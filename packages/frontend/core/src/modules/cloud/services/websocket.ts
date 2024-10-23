@@ -12,6 +12,7 @@ export class WebSocketService extends Service {
     autoConnect: false,
     transports: ['websocket'],
     secure: location.protocol === 'https:',
+    withCredentials: true,
   });
   socket = this.ioManager.socket('/');
   refCount = 0;
