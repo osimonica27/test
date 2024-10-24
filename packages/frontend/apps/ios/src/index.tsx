@@ -18,7 +18,10 @@ import { App } from './app';
 
 function main() {
   if (BUILD_CONFIG.debug || window.SENTRY_RELEASE) {
-    // TODO: workaround
+    // workaround for Capacitor HttpPlugin
+    // capacitor-http-plugin will replace window.XMLHttpRequest with its own implementation
+    // but XMLHttpRequest.prototype is not defined which is used by sentry
+    // see: https://github.com/ionic-team/capacitor/blob/74c3e9447e1e32e73f818d252eb12f453d849e8d/core/native-bridge.ts#L581
     if ('CapacitorWebXMLHttpRequest' in window) {
       window.XMLHttpRequest.prototype = (
         window.CapacitorWebXMLHttpRequest as any
