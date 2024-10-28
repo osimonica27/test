@@ -4,17 +4,12 @@ import type { ClientSchemaProvider } from '../providers/client-schema';
 import type { PopupWindowProvider } from '../providers/popup-window';
 
 export class UrlService extends Service {
-  // those providers are optional, because they are not always available in some environments
-
-  private readonly popupWindowProvider: PopupWindowProvider | undefined;
-  private readonly clientSchemaProvider: ClientSchemaProvider | undefined;
   constructor(
-    popupWindowProvider: PopupWindowProvider[],
-    clientSchemaProvider: ClientSchemaProvider[]
+    // those providers are optional, because they are not always available in some environments
+    private readonly popupWindowProvider?: PopupWindowProvider,
+    private readonly clientSchemaProvider?: ClientSchemaProvider
   ) {
     super();
-    this.popupWindowProvider = popupWindowProvider.at(0);
-    this.clientSchemaProvider = clientSchemaProvider.at(0);
   }
 
   getClientSchema() {

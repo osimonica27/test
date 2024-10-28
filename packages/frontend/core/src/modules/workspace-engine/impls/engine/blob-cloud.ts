@@ -38,6 +38,9 @@ export class CloudBlobStorage implements BlobStorage {
           return null;
         }
         return bufferToBlob(await res.arrayBuffer());
+      })
+      .catch(() => {
+        return null;
       });
   }
 
