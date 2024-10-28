@@ -1,87 +1,122 @@
-import { AttachmentViewer } from '@affine/component/attachment-viewer';
-import {
-  type AttachmentBlockModel,
-  matchFlavours,
-} from '@blocksuite/affine/blocks';
+import { Skeleton } from '@affine/component';
+import { type AttachmentBlockModel } from '@blocksuite/affine/blocks';
 import {
   type Doc,
   DocsService,
   FrameworkScope,
+  useLiveData,
   useService,
 } from '@toeverything/infra';
-import { type ReactElement, useEffect, useLayoutEffect, useState } from 'react';
+import { type ReactElement, useLayoutEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import {
-  ViewBody,
-  ViewHeader,
-  ViewIcon,
-  ViewTitle,
-} from '../../../../modules/workbench';
+import { AttachmentViewerView } from '../../../../components/attachment-viewer';
+import { ViewIcon, ViewTitle } from '../../../../modules/workbench';
 import { PageNotFound } from '../../404';
+import * as styles from './index.css';
 
-const useLoadAttachment = (pageId?: string, attachmentId?: string) => {
+type AttachmentPageProps = {
+  pageId: string;
+  attachmentId: string;
+};
+
+const useLoadAttachment = (pageId: string, attachmentId: string) => {
   const docsService = useService(DocsService);
+  const docRecord = useLiveData(docsService.list.doc$(pageId));
   const [doc, setDoc] = useState<Doc | null>(null);
   const [model, setModel] = useState<AttachmentBlockModel | null>(null);
 
   useLayoutEffect(() => {
-    if (!pageId) return;
+    if (!docRecord) {
+      return;
+    }
 
     const { doc, release } = docsService.open(pageId);
+
+    setDoc(doc);
 
     if (!doc.blockSuiteDoc.ready) {
       doc.blockSuiteDoc.load();
     }
+    doc.setPriorityLoad(10);
 
-    setDoc(doc);
+    doc
+      .waitForSyncReady()
+      .then(() => {
+        const block = doc.blockSuiteDoc.getBlock(attachmentId);
+        if (block) {
+          setModel(block.model as AttachmentBlockModel);
+        }
+      })
+      .catch(console.error);
 
     return () => {
       release();
     };
-  }, [docsService, pageId]);
-
-  useEffect(() => {
-    if (!doc) return;
-    if (!attachmentId) return;
-
-    const disposable = doc.blockSuiteDoc.slots.blockUpdated
-      .filter(({ type, id }) => type === 'add' && id === attachmentId)
-      // @ts-expect-error allow
-      .filter(({ model }) => matchFlavours(model, ['affine:attachment']))
-      // @ts-expect-error allow
-      .once(({ model }) => setModel(model as AttachmentBlockModel));
-
-    return () => {
-      disposable.dispose();
-    };
-  }, [doc, attachmentId]);
+  }, [docRecord, docsService, pageId, attachmentId]);
 
   return { doc, model };
 };
 
-export const AttachmentPage = (): ReactElement => {
-  const params = useParams();
-  const { doc, model } = useLoadAttachment(params.pageId, params.attachmentId);
+export const AttachmentPage = ({
+  pageId,
+  attachmentId,
+}: AttachmentPageProps): ReactElement => {
+  const { doc, model } = useLoadAttachment(pageId, attachmentId);
 
-  if (!doc || !model) {
-    return <PageNotFound noPermission />;
+  if (!doc) {
+    return <PageNotFound noPermission={false} />;
+  }
+
+  if (doc && model) {
+    return (
+      <FrameworkScope scope={doc.scope}>
+        <ViewTitle title={model.name} />
+        <ViewIcon icon={model.type.endsWith('pdf') ? 'pdf' : 'attachment'} />
+        <AttachmentViewerView model={model} />
+      </FrameworkScope>
+    );
   }
 
   return (
-    <>
-      <ViewTitle title={model.name} />
-      <ViewIcon icon={model.type.endsWith('pdf') ? 'pdf' : 'attachment'} />
-      <ViewHeader></ViewHeader>
-      <ViewBody>
-        <FrameworkScope scope={doc.scope}>
-          <AttachmentViewer model={model} />
-        </FrameworkScope>
-      </ViewBody>
-    </>
+    <div className={styles.attachmentSkeletonStyle}>
+      <Skeleton
+        className={styles.attachmentSkeletonItemStyle}
+        animation="wave"
+        height={30}
+      />
+      <Skeleton
+        className={styles.attachmentSkeletonItemStyle}
+        animation="wave"
+        height={30}
+        width="80%"
+      />
+      <Skeleton
+        className={styles.attachmentSkeletonItemStyle}
+        animation="wave"
+        height={30}
+      />
+      <Skeleton
+        className={styles.attachmentSkeletonItemStyle}
+        animation="wave"
+        height={30}
+        width="70%"
+      />
+      <Skeleton
+        className={styles.attachmentSkeletonItemStyle}
+        animation="wave"
+        height={30}
+      />
+    </div>
   );
 };
 
 export const Component = () => {
-  return <AttachmentPage />;
+  const { pageId, attachmentId } = useParams();
+
+  if (!pageId || !attachmentId) {
+    return <PageNotFound noPermission />;
+  }
+
+  return <AttachmentPage pageId={pageId} attachmentId={attachmentId} />;
 };

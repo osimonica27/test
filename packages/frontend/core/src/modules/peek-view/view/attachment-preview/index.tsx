@@ -1,20 +1,8 @@
-import { AttachmentViewer } from '@affine/component/attachment-viewer';
 import type { AttachmentBlockModel } from '@blocksuite/affine/blocks';
-import { type PropsWithChildren, Suspense, useMemo } from 'react';
-import { ErrorBoundary, type FallbackProps } from 'react-error-boundary';
+import { useMemo } from 'react';
 
+import { AttachmentViewer } from '../../../../components/attachment-viewer';
 import { useEditor } from '../utils';
-
-const ErrorLogger = (props: FallbackProps) => {
-  console.error('image preview modal error', props.error);
-  return null;
-};
-
-export const AttachmentPreviewErrorBoundary = (props: PropsWithChildren) => {
-  return (
-    <ErrorBoundary fallbackRender={ErrorLogger}>{props.children}</ErrorBoundary>
-  );
-};
 
 export type AttachmentPreviewModalProps = {
   docId: string;
@@ -28,16 +16,10 @@ export const AttachmentPreviewPeekView = ({
   const { doc } = useEditor(docId);
   const blocksuiteDoc = doc?.blockSuiteDoc;
   const model = useMemo(() => {
-    const block = blocksuiteDoc?.getBlock(blockId);
-    if (block?.model) {
-      return block.model as AttachmentBlockModel;
-    }
-    return null;
+    const model = blocksuiteDoc?.getBlock(blockId)?.model;
+    if (!model) return null;
+    return model as AttachmentBlockModel;
   }, [blockId, blocksuiteDoc]);
 
-  return (
-    <AttachmentPreviewErrorBoundary>
-      <Suspense>{model ? <AttachmentViewer model={model} /> : null}</Suspense>
-    </AttachmentPreviewErrorBoundary>
-  );
+  return model === null ? null : <AttachmentViewer model={model} />;
 };
