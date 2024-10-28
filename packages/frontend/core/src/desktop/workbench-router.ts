@@ -30,7 +30,7 @@ export const workbenchRoutes = [
     lazy: () => import('./pages/workspace/detail-page/detail-page'),
   },
   {
-    path: '/:pageId/:attachmentId',
+    path: '/:pageId/attachments/:attachmentId',
     lazy: () => import('./pages/workspace/attachment/index'),
   },
   {
