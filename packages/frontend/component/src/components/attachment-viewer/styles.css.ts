@@ -103,8 +103,22 @@ export const errorBtns = style({
   marginTop: '28px',
 });
 
-export const viewerPage = style({
+export const mainItemWrapper = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   margin: '20px auto',
+  selectors: {
+    '&:first-of-type': {
+      marginTop: 0,
+    },
+    '&:last-of-type': {
+      marginBottom: 0,
+    },
+  },
+});
+
+export const viewerPage = style({
   maxWidth: 'calc(100% - 40px)',
   background: cssVarV2('layer/white'),
   boxSizing: 'border-box',
@@ -116,12 +130,15 @@ export const viewerPage = style({
 });
 
 export const thumbnails = style({
+  display: 'flex',
+  flexDirection: 'column',
   position: 'absolute',
   boxSizing: 'border-box',
   width: '120px',
   padding: '12px 0',
   right: '30px',
   bottom: '30px',
+  maxHeight: 'calc(100% - 60px)',
   borderRadius: '8px',
   borderWidth: '1px',
   borderStyle: 'solid',
@@ -135,8 +152,11 @@ export const thumbnails = style({
 });
 
 export const thumbnailsPages = style({
+  position: 'relative',
   display: 'flex',
   flexDirection: 'column',
+  maxHeight: '100%',
+  overflow: 'hidden',
   // gap: '12px',
   selectors: {
     '&.collapsed': {
@@ -148,8 +168,11 @@ export const thumbnailsPages = style({
   },
 });
 
-export const thumbnailsPage = style({
+export const thumbnailsItemWrapper = style({
   margin: '0px 12px 12px',
+});
+
+export const thumbnailsPage = style({
   display: 'flex',
   overflow: 'clip',
   // width: '100%',
