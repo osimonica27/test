@@ -47,8 +47,6 @@
     "check-password-strength": "^2.0.10",
     "clsx": "^2.1.0",
     "dayjs": "^1.11.10",
-    "file-type": "^19.1.0",
-    "filesize": "^10.1.6",
     "jotai": "^2.8.0",
     "lit": "^3.1.2",
     "lodash-es": "^4.17.21",
@@ -61,7 +59,6 @@
     "react-paginate": "^8.2.0",
     "react-router-dom": "^6.22.3",
     "react-transition-state": "^2.1.1",
-    "react-virtuoso": "^4.7.8",
     "sonner": "^1.4.41",
     "swr": "^2.2.5",
     "zod": "^3.22.4"
