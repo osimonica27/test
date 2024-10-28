@@ -1,8 +1,12 @@
 export abstract class Connection {
   protected _connected = false;
 
-  protected abstract doConnect(): Promise<void>;
-  protected abstract doDisconnect(): Promise<void>;
+  protected doConnect() {
+    return Promise.resolve();
+  }
+  protected doDisconnect() {
+    return Promise.resolve();
+  }
 
   get connected() {
     return this._connected;

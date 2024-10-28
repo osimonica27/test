@@ -15,12 +15,13 @@ type WebsocketResponse<T> =
     };
 
 interface ServerEvents {
-  'space:broadcast-doc-updates': {
+  'space:broadcast-doc-update': {
     spaceType: string;
     spaceId: string;
     docId: string;
-    updates: string[];
+    update: string;
     timestamp: number;
+    editor: string;
   };
 }
 
@@ -45,8 +46,8 @@ interface ClientEvents {
     docId: string;
   };
 
-  'space:push-doc-updates': [
-    { spaceType: string; spaceId: string; docId: string; updates: string[] },
+  'space:push-doc-update': [
+    { spaceType: string; spaceId: string; docId: string; updates: string },
     { timestamp: number },
   ];
   'space:load-doc-timestamps': [

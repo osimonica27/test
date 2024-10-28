@@ -67,7 +67,7 @@ impl SqliteDocStorage {
 
 #[cfg(test)]
 mod tests {
-  use napi::bindgen_prelude::Buffer;
+  use napi::bindgen_prelude::Uint8Array;
   use sqlx::Row;
 
   use super::*;
@@ -88,7 +88,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: Buffer::from(vec![0, 0]),
+          data: Uint8Array::from(vec![0, 0]),
           mime: "text/plain".to_string(),
         })
         .await
@@ -128,7 +128,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: Buffer::from(vec![0, 0]),
+          data: Uint8Array::from(vec![0, 0]),
           mime: "text/plain".to_string(),
         })
         .await
@@ -176,7 +176,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: Buffer::from(vec![0, 0]),
+          data: Uint8Array::from(vec![0, 0]),
           mime: "text/plain".to_string(),
         })
         .await

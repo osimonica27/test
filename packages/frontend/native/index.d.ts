@@ -15,13 +15,13 @@ export declare class DocStorage {
    * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
    */
   checkpoint(): Promise<void>
-  pushUpdates(docId: string, updates: Array<Uint8Array>): Promise<number>
+  pushUpdate(docId: string, update: Uint8Array): Promise<Date>
   getDocSnapshot(docId: string): Promise<DocRecord | null>
   setDocSnapshot(snapshot: DocRecord): Promise<boolean>
   getDocUpdates(docId: string): Promise<Array<DocUpdate>>
   markUpdatesMerged(docId: string, updates: Array<Date>): Promise<number>
   deleteDoc(docId: string): Promise<void>
-  getDocClocks(after?: number | undefined | null): Promise<Array<DocClock>>
+  getDocClocks(after?: Date | undefined | null): Promise<Array<DocClock>>
   getBlob(key: string): Promise<Blob | null>
   setBlob(blob: SetBlob): Promise<void>
   deleteBlob(key: string, permanently: boolean): Promise<void>
@@ -72,7 +72,7 @@ export declare class SqliteConnection {
 
 export interface Blob {
   key: string
-  data: Buffer
+  data: Uint8Array
   mime: string
   size: number
   createdAt: Date
@@ -91,14 +91,14 @@ export interface DocClock {
 
 export interface DocRecord {
   docId: string
-  data: Buffer
+  data: Uint8Array
   timestamp: Date
 }
 
 export interface DocUpdate {
   docId: string
   createdAt: Date
-  data: Buffer
+  data: Uint8Array
 }
 
 export interface InsertRow {
@@ -117,7 +117,7 @@ export declare function mintChallengeResponse(resource: string, bits?: number | 
 
 export interface SetBlob {
   key: string
-  data: Buffer
+  data: Uint8Array
   mime: string
 }
 
