@@ -10,11 +10,12 @@ import { AppModule } from '../../src/app.module';
 import { CurrentUser } from '../../src/core/auth';
 import { AuthService } from '../../src/core/auth/service';
 import { UserService } from '../../src/core/user';
-import { Config, ConfigModule } from '../../src/fundamentals/config';
+import { URLHelper } from '../../src/fundamentals';
+import { ConfigModule } from '../../src/fundamentals/config';
+import { OAuthProviderName } from '../../src/plugins/oauth/config';
 import { GoogleOAuthProvider } from '../../src/plugins/oauth/providers/google';
 import { OAuthService } from '../../src/plugins/oauth/service';
-import { OAuthProviderName } from '../../src/plugins/oauth/types';
-import { createTestingApp, getSession } from '../utils';
+import { createTestingApp, getSession, initTestingDB } from '../utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
@@ -25,7 +26,7 @@ const test = ava as TestFn<{
   app: INestApplication;
 }>;
 
-test.beforeEach(async t => {
+test.before(async t => {
   const { app } = await createTestingApp({
     imports: [
       ConfigModule.forRoot({
@@ -49,11 +50,15 @@ test.beforeEach(async t => {
   t.context.user = app.get(UserService);
   t.context.db = app.get(PrismaClient);
   t.context.app = app;
-
-  t.context.u1 = await t.context.auth.signUp('u1', 'u1@affine.pro', '1');
 });
 
-test.afterEach.always(async t => {
+test.beforeEach(async t => {
+  Sinon.restore();
+  await initTestingDB(t.context.db);
+  t.context.u1 = await t.context.auth.signUp('u1@affine.pro', '1');
+});
+
+test.after.always(async t => {
   await t.context.app.close();
 });
 
@@ -61,17 +66,20 @@ test("should be able to redirect to oauth provider's login page", async t => {
   const { app } = t.context;
 
   const res = await request(app.getHttpServer())
-    .get('/oauth/login?provider=Google')
-    .expect(HttpStatus.FOUND);
+    .post('/api/oauth/preflight')
+    .send({ provider: 'Google' })
+    .expect(HttpStatus.OK);
 
-  const redirect = new URL(res.header.location);
+  const { url } = res.body;
+
+  const redirect = new URL(url);
   t.is(redirect.origin, 'https://accounts.google.com');
 
   t.is(redirect.pathname, '/o/oauth2/v2/auth');
   t.is(redirect.searchParams.get('client_id'), 'google-client-id');
   t.is(
     redirect.searchParams.get('redirect_uri'),
-    app.get(Config).baseUrl + '/oauth/callback'
+    app.get(URLHelper).link('/oauth/callback')
   );
   t.is(redirect.searchParams.get('response_type'), 'code');
   t.is(redirect.searchParams.get('prompt'), 'select_account');
@@ -82,22 +90,25 @@ test('should throw if provider is invalid', async t => {
   const { app } = t.context;
 
   await request(app.getHttpServer())
-    .get('/oauth/login?provider=Invalid')
+    .post('/api/oauth/preflight')
+    .send({ provider: 'Invalid' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'Invalid OAuth provider',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'INVALID_INPUT',
+      name: 'UNKNOWN_OAUTH_PROVIDER',
+      message: 'Unknown authentication provider Invalid.',
+      data: { name: 'Invalid' },
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 test('should be able to save oauth state', async t => {
   const { oauth } = t.context;
 
   const id = await oauth.saveOAuthState({
-    redirectUri: 'https://example.com',
     provider: OAuthProviderName.Google,
   });
 
@@ -105,7 +116,6 @@ test('should be able to save oauth state', async t => {
 
   t.truthy(state);
   t.is(state!.provider, OAuthProviderName.Google);
-  t.is(state!.redirectUri, 'https://example.com');
 });
 
 test('should be able to get registered oauth providers', async t => {
@@ -120,45 +130,75 @@ test('should throw if code is missing in callback uri', async t => {
   const { app } = t.context;
 
   await request(app.getHttpServer())
-    .get('/oauth/callback')
+    .post('/api/oauth/callback')
+    .send({})
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'Missing query parameter `code`',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'MISSING_OAUTH_QUERY_PARAMETER',
+      message: 'Missing query parameter `code`.',
+      data: { name: 'code' },
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 test('should throw if state is missing in callback uri', async t => {
   const { app } = t.context;
 
   await request(app.getHttpServer())
-    .get('/oauth/callback?code=1')
+    .post('/api/oauth/callback')
+    .send({ code: '1' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'Invalid callback state parameter',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'MISSING_OAUTH_QUERY_PARAMETER',
+      message: 'Missing query parameter `state`.',
+      data: { name: 'state' },
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 test('should throw if state is expired', async t => {
+  const { app, oauth } = t.context;
+  Sinon.stub(oauth, 'isValidState').resolves(true);
+
+  await request(app.getHttpServer())
+    .post('/api/oauth/callback')
+    .send({ code: '1', state: '1' })
+    .expect(HttpStatus.BAD_REQUEST)
+    .expect({
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'OAUTH_STATE_EXPIRED',
+      message: 'OAuth state expired, please try again.',
+    });
+
+  t.pass();
+});
+
+test('should throw if state is invalid', async t => {
   const { app } = t.context;
 
   await request(app.getHttpServer())
-    .get('/oauth/callback?code=1&state=1')
+    .post('/api/oauth/callback')
+    .send({ code: '1', state: '1' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'OAuth state expired, please try again.',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'INVALID_OAUTH_CALLBACK_STATE',
+      message: 'Invalid callback state parameter.',
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 test('should throw if provider is missing in state', async t => {
@@ -166,17 +206,22 @@ test('should throw if provider is missing in state', async t => {
 
   // @ts-expect-error mock
   Sinon.stub(oauth, 'getOAuthState').resolves({});
+  Sinon.stub(oauth, 'isValidState').resolves(true);
 
   await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
+    .post('/api/oauth/callback')
+    .send({ code: '1', state: '1' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'Missing callback state parameter `provider`',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'BAD_REQUEST',
+      name: 'MISSING_OAUTH_QUERY_PARAMETER',
+      message: 'Missing query parameter `provider`.',
+      data: { name: 'provider' },
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 test('should throw if provider is invalid in callback uri', async t => {
@@ -184,26 +229,31 @@ test('should throw if provider is invalid in callback uri', async t => {
 
   // @ts-expect-error mock
   Sinon.stub(oauth, 'getOAuthState').resolves({ provider: 'Invalid' });
+  Sinon.stub(oauth, 'isValidState').resolves(true);
 
   await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
+    .post('/api/oauth/callback')
+    .send({ code: '1', state: '1' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
-      statusCode: 400,
-      message: 'Invalid provider',
-      error: 'Bad Request',
+      status: 400,
+      code: 'Bad Request',
+      type: 'INVALID_INPUT',
+      name: 'UNKNOWN_OAUTH_PROVIDER',
+      message: 'Unknown authentication provider Invalid.',
+      data: { name: 'Invalid' },
     });
 
-  t.assert(true);
+  t.pass();
 });
 
 function mockOAuthProvider(app: INestApplication, email: string) {
   const provider = app.get(GoogleOAuthProvider);
   const oauth = app.get(OAuthService);
 
+  Sinon.stub(oauth, 'isValidState').resolves(true);
   Sinon.stub(oauth, 'getOAuthState').resolves({
     provider: OAuthProviderName.Google,
-    redirectUri: '/',
   });
 
   // @ts-expect-error mock
@@ -221,8 +271,9 @@ test('should be able to sign up with oauth', async t => {
   mockOAuthProvider(app, 'u2@affine.pro');
 
   const res = await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
-    .expect(HttpStatus.FOUND);
+    .post(`/api/oauth/callback`)
+    .send({ code: '1', state: '1' })
+    .expect(HttpStatus.OK);
 
   const session = await getSession(app, res);
 
@@ -244,22 +295,17 @@ test('should be able to sign up with oauth', async t => {
   t.is(user!.connectedAccounts[0].providerAccountId, '1');
 });
 
-test('should throw if account register in another way', async t => {
+test('should not throw if account registered', async t => {
   const { app, u1 } = t.context;
 
   mockOAuthProvider(app, u1.email);
 
   const res = await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
-    .expect(HttpStatus.FOUND);
+    .post(`/api/oauth/callback`)
+    .send({ code: '1', state: '1' })
+    .expect(HttpStatus.OK);
 
-  const link = new URL(res.headers.location);
-
-  t.is(link.pathname, '/signIn');
-  t.is(
-    link.searchParams.get('error'),
-    'The account with provided email is not register in the same way.'
-  );
+  t.is(res.body.id, u1.id);
 });
 
 test('should be able to fullfil user with oauth sign in', async t => {
@@ -274,8 +320,9 @@ test('should be able to fullfil user with oauth sign in', async t => {
   mockOAuthProvider(app, u3.email);
 
   const res = await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
-    .expect(HttpStatus.FOUND);
+    .post('/api/oauth/callback')
+    .send({ code: '1', state: '1' })
+    .expect(HttpStatus.OK);
 
   const session = await getSession(app, res);
 
@@ -289,57 +336,4 @@ test('should be able to fullfil user with oauth sign in', async t => {
   });
 
   t.truthy(account);
-});
-
-test('should throw if oauth account already connected', async t => {
-  const { app, db, u1, auth } = t.context;
-
-  await db.connectedAccount.create({
-    data: {
-      userId: u1.id,
-      provider: OAuthProviderName.Google,
-      providerAccountId: '1',
-    },
-  });
-
-  // @ts-expect-error mock
-  Sinon.stub(auth, 'getUser').resolves({ user: { id: 'u2-id' } });
-
-  mockOAuthProvider(app, 'u2@affine.pro');
-
-  const res = await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
-    .set('cookie', `${AuthService.sessionCookieName}=1`)
-    .expect(HttpStatus.FOUND);
-
-  const link = new URL(res.headers.location);
-
-  t.is(link.pathname, '/signIn');
-  t.is(
-    link.searchParams.get('error'),
-    'The third-party account has already been connected to another user.'
-  );
-});
-
-test('should be able to connect oauth account', async t => {
-  const { app, u1, auth, db } = t.context;
-
-  // @ts-expect-error mock
-  Sinon.stub(auth, 'getUser').resolves({ user: { id: u1.id } });
-
-  mockOAuthProvider(app, u1.email);
-
-  await request(app.getHttpServer())
-    .get(`/oauth/callback?code=1&state=1`)
-    .set('cookie', `${AuthService.sessionCookieName}=1`)
-    .expect(HttpStatus.FOUND);
-
-  const account = await db.connectedAccount.findFirst({
-    where: {
-      userId: u1.id,
-    },
-  });
-
-  t.truthy(account);
-  t.is(account!.userId, u1.id);
 });

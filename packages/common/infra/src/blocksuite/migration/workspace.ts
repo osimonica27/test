@@ -1,4 +1,4 @@
-import type { DocCollection } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/affine/store';
 import type { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 /**
@@ -53,7 +53,6 @@ export function checkWorkspaceCompatibility(
     return MigrationPoint.BlockVersion;
   }
 
-  // TODO: Catch compatibility error from blocksuite to show upgrade page.
   // Temporarily follow the check logic of blocksuite.
   if ((docCollection.meta.docs?.length ?? 0) <= 1) {
     try {

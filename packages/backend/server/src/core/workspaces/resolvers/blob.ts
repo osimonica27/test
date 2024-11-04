@@ -1,4 +1,4 @@
-import { Logger, PayloadTooLargeException, UseGuards } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
 import {
   Args,
   Int,
@@ -13,15 +13,16 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import type { FileUpload } from '../../../fundamentals';
 import {
+  BlobQuotaExceeded,
   CloudThrottlerGuard,
   MakeCache,
   PreventCache,
 } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
+import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
-import { PermissionService } from '../permission';
-import { Permission, WorkspaceBlobSizes, WorkspaceType } from '../types';
+import { WorkspaceBlobSizes, WorkspaceType } from '../types';
 
 @UseGuards(CloudThrottlerGuard)
 @Resolver(() => WorkspaceType)
@@ -126,10 +127,9 @@ export class WorkspaceBlobResolver {
     const checkExceeded =
       await this.quota.getQuotaCalculatorByWorkspace(workspaceId);
 
+    // TODO(@darksky): need a proper way to separate `BlobQuotaExceeded` and `BlobSizeTooLarge`
     if (checkExceeded(0)) {
-      throw new PayloadTooLargeException(
-        'Storage or blob size limit exceeded.'
-      );
+      throw new BlobQuotaExceeded();
     }
     const buffer = await new Promise<Buffer>((resolve, reject) => {
       const stream = blob.createReadStream();
@@ -140,9 +140,7 @@ export class WorkspaceBlobResolver {
         // check size after receive each chunk to avoid unnecessary memory usage
         const bufferSize = chunks.reduce((acc, cur) => acc + cur.length, 0);
         if (checkExceeded(bufferSize)) {
-          reject(
-            new PayloadTooLargeException('Storage or blob size limit exceeded.')
-          );
+          reject(new BlobQuotaExceeded());
         }
       });
       stream.on('error', reject);
@@ -150,7 +148,7 @@ export class WorkspaceBlobResolver {
         const buffer = Buffer.concat(chunks);
 
         if (checkExceeded(buffer.length)) {
-          reject(new PayloadTooLargeException('Storage limit exceeded.'));
+          reject(new BlobQuotaExceeded());
         } else {
           resolve(buffer);
         }

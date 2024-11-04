@@ -1,4 +1,10 @@
+import type { WebSocketService } from '@affine/core/modules/cloud';
 import { DebugLogger } from '@affine/debug';
+import {
+  ErrorNames,
+  UserFriendlyError,
+  type UserFriendlyErrorResponse,
+} from '@affine/graphql';
 import type { DocServer } from '@toeverything/infra';
 import { throwIfAborted } from '@toeverything/infra';
 import type { Socket } from 'socket.io-client';
@@ -9,19 +15,29 @@ import { base64ToUint8Array, uint8ArrayToBase64 } from '../../utils/base64';
 
 const logger = new DebugLogger('affine-cloud-doc-engine-server');
 
+type WebsocketResponse<T> = { error: UserFriendlyErrorResponse } | { data: T };
+
 export class CloudDocEngineServer implements DocServer {
   interruptCb: ((reason: string) => void) | null = null;
   SEND_TIMEOUT = 30000;
 
+  socket: Socket;
+  disposeSocket: () => void;
+
   constructor(
     private readonly workspaceId: string,
-    private readonly socket: Socket
-  ) {}
+    webSocketService: WebSocketService
+  ) {
+    const { socket, dispose } = webSocketService.connect();
+    this.socket = socket;
+    this.disposeSocket = dispose;
+  }
 
   private async clientHandShake() {
-    await this.socket.emitWithAck('client-handshake-sync', {
-      workspaceId: this.workspaceId,
-      version: runtimeConfig.appVersion,
+    await this.socket.emitWithAck('space:join', {
+      spaceType: 'workspace',
+      spaceId: this.workspaceId,
+      clientVersion: BUILD_CONFIG.appVersion,
     });
   }
 
@@ -31,21 +47,25 @@ export class CloudDocEngineServer implements DocServer {
 
     const stateVector = state ? await uint8ArrayToBase64(state) : undefined;
 
-    const response:
-      | { error: any }
-      | { data: { missing: string; state: string; timestamp: number } } =
-      await this.socket.timeout(this.SEND_TIMEOUT).emitWithAck('doc-load-v2', {
-        workspaceId: this.workspaceId,
-        guid: docId,
+    const response: WebsocketResponse<{
+      missing: string;
+      state: string;
+      timestamp: number;
+    }> = await this.socket
+      .timeout(this.SEND_TIMEOUT)
+      .emitWithAck('space:load-doc', {
+        spaceType: 'workspace',
+        spaceId: this.workspaceId,
+        docId: docId,
         stateVector,
       });
 
     if ('error' in response) {
-      // TODO: result `EventError` with server
-      if (response.error.code === 'DOC_NOT_FOUND') {
+      const error = new UserFriendlyError(response.error);
+      if (error.name === ErrorNames.DOC_NOT_FOUND) {
         return null;
       } else {
-        throw new Error(response.error.message);
+        throw error;
       }
     } else {
       return {
@@ -60,50 +80,44 @@ export class CloudDocEngineServer implements DocServer {
   async pushDoc(docId: string, data: Uint8Array) {
     const payload = await uint8ArrayToBase64(data);
 
-    const response: {
-      // TODO: reuse `EventError` with server
-      error?: any;
-      data: { timestamp: number };
-    } = await this.socket
+    const response: WebsocketResponse<{ timestamp: number }> = await this.socket
       .timeout(this.SEND_TIMEOUT)
-      .emitWithAck('client-update-v2', {
-        workspaceId: this.workspaceId,
-        guid: docId,
+      .emitWithAck('space:push-doc-updates', {
+        spaceType: 'workspace',
+        spaceId: this.workspaceId,
+        docId: docId,
         updates: [payload],
       });
 
-    // TODO: raise error with different code to users
-    if (response.error) {
+    if ('error' in response) {
       logger.error('client-update-v2 error', {
         workspaceId: this.workspaceId,
         guid: docId,
         response,
       });
 
-      throw new Error(response.error);
+      throw new UserFriendlyError(response.error);
     }
 
     return { serverClock: response.data.timestamp };
   }
   async loadServerClock(after: number): Promise<Map<string, number>> {
-    const response: {
-      // TODO: reuse `EventError` with server
-      error?: any;
-      data: Record<string, number>;
-    } = await this.socket
-      .timeout(this.SEND_TIMEOUT)
-      .emitWithAck('client-pre-sync', {
-        workspaceId: this.workspaceId,
-        timestamp: after,
-      });
+    const response: WebsocketResponse<Record<string, number>> =
+      await this.socket
+        .timeout(this.SEND_TIMEOUT)
+        .emitWithAck('space:load-doc-timestamps', {
+          spaceType: 'workspace',
+          spaceId: this.workspaceId,
+          timestamp: after,
+        });
 
-    if (response.error) {
+    if ('error' in response) {
       logger.error('client-pre-sync error', {
         workspaceId: this.workspaceId,
         response,
       });
 
-      throw new Error(response.error);
+      throw new UserFriendlyError(response.error);
     }
 
     return new Map(Object.entries(response.data));
@@ -116,25 +130,29 @@ export class CloudDocEngineServer implements DocServer {
     }) => void
   ): Promise<() => void> {
     const handleUpdate = async (message: {
-      workspaceId: string;
-      guid: string;
+      spaceType: string;
+      spaceId: string;
+      docId: string;
       updates: string[];
       timestamp: number;
     }) => {
-      if (message.workspaceId === this.workspaceId) {
+      if (
+        message.spaceType === 'workspace' &&
+        message.spaceId === this.workspaceId
+      ) {
         message.updates.forEach(update => {
           cb({
-            docId: message.guid,
+            docId: message.docId,
             data: base64ToUint8Array(update),
             serverClock: message.timestamp,
           });
         });
       }
     };
-    this.socket.on('server-updates', handleUpdate);
+    this.socket.on('space:broadcast-doc-updates', handleUpdate);
 
     return () => {
-      this.socket.off('server-updates', handleUpdate);
+      this.socket.off('space:broadcast-doc-updates', handleUpdate);
     };
   }
   async waitForConnectingServer(signal: AbortSignal): Promise<void> {
@@ -159,14 +177,12 @@ export class CloudDocEngineServer implements DocServer {
     }
   }
   disconnectServer(): void {
-    if (!this.socket) {
-      return;
-    }
-
-    this.socket.emit('client-leave-sync', this.workspaceId);
+    this.socket.emit('space:leave', {
+      spaceType: 'workspace',
+      spaceId: this.workspaceId,
+    });
     this.socket.off('server-version-rejected', this.handleVersionRejected);
     this.socket.off('disconnect', this.handleDisconnect);
-    this.socket.disconnect();
   }
   onInterrupted = (cb: (reason: string) => void) => {
     this.interruptCb = cb;
@@ -180,4 +196,9 @@ export class CloudDocEngineServer implements DocServer {
   handleVersionRejected = () => {
     this.interruptCb?.('Client version rejected');
   };
+
+  dispose(): void {
+    this.disconnectServer();
+    this.disposeSocket();
+  }
 }

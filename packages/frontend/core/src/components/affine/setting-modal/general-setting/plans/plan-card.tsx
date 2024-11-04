@@ -1,23 +1,30 @@
-import { Button } from '@affine/component/ui/button';
+import { Button, type ButtonProps } from '@affine/component/ui/button';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { generateSubscriptionCallbackLink } from '@affine/core/components/hooks/affine/use-subscription-notify';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
-import { popupWindow } from '@affine/core/utils';
-import type { SubscriptionRecurring } from '@affine/graphql';
-import { SubscriptionPlan, SubscriptionStatus } from '@affine/graphql';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { DoneIcon } from '@blocksuite/icons';
+import {
+  type CreateCheckoutSessionInput,
+  SubscriptionRecurring,
+} from '@affine/graphql';
+import {
+  SubscriptionPlan,
+  SubscriptionStatus,
+  SubscriptionVariant,
+} from '@affine/graphql';
+import { Trans, useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
+import { DoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useAtom, useSetAtom } from 'jotai';
+import clsx from 'clsx';
+import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
 import type { PropsWithChildren } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
-import { openPaymentDisableAtom } from '../../../../../atoms';
-import { authAtom } from '../../../../../atoms/index';
-import { mixpanel } from '../../../../../utils';
+import { authAtom } from '../../../../atoms/index';
 import { CancelAction, ResumeAction } from './actions';
+import { CheckoutSlot } from './checkout-slot';
 import type { DynamicPrice, FixedPrice } from './cloud-plans';
 import { ConfirmLoadingModal } from './modals';
 import * as styles from './style.css';
@@ -86,15 +93,18 @@ export const PlanCard = (props: PlanCardProps) => {
 };
 
 const ActionButton = ({ detail, recurring }: PlanCardProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const loggedIn =
     useLiveData(useService(AuthService).session.status$) === 'authenticated';
   const subscriptionService = useService(SubscriptionService);
+  const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
   const primarySubscription = useLiveData(
     subscriptionService.subscription.pro$
   );
   const currentPlan = primarySubscription?.plan ?? SubscriptionPlan.Free;
   const currentRecurring = primarySubscription?.recurring;
+  const isOnetime = useLiveData(subscriptionService.subscription.isOnetimePro$);
+  const isFree = detail.plan === SubscriptionPlan.Free;
 
   // branches:
   //  if contact                                => 'Contact Sales'
@@ -102,12 +112,15 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
   //    if free                                 => 'Sign up free'
   //    else                                    => 'Buy Pro'
   //  else
+  //    if isBeliever                           => 'Included in Lifetime'
+  //    if onetime
+  //      if free                               => 'Included in Pro'
+  //      else                                  => 'Redeem Code'
   //    if isCurrent
   //      if canceled                           => 'Resume'
   //      else                                  => 'Current Plan'
-  //    if isCurrent                            => 'Current Plan'
-  //    else if free                            => 'Downgrade'
-  //    else if currentRecurring !== recurring  => 'Change to {recurring} Billing'
+  //    if free                                 => 'Downgrade'
+  //    if currentRecurring !== recurring       => 'Change to {recurring} Billing'
   //    else                                    => 'Upgrade'
 
   // contact
@@ -126,8 +139,27 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
     );
   }
 
+  // lifetime
+  if (isBeliever) {
+    return (
+      <Button className={styles.planAction} disabled>
+        {t['com.affine.payment.cloud.lifetime.included']()}
+      </Button>
+    );
+  }
+
+  // onetime
+  if (isOnetime) {
+    return isFree ? (
+      <Button className={styles.planAction} disabled>
+        {t['com.affine.payment.cloud.onetime.included']()}
+      </Button>
+    ) : (
+      <RedeemCode recurring={recurring} />
+    );
+  }
+
   const isCanceled = !!primarySubscription?.canceledAt;
-  const isFree = detail.plan === SubscriptionPlan.Free;
   const isCurrent =
     detail.plan === currentPlan &&
     (isFree
@@ -157,7 +189,7 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
 };
 
 const CurrentPlan = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <Button className={styles.planAction}>
       {t['com.affine.payment.current-plan']()}
@@ -166,12 +198,16 @@ const CurrentPlan = () => {
 };
 
 const Downgrade = ({ disabled }: { disabled?: boolean }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useState(false);
 
   const tooltipContent = disabled
     ? t['com.affine.payment.downgraded-tooltip']()
     : null;
+
+  const handleClick = useCallback(() => {
+    setOpen(true);
+  }, []);
 
   return (
     <CancelAction open={open} onOpenChange={setOpen}>
@@ -179,8 +215,8 @@ const Downgrade = ({ disabled }: { disabled?: boolean }) => {
         <div className={styles.planAction}>
           <Button
             className={styles.planAction}
-            type="primary"
-            onClick={() => setOpen(true)}
+            variant="primary"
+            onClick={handleClick}
             disabled={disabled}
           >
             {t['com.affine.payment.downgrade']()}
@@ -192,7 +228,7 @@ const Downgrade = ({ disabled }: { disabled?: boolean }) => {
 };
 
 const BookDemo = ({ plan }: { plan: SubscriptionPlan }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const url = useMemo(() => {
     switch (plan) {
       case SubscriptionPlan.Team:
@@ -210,72 +246,70 @@ const BookDemo = ({ plan }: { plan: SubscriptionPlan }) => {
       href={url}
       target="_blank"
       rel="noreferrer"
-      onClick={() => {
-        mixpanel.track('Button', {
-          resolve: 'BookDemo',
-          url,
-        });
-      }}
     >
-      <Button className={styles.planAction} type="primary">
-        {t['com.affine.payment.book-a-demo']()}
+      <Button
+        className={styles.planAction}
+        variant="primary"
+        data-event-props="$.settingsPanel.billing.bookDemo"
+        data-event-args-url={url}
+      >
+        {t['com.affine.payment.tell-us-use-case']()}
       </Button>
     </a>
   );
 };
 
-const Upgrade = ({ recurring }: { recurring: SubscriptionRecurring }) => {
-  const [isMutating, setMutating] = useState(false);
-  const [isOpenedExternalWindow, setOpenedExternalWindow] = useState(false);
-  const t = useAFFiNEI18N();
+export const Upgrade = ({
+  className,
+  recurring,
+  children,
+  checkoutInput,
+  ...btnProps
+}: ButtonProps & {
+  recurring: SubscriptionRecurring;
+  checkoutInput?: Partial<CreateCheckoutSessionInput>;
+}) => {
+  const t = useI18n();
+  const authService = useService(AuthService);
 
-  const subscriptionService = useService(SubscriptionService);
-
-  const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
-
-  useEffect(() => {
-    if (isOpenedExternalWindow) {
-      // when the external window is opened, revalidate the subscription status every 3 seconds
-      const timer = setInterval(() => {
-        subscriptionService.subscription.revalidate();
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-    return;
-  }, [isOpenedExternalWindow, subscriptionService]);
-
-  const [, openPaymentDisableModal] = useAtom(openPaymentDisableAtom);
-  const upgrade = useAsyncCallback(async () => {
-    if (!runtimeConfig.enablePayment) {
-      openPaymentDisableModal(true);
-      return;
-    }
-
-    setMutating(true);
-    const link = await subscriptionService.createCheckoutSession({
-      recurring,
-      idempotencyKey,
-      plan: SubscriptionPlan.Pro, // Only support prod plan now.
-      coupon: null,
-      successCallbackLink: null,
+  const onBeforeCheckout = useCallback(() => {
+    track.$.settingsPanel.plans.checkout({
+      plan: SubscriptionPlan.Pro,
+      recurring: recurring,
     });
-    setMutating(false);
-    setIdempotencyKey(nanoid());
-    popupWindow(link);
-    setOpenedExternalWindow(true);
-    mixpanel.track_forms('Subscription', SubscriptionPlan.Pro);
-  }, [openPaymentDisableModal, subscriptionService, recurring, idempotencyKey]);
+  }, [recurring]);
+
+  const checkoutOptions = useMemo(
+    () => ({
+      recurring,
+      plan: SubscriptionPlan.Pro,
+      variant: null,
+      coupon: null,
+      successCallbackLink: generateSubscriptionCallbackLink(
+        authService.session.account$.value,
+        SubscriptionPlan.Pro,
+        recurring
+      ),
+      ...checkoutInput,
+    }),
+    [authService.session.account$.value, checkoutInput, recurring]
+  );
 
   return (
-    <Button
-      className={styles.planAction}
-      type="primary"
-      onClick={upgrade}
-      disabled={isMutating}
-      loading={isMutating}
-    >
-      {t['com.affine.payment.upgrade']()}
-    </Button>
+    <CheckoutSlot
+      onBeforeCheckout={onBeforeCheckout}
+      checkoutOptions={checkoutOptions}
+      renderer={props => (
+        <Button
+          className={clsx(styles.planAction, className)}
+          variant="primary"
+          {...props}
+          {...btnProps}
+        >
+          {children ?? t['com.affine.payment.upgrade']()}
+        </Button>
+      )}
+    />
   );
 };
 
@@ -290,12 +324,20 @@ const ChangeRecurring = ({
   disabled?: boolean;
   due: string;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useState(false);
   const [isMutating, setIsMutating] = useState(false);
   // allow replay request on network error until component unmount or success
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const subscription = useService(SubscriptionService).subscription;
+
+  const onStartChange = useCallback(() => {
+    track.$.settingsPanel.plans.changeSubscriptionRecurring({
+      plan: SubscriptionPlan.Pro,
+      recurring: to,
+    });
+    setOpen(true);
+  }, [to]);
 
   const change = useAsyncCallback(async () => {
     setIsMutating(true);
@@ -321,8 +363,8 @@ const ChangeRecurring = ({
     <>
       <Button
         className={styles.planAction}
-        type="primary"
-        onClick={() => setOpen(true)}
+        variant="primary"
+        onClick={onStartChange}
         disabled={disabled || isMutating}
         loading={isMutating}
       >
@@ -355,7 +397,7 @@ const SignUpAction = ({ children }: PropsWithChildren) => {
     <Button
       onClick={onClickSignIn}
       className={styles.planAction}
-      type="primary"
+      variant="primary"
     >
       {children}
     </Button>
@@ -363,22 +405,52 @@ const SignUpAction = ({ children }: PropsWithChildren) => {
 };
 
 const ResumeButton = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [open, setOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const subscription = useService(SubscriptionService).subscription;
+
+  const handleClick = useCallback(() => {
+    setOpen(true);
+    const pro = subscription.pro$.value;
+    if (pro) {
+      track.$.settingsPanel.plans.resumeSubscription({
+        plan: SubscriptionPlan.Pro,
+        recurring: pro.recurring,
+      });
+    }
+  }, [subscription.pro$.value]);
 
   return (
     <ResumeAction open={open} onOpenChange={setOpen}>
-      <Button
-        className={styles.planAction}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        onClick={() => setOpen(true)}
-      >
-        {hovered
-          ? t['com.affine.payment.resume-renewal']()
-          : t['com.affine.payment.current-plan']()}
+      <Button className={styles.resumeAction} onClick={handleClick}>
+        <span data-show-hover="true" className={clsx(styles.resumeContent)}>
+          {t['com.affine.payment.resume-renewal']()}
+        </span>
+        <span data-show-hover="false" className={clsx(styles.resumeContent)}>
+          {t['com.affine.payment.current-plan']()}
+        </span>
       </Button>
     </ResumeAction>
+  );
+};
+
+const redeemCodeCheckoutInput = { variant: SubscriptionVariant.Onetime };
+export const RedeemCode = ({
+  className,
+  recurring = SubscriptionRecurring.Yearly,
+  children,
+  ...btnProps
+}: ButtonProps & { recurring?: SubscriptionRecurring }) => {
+  const t = useI18n();
+
+  return (
+    <Upgrade
+      recurring={recurring}
+      className={className}
+      checkoutInput={redeemCodeCheckoutInput}
+      {...btnProps}
+    >
+      {children ?? t['com.affine.payment.redeem-code']()}
+    </Upgrade>
   );
 };

@@ -13,7 +13,7 @@ export class QuotaConfig {
       return cachedQuota;
     }
 
-    const quota = await tx.features.findFirst({
+    const quota = await tx.feature.findFirst({
       where: {
         id: featureId,
       },
@@ -69,10 +69,6 @@ export class QuotaConfig {
 
   get historyPeriod() {
     return this.config.configs.historyPeriod;
-  }
-
-  get historyPeriodFromNow() {
-    return new Date(Date.now() + this.historyPeriod);
   }
 
   get memberLimit() {

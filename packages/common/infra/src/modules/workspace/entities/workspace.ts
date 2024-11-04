@@ -1,11 +1,12 @@
-import { DocCollection } from '@blocksuite/store';
+import { DocCollection } from '@blocksuite/affine/store';
 import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
 import type { Awareness } from 'y-protocols/awareness.js';
 
 import { Entity } from '../../../framework';
 import { LiveData } from '../../../livedata';
-import { globalBlockSuiteSchema } from '../global-schema';
+import { WorkspaceDBService } from '../../db';
+import { getAFFiNEWorkspaceSchema } from '../global-schema';
 import type { WorkspaceScope } from '../scopes/workspace';
 import { WorkspaceEngineService } from '../services/engine';
 import { WorkspaceUpgradeService } from '../services/upgrade';
@@ -29,29 +30,21 @@ export class Workspace extends Entity {
     if (!this._docCollection) {
       this._docCollection = new DocCollection({
         id: this.openOptions.metadata.id,
-        blobStorages: [
-          () => ({
-            crud: {
-              get: key => {
-                return this.engine.blob.get(key);
-              },
-              set: (key, value) => {
-                return this.engine.blob.set(key, value);
-              },
-              list: () => {
-                return this.engine.blob.list();
-              },
-              delete: key => {
-                return this.engine.blob.delete(key);
-              },
-            },
-          }),
-        ],
+        blobSources: {
+          main: this.engine.blob,
+        },
         idGenerator: () => nanoid(),
-        schema: globalBlockSuiteSchema,
+        schema: getAFFiNEWorkspaceSchema(),
+      });
+      this._docCollection.slots.docCreated.on(id => {
+        this.engine.doc.markAsReady(id);
       });
     }
     return this._docCollection;
+  }
+
+  get db() {
+    return this.framework.get(WorkspaceDBService).db;
   }
 
   get awareness() {
@@ -73,10 +66,6 @@ export class Workspace extends Entity {
 
   get upgrade() {
     return this.framework.get(WorkspaceUpgradeService).upgrade;
-  }
-
-  get flavourProvider() {
-    return this.scope.props.flavourProvider;
   }
 
   name$ = LiveData.from<string | undefined>(

@@ -113,7 +113,7 @@ export const EdgelessSwitch = ({
       turnOffScalingRef.current?.();
     };
 
-    // TODO: mobile support
+    // TODO(@catsjuice): mobile support
     const onMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (target.closest('[data-no-drag]')) return;
@@ -235,7 +235,7 @@ export const EdgelessSwitch = ({
                 onSwitchToPageMode={onSwitchToPageMode}
                 onSwitchToEdgelessMode={onSwitchToEdgelessMode}
               />
-              <Button size="extraLarge" type="primary" onClick={onNextClick}>
+              <Button size="extraLarge" variant="primary" onClick={onNextClick}>
                 Next
               </Button>
             </header>
@@ -263,7 +263,7 @@ export const EdgelessSwitch = ({
           <Button
             className={styles.wellDoneEnterAnim}
             onClick={onNextClick}
-            type="primary"
+            variant="primary"
             size="extraLarge"
             style={{ marginTop: 40 }}
           >

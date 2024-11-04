@@ -34,7 +34,10 @@ export type KnownMetricScopes =
   | 'jwst'
   | 'auth'
   | 'controllers'
-  | 'doc';
+  | 'doc'
+  | 'sse'
+  | 'mail'
+  | 'ai';
 
 const metricCreators: MetricCreators = {
   counter(meter: Meter, name: string, opts?: MetricOptions) {

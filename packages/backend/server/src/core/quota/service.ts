@@ -3,8 +3,8 @@ import { PrismaClient } from '@prisma/client';
 
 import type { EventPayload } from '../../fundamentals';
 import { OnEvent, PrismaTransaction } from '../../fundamentals';
-import { SubscriptionPlan } from '../../plugins/payment/types';
-import { FeatureKind, FeatureManagementService } from '../features';
+import { FeatureManagementService } from '../features/management';
+import { FeatureKind } from '../features/types';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';
 
@@ -17,7 +17,7 @@ export class QuotaService {
 
   // get activated user quota
   async getUserQuota(userId: string) {
-    const quota = await this.prisma.userFeatures.findFirst({
+    const quota = await this.prisma.userFeature.findFirst({
       where: {
         userId,
         feature: {
@@ -44,7 +44,7 @@ export class QuotaService {
 
   // get user all quota records
   async getUserQuotas(userId: string) {
-    const quotas = await this.prisma.userFeatures.findMany({
+    const quotas = await this.prisma.userFeature.findMany({
       where: {
         userId,
         feature: {
@@ -58,6 +58,9 @@ export class QuotaService {
         expiredAt: true,
         featureId: true,
       },
+      orderBy: {
+        id: 'asc',
+      },
     });
     const configs = await Promise.all(
       quotas.map(async quota => {
@@ -66,7 +69,7 @@ export class QuotaService {
             ...quota,
             feature: await QuotaConfig.get(this.prisma, quota.featureId),
           };
-        } catch (_) {}
+        } catch {}
         return null as unknown as typeof quota & {
           feature: QuotaConfig;
         };
@@ -92,7 +95,7 @@ export class QuotaService {
         return;
       }
 
-      const featureId = await tx.features
+      const featureId = await tx.feature
         .findFirst({
           where: { feature: quota, type: FeatureKind.Quota },
           select: { id: true },
@@ -105,7 +108,7 @@ export class QuotaService {
       }
 
       // we will deactivate all exists quota for this user
-      await tx.userFeatures.updateMany({
+      await tx.userFeature.updateMany({
         where: {
           id: undefined,
           userId,
@@ -118,7 +121,7 @@ export class QuotaService {
         },
       });
 
-      await tx.userFeatures.create({
+      await tx.userFeature.create({
         data: {
           userId,
           featureId,
@@ -133,7 +136,7 @@ export class QuotaService {
   async hasQuota(userId: string, quota: QuotaType, tx?: PrismaTransaction) {
     const executor = tx ?? this.prisma;
 
-    return executor.userFeatures
+    return executor.userFeature
       .count({
         where: {
           userId,
@@ -151,15 +154,18 @@ export class QuotaService {
   async onSubscriptionUpdated({
     userId,
     plan,
+    recurring,
   }: EventPayload<'user.subscription.activated'>) {
     switch (plan) {
-      case SubscriptionPlan.AI:
+      case 'ai':
         await this.feature.addCopilot(userId, 'subscription activated');
         break;
-      case SubscriptionPlan.Pro:
+      case 'pro':
         await this.switchUserQuota(
           userId,
-          QuotaType.ProPlanV1,
+          recurring === 'lifetime'
+            ? QuotaType.LifetimeProPlanV1
+            : QuotaType.ProPlanV1,
           'subscription activated'
         );
         break;
@@ -174,16 +180,22 @@ export class QuotaService {
     plan,
   }: EventPayload<'user.subscription.canceled'>) {
     switch (plan) {
-      case SubscriptionPlan.AI:
+      case 'ai':
         await this.feature.removeCopilot(userId);
         break;
-      case SubscriptionPlan.Pro:
-        await this.switchUserQuota(
-          userId,
-          QuotaType.FreePlanV1,
-          'subscription canceled'
-        );
+      case 'pro': {
+        // edge case: when user switch from recurring Pro plan to `Lifetime` plan,
+        // a subscription canceled event will be triggered because `Lifetime` plan is not subscription based
+        const quota = await this.getUserQuota(userId);
+        if (quota.feature.name !== QuotaType.LifetimeProPlanV1) {
+          await this.switchUserQuota(
+            userId,
+            QuotaType.FreePlanV1,
+            'subscription canceled'
+          );
+        }
         break;
+      }
       default:
         break;
     }

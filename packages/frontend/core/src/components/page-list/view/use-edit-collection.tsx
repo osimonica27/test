@@ -1,32 +1,40 @@
 import type { Collection } from '@affine/env/filter';
-import { useCallback, useState } from 'react';
+import { useMount } from '@toeverything/infra';
+import { useCallback, useEffect, useState } from 'react';
 
 import { CreateCollectionModal } from './create-collection';
-import type {
-  AllPageListConfig,
-  EditCollectionMode,
+import {
+  EditCollectionModal,
+  type EditCollectionMode,
 } from './edit-collection/edit-collection';
-import { EditCollectionModal } from './edit-collection/edit-collection';
 
-export const useEditCollection = (config: AllPageListConfig) => {
+export const useEditCollection = () => {
   const [data, setData] = useState<{
     collection: Collection;
     mode?: 'page' | 'rule';
     onConfirm: (collection: Collection) => void;
   }>();
-  const close = useCallback(() => setData(undefined), []);
+  const close = useCallback((open: boolean) => {
+    if (!open) {
+      setData(undefined);
+    }
+  }, []);
+  const { mount } = useMount('useEditCollection');
+
+  useEffect(() => {
+    if (!data) return;
+    return mount(
+      <EditCollectionModal
+        init={data?.collection}
+        open={!!data}
+        mode={data?.mode}
+        onOpenChange={close}
+        onConfirm={data?.onConfirm ?? (() => {})}
+      />
+    );
+  }, [close, data, mount]);
 
   return {
-    node: data ? (
-      <EditCollectionModal
-        allPageListConfig={config}
-        init={data.collection}
-        open={!!data}
-        mode={data.mode}
-        onOpenChange={close}
-        onConfirm={data.onConfirm}
-      />
-    ) : null,
     open: (
       collection: Collection,
       mode?: EditCollectionMode
@@ -54,19 +62,28 @@ export const useEditCollectionName = ({
     name: string;
     onConfirm: (name: string) => void;
   }>();
-  const close = useCallback(() => setData(undefined), []);
+  const close = useCallback((open: boolean) => {
+    if (!open) {
+      setData(undefined);
+    }
+  }, []);
+  const { mount } = useMount('useEditCollectionName');
 
-  return {
-    node: data ? (
+  useEffect(() => {
+    if (!data) return;
+    return mount(
       <CreateCollectionModal
         showTips={showTips}
         title={title}
-        init={data.name}
+        init={data?.name ?? ''}
         open={!!data}
         onOpenChange={close}
-        onConfirm={data.onConfirm}
+        onConfirm={data?.onConfirm ?? (() => {})}
       />
-    ) : null,
+    );
+  }, [close, data, mount, showTips, title]);
+
+  return {
     open: (name: string): Promise<string> =>
       new Promise<string>(res => {
         setData({

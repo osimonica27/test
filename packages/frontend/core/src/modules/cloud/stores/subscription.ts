@@ -11,9 +11,10 @@ import {
   subscriptionQuery,
   updateSubscriptionMutation,
 } from '@affine/graphql';
-import type { GlobalCacheService } from '@toeverything/infra';
+import type { GlobalCache } from '@toeverything/infra';
 import { Store } from '@toeverything/infra';
 
+import type { UrlService } from '../../url';
 import type { SubscriptionType } from '../entities/subscription';
 import { getAffineCloudBaseUrl } from '../services/fetch';
 import type { GraphQLService } from '../services/graphql';
@@ -21,14 +22,15 @@ import type { GraphQLService } from '../services/graphql';
 const SUBSCRIPTION_CACHE_KEY = 'subscription:';
 
 const getDefaultSubscriptionSuccessCallbackLink = (
-  plan: SubscriptionPlan | null
+  plan: SubscriptionPlan | null,
+  scheme?: string
 ) => {
   const path =
     plan === SubscriptionPlan.AI ? '/ai-upgrade-success' : '/upgrade-success';
   const urlString = getAffineCloudBaseUrl() + path;
   const url = new URL(urlString);
-  if (environment.isDesktop) {
-    url.searchParams.set('schema', window.appInfo.schema);
+  if (scheme) {
+    url.searchParams.set('scheme', scheme);
   }
   return url.toString();
 };
@@ -36,7 +38,8 @@ const getDefaultSubscriptionSuccessCallbackLink = (
 export class SubscriptionStore extends Store {
   constructor(
     private readonly gqlService: GraphQLService,
-    private readonly globalCacheService: GlobalCacheService
+    private readonly globalCache: GlobalCache,
+    private readonly urlService: UrlService
   ) {
     super();
   }
@@ -96,16 +99,13 @@ export class SubscriptionStore extends Store {
   }
 
   getCachedSubscriptions(userId: string) {
-    return this.globalCacheService.globalCache.get<SubscriptionType[]>(
+    return this.globalCache.get<SubscriptionType[]>(
       SUBSCRIPTION_CACHE_KEY + userId
     );
   }
 
   setCachedSubscriptions(userId: string, subscriptions: SubscriptionType[]) {
-    return this.globalCacheService.globalCache.set(
-      SUBSCRIPTION_CACHE_KEY + userId,
-      subscriptions
-    );
+    return this.globalCache.set(SUBSCRIPTION_CACHE_KEY + userId, subscriptions);
   }
 
   setSubscriptionRecurring(
@@ -131,7 +131,10 @@ export class SubscriptionStore extends Store {
           ...input,
           successCallbackLink:
             input.successCallbackLink ||
-            getDefaultSubscriptionSuccessCallbackLink(input.plan),
+            getDefaultSubscriptionSuccessCallbackLink(
+              input.plan,
+              this.urlService.getClientScheme()
+            ),
         },
       },
     });

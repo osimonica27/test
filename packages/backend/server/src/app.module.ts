@@ -1,24 +1,33 @@
-import { join } from 'node:path';
-
-import { Logger, Module } from '@nestjs/common';
+import {
+  DynamicModule,
+  ForwardReference,
+  Logger,
+  Module,
+} from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { get } from 'lodash-es';
 
 import { AppController } from './app.controller';
 import { AuthModule } from './core/auth';
 import { ADD_ENABLED_FEATURES, ServerConfigModule } from './core/config';
-import { DocModule } from './core/doc';
+import { DocStorageModule } from './core/doc';
+import { DocRendererModule } from './core/doc-renderer';
 import { FeatureModule } from './core/features';
+import { PermissionModule } from './core/permission';
 import { QuotaModule } from './core/quota';
+import { SelfhostModule } from './core/selfhost';
 import { StorageModule } from './core/storage';
 import { SyncModule } from './core/sync';
 import { UserModule } from './core/user';
 import { WorkspaceModule } from './core/workspaces';
 import { getOptionalModuleMetadata } from './fundamentals';
 import { CacheModule } from './fundamentals/cache';
-import type { AvailablePlugins } from './fundamentals/config';
-import { Config, ConfigModule } from './fundamentals/config';
+import {
+  AFFiNEConfig,
+  ConfigModule,
+  mergeConfigOverride,
+} from './fundamentals/config';
+import { ErrorModule } from './fundamentals/error';
 import { EventModule } from './fundamentals/event';
 import { GqlModule } from './fundamentals/graphql';
 import { HelpersModule } from './fundamentals/helpers';
@@ -30,10 +39,10 @@ import { StorageProviderModule } from './fundamentals/storage';
 import { RateLimiterModule } from './fundamentals/throttler';
 import { WebSocketModule } from './fundamentals/websocket';
 import { REGISTERED_PLUGINS } from './plugins';
+import { ENABLED_PLUGINS } from './plugins/registry';
 
 export const FunctionalityModules = [
   ConfigModule.forRoot(),
-  ScheduleModule.forRoot(),
   EventModule,
   CacheModule,
   MutexModule,
@@ -43,54 +52,77 @@ export const FunctionalityModules = [
   MailModule,
   StorageProviderModule,
   HelpersModule,
+  ErrorModule,
 ];
+
+function filterOptionalModule(
+  config: AFFiNEConfig,
+  module: AFFiNEModule | Promise<DynamicModule> | ForwardReference<any>
+) {
+  // can't deal with promise or forward reference
+  if (module instanceof Promise || 'forwardRef' in module) {
+    return module;
+  }
+
+  const requirements = getOptionalModuleMetadata(module, 'requires');
+  // if condition not set or condition met, include the module
+  if (requirements?.length) {
+    const nonMetRequirements = requirements.filter(c => {
+      const value = get(config, c);
+      return (
+        value === undefined ||
+        value === null ||
+        (typeof value === 'string' && value.trim().length === 0)
+      );
+    });
+
+    if (nonMetRequirements.length) {
+      const name = 'module' in module ? module.module.name : module.name;
+      new Logger(name).warn(
+        `${name} is not enabled because of the required configuration is not satisfied.`,
+        'Unsatisfied configuration:',
+        ...nonMetRequirements.map(config => `  AFFiNE.${config}`)
+      );
+      return null;
+    }
+  }
+
+  const predicator = getOptionalModuleMetadata(module, 'if');
+  if (predicator && !predicator(config)) {
+    return null;
+  }
+
+  const contribution = getOptionalModuleMetadata(module, 'contributesTo');
+  if (contribution) {
+    ADD_ENABLED_FEATURES(contribution);
+  }
+
+  const subModules = getOptionalModuleMetadata(module, 'imports');
+  const filteredSubModules = subModules
+    ?.map(subModule => filterOptionalModule(config, subModule))
+    .filter(Boolean);
+  Reflect.defineMetadata('imports', filteredSubModules, module);
+
+  return module;
+}
 
 export class AppModuleBuilder {
   private readonly modules: AFFiNEModule[] = [];
-  constructor(private readonly config: Config) {}
+  constructor(private readonly config: AFFiNEConfig) {}
 
   use(...modules: AFFiNEModule[]): this {
     modules.forEach(m => {
-      const requirements = getOptionalModuleMetadata(m, 'requires');
-      // if condition not set or condition met, include the module
-      if (requirements?.length) {
-        const nonMetRequirements = requirements.filter(c => {
-          const value = get(this.config, c);
-          return (
-            value === undefined ||
-            value === null ||
-            (typeof value === 'string' && value.trim().length === 0)
-          );
-        });
-
-        if (nonMetRequirements.length) {
-          const name = 'module' in m ? m.module.name : m.name;
-          new Logger(name).warn(
-            `${name} is not enabled because of the required configuration is not satisfied.`,
-            'Unsatisfied configuration:',
-            ...nonMetRequirements.map(config => `  AFFiNE.${config}`)
-          );
-          return;
-        }
+      const result = filterOptionalModule(this.config, m);
+      if (result) {
+        this.modules.push(m);
       }
-
-      const predicator = getOptionalModuleMetadata(m, 'if');
-      if (predicator && !predicator(this.config)) {
-        return;
-      }
-
-      const contribution = getOptionalModuleMetadata(m, 'contributesTo');
-      if (contribution) {
-        ADD_ENABLED_FEATURES(contribution);
-      }
-      this.modules.push(m);
     });
 
     return this;
   }
 
   useIf(
-    predicator: (config: Config) => boolean,
+    predicator: (config: AFFiNEConfig) => boolean,
     ...modules: AFFiNEModule[]
   ): this {
     if (predicator(this.config)) {
@@ -103,7 +135,7 @@ export class AppModuleBuilder {
   compile() {
     @Module({
       imports: this.modules,
-      controllers: this.config.isSelfhosted ? [] : [AppController],
+      controllers: [AppController],
     })
     class AppModule {}
 
@@ -111,44 +143,41 @@ export class AppModuleBuilder {
   }
 }
 
-function buildAppModule() {
+export function buildAppModule() {
+  AFFiNE = mergeConfigOverride(AFFiNE);
   const factor = new AppModuleBuilder(AFFiNE);
 
   factor
-    // common fundamental modules
+    // basic
     .use(...FunctionalityModules)
+    .useIf(config => config.flavor.sync, WebSocketModule)
+
     // auth
-    .use(AuthModule)
+    .use(UserModule, AuthModule, PermissionModule)
 
     // business modules
-    .use(DocModule)
+    .use(FeatureModule, QuotaModule, DocStorageModule)
 
     // sync server only
-    .useIf(config => config.flavor.sync, WebSocketModule, SyncModule)
+    .useIf(config => config.flavor.sync, SyncModule)
 
     // graphql server only
     .useIf(
       config => config.flavor.graphql,
-      ServerConfigModule,
+      ScheduleModule.forRoot(),
       GqlModule,
       StorageModule,
-      UserModule,
-      WorkspaceModule,
-      FeatureModule,
-      QuotaModule
+      ServerConfigModule,
+      WorkspaceModule
     )
 
     // self hosted server only
-    .useIf(
-      config => config.isSelfhosted,
-      ServeStaticModule.forRoot({
-        rootPath: join('/app', 'static'),
-      })
-    );
+    .useIf(config => config.isSelfhosted, SelfhostModule)
+    .useIf(config => config.flavor.renderer, DocRendererModule);
 
   // plugin modules
-  AFFiNE.plugins.enabled.forEach(name => {
-    const plugin = REGISTERED_PLUGINS.get(name as AvailablePlugins);
+  ENABLED_PLUGINS.forEach(name => {
+    const plugin = REGISTERED_PLUGINS.get(name);
     if (!plugin) {
       throw new Error(`Unknown plugin ${name}`);
     }

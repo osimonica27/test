@@ -1,14 +1,9 @@
-import { fileURLToPath } from 'node:url';
-
 export type BuildFlags = {
-  distribution: 'browser' | 'desktop';
+  distribution: 'web' | 'desktop' | 'admin' | 'mobile' | 'ios' | 'android';
   mode: 'development' | 'production';
   channel: 'stable' | 'beta' | 'canary' | 'internal';
+  static: boolean;
   coverage?: boolean;
   localBlockSuite?: string;
-  entry?: string;
+  entry?: string | { [key: string]: string };
 };
-
-export const projectRoot = fileURLToPath(
-  new URL('../../../../', import.meta.url)
-);

@@ -2,7 +2,7 @@ import type { DocsService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
 
 import type { TagStore } from '../stores/tag';
-import { tagColorMap } from './utils';
+import { tagToPaletteLine } from './utils';
 
 export class Tag extends Entity<{ id: string }> {
   id = this.props.id;
@@ -20,7 +20,7 @@ export class Tag extends Entity<{ id: string }> {
 
   value$ = this.tagOption$.map(tag => tag?.value || '');
 
-  color$ = this.tagOption$.map(tag => tagColorMap(tag?.color ?? '') || '');
+  color$ = this.tagOption$.map(tag => tagToPaletteLine(tag?.color ?? '') || '');
 
   createDate$ = this.tagOption$.map(tag => tag?.createDate || Date.now());
 
@@ -62,6 +62,10 @@ export class Tag extends Entity<{ id: string }> {
     });
   }
 
+  /**
+   * @deprecated performance issue here, use with caution until it is fixed
+   * @fixme(EYHN): page.meta$ has performance issue
+   */
   readonly pageIds$ = LiveData.computed(get => {
     const pages = get(this.docs.list.docs$);
     return pages

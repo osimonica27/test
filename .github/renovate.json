@@ -13,50 +13,21 @@
   ],
   "packageRules": [
     {
-      "matchPackageNames": ["napi", "napi-build", "napi-derive"],
-      "rangeStrategy": "replace",
-      "groupName": "napi-rs"
-    },
-    {
       "matchPackagePatterns": ["^eslint", "^@typescript-eslint"],
       "rangeStrategy": "replace",
       "groupName": "linter"
     },
     {
-      "matchPackagePatterns": ["^@nestjs"],
-      "rangeStrategy": "replace",
-      "groupName": "nestjs"
-    },
-    {
-      "matchPackagePatterns": ["^@opentelemetry"],
-      "rangeStrategy": "replace",
-      "groupName": "opentelemetry"
-    },
-    {
-      "matchPackageNames": [
-        "@prisma/client",
-        "@prisma/instrumentation",
-        "prisma"
-      ],
-      "rangeStrategy": "replace",
-      "groupName": "prisma"
-    },
-    {
-      "matchPackagePatterns": ["^@electron-forge"],
-      "rangeStrategy": "replace",
-      "groupName": "electron-forge"
-    },
-    {
-      "matchPackageNames": ["oxlint"],
+      "matchDepNames": ["oxlint"],
       "rangeStrategy": "replace",
       "groupName": "oxlint"
     },
     {
-      "groupName": "blocksuite-canary",
+      "groupName": "blocksuite",
       "matchPackagePatterns": ["^@blocksuite"],
       "excludePackageNames": ["@blocksuite/icons"],
       "rangeStrategy": "replace",
-      "followTag": "canary"
+      "changelogUrl": "https://github.com/toeverything/blocksuite/blob/master/packages/blocks/CHANGELOG.md"
     },
     {
       "groupName": "all non-major dependencies",
@@ -66,9 +37,13 @@
       "matchUpdateTypes": ["minor", "patch"]
     },
     {
-      "matchPackagePatterns": ["*"],
-      "rangeStrategy": "replace",
-      "excludePackagePatterns": ["^@blocksuite/"]
+      "groupName": "rust toolchain",
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["rustc"]
+    },
+    {
+      "groupName": "nestjs",
+      "matchPackagePatterns": ["^@nestjs"]
     }
   ],
   "commitMessagePrefix": "chore: ",
@@ -79,5 +54,17 @@
   "lockFileMaintenance": {
     "enabled": true,
     "extends": ["schedule:weekly"]
-  }
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^rust-toolchain\\.toml?$"],
+      "matchStrings": [
+        "channel\\s*=\\s*\"(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\""
+      ],
+      "depNameTemplate": "rustc",
+      "packageNameTemplate": "rust-lang/rust",
+      "datasourceTemplate": "github-releases"
+    }
+  ]
 }

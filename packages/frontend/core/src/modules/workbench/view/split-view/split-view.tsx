@@ -1,5 +1,4 @@
-import { HubIsland } from '@affine/core/components/affine/hub-island';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   closestCenter,
@@ -14,13 +13,13 @@ import {
 } from '@dnd-kit/sortable';
 import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
-import type { HTMLAttributes, RefObject } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import type { HTMLAttributes, PropsWithChildren, RefObject } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { View } from '../../entities/view';
 import { WorkbenchService } from '../../services/workbench';
-import { SplitViewPanel } from './panel';
+import { SplitViewPanel, SplitViewPanelContainer } from './panel';
 import { ResizeHandle } from './resize-handle';
 import * as styles from './split-view.css';
 
@@ -36,7 +35,7 @@ export interface SplitViewProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 type SlotsMap = Record<View['id'], RefObject<HTMLDivElement | null>>;
-// TODO: vertical orientation support
+// TODO(@catsjuice): vertical orientation support
 export const SplitView = ({
   orientation = 'horizontal',
   className,
@@ -52,11 +51,18 @@ export const SplitView = ({
   const workbench = useService(WorkbenchService).workbench;
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 0,
-      },
-    })
+    useSensor(
+      PointerSensor,
+      useMemo(
+        /* avoid re-rendering */
+        () => ({
+          activationConstraint: {
+            distance: 0,
+          },
+        }),
+        []
+      )
+    )
   );
 
   const onResizing = useCallback(
@@ -109,7 +115,6 @@ export const SplitView = ({
       data-client-border={appSettings.clientBorder}
       {...attrs}
     >
-      <HubIsland />
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -133,6 +138,23 @@ export const SplitView = ({
           `portalToSplitViewPanel_${view.id}`
         );
       })}
+    </div>
+  );
+};
+
+export const SplitViewFallback = ({
+  children,
+  className,
+}: PropsWithChildren<{ className?: string }>) => {
+  const { appSettings } = useAppSettingHelper();
+
+  return (
+    <div
+      className={clsx(styles.splitViewRoot, className)}
+      data-client-border={appSettings.clientBorder}
+    >
+      {/* todo: support multiple split views */}
+      <SplitViewPanelContainer>{children}</SplitViewPanelContainer>
     </div>
   );
 };

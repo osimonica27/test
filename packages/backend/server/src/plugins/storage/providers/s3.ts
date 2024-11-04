@@ -20,7 +20,7 @@ import {
   StorageProvider,
   toBuffer,
 } from '../../../fundamentals/storage';
-import type { S3StorageConfig } from '../types';
+import type { S3StorageConfig } from '../config';
 
 export class S3StorageProvider implements StorageProvider {
   protected logger: Logger;
@@ -62,7 +62,7 @@ export class S3StorageProvider implements StorageProvider {
           // metadata
           ContentType: metadata.contentType,
           ContentLength: metadata.contentLength,
-          // TODO: Cloudflare doesn't support CRC32, use md5 instead later.
+          // TODO(@forehalo): Cloudflare doesn't support CRC32, use md5 instead later.
           // ChecksumCRC32: metadata.checksumCRC32,
         })
       );

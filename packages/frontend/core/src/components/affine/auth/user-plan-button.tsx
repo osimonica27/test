@@ -1,14 +1,16 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
+import { SubscriptionPlan } from '@affine/graphql';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 
-import { openSettingModalAtom } from '../../../atoms';
 import {
   ServerConfigService,
   SubscriptionService,
 } from '../../../modules/cloud';
+import { openSettingModalAtom } from '../../atoms';
 import * as styles from './style.css';
 
 export const UserPlanButton = () => {
@@ -25,6 +27,7 @@ export const UserPlanButton = () => {
       subscription !== null ? subscription?.plan : null
     )
   );
+  const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
   const isLoading = plan === null;
 
   useEffect(() => {
@@ -33,18 +36,15 @@ export const UserPlanButton = () => {
   }, [subscriptionService]);
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
-  const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      e.stopPropagation();
-      setSettingModalAtom({
-        open: true,
-        activeTab: 'plans',
-      });
-    },
-    [setSettingModalAtom]
-  );
+  const handleClick = useCatchEventCallback(() => {
+    setSettingModalAtom({
+      open: true,
+      activeTab: 'plans',
+      scrollAnchor: 'cloudPricingPlan',
+    });
+  }, [setSettingModalAtom]);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   if (!hasPayment) {
     // no payment feature
@@ -56,15 +56,17 @@ export const UserPlanButton = () => {
     return;
   }
 
-  if (!plan) {
-    // no plan, do nothing
-    return;
-  }
+  const planLabel = isBeliever ? 'Believer' : (plan ?? SubscriptionPlan.Free);
 
   return (
     <Tooltip content={t['com.affine.payment.tag-tooltips']()} side="top">
-      <div className={styles.userPlanButton} onClick={handleClick}>
-        {plan}
+      <div
+        data-is-believer={isBeliever ? 'true' : undefined}
+        className={styles.userPlanButton}
+        onClick={handleClick}
+        data-event-props="$.settingsPanel.profileAndBadge.viewPlans"
+      >
+        {planLabel}
       </div>
     </Tooltip>
   );

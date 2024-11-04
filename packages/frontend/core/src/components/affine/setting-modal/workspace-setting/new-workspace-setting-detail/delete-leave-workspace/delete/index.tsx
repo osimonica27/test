@@ -1,11 +1,10 @@
 import { Input } from '@affine/component';
 import type { ConfirmModalProps } from '@affine/component/ui/modal';
 import { ConfirmModal } from '@affine/component/ui/modal';
-import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { Trans, useI18n } from '@affine/i18n';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
@@ -25,7 +24,7 @@ export const WorkspaceDeleteModal = ({
   const info = useWorkspaceInfo(workspaceMetadata);
   const workspaceName = info?.name ?? UNTITLED_WORKSPACE_NAME;
   const allowDelete = deleteStr === workspaceName;
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const handleOnEnter = useCallback(() => {
     if (allowDelete) {
@@ -37,11 +36,11 @@ export const WorkspaceDeleteModal = ({
     <ConfirmModal
       title={`${t['com.affine.workspaceDelete.title']()}?`}
       cancelText={t['com.affine.workspaceDelete.button.cancel']()}
+      confirmText={t['com.affine.workspaceDelete.button.delete']()}
       confirmButtonOptions={{
-        type: 'error',
+        variant: 'error',
         disabled: !allowDelete,
-        ['data-testid' as string]: 'delete-workspace-confirm-button',
-        children: t['com.affine.workspaceDelete.button.delete'](),
+        'data-testid': 'delete-workspace-confirm-button',
       }}
       {...props}
     >

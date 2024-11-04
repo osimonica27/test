@@ -4,23 +4,36 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import { useAppUpdater } from '@affine/core/hooks/use-app-updater';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons';
+import { useAppUpdater } from '@affine/core/components/hooks/use-app-updater';
+import { UrlService } from '@affine/core/modules/url';
+import { appIconMap, appNames } from '@affine/core/utils';
+import { useI18n } from '@affine/i18n';
+import { mixpanel } from '@affine/track';
+import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons/rc';
+import {
+  FeatureFlagService,
+  useLiveData,
+  useServices,
+} from '@toeverything/infra';
 import { useCallback } from 'react';
 
-import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
-import { appIconMap, appNames } from '../../../../../pages/open-app';
-import { mixpanel, popupWindow } from '../../../../../utils';
+import { useAppSettingHelper } from '../../../../../components/hooks/affine/use-app-setting-helper';
 import { relatedLinks } from './config';
 import * as styles from './style.css';
 import { UpdateCheckSection } from './update-check-section';
 
 export const AboutAffine = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
+  const { urlService, featureFlagService } = useServices({
+    UrlService,
+    FeatureFlagService,
+  });
   const { appSettings, updateSettings } = useAppSettingHelper();
   const { toggleAutoCheck, toggleAutoDownload } = useAppUpdater();
-  const channel = runtimeConfig.appBuildType;
+  const enableSnapshotImportExport = useLiveData(
+    featureFlagService.flags.enable_snapshot_import_export.$
+  );
+  const channel = BUILD_CONFIG.appBuildType;
   const appIcon = appIconMap[channel];
   const appName = appNames[channel];
 
@@ -52,6 +65,13 @@ export const AboutAffine = () => {
     [updateSettings]
   );
 
+  const onSwitchSnapshotImportExport = useCallback(
+    (checked: boolean) => {
+      featureFlagService.flags.enable_snapshot_import_export.set(checked);
+    },
+    [featureFlagService]
+  );
+
   return (
     <>
       <SettingHeader
@@ -62,16 +82,16 @@ export const AboutAffine = () => {
       <SettingWrapper title={t['com.affine.aboutAFFiNE.version.title']()}>
         <SettingRow
           name={appName}
-          desc={runtimeConfig.appVersion}
+          desc={BUILD_CONFIG.appVersion}
           className={styles.appImageRow}
         >
           <img src={appIcon} alt={appName} width={56} height={56} />
         </SettingRow>
         <SettingRow
           name={t['com.affine.aboutAFFiNE.version.editor.title']()}
-          desc={runtimeConfig.editorVersion}
+          desc={BUILD_CONFIG.editorVersion}
         />
-        {environment.isDesktop ? (
+        {BUILD_CONFIG.isElectron ? (
           <>
             <UpdateCheckSection />
             <SettingRow
@@ -99,7 +119,7 @@ export const AboutAffine = () => {
               desc={t['com.affine.aboutAFFiNE.changelog.description']()}
               style={{ cursor: 'pointer' }}
               onClick={() => {
-                popupWindow(runtimeConfig.changelogUrl);
+                urlService.openPopupWindow(BUILD_CONFIG.changelogUrl);
               }}
             >
               <ArrowRightSmallIcon />
@@ -135,6 +155,16 @@ export const AboutAffine = () => {
           {t['com.affine.aboutAFFiNE.contact.community']()}
           <OpenInNewIcon className="icon" />
         </a>
+        <SettingRow
+          name={t['com.affine.snapshot.import-export.enable']()}
+          desc={t['com.affine.snapshot.import-export.enable.desc']()}
+          className={styles.snapshotImportExportRow}
+        >
+          <Switch
+            checked={enableSnapshotImportExport}
+            onChange={onSwitchSnapshotImportExport}
+          />
+        </SettingRow>
       </SettingWrapper>
       <SettingWrapper title={t['com.affine.aboutAFFiNE.community.title']()}>
         <div className={styles.communityWrapper}>
@@ -143,7 +173,7 @@ export const AboutAffine = () => {
               <div
                 className={styles.communityItem}
                 onClick={() => {
-                  popupWindow(link);
+                  urlService.openPopupWindow(link);
                 }}
                 key={title}
               >

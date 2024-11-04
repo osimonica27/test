@@ -84,7 +84,7 @@ export const planCardBorderMock = style({
     bottom: 0,
     borderRadius: 'inherit',
     border: `2px solid transparent`,
-    // TODO: brandColor with opacity, dark mode compatibility needed
+    // TODO(@catsjuice): brandColor with opacity, dark mode compatibility needed
     background: `linear-gradient(180deg, ${cssVar('brandColor')}, #1E96EB33) border-box`,
     ['WebkitMask']: `linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)`,
     [`WebkitMaskComposite`]: `destination-out`,
@@ -152,6 +152,7 @@ export const planTitleTitle = style({
   fontWeight: 600,
   fontSize: cssVar('fontBase'),
   lineHeight: '20px',
+  height: 20,
 });
 export const planTitleTitleCaption = style({
   fontWeight: 500,
@@ -176,6 +177,19 @@ export const planPriceDesc = style({
 });
 export const planAction = style({
   width: '100%',
+});
+export const resumeAction = style([planAction, {}]);
+export const resumeContent = style({
+  selectors: {
+    [`&[data-show-hover="true"], ${resumeAction}:hover &[data-show-hover="false"]`]:
+      {
+        display: 'none',
+      },
+    [`&[data-show-hover="false"], ${resumeAction}:hover &[data-show-hover="true"]`]:
+      {
+        display: 'block',
+      },
+  },
 });
 export const planBenefits = style({
   fontSize: cssVar('fontXs'),

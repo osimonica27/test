@@ -1,13 +1,10 @@
-import path from 'node:path';
+import { spawn } from 'node:child_process';
 
 import webpack from 'webpack';
 
+import { getCwdFromDistribution } from '../config/cwd.cjs';
 import type { BuildFlags } from '../config/index.js';
-import { projectRoot } from '../config/index.js';
-import { buildI18N } from '../util/i18n.js';
 import { createWebpackConfig } from '../webpack/webpack.config.js';
-
-let cwd: string;
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const buildType = process.env.BUILD_TYPE_OVERRIDE || process.env.BUILD_TYPE;
@@ -33,35 +30,28 @@ const getChannel = () => {
   }
 };
 
-let entry: string | undefined;
+let entry: BuildFlags['entry'];
 
-const { DISTRIBUTION } = process.env;
+const { DISTRIBUTION = 'web' } = process.env;
 
-const getDistribution = () => {
-  switch (DISTRIBUTION) {
-    case 'browser':
-    case undefined:
-      cwd = path.join(projectRoot, 'packages/frontend/web');
-      return 'browser';
-    case 'desktop':
-      cwd = path.join(projectRoot, 'packages/frontend/electron/renderer');
-      entry = path.join(cwd, 'index.tsx');
-      return DISTRIBUTION;
-    default: {
-      throw new Error('DISTRIBUTION must be one of browser, desktop');
-    }
-  }
-};
+const cwd = getCwdFromDistribution(DISTRIBUTION);
+
+if (DISTRIBUTION === 'desktop') {
+  entry = { app: './index.tsx', shell: './shell/index.tsx' };
+}
 
 const flags = {
-  distribution: getDistribution(),
+  distribution: DISTRIBUTION as BuildFlags['distribution'],
   mode: 'production',
   channel: getChannel(),
   coverage: process.env.COVERAGE === 'true',
   entry,
+  static: false,
 } satisfies BuildFlags;
 
-buildI18N();
+spawn('yarn', ['workspace', '@affine/i18n', 'build'], {
+  stdio: 'inherit',
+});
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 webpack(createWebpackConfig(cwd!, flags), (err, stats) => {

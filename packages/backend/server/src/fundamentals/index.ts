@@ -6,22 +6,27 @@ export {
   SessionCache,
 } from './cache';
 export {
+  type AFFiNEConfig,
   applyEnvToConfig,
   Config,
   type ConfigPaths,
   DeploymentType,
-  getDefaultAFFiNEStorageConfig,
+  getAFFiNEConfigModifier,
 } from './config';
 export * from './error';
 export { EventEmitter, type EventPayload, OnEvent } from './event';
 export type { GraphqlContext } from './graphql';
+export * from './guard';
 export { CryptoHelper, URLHelper } from './helpers';
 export { MailService } from './mailer';
-export { CallCounter, CallTimer, metrics } from './metrics';
-export { type ILocker, Lock, Locker, MutexService } from './mutex';
+export { CallMetric, metrics } from './metrics';
+export { type ILocker, Lock, Locker, Mutex, RequestMutex } from './mutex';
 export {
+  GatewayErrorWrapper,
   getOptionalModuleMetadata,
   GlobalExceptionFilter,
+  mapAnyError,
+  mapSseError,
   OptionalModule,
 } from './nestjs';
 export type { PrismaTransaction } from './prisma';
@@ -32,5 +37,6 @@ export {
   getRequestFromHost,
   getRequestResponseFromContext,
   getRequestResponseFromHost,
+  parseCookies,
 } from './utils/request';
 export type * from './utils/types';

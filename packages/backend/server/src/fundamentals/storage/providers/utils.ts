@@ -3,7 +3,7 @@ import { Readable } from 'node:stream';
 import { crc32 } from '@node-rs/crc32';
 import { getStreamAsBuffer } from 'get-stream';
 
-import { getMime } from '../native';
+import { getMime } from '../../../native';
 import { BlobInputType, PutObjectMetadata } from './provider';
 
 export async function toBuffer(input: BlobInputType): Promise<Buffer> {
@@ -42,7 +42,7 @@ export async function autoMetadata(
     }
 
     return metadata;
-  } catch (e) {
+  } catch {
     return metadata;
   }
 }

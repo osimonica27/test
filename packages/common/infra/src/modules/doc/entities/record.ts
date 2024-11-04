@@ -1,10 +1,11 @@
-import type { DocMeta } from '@blocksuite/store';
+import type { DocMode } from '@blocksuite/affine/blocks';
+import type { DocMeta } from '@blocksuite/affine/store';
 
 import { Entity } from '../../../framework';
 import { LiveData } from '../../../livedata';
+import type { DocProperties } from '../../db';
+import type { DocPropertiesStore } from '../stores/doc-properties';
 import type { DocsStore } from '../stores/docs';
-
-export type DocMode = 'edgeless' | 'page';
 
 /**
  * # DocRecord
@@ -13,8 +14,10 @@ export type DocMode = 'edgeless' | 'page';
  */
 export class DocRecord extends Entity<{ id: string }> {
   id: string = this.props.id;
-  meta: Partial<DocMeta> | null = null;
-  constructor(private readonly docsStore: DocsStore) {
+  constructor(
+    private readonly docsStore: DocsStore,
+    private readonly docPropertiesStore: DocPropertiesStore
+  ) {
     super();
   }
 
@@ -23,23 +26,55 @@ export class DocRecord extends Entity<{ id: string }> {
     {}
   );
 
+  properties$ = LiveData.from<DocProperties>(
+    this.docPropertiesStore.watchDocProperties(this.id),
+    { id: this.id }
+  );
+
+  customProperty$(propertyId: string) {
+    return this.properties$.selector(
+      p => p['custom:' + propertyId]
+    ) as LiveData<string | undefined | null>;
+  }
+
+  setCustomProperty(propertyId: string, value: string) {
+    this.docPropertiesStore.updateDocProperties(this.id, {
+      ['custom:' + propertyId]: value,
+    });
+  }
+
+  setProperty(propertyId: string, value: string) {
+    this.docPropertiesStore.updateDocProperties(this.id, {
+      [propertyId]: value,
+    });
+  }
+
   setMeta(meta: Partial<DocMeta>): void {
     this.docsStore.setDocMeta(this.id, meta);
   }
 
-  mode$: LiveData<DocMode> = LiveData.from(
-    this.docsStore.watchDocModeSetting(this.id),
-    'page'
-  ).map(mode => (mode === 'edgeless' ? 'edgeless' : 'page'));
+  primaryMode$: LiveData<DocMode> = LiveData.from(
+    this.docsStore.watchDocPrimaryModeSetting(this.id),
+    'page' as DocMode
+  ).map(mode => (mode === 'edgeless' ? 'edgeless' : 'page') as DocMode);
 
-  setMode(mode: DocMode) {
-    this.docsStore.setDocModeSetting(this.id, mode);
+  setPrimaryMode(mode: DocMode) {
+    return this.docsStore.setDocPrimaryModeSetting(this.id, mode);
   }
 
-  toggleMode() {
-    this.setMode(this.mode$.value === 'edgeless' ? 'page' : 'edgeless');
-    return this.mode$.value;
+  getPrimaryMode() {
+    return this.docsStore.getDocPrimaryModeSetting(this.id);
+  }
+
+  moveToTrash() {
+    return this.setMeta({ trash: true, trashDate: Date.now() });
+  }
+
+  restoreFromTrash() {
+    return this.setMeta({ trash: false, trashDate: undefined });
   }
 
   title$ = this.meta$.map(meta => meta.title ?? '');
+
+  trash$ = this.meta$.map(meta => meta.trash ?? false);
 }

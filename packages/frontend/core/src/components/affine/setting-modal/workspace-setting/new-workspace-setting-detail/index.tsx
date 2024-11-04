@@ -3,26 +3,27 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import { useWorkspace } from '@affine/core/hooks/use-workspace';
-import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { useWorkspace } from '@affine/core/components/hooks/use-workspace';
+import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { useI18n } from '@affine/i18n';
+import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { FrameworkScope } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { DeleteLeaveWorkspace } from './delete-leave-workspace';
 import { EnableCloudPanel } from './enable-cloud';
-import { ExportPanel } from './export';
+import { DesktopExportPanel } from './export';
 import { LabelsPanel } from './labels';
 import { MembersPanel } from './members';
 import { ProfilePanel } from './profile';
+import { SharingPanel } from './sharing';
 import type { WorkspaceSettingDetailProps } from './types';
 
 export const WorkspaceSettingDetail = ({
   workspaceMetadata,
 }: WorkspaceSettingDetailProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   // useWorkspace hook is a vary heavy operation here, but we need syncing name and avatar changes here,
   // we don't have a better way to do this now
@@ -67,9 +68,10 @@ export const WorkspaceSettingDetail = ({
         <EnableCloudPanel />
         <MembersPanel />
       </SettingWrapper>
-      {environment.isDesktop && (
+      <SharingPanel />
+      {BUILD_CONFIG.isElectron && (
         <SettingWrapper title={t['Storage and Export']()}>
-          <ExportPanel
+          <DesktopExportPanel
             workspace={workspace}
             workspaceMetadata={workspaceMetadata}
           />

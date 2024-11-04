@@ -1,54 +1,45 @@
 import { notify } from '@affine/component';
 import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowDownBigIcon } from '@blocksuite/icons';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { CaptchaService } from '@affine/core/modules/cloud';
+import { Trans, useI18n } from '@affine/i18n';
+import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { cssVar } from '@toeverything/theme';
 import type { FC } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { AuthService } from '../../../modules/cloud';
-import { mixpanel } from '../../../utils';
 import { emailRegex } from '../../../utils/email-regex';
 import type { AuthPanelProps } from './index';
 import { OAuth } from './oauth';
 import * as style from './style.css';
-import { Captcha, useCaptcha } from './use-captcha';
+import { Captcha } from './use-captcha';
 
 function validateEmail(email: string) {
   return emailRegex.test(email);
 }
 
-export const SignIn: FC<AuthPanelProps> = ({
-  setAuthState,
-  setAuthEmail,
-  email,
-  onSignedIn,
+export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
+  setAuthData: setAuthState,
+  onSkip,
+  redirectUrl,
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const authService = useService(AuthService);
   const [searchParams] = useSearchParams();
   const [isMutating, setIsMutating] = useState(false);
-  const [verifyToken, challenge] = useCaptcha();
+  const captchaService = useService(CaptchaService);
+
+  const verifyToken = useLiveData(captchaService.verifyToken$);
+  const needCaptcha = useLiveData(captchaService.needCaptcha$);
+  const challenge = useLiveData(captchaService.challenge$);
+  const [email, setEmail] = useState('');
 
   const [isValidEmail, setIsValidEmail] = useState(true);
-
-  useEffect(() => {
-    const timeout = setInterval(() => {
-      // revalidate session to get the latest status
-      authService.session.revalidate();
-    }, 3000);
-    return () => {
-      clearInterval(timeout);
-    };
-  }, [authService]);
-  const loginStatus = useLiveData(authService.session.status$);
-  if (loginStatus === 'authenticated') {
-    onSignedIn?.();
-  }
+  const errorMsg = searchParams.get('error');
 
   const onContinue = useAsyncCallback(async () => {
     if (!validateEmail(email)) {
@@ -57,49 +48,50 @@ export const SignIn: FC<AuthPanelProps> = ({
     }
 
     setIsValidEmail(true);
-
     setIsMutating(true);
 
-    setAuthEmail(email);
     try {
-      const { hasPassword, isExist: isUserExist } =
+      const { hasPassword, registered } =
         await authService.checkUserByEmail(email);
 
-      if (verifyToken) {
-        if (isUserExist) {
-          // provider password sign-in if user has by default
-          //  If with payment, onl support email sign in to avoid redirect to affine app
-          if (hasPassword) {
-            setAuthState('signInWithPassword');
-          } else {
-            mixpanel.track_forms('SignIn', 'Email', {
-              email,
-            });
-            await authService.sendEmailMagicLink(
-              email,
-              verifyToken,
-              challenge,
-              searchParams.get('redirect_uri')
-            );
-            setAuthState('afterSignInSendEmail');
-          }
+      if (registered) {
+        // provider password sign-in if user has by default
+        //  If with payment, onl support email sign in to avoid redirect to affine app
+        if (hasPassword) {
+          setAuthState({
+            state: 'signInWithPassword',
+            email,
+          });
         } else {
+          captchaService.revalidate();
           await authService.sendEmailMagicLink(
             email,
             verifyToken,
             challenge,
-            searchParams.get('redirect_uri')
+            redirectUrl
           );
-          mixpanel.track_forms('SignUp', 'Email', {
+          setAuthState({
+            state: 'afterSignInSendEmail',
             email,
           });
-          setAuthState('afterSignUpSendEmail');
         }
+      } else {
+        captchaService.revalidate();
+        await authService.sendEmailMagicLink(
+          email,
+          verifyToken,
+          challenge,
+          redirectUrl
+        );
+        setAuthState({
+          state: 'afterSignUpSendEmail',
+          email,
+        });
       }
     } catch (err) {
       console.error(err);
 
-      // TODO: better error handling
+      // TODO(@eyhn): better error handling
       notify.error({
         title: 'Failed to send email. Please try again.',
       });
@@ -108,10 +100,10 @@ export const SignIn: FC<AuthPanelProps> = ({
     setIsMutating(false);
   }, [
     authService,
+    captchaService,
     challenge,
     email,
-    searchParams,
-    setAuthEmail,
+    redirectUrl,
     setAuthState,
     verifyToken,
   ]);
@@ -123,19 +115,13 @@ export const SignIn: FC<AuthPanelProps> = ({
         subTitle={t['com.affine.brand.affineCloud']()}
       />
 
-      <OAuth redirectUri={searchParams.get('redirect_uri')} />
+      <OAuth redirectUrl={redirectUrl} />
 
       <div className={style.authModalContent}>
         <AuthInput
           label={t['com.affine.settings.email']()}
           placeholder={t['com.affine.auth.sign.email.placeholder']()}
-          value={email}
-          onChange={useCallback(
-            (value: string) => {
-              setAuthEmail(value);
-            },
-            [setAuthEmail]
-          )}
+          onChange={setEmail}
           error={!isValidEmail}
           errorHint={
             isValidEmail ? '' : t['com.affine.auth.sign.email.error']()
@@ -143,30 +129,24 @@ export const SignIn: FC<AuthPanelProps> = ({
           onEnter={onContinue}
         />
 
-        {verifyToken ? null : <Captcha />}
-
-        {verifyToken ? (
+        {verifyToken || !needCaptcha ? (
           <Button
+            style={{ width: '100%' }}
             size="extraLarge"
             data-testid="continue-login-button"
             block
             loading={isMutating}
-            icon={
-              <ArrowDownBigIcon
-                width={20}
-                height={20}
-                style={{
-                  transform: 'rotate(-90deg)',
-                  color: 'var(--affine-blue)',
-                }}
-              />
-            }
-            iconPosition="end"
+            suffix={<ArrowRightBigIcon />}
+            suffixStyle={{ width: 20, height: 20, color: cssVar('blue') }}
             onClick={onContinue}
           >
             {t['com.affine.auth.sign.email.continue']()}
           </Button>
-        ) : null}
+        ) : (
+          <Captcha />
+        )}
+
+        {errorMsg && <div className={style.errorMessage}>{errorMsg}</div>}
 
         <div className={style.authMessage}>
           {/*prettier-ignore*/}
@@ -176,6 +156,29 @@ export const SignIn: FC<AuthPanelProps> = ({
           </Trans>
         </div>
       </div>
+
+      {onSkip ? (
+        <>
+          <div className={style.skipDivider}>
+            <div className={style.skipDividerLine} />
+            <span className={style.skipDividerText}>or</span>
+            <div className={style.skipDividerLine} />
+          </div>
+          <div className={style.skipSection}>
+            <div className={style.skipText}>
+              {t['com.affine.mobile.sign-in.skip.hint']()}
+            </div>
+            <Button
+              variant="plain"
+              onClick={onSkip}
+              className={style.skipLink}
+              suffix={<ArrowRightBigIcon className={style.skipLinkIcon} />}
+            >
+              {t['com.affine.mobile.sign-in.skip.link']()}
+            </Button>
+          </div>
+        </>
+      ) : null}
     </>
   );
 };

@@ -3,6 +3,7 @@ import type { Doc as YDoc } from 'yjs';
 import { Entity } from '../../../framework';
 import { AwarenessEngine, BlobEngine, DocEngine } from '../../../sync';
 import { throwIfAborted } from '../../../utils';
+import { WorkspaceEngineBeforeStart } from '../events';
 import type { WorkspaceEngineProvider } from '../providers/flavour';
 import type { WorkspaceService } from '../services/workspace';
 
@@ -33,8 +34,9 @@ export class WorkspaceEngine extends Entity<{
   }
 
   start() {
+    this.eventBus.emit(WorkspaceEngineBeforeStart, this);
     this.doc.start();
-    this.awareness.connect();
+    this.awareness.connect(this.workspaceService.workspace.awareness);
     this.blob.start();
   }
 
@@ -68,5 +70,7 @@ export class WorkspaceEngine extends Entity<{
 
   override dispose(): void {
     this.forceStop();
+    this.doc.dispose();
+    this.awareness.dispose();
   }
 }

@@ -1,3 +1,5 @@
+import './config';
+
 import { ExecutionContext, Global, Injectable, Module } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import {
@@ -6,14 +8,15 @@ import {
   ThrottlerGuard,
   ThrottlerModule,
   type ThrottlerModuleOptions,
-  ThrottlerOptions,
   ThrottlerOptionsFactory,
+  ThrottlerRequest,
   ThrottlerStorageService,
 } from '@nestjs/throttler';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 
 import { Config } from '../config';
 import { getRequestResponseFromContext } from '../utils/request';
+import type { ThrottlerType } from './config';
 import { THROTTLER_PROTECTED, Throttlers } from './decorators';
 
 @Injectable()
@@ -21,25 +24,14 @@ export class ThrottlerStorage extends ThrottlerStorageService {}
 
 @Injectable()
 class CustomOptionsFactory implements ThrottlerOptionsFactory {
-  constructor(
-    private readonly config: Config,
-    private readonly storage: ThrottlerStorage
-  ) {}
+  constructor(private readonly storage: ThrottlerStorage) {}
 
   createThrottlerOptions() {
     const options: ThrottlerModuleOptions = {
-      throttlers: [
-        {
-          name: 'default',
-          ttl: this.config.rateLimiter.ttl * 1000,
-          limit: this.config.rateLimiter.limit,
-        },
-        {
-          name: 'strict',
-          ttl: this.config.rateLimiter.ttl * 1000,
-          limit: 20,
-        },
-      ],
+      throttlers: Object.entries(AFFiNE.throttler).map(([name, config]) => ({
+        name,
+        ...config,
+      })),
       storage: this.storage,
     };
 
@@ -58,14 +50,17 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
     super(options, storageService, reflector);
   }
 
-  override getRequestResponse(context: ExecutionContext) {
+  override getRequestResponse(context: ExecutionContext): {
+    req: Request;
+    res: Response;
+  } {
     return getRequestResponseFromContext(context) as any;
   }
 
   override getTracker(req: Request): Promise<string> {
     return Promise.resolve(
       //           ↓ prefer session id if available
-      `throttler:${req.sid ?? req.get('CF-Connecting-IP') ?? req.get('CF-ray') ?? req.ip}`
+      `throttler:${req.session?.sessionId ?? req.get('CF-Connecting-IP') ?? req.get('CF-ray') ?? req.ip}`
       // ^ throttler prefix make the key in store recognizable
     );
   }
@@ -82,12 +77,15 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
     return `${tracker};${throttler}`;
   }
 
-  override async handleRequest(
-    context: ExecutionContext,
-    limit: number,
-    ttl: number,
-    throttlerOptions: ThrottlerOptions
-  ) {
+  override async handleRequest(request: ThrottlerRequest) {
+    const {
+      context,
+      throttler: throttlerOptions,
+      ttl,
+      blockDuration,
+    } = request;
+    let limit = request.limit;
+
     // give it 'default' if no throttler is specified,
     // so the unauthenticated users visits will always hit default throttler
     // authenticated users will directly bypass unprotected APIs in [CloudThrottlerGuard.canActivate]
@@ -126,13 +124,11 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
       tracker,
       throttlerOptions.name ?? 'default'
     );
-    const { timeToExpire, totalHits } = await this.storageService.increment(
-      key,
-      ttl
-    );
+    const { timeToExpire, totalHits, isBlocked, timeToBlockExpire } =
+      await this.storageService.increment(key, ttl, limit, blockDuration, key);
 
-    if (totalHits > limit) {
-      res.header('Retry-After', timeToExpire.toString());
+    if (isBlocked) {
+      res.header('Retry-After', timeToBlockExpire.toString());
       await this.throwThrottlingException(context, {
         limit,
         ttl,
@@ -140,6 +136,8 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
         tracker,
         totalHits,
         timeToExpire,
+        isBlocked,
+        timeToBlockExpire,
       });
     }
 
@@ -158,14 +156,14 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
     const throttler = this.getSpecifiedThrottler(context);
 
     // if user is logged in, bypass non-protected handlers
-    if (!throttler && req.user) {
+    if (!throttler && req.session?.user) {
       return true;
     }
 
     return super.canActivate(context);
   }
 
-  getSpecifiedThrottler(context: ExecutionContext) {
+  getSpecifiedThrottler(context: ExecutionContext): ThrottlerType | undefined {
     const throttler = this.reflector.getAllAndOverride<Throttlers | undefined>(
       THROTTLER_PROTECTED,
       [context.getHandler(), context.getClass()]

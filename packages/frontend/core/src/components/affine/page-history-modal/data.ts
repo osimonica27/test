@@ -1,12 +1,13 @@
-import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
-import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspace-page';
-import { timestampToLocalDate } from '@affine/core/utils';
+import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
+import { useDocCollectionPage } from '@affine/core/components/hooks/use-block-suite-workspace-page';
+import { FetchService } from '@affine/core/modules/cloud';
 import { DebugLogger } from '@affine/debug';
 import type { ListHistoryQuery } from '@affine/graphql';
 import { listHistoryQuery, recoverDocMutation } from '@affine/graphql';
-import { assertEquals } from '@blocksuite/global/utils';
-import { DocCollection } from '@blocksuite/store';
-import { globalBlockSuiteSchema } from '@toeverything/infra';
+import { i18nTime } from '@affine/i18n';
+import { assertEquals } from '@blocksuite/affine/global/utils';
+import { DocCollection } from '@blocksuite/affine/store';
+import { getAFFiNEWorkspaceSchema, useService } from '@toeverything/infra';
 import { useEffect, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import {
@@ -20,8 +21,8 @@ import {
 import {
   useMutateQueryResource,
   useMutation,
-} from '../../../hooks/use-mutation';
-import { useQueryInfinite } from '../../../hooks/use-query';
+} from '../../../components/hooks/use-mutation';
+import { useQueryInfinite } from '../../../components/hooks/use-query';
 import { CloudBlobStorage } from '../../../modules/workspace-engine/impls/engine/blob-cloud';
 
 const logger = new DebugLogger('page-history');
@@ -94,23 +95,24 @@ const snapshotFetcher = async (
 
 // attach the Page shown in the modal to a temporary workspace
 // so that we do not need to worry about providers etc
-// todo: fix references to the page (the referenced page will shown as deleted)
+// TODO(@Peng): fix references to the page (the referenced page will shown as deleted)
 // if we simply clone the current workspace, it maybe time consuming right?
 const docCollectionMap = new Map<string, DocCollection>();
 
 // assume the workspace is a cloud workspace since the history feature is only enabled for cloud workspace
-const getOrCreateShellWorkspace = (workspaceId: string) => {
+const getOrCreateShellWorkspace = (
+  workspaceId: string,
+  fetchService: FetchService
+) => {
   let docCollection = docCollectionMap.get(workspaceId);
   if (!docCollection) {
-    const blobStorage = new CloudBlobStorage(workspaceId);
+    const blobStorage = new CloudBlobStorage(workspaceId, fetchService);
     docCollection = new DocCollection({
       id: workspaceId,
-      blobStorages: [
-        () => ({
-          crud: blobStorage,
-        }),
-      ],
-      schema: globalBlockSuiteSchema,
+      blobSources: {
+        main: blobStorage,
+      },
+      schema: getAFFiNEWorkspaceSchema(),
     });
     docCollectionMap.set(workspaceId, docCollection);
     docCollection.doc.emit('sync', [true, docCollection.doc]);
@@ -141,13 +143,17 @@ export const useSnapshotPage = (
   pageDocId: string,
   ts?: string
 ) => {
+  const fetchService = useService(FetchService);
   const snapshot = usePageHistory(docCollection.id, pageDocId, ts);
   const page = useMemo(() => {
     if (!ts) {
       return;
     }
     const pageId = pageDocId + '-' + ts;
-    const historyShellWorkspace = getOrCreateShellWorkspace(docCollection.id);
+    const historyShellWorkspace = getOrCreateShellWorkspace(
+      docCollection.id,
+      fetchService
+    );
     let page = historyShellWorkspace.getDoc(pageId);
     if (!page && snapshot) {
       page = historyShellWorkspace.createDoc({
@@ -161,15 +167,18 @@ export const useSnapshotPage = (
       }); // must load before applyUpdate
     }
     return page ?? undefined;
-  }, [pageDocId, snapshot, ts, docCollection]);
+  }, [ts, pageDocId, docCollection.id, fetchService, snapshot]);
 
   useEffect(() => {
-    const historyShellWorkspace = getOrCreateShellWorkspace(docCollection.id);
+    const historyShellWorkspace = getOrCreateShellWorkspace(
+      docCollection.id,
+      fetchService
+    );
     // apply the rootdoc's update to the current workspace
     // this makes sure the page reference links are not deleted ones in the preview
     const update = encodeStateAsUpdate(docCollection.doc);
     applyUpdate(historyShellWorkspace.doc, update);
-  }, [docCollection]);
+  }, [docCollection, fetchService]);
 
   return page;
 };
@@ -177,7 +186,17 @@ export const useSnapshotPage = (
 export const historyListGroupByDay = (histories: DocHistory[]) => {
   const map = new Map<string, DocHistory[]>();
   for (const history of histories) {
-    const day = timestampToLocalDate(history.timestamp);
+    const day = i18nTime(history.timestamp, {
+      relative: {
+        max: [1, 'week'],
+        accuracy: 'day',
+        weekday: true,
+      },
+      absolute: {
+        accuracy: 'day',
+        noYear: true,
+      },
+    });
     const list = map.get(day) ?? [];
     list.push(history);
     map.set(day, list);
@@ -231,7 +250,7 @@ export const useRestorePage = (
   const { trigger: recover, isMutating } = useMutation({
     mutation: recoverDocMutation,
   });
-  const { getDocMeta, setDocTitle } = useDocMetaHelper(docCollection);
+  const { getDocMeta, setDocTitle } = useDocMetaHelper();
 
   const onRestore = useMemo(() => {
     return async (version: string, update: Uint8Array) => {

@@ -1,24 +1,21 @@
 import { FlexWrapper, Input, notify, Wrapper } from '@affine/component';
-import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
+import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import { Upload } from '@affine/core/components/pure/file-upload';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { validateAndReduceImage } from '@affine/core/utils/reduce-image';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { CameraIcon } from '@blocksuite/icons';
+import { useI18n } from '@affine/i18n';
+import { CameraIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
-import type { KeyboardEvent, MouseEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import * as style from './style.css';
 
-const avatarImageProps = { style: { borderRadius: 8 } };
-
 export const ProfilePanel = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   const workspace = useService(WorkspaceService).workspace;
   const permissionService = useService(WorkspacePermissionService);
@@ -28,18 +25,13 @@ export const ProfilePanel = () => {
   }, [permissionService]);
   const workspaceIsReady = useLiveData(workspace?.engine.rootDocState$)?.ready;
 
-  const [avatarBlob, setAvatarBlob] = useState<string | null>(null);
   const [name, setName] = useState('');
-
-  const avatarUrl = useWorkspaceBlobObjectUrl(workspace?.meta, avatarBlob);
 
   useEffect(() => {
     if (workspace?.docCollection) {
-      setAvatarBlob(workspace.docCollection.meta.avatar ?? null);
       setName(workspace.docCollection.meta.name ?? UNTITLED_WORKSPACE_NAME);
       const dispose = workspace.docCollection.meta.commonFieldsUpdated.on(
         () => {
-          setAvatarBlob(workspace.docCollection.meta.avatar ?? null);
           setName(workspace.docCollection.meta.name ?? UNTITLED_WORKSPACE_NAME);
         }
       );
@@ -47,7 +39,6 @@ export const ProfilePanel = () => {
         dispose.dispose();
       };
     } else {
-      setAvatarBlob(null);
       setName(UNTITLED_WORKSPACE_NAME);
     }
     return;
@@ -64,7 +55,7 @@ export const ProfilePanel = () => {
       }
       try {
         const reducedFile = await validateAndReduceImage(file);
-        const blobs = workspace.docCollection.blob;
+        const blobs = workspace.docCollection.blobSync;
         const blobId = await blobs.set(reducedFile);
         workspace.docCollection.meta.setAvatar(blobId);
       } catch (error) {
@@ -115,13 +106,9 @@ export const ProfilePanel = () => {
     handleUpdateWorkspaceName(input);
   }, [handleUpdateWorkspaceName, input]);
 
-  const handleRemoveUserAvatar = useAsyncCallback(
-    async (e: MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      await setWorkspaceAvatar(null);
-    },
-    [setWorkspaceAvatar]
-  );
+  const handleRemoveUserAvatar = useCatchEventCallback(async () => {
+    await setWorkspaceAvatar(null);
+  }, [setWorkspaceAvatar]);
 
   const handleUploadAvatar = useCallback(
     (file: File) => {
@@ -139,7 +126,7 @@ export const ProfilePanel = () => {
     [setWorkspaceAvatar]
   );
 
-  const canAdjustAvatar = workspaceIsReady && avatarUrl && isOwner;
+  const canAdjustAvatar = workspaceIsReady && isOwner;
 
   return (
     <div className={style.profileWrapper}>
@@ -149,13 +136,11 @@ export const ProfilePanel = () => {
         data-testid="upload-avatar"
         disabled={!isOwner}
       >
-        <Avatar
+        <WorkspaceAvatar
+          meta={workspace.meta}
           size={56}
-          url={avatarUrl}
           name={name}
-          imageProps={avatarImageProps}
-          fallbackProps={avatarImageProps}
-          hoverWrapperProps={avatarImageProps}
+          rounded={8}
           colorfulFallback
           hoverIcon={isOwner ? <CameraIcon /> : undefined}
           onRemove={canAdjustAvatar ? handleRemoveUserAvatar : undefined}

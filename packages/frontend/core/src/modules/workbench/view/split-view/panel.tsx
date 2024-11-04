@@ -1,11 +1,11 @@
-import { MenuIcon, MenuItem } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { MenuItem } from '@affine/component';
+import { useI18n } from '@affine/i18n';
 import {
   ExpandCloseIcon,
-  MoveToLeftIcon,
-  MoveToRightIcon,
+  MoveToLeftDuotoneIcon,
+  MoveToRightDuotoneIcon,
   SoloViewIcon,
-} from '@blocksuite/icons';
+} from '@blocksuite/icons/rc';
 import { useSortable } from '@dnd-kit/sortable';
 import { useLiveData, useService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
@@ -16,7 +16,14 @@ import type {
   PropsWithChildren,
   RefObject,
 } from 'react';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import type { View } from '../../entities/view';
 import { WorkbenchService } from '../../services/workbench';
@@ -31,6 +38,17 @@ export interface SplitViewPanelProps
     SetStateAction<Record<string, RefObject<HTMLDivElement | null>>>
   >;
 }
+
+export const SplitViewPanelContainer = ({
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) => {
+  return (
+    <div className={styles.splitViewPanel} {...props}>
+      {children}
+    </div>
+  );
+};
 
 export const SplitViewPanel = memo(function SplitViewPanel({
   children,
@@ -57,7 +75,7 @@ export const SplitViewPanel = memo(function SplitViewPanel({
   const isDragging = dndIsDragging || indicatorPressed;
   const isActive = activeView === view;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (ref.current) {
       setSlots?.(slots => ({ ...slots, [view.id]: ref }));
     }
@@ -78,9 +96,8 @@ export const SplitViewPanel = memo(function SplitViewPanel({
   );
 
   return (
-    <div
+    <SplitViewPanelContainer
       style={style}
-      className={styles.splitViewPanel}
       data-is-dragging={isDragging}
       data-is-active={isActive && views.length > 1}
       data-is-last={isLast}
@@ -103,12 +120,12 @@ export const SplitViewPanel = memo(function SplitViewPanel({
         ) : null}
       </div>
       {children}
-    </div>
+    </SplitViewPanelContainer>
   );
 });
 
 const SplitViewMenu = ({ view }: { view: View }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const workbench = useService(WorkbenchService).workbench;
   const views = useLiveData(workbench.views$);
 
@@ -130,30 +147,21 @@ const SplitViewMenu = ({ view }: { view: View }) => {
 
   const CloseItem =
     views.length > 1 ? (
-      <MenuItem
-        preFix={<MenuIcon icon={<ExpandCloseIcon />} />}
-        onClick={handleClose}
-      >
+      <MenuItem prefixIcon={<ExpandCloseIcon />} onClick={handleClose}>
         {t['com.affine.workbench.split-view-menu.close']()}
       </MenuItem>
     ) : null;
 
   const MoveLeftItem =
     viewIndex > 0 && views.length > 1 ? (
-      <MenuItem
-        onClick={handleMoveLeft}
-        preFix={<MenuIcon icon={<MoveToLeftIcon />} />}
-      >
+      <MenuItem onClick={handleMoveLeft} prefixIcon={<MoveToLeftDuotoneIcon />}>
         {t['com.affine.workbench.split-view-menu.move-left']()}
       </MenuItem>
     ) : null;
 
   const FullScreenItem =
     views.length > 1 ? (
-      <MenuItem
-        onClick={handleCloseOthers}
-        preFix={<MenuIcon icon={<SoloViewIcon />} />}
-      >
+      <MenuItem onClick={handleCloseOthers} prefixIcon={<SoloViewIcon />}>
         {t['com.affine.workbench.split-view-menu.keep-this-one']()}
       </MenuItem>
     ) : null;
@@ -162,7 +170,7 @@ const SplitViewMenu = ({ view }: { view: View }) => {
     viewIndex < views.length - 1 ? (
       <MenuItem
         onClick={handleMoveRight}
-        preFix={<MenuIcon icon={<MoveToRightIcon />} />}
+        prefixIcon={<MoveToRightDuotoneIcon />}
       >
         {t['com.affine.workbench.split-view-menu.move-right']()}
       </MenuItem>

@@ -5,7 +5,7 @@ export const editor = style({
     '&.full-screen': {
       vars: {
         '--affine-editor-width': '100%',
-        '--affine-editor-side-padding': '15px',
+        '--affine-editor-side-padding': '72px',
       },
     },
   },
@@ -22,9 +22,10 @@ export const editor = style({
     },
   },
 });
-globalStyle(
-  `${editor} .affine-page-viewport:not(.affine-embed-synced-doc-editor)`,
-  {
-    paddingBottom: '150px',
-  }
-);
+
+globalStyle(`${editor}.full-screen .page-editor-container`, {
+  vars: {
+    '--affine-editor-width': '100%',
+    '--affine-editor-side-padding': '72px',
+  },
+});

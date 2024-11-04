@@ -48,12 +48,12 @@ pub enum ValidationResult {
 
 #[napi]
 impl SqliteConnection {
-  #[napi(constructor)]
+  #[napi(constructor, async_runtime)]
   pub fn new(path: String) -> napi::Result<Self> {
     let sqlite_options = SqliteConnectOptions::new()
       .filename(&path)
       .foreign_keys(false)
-      .journal_mode(sqlx::sqlite::SqliteJournalMode::Off);
+      .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
     let pool = SqlitePoolOptions::new()
       .max_connections(4)
       .connect_lazy_with(sqlite_options);
@@ -73,6 +73,7 @@ impl SqliteConnection {
       .await
       .map_err(anyhow::Error::from)?;
     self.migrate_add_doc_id().await?;
+    self.migrate_add_doc_id_index().await?;
     connection.detach();
     Ok(())
   }
@@ -146,7 +147,26 @@ impl SqliteConnection {
   }
 
   #[napi]
-  pub async fn get_updates_count(&self, doc_id: Option<String>) -> napi::Result<i32> {
+  pub async fn delete_updates(&self, doc_id: Option<String>) -> napi::Result<()> {
+    match doc_id {
+      Some(doc_id) => {
+        sqlx::query!("DELETE FROM updates WHERE doc_id = ?", doc_id)
+          .execute(&self.pool)
+          .await
+          .map_err(anyhow::Error::from)?;
+      }
+      None => {
+        sqlx::query!("DELETE FROM updates WHERE doc_id is NULL")
+          .execute(&self.pool)
+          .await
+          .map_err(anyhow::Error::from)?;
+      }
+    };
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn get_updates_count(&self, doc_id: Option<String>) -> napi::Result<i64> {
     let count = match doc_id {
       Some(doc_id) => {
         sqlx::query!(
@@ -233,6 +253,114 @@ impl SqliteConnection {
   }
 
   #[napi]
+  pub async fn get_server_clock(&self, key: String) -> Option<BlobRow> {
+    sqlx::query_as!(
+      BlobRow,
+      "SELECT key, data, timestamp FROM server_clock WHERE key = ?",
+      key
+    )
+    .fetch_one(&self.pool)
+    .await
+    .ok()
+  }
+
+  #[napi]
+  pub async fn set_server_clock(&self, key: String, data: Uint8Array) -> napi::Result<()> {
+    let data = data.as_ref();
+    sqlx::query!(
+      "INSERT INTO server_clock (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = excluded.data",
+      key,
+      data,
+    )
+    .execute(&self.pool)
+    .await
+    .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn get_server_clock_keys(&self) -> napi::Result<Vec<String>> {
+    let keys = sqlx::query!("SELECT key FROM server_clock")
+      .fetch_all(&self.pool)
+      .await
+      .map(|rows| rows.into_iter().map(|row| row.key).collect())
+      .map_err(anyhow::Error::from)?;
+    Ok(keys)
+  }
+
+  #[napi]
+  pub async fn clear_server_clock(&self) -> napi::Result<()> {
+    sqlx::query!("DELETE FROM server_clock")
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn del_server_clock(&self, key: String) -> napi::Result<()> {
+    sqlx::query!("DELETE FROM server_clock WHERE key = ?", key)
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn get_sync_metadata(&self, key: String) -> Option<BlobRow> {
+    sqlx::query_as!(
+      BlobRow,
+      "SELECT key, data, timestamp FROM sync_metadata WHERE key = ?",
+      key
+    )
+    .fetch_one(&self.pool)
+    .await
+    .ok()
+  }
+
+  #[napi]
+  pub async fn set_sync_metadata(&self, key: String, data: Uint8Array) -> napi::Result<()> {
+    let data = data.as_ref();
+    sqlx::query!(
+      "INSERT INTO sync_metadata (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = excluded.data",
+      key,
+      data,
+    )
+    .execute(&self.pool)
+    .await
+    .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn get_sync_metadata_keys(&self) -> napi::Result<Vec<String>> {
+    let keys = sqlx::query!("SELECT key FROM sync_metadata")
+      .fetch_all(&self.pool)
+      .await
+      .map(|rows| rows.into_iter().map(|row| row.key).collect())
+      .map_err(anyhow::Error::from)?;
+    Ok(keys)
+  }
+
+  #[napi]
+  pub async fn clear_sync_metadata(&self) -> napi::Result<()> {
+    sqlx::query!("DELETE FROM sync_metadata")
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn del_sync_metadata(&self, key: String) -> napi::Result<()> {
+    sqlx::query!("DELETE FROM sync_metadata WHERE key = ?", key)
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  #[napi]
   pub async fn init_version(&self) -> napi::Result<()> {
     // create version_info table
     sqlx::query!(
@@ -266,7 +394,7 @@ impl SqliteConnection {
   }
 
   #[napi]
-  pub async fn get_max_version(&self) -> napi::Result<i32> {
+  pub async fn get_max_version(&self) -> napi::Result<i64> {
     // 4 is the current version
     let version = sqlx::query!("SELECT COALESCE(MAX(version), 4) AS max_version FROM version_info")
       .fetch_one(&self.pool)
@@ -358,6 +486,32 @@ impl SqliteConnection {
         } else {
           Err(anyhow::Error::from(err).into()) // Propagate other errors
         }
+      }
+    }
+  }
+
+  /**
+   * Flush the WAL file to the database file.
+   * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
+   */
+  #[napi]
+  pub async fn checkpoint(&self) -> napi::Result<()> {
+    sqlx::query("PRAGMA wal_checkpoint(FULL);")
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
+  pub async fn migrate_add_doc_id_index(&self) -> napi::Result<()> {
+    // ignore errors
+    match sqlx::query("CREATE INDEX IF NOT EXISTS idx_doc_id ON updates(doc_id);")
+      .execute(&self.pool)
+      .await
+    {
+      Ok(_) => Ok(()),
+      Err(err) => {
+        Err(anyhow::Error::from(err).into()) // Propagate other errors
       }
     }
   }

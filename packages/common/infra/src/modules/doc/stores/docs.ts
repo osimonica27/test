@@ -1,15 +1,17 @@
-import { type DocMeta } from '@blocksuite/store';
-import { isEqual } from 'lodash-es';
-import { distinctUntilChanged, Observable } from 'rxjs';
+import type { DocMode } from '@blocksuite/affine/blocks';
+import type { DocMeta } from '@blocksuite/affine/store';
+import { distinctUntilChanged, map, switchMap } from 'rxjs';
+import { Array as YArray, Map as YMap } from 'yjs';
 
 import { Store } from '../../../framework';
-import type { WorkspaceLocalState, WorkspaceService } from '../../workspace';
-import type { DocMode } from '../entities/record';
+import { yjsObserve, yjsObserveByPath, yjsObserveDeep } from '../../../utils';
+import type { WorkspaceService } from '../../workspace';
+import type { DocPropertiesStore } from './doc-properties';
 
 export class DocsStore extends Store {
   constructor(
     private readonly workspaceService: WorkspaceService,
-    private readonly localState: WorkspaceLocalState
+    private readonly docPropertiesStore: DocPropertiesStore
   ) {
     super();
   }
@@ -18,51 +20,72 @@ export class DocsStore extends Store {
     return this.workspaceService.workspace.docCollection.getDoc(id);
   }
 
+  createBlockSuiteDoc() {
+    return this.workspaceService.workspace.docCollection.createDoc();
+  }
+
   watchDocIds() {
-    return new Observable<string[]>(subscriber => {
-      const emit = () => {
-        subscriber.next(
-          this.workspaceService.workspace.docCollection.meta.docMetas.map(
-            v => v.id
-          )
-        );
-      };
+    return yjsObserveByPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(yjsObserve),
+      map(meta => {
+        if (meta instanceof YArray) {
+          return meta.map(v => v.get('id'));
+        } else {
+          return [];
+        }
+      })
+    );
+  }
 
-      emit();
-
-      const dispose =
-        this.workspaceService.workspace.docCollection.meta.docMetaUpdated.on(
-          emit
-        ).dispose;
-      return () => {
-        dispose();
-      };
-    }).pipe(distinctUntilChanged((p, c) => isEqual(p, c)));
+  watchTrashDocIds() {
+    return yjsObserveByPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(yjsObserveDeep),
+      map(meta => {
+        if (meta instanceof YArray) {
+          return meta
+            .map(v => (v.get('trash') ? v.get('id') : null))
+            .filter(Boolean) as string[];
+        } else {
+          return [];
+        }
+      })
+    );
   }
 
   watchDocMeta(id: string) {
-    let meta: DocMeta | null = null;
-    return new Observable<Partial<DocMeta>>(subscriber => {
-      const emit = () => {
-        if (meta === null) {
-          // getDocMeta is heavy, so we cache the doc meta reference
-          meta =
-            this.workspaceService.workspace.docCollection.meta.getDocMeta(id) ||
-            null;
+    return yjsObserveByPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(yjsObserve),
+      map(meta => {
+        if (meta instanceof YArray) {
+          let docMetaYMap = null as YMap<any> | null;
+          meta.forEach(doc => {
+            if (doc.get('id') === id) {
+              docMetaYMap = doc;
+            }
+          });
+          return docMetaYMap;
+        } else {
+          return null;
         }
-        subscriber.next({ ...meta });
-      };
-
-      emit();
-
-      const dispose =
-        this.workspaceService.workspace.docCollection.meta.docMetaUpdated.on(
-          emit
-        ).dispose;
-      return () => {
-        dispose();
-      };
-    }).pipe(distinctUntilChanged((p, c) => isEqual(p, c)));
+      }),
+      switchMap(yjsObserveDeep),
+      map(meta => {
+        if (meta instanceof YMap) {
+          return meta.toJSON() as Partial<DocMeta>;
+        } else {
+          return {};
+        }
+      })
+    );
   }
 
   watchDocListReady() {
@@ -75,11 +98,32 @@ export class DocsStore extends Store {
     this.workspaceService.workspace.docCollection.setDocMeta(id, meta);
   }
 
-  setDocModeSetting(id: string, mode: DocMode) {
-    this.localState.set(`page:${id}:mode`, mode);
+  setDocPrimaryModeSetting(id: string, mode: DocMode) {
+    return this.docPropertiesStore.updateDocProperties(id, {
+      primaryMode: mode,
+    });
   }
 
-  watchDocModeSetting(id: string) {
-    return this.localState.watch<DocMode>(`page:${id}:mode`);
+  getDocPrimaryModeSetting(id: string) {
+    return this.docPropertiesStore.getDocProperties(id)?.primaryMode;
+  }
+
+  watchDocPrimaryModeSetting(id: string) {
+    return this.docPropertiesStore.watchDocProperties(id).pipe(
+      map(config => config?.primaryMode),
+      distinctUntilChanged((p, c) => p === c)
+    );
+  }
+
+  waitForDocLoadReady(id: string) {
+    return this.workspaceService.workspace.engine.doc.waitForReady(id);
+  }
+
+  setPriorityLoad(id: string, priority: number) {
+    return this.workspaceService.workspace.engine.doc.setPriority(id, priority);
+  }
+
+  markDocSyncStateAsReady(id: string) {
+    this.workspaceService.workspace.engine.doc.markAsReady(id);
   }
 }

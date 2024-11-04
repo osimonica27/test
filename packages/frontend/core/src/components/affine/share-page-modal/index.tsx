@@ -1,25 +1,26 @@
-import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
-import type { Doc } from '@blocksuite/store';
-import type { Workspace } from '@toeverything/infra';
+import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
+import { track } from '@affine/track';
+import type { Doc } from '@blocksuite/affine/store';
+import { type Workspace } from '@toeverything/infra';
+import { useCallback } from 'react';
 
 import { ShareMenu } from './share-menu';
 
 type SharePageModalProps = {
   workspace: Workspace;
   page: Doc;
-  isJournal?: boolean;
 };
 
-export const SharePageButton = ({
-  workspace,
-  page,
-  isJournal,
-}: SharePageModalProps) => {
+export const SharePageButton = ({ workspace, page }: SharePageModalProps) => {
   const confirmEnableCloud = useEnableCloud();
+  const handleOpenShareModal = useCallback((open: boolean) => {
+    if (open) {
+      track.$.sharePanel.$.open();
+    }
+  }, []);
 
   return (
     <ShareMenu
-      isJournal={isJournal}
       workspaceMetadata={workspace.meta}
       currentPage={page}
       onEnableAffineCloud={() =>
@@ -27,6 +28,7 @@ export const SharePageButton = ({
           openPageId: page.id,
         })
       }
+      onOpenShareModal={handleOpenShareModal}
     />
   );
 };

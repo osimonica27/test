@@ -34,8 +34,8 @@ const createPattern = packageName => [
   {
     group: ['@affine/env/constant'],
     message:
-      'Do not import from @affine/env/constant. Use `environment.isDesktop` instead',
-    importNames: ['isDesktop'],
+      'Do not import from @affine/env/constant. Use `BUILD_CONFIG.isElectron` instead',
+    importNames: ['isElectron'],
   },
 ];
 
@@ -43,11 +43,14 @@ const allPackages = [
   'packages/backend/server',
   'packages/frontend/component',
   'packages/frontend/core',
-  'packages/frontend/electron',
+  'packages/frontend/apps/electron',
+  'packages/frontend/apps/web',
+  'packages/frontend/apps/mobile',
   'packages/frontend/graphql',
   'packages/frontend/i18n',
   'packages/frontend/native',
   'packages/frontend/templates',
+  'packages/frontend/track',
   'packages/common/debug',
   'packages/common/env',
   'packages/common/infra',
@@ -157,11 +160,6 @@ const config = {
             message: "Import from '@blocksuite/global/utils'",
             importNames: ['assertExists', 'assertEquals'],
           },
-          {
-            group: ['react-router-dom'],
-            message: 'Use `useNavigateHelper` instead',
-            importNames: ['useNavigate'],
-          },
         ],
       },
     ],
@@ -252,7 +250,8 @@ const config = {
         'react-hooks/exhaustive-deps': [
           'warn',
           {
-            additionalHooks: 'useAsyncCallback',
+            additionalHooks:
+              '(useAsyncCallback|useCatchEventCallback|useDraggable|useDropTarget|useRefEffect)',
           },
         ],
       },

@@ -1,7 +1,7 @@
 import { Button } from '@affine/component/ui/button';
 import type { ConfirmModalProps } from '@affine/component/ui/modal';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { DialogTrigger } from '@radix-ui/react-dialog';
 import type { ReactNode } from 'react';
 import { useEffect, useRef } from 'react';
@@ -26,7 +26,7 @@ export const ConfirmLoadingModal = ({
   loading?: boolean;
   content?: ReactNode;
 } & ConfirmModalProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const confirmed = useRef(false);
 
   const title = t[`com.affine.payment.modal.${type}.title`]();
@@ -46,9 +46,9 @@ export const ConfirmLoadingModal = ({
     <ConfirmModal
       title={title}
       cancelText={cancelText}
+      confirmText={confirmText}
       confirmButtonOptions={{
-        type: 'primary',
-        children: confirmText,
+        variant: 'primary',
         loading,
       }}
       open={open}
@@ -79,7 +79,7 @@ export const DowngradeModal = ({
   onOpenChange?: (open: boolean) => void;
   onCancel?: () => void;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const canceled = useRef(false);
 
   useEffect(() => {
@@ -120,7 +120,7 @@ export const DowngradeModal = ({
           <Button
             disabled={loading}
             onClick={() => onOpenChange?.(false)}
-            type="primary"
+            variant="primary"
           >
             {t['com.affine.payment.modal.downgrade.confirm']()}
           </Button>

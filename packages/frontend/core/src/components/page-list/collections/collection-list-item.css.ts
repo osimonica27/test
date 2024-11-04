@@ -6,6 +6,7 @@ export const root = style({
   height: '54px',
   // 42 + 12
   flexShrink: 0,
+  contain: 'strict',
   width: '100%',
   alignItems: 'stretch',
   transition: 'background-color 0.2s, opacity 0.2s',
@@ -23,7 +24,7 @@ export const root = style({
 });
 
 export const dragPageItemOverlay = style({
-  height: '54px',
+  height: '45px',
   borderRadius: '10px',
   display: 'flex',
   alignItems: 'center',
@@ -66,7 +67,6 @@ globalStyle(`[data-draggable=true][data-dragging=true] ${dndCell}:before`, {
   opacity: 1,
 });
 
-// todo: remove global style
 globalStyle(`${root} > :first-child`, {
   paddingLeft: '16px',
 });

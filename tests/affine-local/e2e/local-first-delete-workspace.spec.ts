@@ -13,12 +13,14 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
   await waitForEditorLoad(page);
   await clickSideBarCurrentWorkspaceBanner(page);
   await page.getByTestId('new-workspace').click();
+  await page.waitForTimeout(1000);
   await page
     .getByTestId('create-workspace-input')
     .pressSequentially('Test Workspace', { delay: 50 });
-  await page.getByTestId('create-workspace-create-button').click();
+  const createButton = page.getByTestId('create-workspace-create-button');
+  await createButton.click();
+  await createButton.waitFor({ state: 'hidden' });
 
-  await page.waitForTimeout(1000);
   await page.waitForSelector('[data-testid="workspace-name"]');
   expect(await page.getByTestId('workspace-name').textContent()).toBe(
     'Test Workspace'

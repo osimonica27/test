@@ -1,18 +1,20 @@
 import { ConfirmModal } from '@affine/component/ui/modal';
-import { openQuotaModalAtom, openSettingModalAtom } from '@affine/core/atoms';
+import {
+  openQuotaModalAtom,
+  openSettingModalAtom,
+} from '@affine/core/components/atoms';
 import { UserQuotaService } from '@affine/core/modules/cloud';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import bytes from 'bytes';
 import { useAtom, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { mixpanel } from '../../../utils';
-
 export const CloudQuotaModal = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const currentWorkspace = useService(WorkspaceService).workspace;
   const [open, setOpen] = useAtom(openQuotaModalAtom);
   const workspaceQuotaService = useService(WorkspaceQuotaService);
@@ -48,8 +50,10 @@ export const CloudQuotaModal = () => {
     setSettingModalAtom({
       open: true,
       activeTab: 'plans',
+      scrollAnchor: 'cloudPricingPlan',
     });
 
+    track.$.paywall.storage.viewPlans();
     setOpen(false);
   }, [setOpen, setSettingModalAtom]);
 
@@ -93,14 +97,6 @@ export const CloudQuotaModal = () => {
     };
   }, [currentWorkspace.engine.blob, setOpen, workspaceQuota]);
 
-  useEffect(() => {
-    if (userQuota?.name) {
-      mixpanel.people.set({
-        plan: userQuota.name,
-      });
-    }
-  }, [userQuota?.name]);
-
   return (
     <ConfirmModal
       open={open}
@@ -111,11 +107,11 @@ export const CloudQuotaModal = () => {
         hidden: !isFreePlanOwner,
       }}
       onConfirm={handleUpgradeConfirm}
+      confirmText={
+        isFreePlanOwner ? t['com.affine.payment.upgrade']() : t['Got it']()
+      }
       confirmButtonOptions={{
-        type: 'primary',
-        children: isFreePlanOwner
-          ? t['com.affine.payment.upgrade']()
-          : t['Got it'](),
+        variant: 'primary',
       }}
     />
   );

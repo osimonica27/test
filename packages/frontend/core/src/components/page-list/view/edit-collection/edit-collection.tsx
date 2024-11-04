@@ -1,19 +1,13 @@
-import {
-  Button,
-  Modal,
-  RadioButton,
-  RadioButtonGroup,
-} from '@affine/component';
+import { Button, Modal, RadioGroup } from '@affine/component';
+import { useAllPageListConfig } from '@affine/core/components/hooks/affine/use-all-page-list-config';
 import type { Collection } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import type { DocCollection, DocMeta } from '@blocksuite/store';
+import { useI18n } from '@affine/i18n';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
-import type { ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
 import * as styles from './edit-collection.css';
-import { PagesMode } from './pages-mode';
 import { RulesMode } from './rules-mode';
+import { SelectPage } from './select-page';
 
 export type EditCollectionMode = 'page' | 'rule';
 
@@ -24,13 +18,9 @@ export interface EditCollectionModalProps {
   mode?: EditCollectionMode;
   onOpenChange: (open: boolean) => void;
   onConfirm: (view: Collection) => void;
-  allPageListConfig: AllPageListConfig;
 }
 
 const contentOptions: DialogContentProps = {
-  onPointerDownOutside: e => {
-    e.preventDefault();
-  },
   style: {
     padding: 0,
     maxWidth: 944,
@@ -44,9 +34,8 @@ export const EditCollectionModal = ({
   onOpenChange,
   title,
   mode,
-  allPageListConfig,
 }: EditCollectionModalProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const onConfirmOnCollection = useCallback(
     (view: Collection) => {
       onConfirm(view);
@@ -58,6 +47,10 @@ export const EditCollectionModal = ({
     onOpenChange(false);
   }, [onOpenChange]);
 
+  if (!(open && init)) {
+    return null;
+  }
+
   return (
     <Modal
       open={open}
@@ -66,18 +59,16 @@ export const EditCollectionModal = ({
       width="calc(100% - 64px)"
       height="80%"
       contentOptions={contentOptions}
+      persistent
     >
-      {init ? (
-        <EditCollection
-          title={title}
-          onConfirmText={t['com.affine.editCollection.save']()}
-          init={init}
-          mode={mode}
-          onCancel={onCancel}
-          onConfirm={onConfirmOnCollection}
-          allPageListConfig={allPageListConfig}
-        />
-      ) : null}
+      <EditCollection
+        title={title}
+        onConfirmText={t['com.affine.editCollection.save']()}
+        init={init}
+        mode={mode}
+        onCancel={onCancel}
+        onConfirm={onConfirmOnCollection}
+      />
     </Modal>
   );
 };
@@ -89,7 +80,6 @@ export interface EditCollectionProps {
   mode?: EditCollectionMode;
   onCancel: () => void;
   onConfirm: (collection: Collection) => void;
-  allPageListConfig: AllPageListConfig;
 }
 
 export const EditCollection = ({
@@ -98,9 +88,9 @@ export const EditCollection = ({
   onCancel,
   onConfirmText,
   mode: initMode,
-  allPageListConfig,
 }: EditCollectionProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
+  const config = useAllPageListConfig();
   const [value, onChange] = useState<Collection>(init);
   const [mode, setMode] = useState<'page' | 'rule'>(
     initMode ?? (init.filterList.length === 0 ? 'page' : 'rule')
@@ -118,17 +108,22 @@ export const EditCollection = ({
       allowList: init.allowList,
     });
   }, [init.allowList, init.filterList, value]);
+  const onIdsChange = useCallback(
+    (ids: string[]) => {
+      onChange({ ...value, allowList: ids });
+    },
+    [value]
+  );
   const buttons = useMemo(
     () => (
       <>
-        <Button size="large" onClick={onCancel}>
+        <Button onClick={onCancel} className={styles.actionButton}>
           {t['com.affine.editCollection.button.cancel']()}
         </Button>
         <Button
-          className={styles.confirmButton}
-          size="large"
+          className={styles.actionButton}
           data-testid="save-collection"
-          type="primary"
+          variant="primary"
           disabled={isNameEmpty}
           onClick={onSaveCollection}
         >
@@ -140,29 +135,24 @@ export const EditCollection = ({
   );
   const switchMode = useMemo(
     () => (
-      <RadioButtonGroup
-        width={158}
-        style={{ height: 32 }}
+      <RadioGroup
+        key="mode-switcher"
+        style={{ minWidth: 158 }}
         value={mode}
-        onValueChange={(mode: 'page' | 'rule') => {
-          setMode(mode);
-        }}
-      >
-        <RadioButton
-          spanStyle={styles.tabButton}
-          value="page"
-          data-testid="edit-collection-pages-button"
-        >
-          {t['com.affine.editCollection.pages']()}
-        </RadioButton>
-        <RadioButton
-          spanStyle={styles.tabButton}
-          value="rule"
-          data-testid="edit-collection-rules-button"
-        >
-          {t['com.affine.editCollection.rules']()}
-        </RadioButton>
-      </RadioButtonGroup>
+        onChange={setMode}
+        items={[
+          {
+            value: 'page',
+            label: t['com.affine.editCollection.pages'](),
+            testId: 'edit-collection-pages-button',
+          },
+          {
+            value: 'rule',
+            label: t['com.affine.editCollection.rules'](),
+            testId: 'edit-collection-rules-button',
+          },
+        ]}
+      />
     ),
     [mode, t]
   );
@@ -177,35 +167,22 @@ export const EditCollection = ({
       className={styles.collectionEditContainer}
     >
       {mode === 'page' ? (
-        <PagesMode
-          collection={value}
-          updateCollection={onChange}
-          switchMode={switchMode}
+        <SelectPage
+          init={value.allowList}
+          onChange={onIdsChange}
+          header={switchMode}
           buttons={buttons}
-          allPageListConfig={allPageListConfig}
-        ></PagesMode>
+        />
       ) : (
         <RulesMode
-          allPageListConfig={allPageListConfig}
+          allPageListConfig={config}
           collection={value}
           switchMode={switchMode}
           reset={reset}
           updateCollection={onChange}
           buttons={buttons}
-        ></RulesMode>
+        />
       )}
     </div>
   );
-};
-
-export type AllPageListConfig = {
-  allPages: DocMeta[];
-  docCollection: DocCollection;
-  isEdgeless: (id: string) => boolean;
-  /**
-   * Return `undefined` if the page is not public
-   */
-  getPublicMode: (id: string) => undefined | 'page' | 'edgeless';
-  getPage: (id: string) => DocMeta | undefined;
-  favoriteRender: (page: DocMeta) => ReactNode;
 };

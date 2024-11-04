@@ -1,11 +1,11 @@
-import { SingleSelectSelectSolidIcon } from '@blocksuite/icons';
+import { SingleSelectSelectSolidIcon } from '@blocksuite/icons/rc';
 import type { StoryFn } from '@storybook/react';
 import { cssVar } from '@toeverything/theme';
 import { type HTMLAttributes, useState } from 'react';
 
 import { Button } from '../button';
 import { Modal } from '../modal';
-import { NotificationCenter, notify } from './notification-center';
+import { NotificationCenter, notify } from '.';
 import type {
   NotificationCustomRendererProps,
   NotificationStyle,

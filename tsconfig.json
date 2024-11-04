@@ -39,7 +39,7 @@
     "lib": ["ESNext", "DOM"],
     "target": "ES2022",
     "useDefineForClassFields": false,
-    "experimentalDecorators": true,
+    "experimentalDecorators": false,
     "emitDecoratorMetadata": false,
     // Projects
     "composite": true,
@@ -48,7 +48,10 @@
     "skipLibCheck": true, // skip all type checks for .d.ts files
     "paths": {
       "@affine/core/*": ["./packages/frontend/core/src/*"],
-      "@affine/core": ["./packages/frontend/core/src/index.ts"],
+      "@affine/admin/*": ["./packages/frontend/admin/src/*"],
+      "@affine/admin/components/ui/*": [
+        "./packages/frontend/admin/src/components/ui/*"
+      ],
       "@affine/cli/*": ["./tools/cli/src/*"],
       "@affine/server/*": ["./packages/backend/server/src/*"],
       "@affine/component": ["./packages/frontend/component/src/index"],
@@ -57,7 +60,6 @@
         "./packages/frontend/component/src/components/*"
       ],
       "@affine/i18n": ["./packages/frontend/i18n/src"],
-      "@affine/i18n/hooks": ["./packages/frontend/i18n/src/i18n-generated"],
       "@affine/debug": ["./packages/common/debug"],
       "@affine/env": ["./packages/common/env/src"],
       "@affine/env/*": ["./packages/common/env/src/*"],
@@ -70,7 +72,7 @@
       "@affine/native/*": ["./packages/frontend/native/*"],
       "@affine/server-native": ["./packages/backend/native/index.d.ts"],
       // Development only
-      "@affine/electron/*": ["./packages/frontend/electron/src/*"]
+      "@affine/electron/*": ["./packages/frontend/apps/electron/src/*"]
     }
   },
   "include": [],
@@ -84,19 +86,34 @@
     },
     // Frontend
     {
+      "path": "./packages/frontend/admin"
+    },
+    {
       "path": "./packages/frontend/component"
     },
     {
       "path": "./packages/frontend/core"
     },
     {
-      "path": "./packages/frontend/web"
+      "path": "./packages/frontend/track"
     },
     {
-      "path": "./packages/frontend/electron/tsconfig.test.json"
+      "path": "./packages/frontend/apps/web"
     },
     {
-      "path": "./packages/frontend/electron/renderer/tsconfig.json"
+      "path": "./packages/frontend/apps/mobile"
+    },
+    {
+      "path": "./packages/frontend/apps/ios"
+    },
+    {
+      "path": "./packages/frontend/apps/android"
+    },
+    {
+      "path": "./packages/frontend/apps/electron/tsconfig.test.json"
+    },
+    {
+      "path": "./packages/frontend/apps/electron/renderer/tsconfig.json"
     },
     {
       "path": "./packages/frontend/graphql"
@@ -118,6 +135,9 @@
     {
       "path": "./tools/cli"
     },
+    {
+      "path": "./tools/playstore-auto-bump"
+    },
     // Tests
     {
       "path": "./tests/kit"
@@ -127,6 +147,9 @@
     },
     {
       "path": "./tests/affine-migration"
+    },
+    {
+      "path": "./tests/affine-mobile"
     },
     {
       "path": "./tests/affine-legacy/0.7.0-canary.18"
@@ -152,7 +175,7 @@
     }
   ],
   "files": [],
-  "exclude": ["node_modules", "target", "lib", "test-results"],
+  "exclude": ["node_modules", "target", "lib", "test-results", "dist"],
   "ts-node": {
     "esm": true,
     "compilerOptions": {

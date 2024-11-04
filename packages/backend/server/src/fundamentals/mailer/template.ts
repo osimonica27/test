@@ -148,7 +148,7 @@ export const emailTemplate = ({
                   </a>
                 </td>
                 <td style="padding: 0 10px">
-                  <a href="https://discord.gg/Arn7TqJBvG" target="_blank"
+                  <a href="https://discord.gg/whd5mjYqVw" target="_blank"
                     ><img
                       src="https://cdn.affine.pro/mail/2023-8-9/Discord.png"
                       alt="AFFiNE discord link"
@@ -213,7 +213,7 @@ export const emailTemplate = ({
               alt="copyright"
               height="14px"
               style="vertical-align: middle; margin: 0 4px"
-            />2023 Toeverything
+            />2023-${new Date().getUTCFullYear()} Toeverything
           </td>
         </tr>
       </table>

@@ -1,4 +1,8 @@
-import type { SubscriptionQuery, SubscriptionRecurring } from '@affine/graphql';
+import {
+  type SubscriptionQuery,
+  SubscriptionRecurring,
+  SubscriptionVariant,
+} from '@affine/graphql';
 import { SubscriptionPlan } from '@affine/graphql';
 import {
   backoffRetry,
@@ -37,6 +41,15 @@ export class Subscription extends Entity {
     subscriptions
       ? subscriptions.find(sub => sub.plan === SubscriptionPlan.AI)
       : null
+  );
+  isBeliever$ = this.pro$.map(
+    sub => sub?.recurring === SubscriptionRecurring.Lifetime
+  );
+  isOnetimePro$ = this.pro$.map(
+    sub => sub?.variant === SubscriptionVariant.Onetime
+  );
+  isOnetimeAI$ = this.ai$.map(
+    sub => sub?.variant === SubscriptionVariant.Onetime
   );
 
   constructor(
@@ -85,9 +98,6 @@ export class Subscription extends Entity {
           if (!accountId) {
             return undefined; // no subscription if no user
           }
-
-          // ensure server config is loaded
-          this.serverConfigService.serverConfig.revalidateIfNeeded();
 
           const serverConfig =
             await this.serverConfigService.serverConfig.features$.waitForNonNull(

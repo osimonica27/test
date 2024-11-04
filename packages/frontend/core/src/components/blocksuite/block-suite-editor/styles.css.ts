@@ -1,19 +1,28 @@
 import { cssVar } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
+import { style, type StyleRule } from '@vanilla-extract/css';
+
 export const docEditorRoot = style({
   display: 'block',
   background: cssVar('backgroundPrimaryColor'),
+  overflowX: 'clip',
 });
 
 export const affineDocViewport = style({
   display: 'flex',
   flexDirection: 'column',
-  paddingBottom: '150px',
+  paddingBottom: '100px',
 });
 
 export const docContainer = style({
   display: 'block',
-  flexGrow: 1,
+  selectors: ['generating', 'finished', 'error'].reduce<
+    NonNullable<StyleRule['selectors']>
+  >((rules, state) => {
+    rules[`&:has(affine-ai-panel-widget[data-state='${state}'])`] = {
+      paddingBottom: '980px',
+    };
+    return rules;
+  }, {}),
 });
 
 export const docEditorGap = style({
@@ -23,6 +32,7 @@ export const docEditorGap = style({
   paddingTop: 50,
   paddingBottom: 50,
   cursor: 'text',
+  flexGrow: 1,
 });
 
 const titleTagBasic = style({
@@ -31,6 +41,7 @@ const titleTagBasic = style({
   padding: '0 4px',
   borderRadius: '4px',
   marginLeft: '4px',
+  lineHeight: '0px',
 });
 export const titleDayTag = style([
   titleTagBasic,

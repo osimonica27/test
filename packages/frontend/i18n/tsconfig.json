@@ -12,7 +12,7 @@
       "path": "./tsconfig.resources.json"
     },
     {
-      "path": "./tsconfig.node.json"
+      "path": "../../common/debug/tsconfig.json"
     }
   ]
 }

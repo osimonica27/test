@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -6,18 +7,17 @@ import { config } from 'dotenv';
 import webpack from 'webpack';
 import WebpackDevServer from 'webpack-dev-server';
 
+import { getCwdFromDistribution, projectRoot } from '../config/cwd.cjs';
 import type { BuildFlags } from '../config/index.js';
-import { projectRoot } from '../config/index.js';
-import { watchI18N } from '../util/i18n.js';
 import { createWebpackConfig } from '../webpack/webpack.config.js';
 
 const flags: BuildFlags = {
   distribution:
-    (process.env.DISTRIBUTION as BuildFlags['distribution']) ?? 'browser',
+    (process.env.DISTRIBUTION as BuildFlags['distribution']) ?? 'web',
   mode: 'development',
+  static: false,
   channel: 'canary',
   coverage: process.env.COVERAGE === 'true',
-  localBlockSuite: undefined,
 };
 
 const files = ['.env', '.env.local'];
@@ -33,7 +33,7 @@ for (const file of files) {
 }
 
 const buildFlags = process.argv.includes('--static')
-  ? { ...flags, debugBlockSuite: false }
+  ? { ...flags, static: true }
   : ((await p.group(
       {
         distribution: () =>
@@ -41,13 +41,22 @@ const buildFlags = process.argv.includes('--static')
             message: 'Distribution',
             options: [
               {
-                value: 'browser',
+                value: 'web',
               },
               {
                 value: 'desktop',
               },
+              {
+                value: 'admin',
+              },
+              {
+                value: 'mobile',
+              },
+              {
+                value: 'ios',
+              },
             ],
-            initialValue: 'browser',
+            initialValue: 'web',
           }),
         mode: () =>
           p.select({
@@ -83,11 +92,6 @@ const buildFlags = process.argv.includes('--static')
             message: 'Enable coverage',
             initialValue: process.env.COVERAGE === 'true',
           }),
-        debugBlockSuite: () =>
-          p.confirm({
-            message: 'Debug blocksuite locally?',
-            initialValue: false,
-          }),
       },
       {
         onCancel: () => {
@@ -95,52 +99,42 @@ const buildFlags = process.argv.includes('--static')
           process.exit(0);
         },
       }
-    )) as BuildFlags & { debugBlockSuite: boolean });
+    )) as BuildFlags);
 
 flags.distribution = buildFlags.distribution;
 flags.mode = buildFlags.mode;
 flags.channel = buildFlags.channel;
 flags.coverage = buildFlags.coverage;
+flags.static = buildFlags.static;
 flags.entry = undefined;
 
-const cwd =
-  flags.distribution === 'browser'
-    ? join(projectRoot, 'packages', 'frontend', 'web')
-    : join(projectRoot, 'packages', 'frontend', 'electron');
+const cwd = getCwdFromDistribution(flags.distribution);
+
+process.env.DISTRIBUTION = flags.distribution;
 
 if (flags.distribution === 'desktop') {
-  flags.entry = join(cwd, 'renderer', 'index.tsx');
-}
-
-if (buildFlags.debugBlockSuite) {
-  const { config } = await import('dotenv');
-  const envLocal = config({
-    path: join(cwd, '.env.local'),
-  });
-
-  const localBlockSuite = await p.text({
-    message: 'local blocksuite PATH',
-    initialValue: envLocal.error
-      ? undefined
-      : envLocal.parsed?.LOCAL_BLOCK_SUITE,
-  });
-  if (typeof localBlockSuite !== 'string') {
-    throw new Error('local blocksuite PATH is required');
-  }
-  if (!existsSync(localBlockSuite)) {
-    throw new Error(`local blocksuite not found: ${localBlockSuite}`);
-  }
-  flags.localBlockSuite = localBlockSuite;
+  flags.entry = {
+    app: join(cwd, 'index.tsx'),
+    shell: join(cwd, 'shell/index.tsx'),
+  };
 }
 
 console.info(flags);
 
-watchI18N();
+if (!flags.static) {
+  spawn('yarn', ['workspace', '@affine/i18n', 'dev'], {
+    stdio: 'inherit',
+    shell: true,
+  });
+}
 
 try {
   // @ts-expect-error no types
   await import('@affine/templates/build-edgeless');
   const config = createWebpackConfig(cwd, flags);
+  if (flags.static) {
+    config.watch = false;
+  }
   const compiler = webpack(config);
   // Start webpack
   const devServer = new WebpackDevServer(config.devServer, compiler);

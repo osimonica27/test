@@ -1,20 +1,11 @@
 import type { User } from '@prisma/client';
-import type { Stripe } from 'stripe';
 
 import type { Payload } from '../../fundamentals/event/def';
-
-export interface PaymentConfig {
-  stripe: {
-    keys: {
-      APIKey: string;
-      webhookKey: string;
-    };
-  } & Stripe.StripeConfig;
-}
 
 export enum SubscriptionRecurring {
   Monthly = 'monthly',
   Yearly = 'yearly',
+  Lifetime = 'lifetime',
 }
 
 export enum SubscriptionPlan {
@@ -26,8 +17,9 @@ export enum SubscriptionPlan {
   SelfHosted = 'selfhosted',
 }
 
-export enum SubscriptionPriceVariant {
+export enum SubscriptionVariant {
   EA = 'earlyaccess',
+  Onetime = 'onetime',
 }
 
 // see https://stripe.com/docs/api/subscriptions/object#subscription_object-status
@@ -56,10 +48,12 @@ declare module '../../fundamentals/event/def' {
       activated: Payload<{
         userId: User['id'];
         plan: SubscriptionPlan;
+        recurring: SubscriptionRecurring;
       }>;
       canceled: Payload<{
         userId: User['id'];
         plan: SubscriptionPlan;
+        recurring: SubscriptionRecurring;
       }>;
     };
   }

@@ -1,5 +1,3 @@
-import { assertExists } from '@blocksuite/global/utils';
-
 export class UaHelper {
   private readonly uaMap;
   public isLinux = false;
@@ -10,10 +8,17 @@ export class UaHelper {
   public isMobile = false;
   public isChrome = false;
   public isIOS = false;
+  public isStandalone = false;
 
   getChromeVersion = (): number => {
-    const raw = this.navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
-    assertExists(raw);
+    let raw = this.navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
+    if (!raw) {
+      raw = this.navigator.userAgent.match(/(CriOS)\/([0-9]+)/);
+    }
+    if (!raw) {
+      console.error('Cannot get chrome version');
+      return 0;
+    }
     return parseInt(raw[2], 10);
   };
 
@@ -26,6 +31,13 @@ export class UaHelper {
     return Boolean(this.uaMap[isUseragent]);
   }
 
+  private isStandaloneMode() {
+    if ('standalone' in window.navigator) {
+      return !!window.navigator.standalone;
+    }
+    return !!window.matchMedia('(display-mode: standalone)').matches;
+  }
+
   private initUaFlags() {
     this.isLinux = this.checkUseragent('linux');
     this.isMacOs = this.checkUseragent('mac');
@@ -35,6 +47,7 @@ export class UaHelper {
     this.isMobile = this.checkUseragent('mobile');
     this.isChrome = this.checkUseragent('chrome');
     this.isIOS = this.checkUseragent('ios');
+    this.isStandalone = this.isStandaloneMode();
   }
 }
 

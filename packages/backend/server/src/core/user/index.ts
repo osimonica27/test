@@ -1,16 +1,14 @@
 import { Module } from '@nestjs/common';
 
-import { FeatureModule } from '../features';
-import { QuotaModule } from '../quota';
+import { PermissionModule } from '../permission';
 import { StorageModule } from '../storage';
 import { UserAvatarController } from './controller';
-import { UserManagementResolver } from './management';
-import { UserResolver } from './resolver';
+import { UserManagementResolver, UserResolver } from './resolver';
 import { UserService } from './service';
 
 @Module({
-  imports: [StorageModule, FeatureModule, QuotaModule],
-  providers: [UserResolver, UserManagementResolver, UserService],
+  imports: [StorageModule, PermissionModule],
+  providers: [UserResolver, UserService, UserManagementResolver],
   controllers: [UserAvatarController],
   exports: [UserService],
 })

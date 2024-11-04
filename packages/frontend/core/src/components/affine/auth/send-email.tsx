@@ -6,23 +6,23 @@ import {
   ModalHeader,
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import {
   sendChangeEmailMutation,
   sendChangePasswordEmailMutation,
   sendSetPasswordEmailMutation,
   sendVerifyEmailMutation,
 } from '@affine/graphql';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
-import { useMutation } from '../../../hooks/use-mutation';
+import { useMutation } from '../../../components/hooks/use-mutation';
 import { ServerConfigService } from '../../../modules/cloud';
 import type { AuthPanelProps } from './index';
 
-const useEmailTitle = (emailType: AuthPanelProps['emailType']) => {
-  const t = useAFFiNEI18N();
+const useEmailTitle = (emailType: AuthPanelProps<'sendEmail'>['emailType']) => {
+  const t = useI18n();
 
   switch (emailType) {
     case 'setPassword':
@@ -36,8 +36,10 @@ const useEmailTitle = (emailType: AuthPanelProps['emailType']) => {
   }
 };
 
-const useNotificationHint = (emailType: AuthPanelProps['emailType']) => {
-  const t = useAFFiNEI18N();
+const useNotificationHint = (
+  emailType: AuthPanelProps<'sendEmail'>['emailType']
+) => {
+  const t = useI18n();
 
   switch (emailType) {
     case 'setPassword':
@@ -49,8 +51,10 @@ const useNotificationHint = (emailType: AuthPanelProps['emailType']) => {
       return t['com.affine.auth.sent.verify.email.hint']();
   }
 };
-const useButtonContent = (emailType: AuthPanelProps['emailType']) => {
-  const t = useAFFiNEI18N();
+const useButtonContent = (
+  emailType: AuthPanelProps<'sendEmail'>['emailType']
+) => {
+  const t = useI18n();
 
   switch (emailType) {
     case 'setPassword':
@@ -63,7 +67,7 @@ const useButtonContent = (emailType: AuthPanelProps['emailType']) => {
   }
 };
 
-const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
+const useSendEmail = (emailType: AuthPanelProps<'sendEmail'>['emailType']) => {
   const {
     trigger: sendChangePasswordEmail,
     isMutating: isChangePasswordMutating,
@@ -114,12 +118,10 @@ const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
             callbackUrl = 'verify-email';
             break;
         }
-        // TODO: add error handler
+        // TODO(@eyhn): add error handler
         return trigger({
           email,
-          callbackUrl: `/auth/${callbackUrl}?isClient=${
-            environment.isDesktop ? 'true' : 'false'
-          }`,
+          callbackUrl: `/auth/${callbackUrl}`,
         });
       },
       [
@@ -134,11 +136,12 @@ const useSendEmail = (emailType: AuthPanelProps['emailType']) => {
 };
 
 export const SendEmail = ({
-  setAuthState,
+  setAuthData,
   email,
   emailType,
-}: AuthPanelProps) => {
-  const t = useAFFiNEI18N();
+  // todo(@pengx17): impl redirectUrl for sendEmail?
+}: AuthPanelProps<'sendEmail'>) => {
+  const t = useI18n();
   const serverConfig = useService(ServerConfigService).serverConfig;
 
   const passwordLimits = useLiveData(
@@ -152,7 +155,7 @@ export const SendEmail = ({
   const { loading, sendEmail } = useSendEmail(emailType);
 
   const onSendEmail = useAsyncCallback(async () => {
-    // TODO: add error handler
+    // TODO(@eyhn): add error handler
     await sendEmail(email);
 
     notify.success({ title: hint });
@@ -160,11 +163,11 @@ export const SendEmail = ({
   }, [email, hint, sendEmail]);
 
   const onBack = useCallback(() => {
-    setAuthState('signIn');
-  }, [setAuthState]);
+    setAuthData({ state: 'signIn' });
+  }, [setAuthData]);
 
   if (!passwordLimits) {
-    // TODO: loading & error UI
+    // TODO(@eyhn): loading & error UI
     return null;
   }
 
@@ -203,7 +206,7 @@ export const SendEmail = ({
       </Wrapper>
 
       <Button
-        type="primary"
+        variant="primary"
         size="extraLarge"
         style={{ width: '100%' }}
         disabled={hasSentEmail}

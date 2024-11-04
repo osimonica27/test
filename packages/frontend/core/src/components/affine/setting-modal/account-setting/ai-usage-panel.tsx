@@ -1,12 +1,14 @@
 import { Button, ErrorMessage, Skeleton } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
-import { openSettingModalAtom } from '@affine/core/atoms';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
 import {
   ServerConfigService,
   SubscriptionService,
-  UserQuotaService,
+  UserCopilotQuotaService,
 } from '@affine/core/modules/cloud';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { SubscriptionPlan } from '@affine/graphql';
+import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';
@@ -16,7 +18,7 @@ import { AIResume, AISubscribe } from '../general-setting/plans/ai/actions';
 import * as styles from './storage-progress.css';
 
 export const AIUsagePanel = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const setOpenSettingModal = useSetAtom(openSettingModalAtom);
   const serverConfigService = useService(ServerConfigService);
   const hasPaymentFeature = useLiveData(
@@ -28,20 +30,25 @@ export const AIUsagePanel = () => {
     // revalidate latest subscription status
     subscriptionService.subscription.revalidate();
   }, [subscriptionService]);
-  const quotaService = useService(UserQuotaService);
+  const copilotQuotaService = useService(UserCopilotQuotaService);
   useEffect(() => {
-    quotaService.quota.revalidate();
-  }, [quotaService]);
-  const aiActionLimit = useLiveData(quotaService.quota.aiActionLimit$);
-  const aiActionUsed = useLiveData(quotaService.quota.aiActionUsed$);
-  const loading = aiActionLimit === null || aiActionUsed === null;
-  const loadError = useLiveData(quotaService.quota.error$);
+    copilotQuotaService.copilotQuota.revalidate();
+  }, [copilotQuotaService]);
+  const copilotActionLimit = useLiveData(
+    copilotQuotaService.copilotQuota.copilotActionLimit$
+  );
+  const copilotActionUsed = useLiveData(
+    copilotQuotaService.copilotQuota.copilotActionUsed$
+  );
+  const loading = copilotActionLimit === null || copilotActionUsed === null;
+  const loadError = useLiveData(copilotQuotaService.copilotQuota.error$);
 
   const openBilling = useCallback(() => {
     setOpenSettingModal({
       open: true,
       activeTab: 'billing',
     });
+    track.$.settingsPanel.accountUsage.viewPlans({ plan: SubscriptionPlan.AI });
   }, [setOpenSettingModal]);
 
   if (loading) {
@@ -52,7 +59,7 @@ export const AIUsagePanel = () => {
           desc={''}
           spreadCol={false}
         >
-          {/* TODO: i18n */}
+          {/* TODO(@catsjuice): i18n */}
           <ErrorMessage>Load error</ErrorMessage>
         </SettingRow>
       );
@@ -69,13 +76,13 @@ export const AIUsagePanel = () => {
   }
 
   const percent =
-    aiActionLimit === 'unlimited'
+    copilotActionLimit === 'unlimited'
       ? 0
       : Math.min(
           100,
           Math.max(
             0.5,
-            Number(((aiActionUsed / aiActionLimit) * 100).toFixed(4))
+            Number(((copilotActionUsed / copilotActionLimit) * 100).toFixed(4))
           )
         );
 
@@ -91,7 +98,7 @@ export const AIUsagePanel = () => {
       }
       name={t['com.affine.payment.ai.usage-title']()}
     >
-      {aiActionLimit === 'unlimited' ? (
+      {copilotActionLimit === 'unlimited' ? (
         hasPaymentFeature && aiSubscription?.canceledAt ? (
           <AIResume />
         ) : (
@@ -106,8 +113,8 @@ export const AIUsagePanel = () => {
               <span>{t['com.affine.payment.ai.usage.used-caption']()}</span>
               <span>
                 {t['com.affine.payment.ai.usage.used-detail']({
-                  used: aiActionUsed.toString(),
-                  limit: aiActionLimit.toString(),
+                  used: copilotActionUsed.toString(),
+                  limit: copilotActionLimit.toString(),
                 })}
               </span>
             </div>
@@ -121,7 +128,7 @@ export const AIUsagePanel = () => {
           </div>
 
           {hasPaymentFeature && (
-            <AISubscribe type="primary" className={styles.storageButton}>
+            <AISubscribe variant="primary">
               {t['com.affine.payment.ai.usage.purchase-button-label']()}
             </AISubscribe>
           )}

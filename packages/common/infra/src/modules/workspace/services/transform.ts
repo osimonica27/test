@@ -1,8 +1,9 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { assertEquals } from '@blocksuite/global/utils';
-import { applyUpdate, encodeStateAsUpdate } from 'yjs';
+import { assertEquals } from '@blocksuite/affine/global/utils';
+import { applyUpdate } from 'yjs';
 
 import { Service } from '../../../framework';
+import { transformWorkspaceDBLocalToCloud } from '../../db';
 import type { Workspace } from '../entities/workspace';
 import type { WorkspaceMetadata } from '../metadata';
 import type { WorkspaceDestroyService } from './destroy';
@@ -18,33 +19,50 @@ export class WorkspaceTransformService extends Service {
 
   /**
    * helper function to transform local workspace to cloud workspace
+   *
+   * @param accountId - all local user data will be transformed to this account
    */
   transformLocalToCloud = async (
-    local: Workspace
+    local: Workspace,
+    accountId: string
   ): Promise<WorkspaceMetadata> => {
     assertEquals(local.flavour, WorkspaceFlavour.LOCAL);
 
-    await local.engine.waitForDocSynced();
+    const localDocStorage = local.engine.doc.storage.behavior;
 
     const newMetadata = await this.factory.create(
       WorkspaceFlavour.AFFINE_CLOUD,
-      async (ws, bs) => {
-        applyUpdate(ws.doc, encodeStateAsUpdate(local.docCollection.doc));
+      async (docCollection, blobStorage, docStorage) => {
+        const rootDocBinary = await localDocStorage.doc.get(
+          local.docCollection.doc.guid
+        );
 
-        for (const subdoc of local.docCollection.doc.getSubdocs()) {
-          for (const newSubdoc of ws.doc.getSubdocs()) {
-            if (newSubdoc.guid === subdoc.guid) {
-              applyUpdate(newSubdoc, encodeStateAsUpdate(subdoc));
-            }
+        if (rootDocBinary) {
+          applyUpdate(docCollection.doc, rootDocBinary);
+        }
+
+        for (const subdoc of docCollection.doc.getSubdocs()) {
+          const subdocBinary = await localDocStorage.doc.get(subdoc.guid);
+          if (subdocBinary) {
+            applyUpdate(subdoc, subdocBinary);
           }
         }
+
+        // transform db
+        await transformWorkspaceDBLocalToCloud(
+          local.id,
+          docCollection.id,
+          localDocStorage,
+          docStorage,
+          accountId
+        );
 
         const blobList = await local.engine.blob.list();
 
         for (const blobKey of blobList) {
           const blob = await local.engine.blob.get(blobKey);
           if (blob) {
-            await bs.set(blobKey, blob);
+            await blobStorage.set(blobKey, blob);
           }
         }
       }

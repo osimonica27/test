@@ -6,11 +6,12 @@ import {
   getIsOwnerQuery,
   getWorkspacesQuery,
 } from '@affine/graphql';
-import { DocCollection } from '@blocksuite/store';
+import { DocCollection } from '@blocksuite/affine/store';
 import {
   ApplicationStarted,
   type BlobStorage,
   catchErrorInto,
+  type DocStorage,
   exhaustMapSwitchUntilChanged,
   fromPromise,
   type GlobalState,
@@ -18,19 +19,20 @@ import {
   onComplete,
   OnEvent,
   onStart,
-  type Workspace,
   type WorkspaceEngineProvider,
   type WorkspaceFlavourProvider,
   type WorkspaceMetadata,
   type WorkspaceProfileInfo,
 } from '@toeverything/infra';
-import { effect, globalBlockSuiteSchema, Service } from '@toeverything/infra';
+import { effect, getAFFiNEWorkspaceSchema, Service } from '@toeverything/infra';
+import { isEqual } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { EMPTY, map, mergeMap } from 'rxjs';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import type {
   AuthService,
+  FetchService,
   GraphQLService,
   WebSocketService,
 } from '../../cloud';
@@ -39,6 +41,7 @@ import type { WorkspaceEngineStorageProvider } from '../providers/engine';
 import { BroadcastChannelAwarenessConnection } from './engine/awareness-broadcast-channel';
 import { CloudAwarenessConnection } from './engine/awareness-cloud';
 import { CloudBlobStorage } from './engine/blob-cloud';
+import { StaticBlobStorage } from './engine/blob-static';
 import { CloudDocEngineServer } from './engine/doc-cloud';
 import { CloudStaticDocStorage } from './engine/doc-cloud-static';
 
@@ -57,7 +60,8 @@ export class CloudWorkspaceFlavourProviderService
     private readonly authService: AuthService,
     private readonly storageProvider: WorkspaceEngineStorageProvider,
     private readonly graphqlService: GraphQLService,
-    private readonly webSocketService: WebSocketService
+    private readonly webSocketService: WebSocketService,
+    private readonly fetchService: FetchService
   ) {
     super();
   }
@@ -76,11 +80,10 @@ export class CloudWorkspaceFlavourProviderService
   async createWorkspace(
     initial: (
       docCollection: DocCollection,
-      blobStorage: BlobStorage
+      blobStorage: BlobStorage,
+      docStorage: DocStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata> {
-    const tempId = nanoid();
-
     // create workspace on cloud, get workspace id
     const {
       createWorkspace: { id: workspaceId },
@@ -93,14 +96,16 @@ export class CloudWorkspaceFlavourProviderService
     const docStorage = this.storageProvider.getDocStorage(workspaceId);
 
     const docCollection = new DocCollection({
-      id: tempId,
+      id: workspaceId,
       idGenerator: () => nanoid(),
-      schema: globalBlockSuiteSchema,
-      blobStorages: [() => ({ crud: blobStorage })],
+      schema: getAFFiNEWorkspaceSchema(),
+      blobSources: {
+        main: blobStorage,
+      },
     });
 
     // apply initial state
-    await initial(docCollection, blobStorage);
+    await initial(docCollection, blobStorage, docStorage);
 
     // save workspace to local storage, should be vary fast
     await docStorage.doc.set(
@@ -114,7 +119,10 @@ export class CloudWorkspaceFlavourProviderService
     this.revalidate();
     await this.waitForLoaded();
 
-    return { id: workspaceId, flavour: WorkspaceFlavour.AFFINE_CLOUD };
+    return {
+      id: workspaceId,
+      flavour: WorkspaceFlavour.AFFINE_CLOUD,
+    };
   }
   revalidate = effect(
     map(() => {
@@ -135,23 +143,32 @@ export class CloudWorkspaceFlavourProviderService
             },
           });
 
-          const ids = workspaces.map(({ id }) => id);
+          const ids = workspaces.map(({ id, initialized }) => ({
+            id,
+            initialized,
+          }));
           return {
             accountId,
-            workspaces: ids.map(id => ({
+            workspaces: ids.map(({ id, initialized }) => ({
               id,
               flavour: WorkspaceFlavour.AFFINE_CLOUD,
+              initialized,
             })),
           };
         }).pipe(
           mergeMap(data => {
             if (data) {
               const { accountId, workspaces } = data;
+              const sorted = workspaces.sort((a, b) => {
+                return a.id.localeCompare(b.id);
+              });
               this.globalState.set(
                 CLOUD_WORKSPACES_CACHE_KEY + accountId,
-                workspaces
+                sorted
               );
-              this.workspaces$.next(workspaces);
+              if (!isEqual(this.workspaces$.value, sorted)) {
+                this.workspaces$.next(sorted);
+              }
             } else {
               this.workspaces$.next([]);
             }
@@ -160,8 +177,8 @@ export class CloudWorkspaceFlavourProviderService
           catchErrorInto(this.error$, err => {
             logger.error('error to revalidate cloud workspaces', err);
           }),
-          onStart(() => this.isLoading$.next(true)),
-          onComplete(() => this.isLoading$.next(false))
+          onStart(() => this.isRevalidating$.next(true)),
+          onComplete(() => this.isRevalidating$.next(false))
         );
       },
       ({ accountId }) => {
@@ -176,7 +193,7 @@ export class CloudWorkspaceFlavourProviderService
     )
   );
   error$ = new LiveData<any>(null);
-  isLoading$ = new LiveData(false);
+  isRevalidating$ = new LiveData(false);
   workspaces$ = new LiveData<WorkspaceMetadata[]>([]);
   async getWorkspaceProfile(
     id: string,
@@ -185,7 +202,7 @@ export class CloudWorkspaceFlavourProviderService
     // get information from both cloud and local storage
 
     // we use affine 'static' storage here, which use http protocol, no need to websocket.
-    const cloudStorage = new CloudStaticDocStorage(id);
+    const cloudStorage = new CloudStaticDocStorage(id, this.fetchService);
     const docStorage = this.storageProvider.getDocStorage(id);
     // download root doc
     const localData = await docStorage.doc.get(id);
@@ -201,7 +218,7 @@ export class CloudWorkspaceFlavourProviderService
 
     const bs = new DocCollection({
       id,
-      schema: globalBlockSuiteSchema,
+      schema: getAFFiNEWorkspaceSchema(),
     });
 
     if (localData) applyUpdate(bs.doc, localData);
@@ -220,38 +237,31 @@ export class CloudWorkspaceFlavourProviderService
       return localBlob;
     }
 
-    const cloudBlob = new CloudBlobStorage(id);
+    const cloudBlob = new CloudBlobStorage(id, this.fetchService);
     return await cloudBlob.get(blob);
   }
-  getEngineProvider(workspace: Workspace): WorkspaceEngineProvider {
+  getEngineProvider(workspaceId: string): WorkspaceEngineProvider {
     return {
       getAwarenessConnections: () => {
         return [
-          new BroadcastChannelAwarenessConnection(
-            workspace.id,
-            workspace.awareness
-          ),
-          new CloudAwarenessConnection(
-            workspace.id,
-            workspace.awareness,
-            this.webSocketService.newSocket()
-          ),
+          new BroadcastChannelAwarenessConnection(workspaceId),
+          new CloudAwarenessConnection(workspaceId, this.webSocketService),
         ];
       },
       getDocServer: () => {
-        return new CloudDocEngineServer(
-          workspace.id,
-          this.webSocketService.newSocket()
-        );
+        return new CloudDocEngineServer(workspaceId, this.webSocketService);
       },
       getDocStorage: () => {
-        return this.storageProvider.getDocStorage(workspace.id);
+        return this.storageProvider.getDocStorage(workspaceId);
       },
       getLocalBlobStorage: () => {
-        return this.storageProvider.getBlobStorage(workspace.id);
+        return this.storageProvider.getBlobStorage(workspaceId);
       },
-      getRemoteBlobStorages() {
-        return [new CloudBlobStorage(workspace.id)];
+      getRemoteBlobStorages: () => {
+        return [
+          new CloudBlobStorage(workspaceId, this.fetchService),
+          new StaticBlobStorage(),
+        ];
       },
     };
   }
@@ -269,6 +279,6 @@ export class CloudWorkspaceFlavourProviderService
   }
 
   private waitForLoaded() {
-    return this.isLoading$.waitFor(loading => !loading);
+    return this.isRevalidating$.waitFor(loading => !loading);
   }
 }

@@ -1,7 +1,9 @@
+import './config';
+
 import { ServerFeature } from '../../core/config';
 import { FeatureModule } from '../../core/features';
+import { PermissionModule } from '../../core/permission';
 import { QuotaModule } from '../../core/quota';
-import { PermissionService } from '../../core/workspaces/permission';
 import { Plugin } from '../registry';
 import { CopilotController } from './controller';
 import { ChatMessageCache } from './message';
@@ -13,18 +15,22 @@ import {
   OpenAIProvider,
   registerCopilotProvider,
 } from './providers';
-import { CopilotResolver, UserCopilotResolver } from './resolver';
+import {
+  CopilotResolver,
+  PromptsManagementResolver,
+  UserCopilotResolver,
+} from './resolver';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
+import { CopilotWorkflowExecutors, CopilotWorkflowService } from './workflow';
 
 registerCopilotProvider(FalProvider);
 registerCopilotProvider(OpenAIProvider);
 
 @Plugin({
   name: 'copilot',
-  imports: [FeatureModule, QuotaModule],
+  imports: [FeatureModule, QuotaModule, PermissionModule],
   providers: [
-    PermissionService,
     ChatSessionService,
     CopilotResolver,
     ChatMessageCache,
@@ -32,6 +38,9 @@ registerCopilotProvider(OpenAIProvider);
     PromptService,
     CopilotProviderService,
     CopilotStorage,
+    PromptsManagementResolver,
+    CopilotWorkflowService,
+    ...CopilotWorkflowExecutors,
   ],
   controllers: [CopilotController],
   contributesTo: ServerFeature.Copilot,
@@ -43,5 +52,3 @@ registerCopilotProvider(OpenAIProvider);
   },
 })
 export class CopilotModule {}
-
-export type { CopilotConfig } from './types';

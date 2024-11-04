@@ -1,26 +1,32 @@
-import { apis } from '@affine/electron-api';
+import type { DesktopApiService } from '@affine/core/modules/desktop-api';
 import type { ByteKV, ByteKVBehavior, DocStorage } from '@toeverything/infra';
-import { AsyncLock, MemoryDocEventBus } from '@toeverything/infra';
-import type { DBSchema, IDBPDatabase, IDBPObjectStore } from 'idb';
-import { openDB } from 'idb';
+import { AsyncLock } from '@toeverything/infra';
+
+import { BroadcastChannelDocEventBus } from './doc-broadcast-channel';
 
 export class SqliteDocStorage implements DocStorage {
-  constructor(private readonly workspaceId: string) {}
-  eventBus = new MemoryDocEventBus();
-  readonly doc = new Doc(this.workspaceId);
-  readonly syncMetadata = new KV(`${this.workspaceId}:sync-metadata`);
-  readonly serverClock = new KV(`${this.workspaceId}:server-clock`);
+  constructor(
+    private readonly workspaceId: string,
+    private readonly electronApi: DesktopApiService
+  ) {}
+  eventBus = new BroadcastChannelDocEventBus(this.workspaceId);
+  readonly doc = new Doc(this.workspaceId, this.electronApi);
+  readonly syncMetadata = new SyncMetadataKV(
+    this.workspaceId,
+    this.electronApi
+  );
+  readonly serverClock = new ServerClockKV(this.workspaceId, this.electronApi);
 }
 
 type DocType = DocStorage['doc'];
 
 class Doc implements DocType {
   lock = new AsyncLock();
-  constructor(private readonly workspaceId: string) {
-    if (!apis?.db) {
-      throw new Error('sqlite datasource is not available');
-    }
-  }
+  apis = this.electronApi.handler;
+  constructor(
+    private readonly workspaceId: string,
+    private readonly electronApi: DesktopApiService
+  ) {}
 
   async transaction<T>(
     cb: (transaction: ByteKVBehavior) => Promise<T>
@@ -34,12 +40,10 @@ class Doc implements DocType {
   }
 
   async get(docId: string) {
-    if (!apis?.db) {
-      throw new Error('sqlite datasource is not available');
-    }
-    const update = await apis.db.getDocAsUpdates(
+    const update = await this.apis.db.getDocAsUpdates(
+      'workspace',
       this.workspaceId,
-      this.workspaceId === docId ? undefined : docId
+      docId
     );
 
     if (update) {
@@ -57,13 +61,11 @@ class Doc implements DocType {
   }
 
   async set(docId: string, data: Uint8Array) {
-    if (!apis?.db) {
-      throw new Error('sqlite datasource is not available');
-    }
-    await apis.db.applyDocUpdate(
+    await this.apis.db.applyDocUpdate(
+      'workspace',
       this.workspaceId,
       data,
-      this.workspaceId === docId ? undefined : docId
+      docId
     );
   }
 
@@ -71,107 +73,79 @@ class Doc implements DocType {
     return;
   }
 
-  del(): void | Promise<void> {
-    return;
+  async del(docId: string) {
+    await this.apis.db.deleteDoc('workspace', this.workspaceId, docId);
   }
 }
 
-interface KvDBSchema extends DBSchema {
-  kv: {
-    key: string;
-    value: { key: string; val: Uint8Array };
-  };
-}
-
-class KV implements ByteKV {
-  constructor(private readonly dbName: string) {}
-
-  dbPromise: Promise<IDBPDatabase<KvDBSchema>> | null = null;
-  dbVersion = 1;
-
-  upgradeDB(db: IDBPDatabase<KvDBSchema>) {
-    db.createObjectStore('kv', { keyPath: 'key' });
-  }
-
-  getDb() {
-    if (this.dbPromise === null) {
-      this.dbPromise = openDB<KvDBSchema>(this.dbName, this.dbVersion, {
-        upgrade: db => this.upgradeDB(db),
-      });
-    }
-    return this.dbPromise;
-  }
-
-  async transaction<T>(
-    cb: (transaction: ByteKVBehavior) => Promise<T>
-  ): Promise<T> {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readwrite').objectStore('kv');
-
-    const behavior = new KVBehavior(store);
-    return await cb(behavior);
-  }
-
-  async get(key: string): Promise<Uint8Array | null> {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readonly').objectStore('kv');
-    return new KVBehavior(store).get(key);
-  }
-  async set(key: string, value: Uint8Array): Promise<void> {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readwrite').objectStore('kv');
-    return new KVBehavior(store).set(key, value);
-  }
-  async keys(): Promise<string[]> {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readwrite').objectStore('kv');
-    return new KVBehavior(store).keys();
-  }
-  async clear() {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readwrite').objectStore('kv');
-    return new KVBehavior(store).clear();
-  }
-  async del(key: string) {
-    const db = await this.getDb();
-    const store = db.transaction('kv', 'readwrite').objectStore('kv');
-    return new KVBehavior(store).del(key);
-  }
-}
-
-class KVBehavior implements ByteKVBehavior {
+class SyncMetadataKV implements ByteKV {
+  apis = this.electronApi.handler;
   constructor(
-    private readonly store: IDBPObjectStore<KvDBSchema, ['kv'], 'kv', any>
+    private readonly workspaceId: string,
+    private readonly electronApi: DesktopApiService
   ) {}
-
-  async get(key: string): Promise<Uint8Array | null> {
-    const value = await this.store.get(key);
-    return value?.val ?? null;
-  }
-  async set(key: string, value: Uint8Array): Promise<void> {
-    if (this.store.put === undefined) {
-      throw new Error('Cannot set in a readonly transaction');
-    }
-    await this.store.put({
-      key: key,
-      val: value,
-    });
-  }
-  async keys(): Promise<string[]> {
-    return await this.store.getAllKeys();
+  transaction<T>(cb: (behavior: ByteKVBehavior) => Promise<T>): Promise<T> {
+    return cb(this);
   }
 
-  async del(key: string) {
-    if (this.store.delete === undefined) {
-      throw new Error('Cannot set in a readonly transaction');
-    }
-    return await this.store.delete(key);
+  get(key: string): Uint8Array | null | Promise<Uint8Array | null> {
+    return this.apis.db.getSyncMetadata('workspace', this.workspaceId, key);
   }
 
-  async clear() {
-    if (this.store.clear === undefined) {
-      throw new Error('Cannot set in a readonly transaction');
-    }
-    return await this.store.clear();
+  set(key: string, data: Uint8Array): void | Promise<void> {
+    return this.apis.db.setSyncMetadata(
+      'workspace',
+      this.workspaceId,
+      key,
+      data
+    );
+  }
+
+  keys(): string[] | Promise<string[]> {
+    return this.apis.db.getSyncMetadataKeys('workspace', this.workspaceId);
+  }
+
+  del(key: string): void | Promise<void> {
+    return this.apis.db.delSyncMetadata('workspace', this.workspaceId, key);
+  }
+
+  clear(): void | Promise<void> {
+    return this.apis.db.clearSyncMetadata('workspace', this.workspaceId);
+  }
+}
+
+class ServerClockKV implements ByteKV {
+  apis = this.electronApi.handler;
+  constructor(
+    private readonly workspaceId: string,
+    private readonly electronApi: DesktopApiService
+  ) {}
+  transaction<T>(cb: (behavior: ByteKVBehavior) => Promise<T>): Promise<T> {
+    return cb(this);
+  }
+
+  get(key: string): Uint8Array | null | Promise<Uint8Array | null> {
+    return this.apis.db.getServerClock('workspace', this.workspaceId, key);
+  }
+
+  set(key: string, data: Uint8Array): void | Promise<void> {
+    return this.apis.db.setServerClock(
+      'workspace',
+      this.workspaceId,
+      key,
+      data
+    );
+  }
+
+  keys(): string[] | Promise<string[]> {
+    return this.apis.db.getServerClockKeys('workspace', this.workspaceId);
+  }
+
+  del(key: string): void | Promise<void> {
+    return this.apis.db.delServerClock('workspace', this.workspaceId, key);
+  }
+
+  clear(): void | Promise<void> {
+    return this.apis.db.clearServerClock('workspace', this.workspaceId);
   }
 }

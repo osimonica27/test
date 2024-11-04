@@ -16,12 +16,26 @@ export async function openAppearancePanel(page: Page) {
   await page.getByTestId('appearance-panel-trigger').click();
 }
 
+export async function openEditorSetting(page: Page) {
+  await page.getByTestId('settings-modal-trigger').click();
+  await page.getByTestId('editor-panel-trigger').click();
+}
+
 export async function openShortcutsPanel(page: Page) {
   await page.getByTestId('shortcuts-panel-trigger').click();
 }
 
 export async function openAboutPanel(page: Page) {
   await page.getByTestId('about-panel-trigger').click();
+}
+
+export async function openExperimentalFeaturesPanel(page: Page) {
+  await page.getByTestId('experimental-features-trigger').click();
+}
+
+export async function confirmExperimentalPrompt(page: Page) {
+  await page.getByTestId('experimental-prompt-disclaimer').click();
+  await page.getByTestId('experimental-confirm-button').click();
 }
 
 export async function openWorkspaceSettingPanel(

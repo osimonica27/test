@@ -1,4 +1,3 @@
-import { BadGatewayException, ForbiddenException } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -19,17 +18,24 @@ import { groupBy } from 'lodash-es';
 
 import { CurrentUser, Public } from '../../core/auth';
 import { UserType } from '../../core/user';
-import { Config } from '../../fundamentals';
+import {
+  AccessDenied,
+  Config,
+  FailedToCheckout,
+  URLHelper,
+} from '../../fundamentals';
 import { decodeLookupKey, SubscriptionService } from './service';
 import {
   InvoiceStatus,
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
+  SubscriptionVariant,
 } from './types';
 
 registerEnumType(SubscriptionStatus, { name: 'SubscriptionStatus' });
 registerEnumType(SubscriptionRecurring, { name: 'SubscriptionRecurring' });
+registerEnumType(SubscriptionVariant, { name: 'SubscriptionVariant' });
 registerEnumType(SubscriptionPlan, { name: 'SubscriptionPlan' });
 registerEnumType(InvoiceStatus, { name: 'InvoiceStatus' });
 
@@ -49,12 +55,15 @@ class SubscriptionPrice {
 
   @Field(() => Int, { nullable: true })
   yearlyAmount?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  lifetimeAmount?: number | null;
 }
 
 @ObjectType('UserSubscription')
 export class UserSubscriptionType implements Partial<UserSubscription> {
-  @Field({ name: 'id' })
-  stripeSubscriptionId!: string;
+  @Field(() => String, { name: 'id', nullable: true })
+  stripeSubscriptionId!: string | null;
 
   @Field(() => SubscriptionPlan, {
     description:
@@ -65,14 +74,17 @@ export class UserSubscriptionType implements Partial<UserSubscription> {
   @Field(() => SubscriptionRecurring)
   recurring!: SubscriptionRecurring;
 
+  @Field(() => SubscriptionVariant, { nullable: true })
+  variant?: SubscriptionVariant | null;
+
   @Field(() => SubscriptionStatus)
   status!: SubscriptionStatus;
 
   @Field(() => Date)
   start!: Date;
 
-  @Field(() => Date)
-  end!: Date;
+  @Field(() => Date, { nullable: true })
+  end!: Date | null;
 
   @Field(() => Date, { nullable: true })
   trialStart?: Date | null;
@@ -143,11 +155,16 @@ class CreateCheckoutSessionInput {
   })
   plan!: SubscriptionPlan;
 
+  @Field(() => SubscriptionVariant, {
+    nullable: true,
+  })
+  variant?: SubscriptionVariant;
+
   @Field(() => String, { nullable: true })
   coupon!: string | null;
 
-  @Field(() => String, { nullable: true })
-  successCallbackLink!: string | null;
+  @Field(() => String)
+  successCallbackLink!: string;
 
   // @FIXME(forehalo): we should put this field in the header instead of as a explicity args
   @Field(() => String)
@@ -158,7 +175,7 @@ class CreateCheckoutSessionInput {
 export class SubscriptionResolver {
   constructor(
     private readonly service: SubscriptionService,
-    private readonly config: Config
+    private readonly url: URLHelper
   ) {}
 
   @Public()
@@ -183,11 +200,19 @@ export class SubscriptionResolver {
 
       const monthlyPrice = prices.find(p => p.recurring?.interval === 'month');
       const yearlyPrice = prices.find(p => p.recurring?.interval === 'year');
+      const lifetimePrice = prices.find(
+        p =>
+          // asserted before
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          decodeLookupKey(p.lookup_key!)[1] === SubscriptionRecurring.Lifetime
+      );
       const currency = monthlyPrice?.currency ?? yearlyPrice?.currency ?? 'usd';
+
       return {
         currency,
         amount: monthlyPrice?.unit_amount,
         yearlyAmount: yearlyPrice?.unit_amount,
+        lifetimeAmount: lifetimePrice?.unit_amount,
       };
     }
 
@@ -221,14 +246,14 @@ export class SubscriptionResolver {
       user,
       plan: input.plan,
       recurring: input.recurring,
+      variant: input.variant,
       promotionCode: input.coupon,
-      redirectUrl:
-        input.successCallbackLink ?? `${this.config.baseUrl}/upgrade-success`,
+      redirectUrl: this.url.link(input.successCallbackLink),
       idempotencyKey: input.idempotencyKey,
     });
 
     if (!session.url) {
-      throw new BadGatewayException('Failed to create checkout session.');
+      throw new FailedToCheckout();
     }
 
     return session.url;
@@ -323,9 +348,7 @@ export class UserSubscriptionResolver {
   ) {
     // allow admin to query other user's subscription
     if (!ctx.isAdminQuery && me.id !== user.id) {
-      throw new ForbiddenException(
-        'You are not allowed to access this subscription.'
-      );
+      throw new AccessDenied();
     }
 
     // @FIXME(@forehalo): should not mock any api for selfhosted server
@@ -364,9 +387,7 @@ export class UserSubscriptionResolver {
     @Parent() user: User
   ): Promise<UserSubscription[]> {
     if (me.id !== user.id) {
-      throw new ForbiddenException(
-        'You are not allowed to access this subscription.'
-      );
+      throw new AccessDenied();
     }
 
     return this.db.userSubscription.findMany({
@@ -386,9 +407,7 @@ export class UserSubscriptionResolver {
     @Args('skip', { type: () => Int, nullable: true }) skip?: number
   ) {
     if (me.id !== user.id) {
-      throw new ForbiddenException(
-        'You are not allowed to access this invoices'
-      );
+      throw new AccessDenied();
     }
 
     return this.db.userInvoice.findMany({

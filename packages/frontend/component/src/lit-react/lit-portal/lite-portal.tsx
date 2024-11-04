@@ -1,4 +1,5 @@
 import { html, LitElement } from 'lit';
+import { customElement } from 'lit/decorators.js';
 import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
 import ReactDOM from 'react-dom';
@@ -14,7 +15,7 @@ const listeners: Set<PortalListener> = new Set();
 
 export function createLitPortalAnchor(callback: (event: PortalEvent) => void) {
   const id = nanoid();
-  // todo: clean up listeners?
+  // todo(@Peng): clean up listeners?
   listeners.add(event => {
     if (event.target.portalId !== id) {
       return;
@@ -24,6 +25,9 @@ export function createLitPortalAnchor(callback: (event: PortalEvent) => void) {
   return html`<lit-react-portal portalId=${id}></lit-react-portal>`;
 }
 
+export const LIT_REACT_PORTAL = 'lit-react-portal';
+
+@customElement(LIT_REACT_PORTAL)
 class LitReactPortal extends LitElement {
   portalId: string = '';
 
@@ -69,11 +73,9 @@ class LitReactPortal extends LitElement {
   }
 }
 
-window.customElements.define('lit-react-portal', LitReactPortal);
-
 declare global {
   interface HTMLElementTagNameMap {
-    'lit-react-portal': LitReactPortal;
+    [LIT_REACT_PORTAL]: LitReactPortal;
   }
 }
 

@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AuthGuard } from './core/auth';
+import { ENABLED_FEATURES } from './core/config/server-feature';
 import {
   CacheInterceptor,
   CloudThrottlerGuard,
@@ -23,13 +24,17 @@ export async function createApp() {
     logger: AFFiNE.affine.stable ? ['log'] : ['verbose'],
   });
 
+  if (AFFiNE.server.path) {
+    app.setGlobalPrefix(AFFiNE.server.path);
+  }
+
   app.use(serverTimingAndCache);
 
   app.use(
     graphqlUploadExpress({
-      // TODO: dynamic limit by quota
+      // TODO(@darkskygit): dynamic limit by quota maybe?
       maxFileSize: 100 * 1024 * 1024,
-      maxFiles: 5,
+      maxFiles: 32,
     })
   );
 
@@ -50,11 +55,14 @@ export async function createApp() {
     app.useWebSocketAdapter(adapter);
   }
 
-  if (AFFiNE.isSelfhosted && AFFiNE.telemetry.enabled) {
+  if (AFFiNE.isSelfhosted && AFFiNE.metrics.telemetry.enabled) {
     const mixpanel = await import('mixpanel');
-    mixpanel.init(AFFiNE.telemetry.token).track('selfhost-server-started', {
-      version: AFFiNE.version,
-    });
+    mixpanel
+      .init(AFFiNE.metrics.telemetry.token)
+      .track('selfhost-server-started', {
+        version: AFFiNE.version,
+        features: Array.from(ENABLED_FEATURES),
+      });
   }
 
   return app;

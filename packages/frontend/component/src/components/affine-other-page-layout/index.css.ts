@@ -1,8 +1,8 @@
 import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 export const root = style({
-  height: '100vh',
-  width: '100vw',
+  height: '100%',
+  width: '100%',
   display: 'flex',
   flexDirection: 'column',
   fontSize: cssVar('fontBase'),
@@ -26,6 +26,12 @@ export const topNav = style({
       padding: '16px 20px',
     },
   },
+});
+export const draggableHeader = style({
+  height: '52px',
+  width: '100%',
+  position: 'fixed',
+  ['WebkitAppRegion' as string]: 'drag',
 });
 export const topNavLinks = style({
   display: 'flex',

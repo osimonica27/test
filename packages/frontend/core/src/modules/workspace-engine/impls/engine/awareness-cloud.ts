@@ -1,3 +1,4 @@
+import type { WebSocketService } from '@affine/core/modules/cloud';
 import { DebugLogger } from '@affine/debug';
 import type { AwarenessConnection } from '@toeverything/infra';
 import type { Socket } from 'socket.io-client';
@@ -15,43 +16,61 @@ const logger = new DebugLogger('affine:awareness:socketio');
 type AwarenessChanges = Record<'added' | 'updated' | 'removed', number[]>;
 
 export class CloudAwarenessConnection implements AwarenessConnection {
+  awareness: Awareness | null = null;
+
+  socket: Socket;
+  disposeSocket: () => void;
+
   constructor(
     private readonly workspaceId: string,
-    private readonly awareness: Awareness,
-    private readonly socket: Socket
-  ) {}
+    webSocketService: WebSocketService
+  ) {
+    const { socket, dispose } = webSocketService.connect();
+    this.socket = socket;
+    this.disposeSocket = dispose;
+  }
 
-  connect(): void {
-    this.socket.on('server-awareness-broadcast', this.awarenessBroadcast);
+  connect(awareness: Awareness): void {
+    this.socket.on('space:broadcast-awareness-update', this.awarenessBroadcast);
     this.socket.on(
-      'new-client-awareness-init',
+      'space:collect-awareness',
       this.newClientAwarenessInitHandler
     );
+    this.awareness = awareness;
     this.awareness.on('update', this.awarenessUpdate);
 
     window.addEventListener('beforeunload', this.windowBeforeUnloadHandler);
 
-    this.socket.on('connect', () => this.handleConnect());
+    this.socket.on('connect', this.handleConnect);
     this.socket.on('server-version-rejected', this.handleReject);
 
     if (this.socket.connected) {
       this.handleConnect();
-    } else {
-      this.socket.connect();
     }
   }
 
   disconnect(): void {
-    removeAwarenessStates(
-      this.awareness,
-      [this.awareness.clientID],
-      'disconnect'
-    );
-    this.awareness.off('update', this.awarenessUpdate);
-    this.socket.emit('client-leave-awareness', this.workspaceId);
-    this.socket.off('server-awareness-broadcast', this.awarenessBroadcast);
+    if (this.awareness) {
+      removeAwarenessStates(
+        this.awareness,
+        [this.awareness.clientID],
+        'disconnect'
+      );
+      this.awareness.off('update', this.awarenessUpdate);
+    }
+    this.awareness = null;
+
+    this.socket.emit('space:leave-awareness', {
+      spaceType: 'workspace',
+      spaceId: this.workspaceId,
+      docId: this.workspaceId,
+    });
     this.socket.off(
-      'new-client-awareness-init',
+      'space:broadcast-awareness-update',
+      this.awarenessBroadcast
+    );
+    this.socket.off(
+      'space:collect-awareness',
       this.newClientAwarenessInitHandler
     );
     this.socket.off('connect', this.handleConnect);
@@ -60,13 +79,19 @@ export class CloudAwarenessConnection implements AwarenessConnection {
   }
 
   awarenessBroadcast = ({
-    workspaceId: wsId,
+    spaceId: wsId,
+    spaceType,
     awarenessUpdate,
   }: {
-    workspaceId: string;
+    spaceType: string;
+    spaceId: string;
+    docId: string;
     awarenessUpdate: string;
   }) => {
-    if (wsId !== this.workspaceId) {
+    if (!this.awareness) {
+      return;
+    }
+    if (wsId !== this.workspaceId || spaceType !== 'workspace') {
       return;
     }
     applyAwarenessUpdate(
@@ -77,6 +102,10 @@ export class CloudAwarenessConnection implements AwarenessConnection {
   };
 
   awarenessUpdate = (changes: AwarenessChanges, origin: unknown) => {
+    if (!this.awareness) {
+      return;
+    }
+
     if (origin === 'remote') {
       return;
     }
@@ -88,8 +117,10 @@ export class CloudAwarenessConnection implements AwarenessConnection {
     const update = encodeAwarenessUpdate(this.awareness, changedClients);
     uint8ArrayToBase64(update)
       .then(encodedUpdate => {
-        this.socket.emit('awareness-update', {
-          workspaceId: this.workspaceId,
+        this.socket.emit('space:update-awareness', {
+          spaceType: 'workspace',
+          spaceId: this.workspaceId,
+          docId: this.workspaceId,
           awarenessUpdate: encodedUpdate,
         });
       })
@@ -97,13 +128,19 @@ export class CloudAwarenessConnection implements AwarenessConnection {
   };
 
   newClientAwarenessInitHandler = () => {
+    if (!this.awareness) {
+      return;
+    }
+
     const awarenessUpdate = encodeAwarenessUpdate(this.awareness, [
       this.awareness.clientID,
     ]);
     uint8ArrayToBase64(awarenessUpdate)
       .then(encodedAwarenessUpdate => {
-        this.socket.emit('awareness-update', {
-          workspaceId: this.workspaceId,
+        this.socket.emit('space:update-awareness', {
+          spaceType: 'workspace',
+          spaceId: this.workspaceId,
+          docId: this.workspaceId,
           awarenessUpdate: encodedAwarenessUpdate,
         });
       })
@@ -111,6 +148,10 @@ export class CloudAwarenessConnection implements AwarenessConnection {
   };
 
   windowBeforeUnloadHandler = () => {
+    if (!this.awareness) {
+      return;
+    }
+
     removeAwarenessStates(
       this.awareness,
       [this.awareness.clientID],
@@ -120,23 +161,36 @@ export class CloudAwarenessConnection implements AwarenessConnection {
 
   handleConnect = () => {
     this.socket.emit(
-      'client-handshake-awareness',
+      'space:join-awareness',
       {
-        workspaceId: this.workspaceId,
-        version: runtimeConfig.appVersion,
+        spaceType: 'workspace',
+        spaceId: this.workspaceId,
+        docId: this.workspaceId,
+        clientVersion: BUILD_CONFIG.appVersion,
       },
       (res: any) => {
         logger.debug('awareness handshake finished', res);
-        this.socket.emit('awareness-init', this.workspaceId, (res: any) => {
-          logger.debug('awareness-init finished', res);
-        });
+        this.socket.emit(
+          'space:load-awarenesses',
+          {
+            spaceType: 'workspace',
+            spaceId: this.workspaceId,
+            docId: this.workspaceId,
+          },
+          (res: any) => {
+            logger.debug('awareness-init finished', res);
+          }
+        );
       }
     );
   };
 
   handleReject = () => {
     this.socket.off('server-version-rejected', this.handleReject);
-    this.disconnect();
-    this.socket.disconnect();
   };
+
+  dispose() {
+    this.disconnect();
+    this.disposeSocket();
+  }
 }

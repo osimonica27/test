@@ -1,6 +1,7 @@
 export type { WorkspaceProfileInfo } from './entities/profile';
 export { Workspace } from './entities/workspace';
-export { globalBlockSuiteSchema } from './global-schema';
+export { WorkspaceEngineBeforeStart, WorkspaceInitialized } from './events';
+export { getAFFiNEWorkspaceSchema } from './global-schema';
 export type { WorkspaceMetadata } from './metadata';
 export type { WorkspaceOpenOptions } from './open-options';
 export type { WorkspaceEngineProvider } from './providers/flavour';
@@ -69,7 +70,7 @@ export function configureWorkspaceModule(framework: Framework) {
     .scope(WorkspaceScope)
     .service(WorkspaceService)
     .entity(Workspace, [WorkspaceScope])
-    .service(WorkspaceEngineService, [WorkspaceService])
+    .service(WorkspaceEngineService, [WorkspaceScope])
     .entity(WorkspaceEngine, [WorkspaceService])
     .service(WorkspaceUpgradeService)
     .entity(WorkspaceUpgrade, [

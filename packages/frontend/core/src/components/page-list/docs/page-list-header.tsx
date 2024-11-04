@@ -2,22 +2,31 @@ import {
   Button,
   Divider,
   Menu,
+  RowInput,
   Scrollable,
   useConfirmModal,
 } from '@affine/component';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
+import { isNewTabTrigger } from '@affine/core/utils';
 import type { Collection } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
+import type { DocMode } from '@blocksuite/affine/blocks';
 import {
   ArrowDownSmallIcon,
   SearchIcon,
   ViewLayersIcon,
-} from '@blocksuite/icons';
-import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
-import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+} from '@blocksuite/icons/rc';
+import type { DocRecord } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  useServices,
+  WorkspaceService,
+} from '@toeverything/infra';
 import clsx from 'clsx';
 import { nanoid } from 'nanoid';
 import { useCallback, useMemo, useState } from 'react';
@@ -27,7 +36,6 @@ import { CollectionService } from '../../../modules/collection';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import { createTagFilter } from '../filter/utils';
 import { createEmptyCollection } from '../use-collection-manager';
-import type { AllPageListConfig } from '../view/edit-collection/edit-collection';
 import {
   useEditCollection,
   useEditCollectionName,
@@ -36,8 +44,12 @@ import * as styles from './page-list-header.css';
 import { PageListNewPageButton } from './page-list-new-page-button';
 
 export const PageListHeader = () => {
-  const t = useAFFiNEI18N();
-  const workspace = useService(WorkspaceService).workspace;
+  const t = useI18n();
+  const { workspaceService } = useServices({
+    WorkspaceService,
+  });
+
+  const workspace = workspaceService.workspace;
   const { importFile, createEdgeless, createPage } = usePageHelper(
     workspace.docCollection
   );
@@ -46,15 +58,35 @@ export const PageListHeader = () => {
     return t['com.affine.all-pages.header']();
   }, [t]);
 
+  const onImportFile = useAsyncCallback(async () => {
+    const options = await importFile();
+    if (options.isWorkspaceFile) {
+      track.allDocs.header.actions.createWorkspace({
+        control: 'import',
+      });
+    } else {
+      track.allDocs.header.actions.createDoc({
+        control: 'import',
+      });
+    }
+  }, [importFile]);
+
   return (
     <div className={styles.docListHeader}>
       <div className={styles.docListHeaderTitle}>{title}</div>
       <PageListNewPageButton
         size="small"
         testId="new-page-button-trigger"
-        onCreateEdgeless={createEdgeless}
-        onCreatePage={createPage}
-        onImportFile={importFile}
+        onCreateEdgeless={e =>
+          createEdgeless(isNewTabTrigger(e) ? 'new-tab' : true)
+        }
+        onCreatePage={e =>
+          createPage('page' as DocMode, isNewTabTrigger(e) ? 'new-tab' : true)
+        }
+        onCreateDoc={e =>
+          createPage(undefined, isNewTabTrigger(e) ? 'new-tab' : true)
+        }
+        onImportFile={onImportFile}
       >
         <div className={styles.buttonText}>{t['New Page']()}</div>
       </PageListNewPageButton>
@@ -64,33 +96,34 @@ export const PageListHeader = () => {
 export const CollectionPageListHeader = ({
   collection,
   workspaceId,
-  config,
 }: {
-  config: AllPageListConfig;
   collection: Collection;
   workspaceId: string;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { jumpToCollections } = useNavigateHelper();
+  const { collectionService, workspaceService } = useServices({
+    CollectionService,
+    WorkspaceService,
+  });
 
   const handleJumpToCollections = useCallback(() => {
     jumpToCollections(workspaceId);
   }, [jumpToCollections, workspaceId]);
 
-  const collectionService = useService(CollectionService);
-  const { node, open } = useEditCollection(config);
+  const { open } = useEditCollection();
 
   const handleEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'page');
     collectionService.updateCollection(collection.id, () => ret);
   }, [collection, collectionService, open]);
 
-  const workspace = useService(WorkspaceService).workspace;
+  const workspace = workspaceService.workspace;
   const { createEdgeless, createPage } = usePageHelper(workspace.docCollection);
   const { openConfirmModal } = useConfirmModal();
 
   const createAndAddDocument = useCallback(
-    (createDocumentFn: () => BlockSuiteDoc) => {
+    (createDocumentFn: () => DocRecord) => {
       const newDoc = createDocumentFn();
       collectionService.addPageToCollection(collection.id, newDoc.id);
     },
@@ -98,14 +131,14 @@ export const CollectionPageListHeader = ({
   );
 
   const onConfirmAddDocument = useCallback(
-    (createDocumentFn: () => BlockSuiteDoc) => {
+    (createDocumentFn: () => DocRecord) => {
       openConfirmModal({
         title: t['com.affine.collection.add-doc.confirm.title'](),
         description: t['com.affine.collection.add-doc.confirm.description'](),
         cancelText: t['Cancel'](),
+        confirmText: t['Confirm'](),
         confirmButtonOptions: {
-          type: 'primary',
-          children: t['Confirm'](),
+          variant: 'primary',
         },
         onConfirm: () => createAndAddDocument(createDocumentFn),
       });
@@ -113,43 +146,46 @@ export const CollectionPageListHeader = ({
     [openConfirmModal, t, createAndAddDocument]
   );
 
+  const createPageModeDoc = useCallback(
+    () => createPage('page' as DocMode),
+    [createPage]
+  );
+
   const onCreateEdgeless = useCallback(
     () => onConfirmAddDocument(createEdgeless),
     [createEdgeless, onConfirmAddDocument]
   );
-  const onCreatePage = useCallback(
-    () => onConfirmAddDocument(createPage),
-    [createPage, onConfirmAddDocument]
-  );
+  const onCreatePage = useCallback(() => {
+    onConfirmAddDocument(createPageModeDoc);
+  }, [createPageModeDoc, onConfirmAddDocument]);
+  const onCreateDoc = useCallback(() => {
+    onConfirmAddDocument(createPage);
+  }, [createPage, onConfirmAddDocument]);
 
   return (
-    <>
-      {node}
-      <div className={styles.docListHeader}>
-        <div className={styles.docListHeaderTitle}>
-          <div style={{ cursor: 'pointer' }} onClick={handleJumpToCollections}>
-            {t['com.affine.collections.header']()} /
-          </div>
-          <div className={styles.titleIcon}>
-            <ViewLayersIcon />
-          </div>
-          <div className={styles.titleCollectionName}>{collection.name}</div>
+    <div className={styles.docListHeader}>
+      <div className={styles.docListHeaderTitle}>
+        <div style={{ cursor: 'pointer' }} onClick={handleJumpToCollections}>
+          {t['com.affine.collections.header']()} /
         </div>
-        <div className={styles.rightButtonGroup}>
-          <Button className={styles.addPageButton} onClick={handleEdit}>
-            {t['Edit']()}
-          </Button>
-          <PageListNewPageButton
-            size="small"
-            testId="new-page-button-trigger"
-            onCreateEdgeless={onCreateEdgeless}
-            onCreatePage={onCreatePage}
-          >
-            <div className={styles.buttonText}>{t['New Page']()}</div>
-          </PageListNewPageButton>
+        <div className={styles.titleIcon}>
+          <ViewLayersIcon />
         </div>
+        <div className={styles.titleCollectionName}>{collection.name}</div>
       </div>
-    </>
+      <div className={styles.rightButtonGroup}>
+        <Button onClick={handleEdit}>{t['Edit']()}</Button>
+        <PageListNewPageButton
+          size="small"
+          testId="new-page-button-trigger"
+          onCreateDoc={onCreateDoc}
+          onCreateEdgeless={onCreateEdgeless}
+          onCreatePage={onCreatePage}
+        >
+          <div className={styles.buttonText}>{t['New Page']()}</div>
+        </PageListNewPageButton>
+      </div>
+    </div>
   );
 };
 
@@ -163,11 +199,11 @@ export const TagPageListHeader = ({
   const tagColor = useLiveData(tag.color$);
   const tagTitle = useLiveData(tag.value$);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const { jumpToTags, jumpToCollection } = useNavigateHelper();
   const collectionService = useService(CollectionService);
   const [openMenu, setOpenMenu] = useState(false);
-  const { open, node } = useEditCollectionName({
+  const { open } = useEditCollectionName({
     title: t['com.affine.editCollection.saveCollection'](),
     showTips: true,
   });
@@ -197,47 +233,44 @@ export const TagPageListHeader = ({
   }, [open, saveToCollection]);
 
   return (
-    <>
-      {node}
-      <div className={styles.docListHeader}>
-        <div className={styles.docListHeaderTitle}>
-          <div
-            style={{ cursor: 'pointer', lineHeight: '1.4em' }}
-            onClick={handleJumpToTags}
-          >
-            {t['Tags']()} /
-          </div>
-          <Menu
-            rootOptions={{
-              open: openMenu,
-              onOpenChange: setOpenMenu,
-            }}
-            contentOptions={{
-              side: 'bottom',
-              align: 'start',
-              sideOffset: 18,
-              avoidCollisions: false,
-              className: styles.tagsMenu,
-            }}
-            items={<SwitchTag onClick={setOpenMenu} />}
-          >
-            <div className={styles.tagSticky}>
-              <div
-                className={styles.tagIndicator}
-                style={{
-                  backgroundColor: tagColor,
-                }}
-              />
-              <div className={styles.tagLabel}>{tagTitle}</div>
-              <ArrowDownSmallIcon className={styles.arrowDownSmallIcon} />
-            </div>
-          </Menu>
+    <div className={styles.docListHeader}>
+      <div className={styles.docListHeaderTitle}>
+        <div
+          style={{ cursor: 'pointer', lineHeight: '1.4em' }}
+          onClick={handleJumpToTags}
+        >
+          {t['Tags']()} /
         </div>
-        <Button className={styles.addPageButton} onClick={handleClick}>
-          {t['com.affine.editCollection.saveCollection']()}
-        </Button>
+        <Menu
+          rootOptions={{
+            open: openMenu,
+            onOpenChange: setOpenMenu,
+          }}
+          contentOptions={{
+            side: 'bottom',
+            align: 'start',
+            sideOffset: 18,
+            avoidCollisions: false,
+            className: styles.tagsMenu,
+          }}
+          items={<SwitchTag onClick={setOpenMenu} />}
+        >
+          <div className={styles.tagSticky}>
+            <div
+              className={styles.tagIndicator}
+              style={{
+                backgroundColor: tagColor,
+              }}
+            />
+            <div className={styles.tagLabel}>{tagTitle}</div>
+            <ArrowDownSmallIcon className={styles.arrowDownSmallIcon} />
+          </div>
+        </Menu>
       </div>
-    </>
+      <Button onClick={handleClick}>
+        {t['com.affine.editCollection.saveCollection']()}
+      </Button>
+    </div>
   );
 };
 
@@ -246,19 +279,16 @@ interface SwitchTagProps {
 }
 
 export const SwitchTag = ({ onClick }: SwitchTagProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [inputValue, setInputValue] = useState('');
   const tagList = useService(TagService).tagList;
   const filteredTags = useLiveData(
     inputValue ? tagList.filterTagsByName$(inputValue) : tagList.tags$
   );
 
-  const onInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setInputValue(e.target.value);
-    },
-    []
-  );
+  const onInputChange = useCallback((value: string) => {
+    setInputValue(value);
+  }, []);
 
   const handleClick = useCallback(() => {
     setInputValue('');
@@ -269,7 +299,7 @@ export const SwitchTag = ({ onClick }: SwitchTagProps) => {
     <div className={styles.tagsEditorRoot}>
       <div className={styles.tagsEditorSelectedTags}>
         <SearchIcon className={styles.searchIcon} />
-        <input
+        <RowInput
           value={inputValue}
           onChange={onInputChange}
           autoFocus

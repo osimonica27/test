@@ -1,5 +1,4 @@
 import type { INestApplication } from '@nestjs/common';
-import { hashSync } from '@node-rs/argon2';
 import request, { type Response } from 'supertest';
 
 import {
@@ -14,7 +13,7 @@ import { gql } from './common';
 export async function internalSignIn(app: INestApplication, userId: string) {
   const auth = app.get(AuthService);
 
-  const session = await auth.createUserSession({ id: userId });
+  const session = await auth.createUserSession(userId);
 
   return `${AuthService.sessionCookieName}=${session.sessionId}`;
 }
@@ -54,10 +53,10 @@ export async function signUp(
   const user = await app.get(UserService).createUser({
     name,
     email,
-    password: hashSync(password),
+    password,
     emailVerifiedAt: autoVerifyEmail ? new Date() : null,
   });
-  const { sessionId } = await app.get(AuthService).createUserSession(user);
+  const { sessionId } = await app.get(AuthService).createUserSession(user.id);
 
   return {
     ...sessionUser(user),
@@ -104,6 +103,49 @@ export async function sendChangeEmail(
     .expect(200);
 
   return res.body.data.sendChangeEmail;
+}
+
+export async function sendSetPasswordEmail(
+  app: INestApplication,
+  userToken: string,
+  email: string,
+  callbackUrl: string
+): Promise<boolean> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+            mutation {
+              sendSetPasswordEmail(email: "${email}", callbackUrl: "${callbackUrl}")
+            }
+          `,
+    })
+    .expect(200);
+
+  return res.body.data.sendChangeEmail;
+}
+
+export async function changePassword(
+  app: INestApplication,
+  userId: string,
+  token: string,
+  password: string
+): Promise<string> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+            mutation changePassword($token: String!, $userId: String!, $password: String!) {
+              changePassword(token: $token, userId: $userId, newPassword: $password)
+            }
+          `,
+      variables: { token, password, userId },
+    })
+    .expect(200);
+  return res.body.data.changePassword;
 }
 
 export async function sendVerifyChangeEmail(

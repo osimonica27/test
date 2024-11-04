@@ -1,17 +1,11 @@
-import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import type { Tag } from '@affine/env/filter';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { assertExists } from '@blocksuite/global/utils';
-import {
-  EdgelessIcon,
-  PageIcon,
-  TodayIcon,
-  ToggleCollapseIcon,
-  ViewLayersIcon,
-} from '@blocksuite/icons';
-import type { DocCollection, DocMeta } from '@blocksuite/store';
+import { useI18n } from '@affine/i18n';
+import { assertExists } from '@blocksuite/affine/global/utils';
+import type { DocCollection, DocMeta } from '@blocksuite/affine/store';
+import { ToggleCollapseIcon, ViewLayersIcon } from '@blocksuite/icons/rc';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { DocsService, useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
 import type { MouseEventHandler } from 'react';
@@ -82,7 +76,7 @@ export const ItemGroupHeader = <T extends ListItem>({
     selectionState.onSelectedIdsChange?.(newSelectedPageIds);
   }, [setSelectionActive, selectionState, allSelected, items]);
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
 
   return label ? (
     <div
@@ -148,7 +142,7 @@ export const ItemGroup = <T extends ListItem>({
       ...items.map(item => item.id),
     ]);
   }, [items, selectionState]);
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   return (
     <Collapsible.Root
       data-testid="page-list-group"
@@ -183,7 +177,10 @@ export const ItemGroup = <T extends ListItem>({
           ) : null}
         </div>
       ) : null}
-      <Collapsible.Content className={styles.collapsibleContent}>
+      <Collapsible.Content
+        className={styles.collapsibleContent}
+        data-state={!collapsed ? 'open' : 'closed'}
+      >
         <div className={styles.collapsibleContentInner}>
           {items.map(item => (
             <PageListItemRenderer key={item.id} {...item} />
@@ -194,11 +191,10 @@ export const ItemGroup = <T extends ListItem>({
   );
 };
 
-// todo: optimize how to render page meta list item
+// TODO(@Peng): optimize how to render page meta list item
 const requiredPropNames = [
   'docCollection',
   'rowAsLink',
-  'isPreferredEdgeless',
   'operationsRenderer',
   'selectedIds',
   'onSelectedIdsChange',
@@ -216,7 +212,7 @@ const listsPropsAtom = selectAtom(
   listPropsAtom,
   props => {
     return Object.fromEntries(
-      requiredPropNames.map(name => [name, props[name]])
+      requiredPropNames.map(name => [name, props?.[name]])
     ) as RequiredProps<ListItem>;
   },
   shallowEqual
@@ -282,27 +278,16 @@ function tagIdToTagOption(
 }
 
 const PageTitle = ({ id }: { id: string }) => {
-  const doc = useLiveData(useService(DocsService).list.doc$(id));
-  const title = useLiveData(doc?.title$);
-  const t = useAFFiNEI18N();
-  return title || t['Untitled']();
+  const i18n = useI18n();
+  const docDisplayMetaService = useService(DocDisplayMetaService);
+  const title = useLiveData(docDisplayMetaService.title$(id));
+  return i18n.t(title);
 };
 
-const UnifiedPageIcon = ({
-  id,
-  docCollection,
-  isPreferredEdgeless,
-}: {
-  id: string;
-  docCollection: DocCollection;
-  isPreferredEdgeless?: (id: string) => boolean;
-}) => {
-  const isEdgeless = isPreferredEdgeless ? isPreferredEdgeless(id) : false;
-  const { isJournal } = useJournalInfoHelper(docCollection, id);
-  if (isJournal) {
-    return <TodayIcon />;
-  }
-  return isEdgeless ? <EdgelessIcon /> : <PageIcon />;
+const UnifiedPageIcon = ({ id }: { id: string }) => {
+  const docDisplayMetaService = useService(DocDisplayMetaService);
+  const Icon = useLiveData(docDisplayMetaService.icon$(id));
+  return <Icon />;
 };
 
 function pageMetaToListItemProp(
@@ -337,13 +322,7 @@ function pageMetaToListItemProp(
     updatedDate: item.updatedDate ? new Date(item.updatedDate) : undefined,
     to: props.rowAsLink && !props.selectable ? `/${item.id}` : undefined,
     onClick: toggleSelection,
-    icon: (
-      <UnifiedPageIcon
-        id={item.id}
-        docCollection={props.docCollection}
-        isPreferredEdgeless={props.isPreferredEdgeless}
-      />
-    ),
+    icon: <UnifiedPageIcon id={item.id} />,
     tags:
       item.tags
         ?.map(id => tagIdToTagOption(id, props.docCollection))

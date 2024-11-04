@@ -1,10 +1,14 @@
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useService } from '@toeverything/infra';
+import { getDowngradeQuestionnaireLink } from '@affine/core/components/hooks/affine/use-subscription-notify';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { SubscriptionPlan } from '@affine/graphql';
+import { track } from '@affine/track';
+import { useLiveData, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import type { PropsWithChildren } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { SubscriptionService } from '../../../../../modules/cloud';
+import { AuthService, SubscriptionService } from '../../../../../modules/cloud';
+import { useDowngradeNotify } from '../../../subscription-landing/notify';
 import { ConfirmLoadingModal, DowngradeModal } from './modals';
 
 /**
@@ -23,9 +27,22 @@ export const CancelAction = ({
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const [isMutating, setIsMutating] = useState(false);
   const subscription = useService(SubscriptionService).subscription;
+  const proSubscription = useLiveData(subscription.pro$);
+  const authService = useService(AuthService);
+  const downgradeNotify = useDowngradeNotify();
+
+  useEffect(() => {
+    if (!open || !proSubscription) return;
+    track.$.settingsPanel.plans.cancelSubscription({
+      plan: proSubscription.plan,
+      recurring: proSubscription.recurring,
+    });
+  }, [open, proSubscription]);
 
   const downgrade = useAsyncCallback(async () => {
     try {
+      const account = authService.session.account$.value;
+      const prevRecurring = subscription.pro$.value?.recurring;
       setIsMutating(true);
       await subscription.cancelSubscription(idempotencyKey);
       subscription.revalidate();
@@ -33,10 +50,34 @@ export const CancelAction = ({
       // refresh idempotency key
       setIdempotencyKey(nanoid());
       onOpenChange(false);
+      const proSubscription = subscription.pro$.value;
+      if (proSubscription) {
+        track.$.settingsPanel.plans.confirmCancelingSubscription({
+          plan: proSubscription.plan,
+          recurring: proSubscription.recurring,
+        });
+      }
+      if (account && prevRecurring) {
+        downgradeNotify(
+          getDowngradeQuestionnaireLink({
+            email: account.email ?? '',
+            id: account.id,
+            name: account.info?.name ?? '',
+            plan: SubscriptionPlan.Pro,
+            recurring: prevRecurring,
+          })
+        );
+      }
     } finally {
       setIsMutating(false);
     }
-  }, [subscription, idempotencyKey, onOpenChange]);
+  }, [
+    authService.session.account$.value,
+    subscription,
+    idempotencyKey,
+    onOpenChange,
+    downgradeNotify,
+  ]);
 
   return (
     <>
@@ -78,6 +119,13 @@ export const ResumeAction = ({
       // refresh idempotency key
       setIdempotencyKey(nanoid());
       onOpenChange(false);
+      const proSubscription = subscription.pro$.value;
+      if (proSubscription) {
+        track.$.settingsPanel.plans.confirmResumingSubscription({
+          plan: proSubscription.plan,
+          recurring: proSubscription.recurring,
+        });
+      }
     } finally {
       setIsMutating(false);
     }

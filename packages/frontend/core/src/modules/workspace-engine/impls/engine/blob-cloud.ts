@@ -1,10 +1,10 @@
+import type { FetchService } from '@affine/core/modules/cloud';
 import {
   deleteBlobMutation,
   fetcher,
-  findGraphQLError,
-  getBaseUrl,
   listBlobsQuery,
   setBlobMutation,
+  UserFriendlyError,
 } from '@affine/graphql';
 import type { BlobStorage } from '@toeverything/infra';
 import { BlobStorageOverCapacity } from '@toeverything/infra';
@@ -12,7 +12,10 @@ import { BlobStorageOverCapacity } from '@toeverything/infra';
 import { bufferToBlob } from '../../utils/buffer-to-blob';
 
 export class CloudBlobStorage implements BlobStorage {
-  constructor(private readonly workspaceId: string) {}
+  constructor(
+    private readonly workspaceId: string,
+    private readonly fetchService: FetchService
+  ) {}
 
   name = 'cloud';
   readonly = false;
@@ -22,13 +25,23 @@ export class CloudBlobStorage implements BlobStorage {
       ? key
       : `/api/workspaces/${this.workspaceId}/blobs/${key}`;
 
-    return fetch(getBaseUrl() + suffix).then(async res => {
-      if (!res.ok) {
-        // status not in the range 200-299
+    return this.fetchService
+      .fetch(suffix, {
+        cache: 'default',
+        headers: {
+          Accept: 'application/octet-stream', // this is necessary for ios native fetch to return arraybuffer
+        },
+      })
+      .then(async res => {
+        if (!res.ok) {
+          // status not in the range 200-299
+          return null;
+        }
+        return bufferToBlob(await res.arrayBuffer());
+      })
+      .catch(() => {
         return null;
-      }
-      return bufferToBlob(await res.arrayBuffer());
-    });
+      });
   }
 
   async set(key: string, value: Blob) {
@@ -42,13 +55,9 @@ export class CloudBlobStorage implements BlobStorage {
     })
       .then(res => res.setBlob)
       .catch(err => {
-        const uploadError = findGraphQLError(
-          err,
-          e => e.extensions.code === 413
-        );
-
-        if (uploadError) {
-          throw new BlobStorageOverCapacity(uploadError);
+        const error = UserFriendlyError.fromAnyError(err);
+        if (error.status === 413) {
+          throw new BlobStorageOverCapacity(error);
         }
 
         throw err;

@@ -9,4 +9,6 @@ export const pageReferenceIcon = style({
 export const pageReferenceLink = style({
   textDecoration: 'none',
   color: 'inherit',
+  wordBreak: 'break-word',
+  hyphens: 'auto',
 });

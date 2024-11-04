@@ -1,5 +1,5 @@
 import type { WorkspaceFlavour } from '@affine/env/workspace';
-import type { DocCollection } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/affine/store';
 
 import { createIdentifier } from '../../../framework';
 import type { LiveData } from '../../../livedata';
@@ -10,7 +10,6 @@ import type {
   DocStorage,
 } from '../../../sync';
 import type { WorkspaceProfileInfo } from '../entities/profile';
-import type { Workspace } from '../entities/workspace';
 import type { WorkspaceMetadata } from '../metadata';
 
 export interface WorkspaceEngineProvider {
@@ -29,7 +28,8 @@ export interface WorkspaceFlavourProvider {
   createWorkspace(
     initial: (
       docCollection: DocCollection,
-      blobStorage: BlobStorage
+      blobStorage: BlobStorage,
+      docStorage: DocStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata>;
 
@@ -38,7 +38,7 @@ export interface WorkspaceFlavourProvider {
   /**
    * means the workspace list is loading. if it's true, the workspace page will show loading spinner.
    */
-  isLoading$?: LiveData<boolean>;
+  isRevalidating$?: LiveData<boolean>;
 
   /**
    * revalidate the workspace list.
@@ -54,7 +54,7 @@ export interface WorkspaceFlavourProvider {
 
   getWorkspaceBlob(id: string, blob: string): Promise<Blob | null>;
 
-  getEngineProvider(workspace: Workspace): WorkspaceEngineProvider;
+  getEngineProvider(workspaceId: string): WorkspaceEngineProvider;
 }
 
 export const WorkspaceFlavourProvider =

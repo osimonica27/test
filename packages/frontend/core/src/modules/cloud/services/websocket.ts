@@ -1,37 +1,64 @@
-import { OnEvent, Service } from '@toeverything/infra';
-import type { Socket } from 'socket.io-client';
+import { ApplicationStarted, OnEvent, Service } from '@toeverything/infra';
 import { Manager } from 'socket.io-client';
 
+import type { WebSocketAuthProvider } from '../provider/websocket-auth';
 import { getAffineCloudBaseUrl } from '../services/fetch';
+import type { AuthService } from './auth';
 import { AccountChanged } from './auth';
 
-@OnEvent(AccountChanged, e => e.reconnect)
+@OnEvent(AccountChanged, e => e.update)
+@OnEvent(ApplicationStarted, e => e.update)
 export class WebSocketService extends Service {
   ioManager: Manager = new Manager(`${getAffineCloudBaseUrl()}/`, {
     autoConnect: false,
     transports: ['websocket'],
     secure: location.protocol === 'https:',
   });
-  sockets: Set<Socket> = new Set();
+  socket = this.ioManager.socket('/', {
+    auth: this.webSocketAuthProvider
+      ? cb => {
+          this.webSocketAuthProvider
+            ?.getAuthToken(`${getAffineCloudBaseUrl()}/`)
+            .then(v => {
+              cb(v ?? {});
+            })
+            .catch(e => {
+              console.error('Failed to get auth token for websocket', e);
+            });
+        }
+      : undefined,
+  });
+  refCount = 0;
 
-  constructor() {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly webSocketAuthProvider?: WebSocketAuthProvider
+  ) {
     super();
   }
 
-  newSocket(): Socket {
-    const socket = this.ioManager.socket('/');
-    this.sockets.add(socket);
-
-    return socket;
+  /**
+   * Connect socket, with automatic connect and reconnect logic.
+   * External code should not call `socket.connect()` or `socket.disconnect()` manually.
+   * When socket is no longer needed, call `dispose()` to clean up resources.
+   */
+  connect() {
+    this.refCount++;
+    this.update();
+    return {
+      socket: this.socket,
+      dispose: () => {
+        this.refCount--;
+        this.update();
+      },
+    };
   }
 
-  reconnect(): void {
-    for (const socket of this.sockets) {
-      socket.disconnect();
-    }
-
-    for (const socket of this.sockets) {
-      socket.connect();
+  update(): void {
+    if (this.authService.session.account$.value && this.refCount > 0) {
+      this.socket.connect();
+    } else {
+      this.socket.disconnect();
     }
   }
 }

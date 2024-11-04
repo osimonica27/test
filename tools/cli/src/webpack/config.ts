@@ -1,8 +1,7 @@
-import { createRequire } from 'node:module';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { RuntimeConfig } from '@affine/env/global';
+import type { BUILD_CONFIG_TYPE } from '@affine/env/global';
 import { PerfseePlugin } from '@perfsee/webpack';
 import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 import { sentryWebpackPlugin } from '@sentry/webpack-plugin';
@@ -14,8 +13,8 @@ import TerserPlugin from 'terser-webpack-plugin';
 import webpack from 'webpack';
 import type { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 
+import { projectRoot } from '../config/cwd.cjs';
 import type { BuildFlags } from '../config/index.js';
-import { projectRoot } from '../config/index.js';
 import { productionCacheGroups } from './cache-group.js';
 import { WebpackS3Plugin } from './s3-plugin.js';
 
@@ -23,8 +22,6 @@ const IN_CI = !!process.env.CI;
 
 export const rootPath = join(fileURLToPath(import.meta.url), '..', '..');
 export const workspaceRoot = join(rootPath, '..', '..', '..');
-
-const require = createRequire(rootPath);
 
 const OptimizeOptionOptions: (
   buildFlags: BuildFlags
@@ -59,13 +56,7 @@ const OptimizeOptionOptions: (
     minChunks: 1,
     maxInitialRequests: Number.MAX_SAFE_INTEGER,
     maxAsyncRequests: Number.MAX_SAFE_INTEGER,
-    cacheGroups:
-      buildFlags.mode === 'production'
-        ? productionCacheGroups
-        : {
-            default: false,
-            vendors: false,
-          },
+    cacheGroups: productionCacheGroups,
   },
 });
 
@@ -74,25 +65,32 @@ export const getPublicPath = (buildFlags: BuildFlags) => {
   if (typeof process.env.PUBLIC_PATH === 'string') {
     return process.env.PUBLIC_PATH;
   }
-  const publicPath = '/';
-  if (process.env.COVERAGE || buildFlags.distribution === 'desktop') {
-    return publicPath;
+
+  if (
+    buildFlags.mode === 'development' ||
+    process.env.COVERAGE ||
+    buildFlags.distribution === 'desktop' ||
+    buildFlags.distribution === 'ios' ||
+    buildFlags.distribution === 'android'
+  ) {
+    return '/';
   }
 
-  if (BUILD_TYPE === 'canary') {
-    return `https://dev.affineassets.com/`;
-  } else if (BUILD_TYPE === 'beta' || BUILD_TYPE === 'stable') {
-    return `https://prod.affineassets.com/`;
+  switch (BUILD_TYPE) {
+    case 'stable':
+      return 'https://prod.affineassets.com/';
+    case 'beta':
+      return 'https://beta.affineassets.com/';
+    default:
+      return 'https://dev.affineassets.com/';
   }
-  return publicPath;
 };
 
 export const createConfiguration: (
   cwd: string,
   buildFlags: BuildFlags,
-  runtimeConfig: RuntimeConfig
-) => webpack.Configuration = (cwd, buildFlags, runtimeConfig) => {
-  const blocksuiteBaseDir = buildFlags.localBlockSuite;
+  buildConfig: BUILD_CONFIG_TYPE
+) => webpack.Configuration = (cwd, buildFlags, buildConfig) => {
   const config = {
     name: 'affine',
     // to set a correct base path for the source map
@@ -109,24 +107,28 @@ export const createConfiguration: (
       },
       filename:
         buildFlags.mode === 'production'
-          ? 'js/[name]-[contenthash:8].js'
+          ? 'js/[name].[contenthash:8].js'
           : 'js/[name].js',
       // In some cases webpack will emit files starts with "_" which is reserved in web extension.
-      chunkFilename:
-        buildFlags.mode === 'production'
-          ? 'js/chunk.[name]-[contenthash:8].js'
-          : 'js/chunk.[name].js',
+      chunkFilename: pathData =>
+        pathData.chunk?.name === 'worker'
+          ? 'js/worker.[contenthash:8].js'
+          : buildFlags.mode === 'production'
+            ? 'js/chunk.[name].[contenthash:8].js'
+            : 'js/chunk.[name].js',
       assetModuleFilename:
         buildFlags.mode === 'production'
-          ? 'assets/[name]-[contenthash:8][ext][query]'
-          : '[name]-[contenthash:8][ext]',
+          ? 'assets/[name].[contenthash:8][ext][query]'
+          : '[name].[contenthash:8][ext]',
       devtoolModuleFilenameTemplate: 'webpack://[namespace]/[resource-path]',
       hotUpdateChunkFilename: 'hot/[id].[fullhash].js',
       hotUpdateMainFilename: 'hot/[runtime].[fullhash].json',
       path: join(cwd, 'dist'),
       clean: buildFlags.mode === 'production',
       globalObject: 'globalThis',
-      publicPath: getPublicPath(buildFlags),
+      // NOTE(@forehalo): always keep it '/'
+      publicPath: '/',
+      workerPublicPath: '/',
     },
     target: ['web', 'es2022'],
 
@@ -144,79 +146,9 @@ export const createConfiguration: (
         '.mjs': ['.mjs', '.mts'],
       },
       extensions: ['.js', '.ts', '.tsx'],
-      fallback:
-        blocksuiteBaseDir === undefined
-          ? undefined
-          : {
-              events: false,
-            },
       alias: {
-        yjs: require.resolve('yjs'),
-        '@blocksuite/block-std': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'framework', 'block-std', 'src')
-          : join(
-              workspaceRoot,
-              'node_modules',
-              '@blocksuite',
-              'block-std',
-              'dist'
-            ),
-        '@blocksuite/blocks': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'blocks', 'src')
-          : join(
-              workspaceRoot,
-              'node_modules',
-              '@blocksuite',
-              'blocks',
-              'dist'
-            ),
-        '@blocksuite/presets': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'presets', 'src')
-          : join(
-              workspaceRoot,
-              'node_modules',
-              '@blocksuite',
-              'presets',
-              'dist'
-            ),
-        '@blocksuite/global': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'framework', 'global', 'src')
-          : join(
-              workspaceRoot,
-              'node_modules',
-              '@blocksuite',
-              'global',
-              'dist'
-            ),
-        '@blocksuite/store/providers/broadcast-channel': blocksuiteBaseDir
-          ? join(
-              blocksuiteBaseDir,
-              'packages',
-              'framework',
-              'store',
-              'src/providers/broadcast-channel'
-            )
-          : join(
-              workspaceRoot,
-              'node_modules',
-              '@blocksuite',
-              'store',
-              'dist',
-              'providers',
-              'broadcast-channel.js'
-            ),
-        '@blocksuite/store': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'framework', 'store', 'src')
-          : join(workspaceRoot, 'node_modules', '@blocksuite', 'store', 'dist'),
-        '@blocksuite/inline': blocksuiteBaseDir
-          ? join(blocksuiteBaseDir, 'packages', 'framework', 'inline', 'src')
-          : join(
-              workspaceRoot,
-              'node_modules',
-              '@blocksuite',
-              'inline',
-              'dist'
-            ),
+        yjs: join(workspaceRoot, 'node_modules', 'yjs'),
+        lit: join(workspaceRoot, 'node_modules', 'lit'),
       },
     },
 
@@ -247,7 +179,33 @@ export const createConfiguration: (
         {
           oneOf: [
             {
-              test: /\.tsx?$/,
+              test: /\.ts$/,
+              exclude: /node_modules/,
+              loader: 'swc-loader',
+              options: {
+                // https://swc.rs/docs/configuring-swc/
+                jsc: {
+                  preserveAllComments: true,
+                  parser: {
+                    syntax: 'typescript',
+                    dynamicImport: true,
+                    topLevelAwait: false,
+                    tsx: false,
+                    decorators: true,
+                  },
+                  target: 'es2022',
+                  externalHelpers: false,
+                  transform: {
+                    useDefineForClassFields: false,
+                    decoratorVersion: '2022-03',
+                  },
+                },
+                sourceMaps: true,
+                inlineSourcesContent: true,
+              },
+            },
+            {
+              test: /\.tsx$/,
               exclude: /node_modules/,
               loader: 'swc-loader',
               options: {
@@ -273,6 +231,7 @@ export const createConfiguration: (
                       },
                     },
                     useDefineForClassFields: false,
+                    decoratorVersion: '2022-03',
                   },
                 },
                 sourceMaps: true,
@@ -289,7 +248,11 @@ export const createConfiguration: (
             },
             {
               test: /\.txt$/,
-              loader: 'raw-loader',
+              type: 'asset/source',
+            },
+            {
+              test: /\.inline\.svg$/,
+              type: 'asset/inline',
             },
             {
               test: /\.css$/,
@@ -311,11 +274,7 @@ export const createConfiguration: (
                   loader: 'postcss-loader',
                   options: {
                     postcssOptions: {
-                      config: resolve(
-                        rootPath,
-                        'webpack',
-                        'postcss.config.cjs'
-                      ),
+                      config: join(rootPath, 'webpack', 'postcss.config.cjs'),
                     },
                   },
                 },
@@ -328,49 +287,68 @@ export const createConfiguration: (
     plugins: compact([
       IN_CI ? null : new webpack.ProgressPlugin({ percentBy: 'entries' }),
       buildFlags.mode === 'development'
-        ? new ReactRefreshWebpackPlugin({ overlay: false, esModule: true })
-        : new MiniCssExtractPlugin({
+        ? new ReactRefreshWebpackPlugin({
+            overlay: false,
+            esModule: true,
+            include: /\.tsx$/,
+          })
+        : // todo: support multiple entry points
+          new MiniCssExtractPlugin({
             filename: `[name].[contenthash:8].css`,
             ignoreOrder: true,
           }),
       new VanillaExtractPlugin(),
       new webpack.DefinePlugin({
-        'process.env': JSON.stringify({}),
-        'process.env.COVERAGE': JSON.stringify(!!buildFlags.coverage),
         'process.env.NODE_ENV': JSON.stringify(buildFlags.mode),
-        'process.env.SHOULD_REPORT_TRACE': JSON.stringify(
-          Boolean(process.env.SHOULD_REPORT_TRACE === 'true')
-        ),
-        'process.env.TRACE_REPORT_ENDPOINT': JSON.stringify(
-          process.env.TRACE_REPORT_ENDPOINT
-        ),
         'process.env.CAPTCHA_SITE_KEY': JSON.stringify(
           process.env.CAPTCHA_SITE_KEY
         ),
         'process.env.SENTRY_DSN': JSON.stringify(process.env.SENTRY_DSN),
         'process.env.BUILD_TYPE': JSON.stringify(process.env.BUILD_TYPE),
-        'process.env.MIXPANEL_TOKEN': `"${process.env.MIXPANEL_TOKEN}"`,
-        runtimeConfig: JSON.stringify(runtimeConfig),
-      }),
-      new CopyPlugin({
-        patterns: [
-          {
-            // copy the shared public assets into dist
-            from: join(workspaceRoot, 'packages', 'frontend', 'core', 'public'),
-            to: join(cwd, 'dist'),
+        'process.env.MIXPANEL_TOKEN': JSON.stringify(
+          process.env.MIXPANEL_TOKEN
+        ),
+        'process.env.DEBUG_JOTAI': JSON.stringify(process.env.DEBUG_JOTAI),
+        ...Object.entries(buildConfig).reduce(
+          (def, [k, v]) => {
+            def[`BUILD_CONFIG.${k}`] = JSON.stringify(v);
+            return def;
           },
-        ],
+          {} as Record<string, string>
+        ),
       }),
-      buildFlags.mode === 'production' && process.env.R2_SECRET_ACCESS_KEY
+      buildFlags.distribution === 'admin'
+        ? null
+        : new CopyPlugin({
+            patterns: [
+              {
+                // copy the shared public assets into dist
+                from: join(
+                  workspaceRoot,
+                  'packages',
+                  'frontend',
+                  'core',
+                  'public'
+                ),
+                to: join(cwd, 'dist'),
+              },
+            ],
+          }),
+      buildFlags.mode === 'production' &&
+      (buildConfig.isWeb || buildConfig.isMobileWeb) &&
+      process.env.R2_SECRET_ACCESS_KEY
         ? new WebpackS3Plugin()
         : null,
     ]),
+    stats: {
+      errorDetails: true,
+    },
 
     optimization: OptimizeOptionOptions(buildFlags),
 
     devServer: {
-      hot: 'only',
-      liveReload: true,
+      hot: buildFlags.static ? false : 'only',
+      liveReload: !buildFlags.static,
       client: {
         overlay: process.env.DISABLE_DEV_OVERLAY === 'true' ? false : undefined,
       },
@@ -385,12 +363,12 @@ export const createConfiguration: (
             'public'
           ),
           publicPath: '/',
-          watch: true,
+          watch: !buildFlags.static,
         },
         {
           directory: join(cwd, 'public'),
           publicPath: '/',
-          watch: true,
+          watch: !buildFlags.static,
         },
       ],
       proxy: [
@@ -403,7 +381,6 @@ export const createConfiguration: (
         { context: '/api', target: 'http://localhost:3010' },
         { context: '/socket.io', target: 'http://localhost:3010', ws: true },
         { context: '/graphql', target: 'http://localhost:3010' },
-        { context: '/oauth', target: 'http://localhost:3010' },
       ],
     } as DevServerConfiguration,
   } satisfies webpack.Configuration;

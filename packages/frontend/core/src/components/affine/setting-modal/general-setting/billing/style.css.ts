@@ -21,6 +21,7 @@ export const currentPlan = style({
   flex: '1 0 0',
 });
 export const planAction = style({
+  width: 'auto',
   marginTop: '8px',
 });
 export const planPrice = style({
@@ -46,9 +47,6 @@ export const currentPlanName = style({
   color: cssVar('textEmphasisColor'),
   cursor: 'pointer',
 });
-export const button = style({
-  padding: '4px 12px',
-});
 export const subscriptionSettingSkeleton = style({
   display: 'flex',
   flexDirection: 'column',
@@ -60,4 +58,44 @@ export const billingHistorySkeleton = style({
   minHeight: '72px',
   alignItems: 'center',
   justifyContent: 'center',
+});
+
+// believer-identification
+export const believerHeader = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  marginBottom: 8,
+});
+export const believerTitle = style({
+  fontSize: cssVar('fontSm'),
+  fontWeight: 600,
+  lineHeight: '22px',
+  color: cssVar('textPrimaryColor'),
+});
+export const believerSubtitle = style({
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  fontWeight: 400,
+  color: cssVar('textSecondaryColor'),
+});
+globalStyle(`.${believerSubtitle} > a`, {
+  color: cssVar('brandColor'),
+  fontWeight: 500,
+});
+export const believerPriceWrapper = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'end',
+});
+export const believerPrice = style({
+  fontSize: '18px',
+  fontWeight: 600,
+  lineHeight: '26px',
+  color: cssVar('textPrimaryColor'),
+});
+export const believerPriceCaption = style({
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  fontWeight: 500,
+  color: cssVar('textSecondaryColor'),
 });

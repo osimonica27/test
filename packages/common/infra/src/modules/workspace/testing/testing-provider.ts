@@ -1,17 +1,20 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { DocCollection, nanoid } from '@blocksuite/store';
+import { DocCollection, nanoid } from '@blocksuite/affine/store';
 import { map } from 'rxjs';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { Service } from '../../../framework';
 import { LiveData } from '../../../livedata';
 import { wrapMemento } from '../../../storage';
-import { type BlobStorage, MemoryDocStorage } from '../../../sync';
+import {
+  type BlobStorage,
+  type DocStorage,
+  MemoryDocStorage,
+} from '../../../sync';
 import { MemoryBlobStorage } from '../../../sync/blob/blob';
 import type { GlobalState } from '../../storage';
 import type { WorkspaceProfileInfo } from '../entities/profile';
-import type { Workspace } from '../entities/workspace';
-import { globalBlockSuiteSchema } from '../global-schema';
+import { getAFFiNEWorkspaceSchema } from '../global-schema';
 import type { WorkspaceMetadata } from '../metadata';
 import type {
   WorkspaceEngineProvider,
@@ -40,7 +43,8 @@ export class TestingWorkspaceLocalProvider
   async createWorkspace(
     initial: (
       docCollection: DocCollection,
-      blobStorage: BlobStorage
+      blobStorage: BlobStorage,
+      docStorage: DocStorage
     ) => Promise<void>
   ): Promise<WorkspaceMetadata> {
     const id = nanoid();
@@ -53,18 +57,14 @@ export class TestingWorkspaceLocalProvider
     const docCollection = new DocCollection({
       id: id,
       idGenerator: () => nanoid(),
-      schema: globalBlockSuiteSchema,
-      blobStorages: [
-        () => {
-          return {
-            crud: blobStorage,
-          };
-        },
-      ],
+      schema: getAFFiNEWorkspaceSchema(),
+      blobSources: {
+        main: blobStorage,
+      },
     });
 
     // apply initial state
-    await initial(docCollection, blobStorage);
+    await initial(docCollection, blobStorage, this.docStorage);
 
     // save workspace to storage
     await this.docStorage.doc.set(id, encodeStateAsUpdate(docCollection.doc));
@@ -94,7 +94,7 @@ export class TestingWorkspaceLocalProvider
 
     const bs = new DocCollection({
       id,
-      schema: globalBlockSuiteSchema,
+      schema: getAFFiNEWorkspaceSchema(),
     });
 
     applyUpdate(bs.doc, data);
@@ -110,7 +110,7 @@ export class TestingWorkspaceLocalProvider
       blob
     );
   }
-  getEngineProvider(workspace: Workspace): WorkspaceEngineProvider {
+  getEngineProvider(workspaceId: string): WorkspaceEngineProvider {
     return {
       getDocStorage: () => {
         return this.docStorage;
@@ -123,7 +123,7 @@ export class TestingWorkspaceLocalProvider
       },
       getLocalBlobStorage: () => {
         return new MemoryBlobStorage(
-          wrapMemento(this.store, workspace.id + '/blobs/')
+          wrapMemento(this.store, workspaceId + '/blobs/')
         );
       },
       getRemoteBlobStorages() {

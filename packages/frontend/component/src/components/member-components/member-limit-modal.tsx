@@ -1,5 +1,5 @@
 import { ConfirmModal } from '@affine/component/ui/modal';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import { useCallback } from 'react';
 
 export interface MemberLimitModalProps {
@@ -19,7 +19,7 @@ export const MemberLimitModal = ({
   setOpen,
   onConfirm,
 }: MemberLimitModalProps) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const handleConfirm = useCallback(() => {
     setOpen(false);
     if (isFreePlan) {
@@ -38,14 +38,13 @@ export const MemberLimitModal = ({
           : 'com.affine.payment.member-limit.pro.description'
       ]({ planName: plan, quota: quota })}
       cancelButtonOptions={{ style: { display: isFreePlan ? '' : 'none' } }}
+      confirmText={t[
+        isFreePlan
+          ? 'com.affine.payment.member-limit.free.confirm'
+          : 'com.affine.payment.member-limit.pro.confirm'
+      ]()}
       confirmButtonOptions={{
-        type: 'primary',
-        children:
-          t[
-            isFreePlan
-              ? 'com.affine.payment.member-limit.free.confirm'
-              : 'com.affine.payment.member-limit.pro.confirm'
-          ](),
+        variant: 'primary',
       }}
       onConfirm={handleConfirm}
     ></ConfirmModal>

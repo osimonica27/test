@@ -1,9 +1,10 @@
 import { DebugLogger } from '@affine/debug';
-import { Slot } from '@blocksuite/global/utils';
+import { Slot } from '@blocksuite/affine/global/utils';
 import { difference } from 'lodash-es';
 
 import { LiveData } from '../../livedata';
 import type { Memento } from '../../storage';
+import { MANUALLY_STOP } from '../../utils';
 import { BlobStorageOverCapacity } from './error';
 
 const logger = new DebugLogger('affine:blob-engine');
@@ -29,6 +30,9 @@ export interface BlobStatus {
  * all operations priority use local, then use remote.
  */
 export class BlobEngine {
+  readonly name = 'blob-engine';
+  readonly readonly = this.local.readonly;
+
   private abort: AbortController | null = null;
 
   readonly isStorageOverCapacity$ = new LiveData(false);
@@ -67,7 +71,7 @@ export class BlobEngine {
   }
 
   stop() {
-    this.abort?.abort();
+    this.abort?.abort(MANUALLY_STOP);
     this.abort = null;
   }
 

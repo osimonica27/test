@@ -1,48 +1,56 @@
 import { notify } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { ConfirmModal } from '@affine/component/ui/modal';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { ArrowRightSmallIcon } from '@blocksuite/icons';
+import { useI18n } from '@affine/i18n';
+import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import {
   GlobalContextService,
   useLiveData,
-  useService,
+  useServices,
   WorkspaceService,
   WorkspacesService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
-import { openSettingModalAtom } from '../../../../../../atoms';
 import {
   RouteLogic,
   useNavigateHelper,
-} from '../../../../../../hooks/use-navigate-helper';
-import { WorkspaceSubPath } from '../../../../../../shared';
+} from '../../../../../../components/hooks/use-navigate-helper';
+import { openSettingModalAtom } from '../../../../../atoms';
 import { WorkspaceDeleteModal } from './delete';
 
 export const DeleteLeaveWorkspace = () => {
-  const t = useAFFiNEI18N();
-  const workspace = useService(WorkspaceService).workspace;
-  const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
+  const {
+    workspaceService,
+    globalContextService,
+    workspacePermissionService,
+    workspacesService,
+  } = useServices({
+    WorkspaceService,
+    GlobalContextService,
+    WorkspacePermissionService,
+    WorkspacesService,
+  });
+  const t = useI18n();
+  const workspace = workspaceService.workspace;
+  const { jumpToPage, jumpToIndex } = useNavigateHelper();
   // fixme: cloud regression
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
   const setSettingModal = useSetAtom(openSettingModalAtom);
 
-  const workspacesService = useService(WorkspacesService);
   const workspaceList = useLiveData(workspacesService.list.workspaces$);
   const currentWorkspaceId = useLiveData(
-    useService(GlobalContextService).globalContext.workspaceId.$
+    globalContextService.globalContext.workspaceId.$
   );
 
-  const permissionService = useService(WorkspacePermissionService);
-  const isOwner = useLiveData(permissionService.permission.isOwner$);
+  const isOwner = useLiveData(workspacePermissionService.permission.isOwner$);
   useEffect(() => {
-    permissionService.permission.revalidate();
-  }, [permissionService]);
+    workspacePermissionService.permission.revalidate();
+  }, [workspacePermissionService]);
 
   const onLeaveOrDelete = useCallback(() => {
     if (isOwner !== null) {
@@ -61,30 +69,32 @@ export const DeleteLeaveWorkspace = () => {
       const backWorkspace = workspaceList.find(
         ws => ws.id !== currentWorkspaceId
       );
-      // TODO: if there is no workspace, jump to a new page(wait for design)
+      // TODO(@eyhn): if there is no workspace, jump to a new page(wait for design)
       if (backWorkspace) {
-        jumpToSubPath(
-          backWorkspace?.id || '',
-          WorkspaceSubPath.ALL,
-          RouteLogic.REPLACE
-        );
+        jumpToPage(backWorkspace?.id || '', 'all', RouteLogic.REPLACE);
       } else {
         jumpToIndex(RouteLogic.REPLACE);
       }
     }
 
-    await workspacesService.deleteWorkspace(workspace.meta);
+    if (isOwner) {
+      await workspacesService.deleteWorkspace(workspace.meta);
+    } else {
+      await workspacePermissionService.leaveWorkspace();
+    }
     notify.success({ title: t['Successfully deleted']() });
   }, [
     setSettingModal,
     currentWorkspaceId,
     workspace.id,
     workspace.meta,
-    workspacesService,
+    isOwner,
     t,
     workspaceList,
-    jumpToSubPath,
+    jumpToPage,
     jumpToIndex,
+    workspacesService,
+    workspacePermissionService,
   ]);
 
   return (
@@ -119,9 +129,9 @@ export const DeleteLeaveWorkspace = () => {
           onOpenChange={setShowLeave}
           title={`${t['com.affine.deleteLeaveWorkspace.leave']()}?`}
           description={t['com.affine.deleteLeaveWorkspace.leaveDescription']()}
+          confirmText={t['Leave']()}
           confirmButtonOptions={{
-            type: 'warning',
-            children: t['Leave'](),
+            variant: 'error',
           }}
         />
       )}

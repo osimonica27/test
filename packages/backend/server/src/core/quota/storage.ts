@@ -1,8 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { FeatureService, FeatureType } from '../features';
+import { PermissionService } from '../permission';
 import { WorkspaceBlobStorage } from '../storage';
-import { PermissionService } from '../workspaces/permission';
 import { OneGB } from './constant';
 import { QuotaService } from './service';
 import { formatSize, QuotaQueryType } from './types';
@@ -40,7 +40,6 @@ export class QuotaManagementService {
     };
   }
 
-  // TODO: lazy calc, need to be optimized with cache
   async getUserUsage(userId: string) {
     const workspaces = await this.permissions.getOwnedWorkspaces(userId);
 
@@ -72,10 +71,12 @@ export class QuotaManagementService {
       const total = usedSize + recvSize;
       // only skip total storage check if workspace has unlimited feature
       if (total > quota && !unlimited) {
-        this.logger.log(`storage size limit exceeded: ${total} > ${quota}`);
+        this.logger.warn(`storage size limit exceeded: ${total} > ${quota}`);
         return true;
       } else if (recvSize > blobLimit) {
-        this.logger.log(`blob size limit exceeded: ${recvSize} > ${blobLimit}`);
+        this.logger.warn(
+          `blob size limit exceeded: ${recvSize} > ${blobLimit}`
+        );
         return true;
       } else {
         return false;
@@ -111,9 +112,9 @@ export class QuotaManagementService {
   // get workspace's owner quota and total size of used
   // quota was apply to owner's account
   async getWorkspaceUsage(workspaceId: string): Promise<QuotaBusinessType> {
-    const { user: owner } =
-      await this.permissions.getWorkspaceOwner(workspaceId);
-    if (!owner) throw new NotFoundException('Workspace owner not found');
+    const owner = await this.permissions.getWorkspaceOwner(workspaceId);
+    const memberCount =
+      await this.permissions.getWorkspaceMemberCount(workspaceId);
     const {
       feature: {
         name,
@@ -146,6 +147,7 @@ export class QuotaManagementService {
       humanReadable,
       usedSize,
       unlimited,
+      memberCount,
     };
 
     if (quota.unlimited) {

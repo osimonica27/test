@@ -1,21 +1,18 @@
 import { Button, FlexWrapper, notify } from '@affine/component';
-import { openSettingModalAtom } from '@affine/core/atoms';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
 import { SubscriptionService } from '@affine/core/modules/cloud';
-import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { AiIcon } from '@blocksuite/icons';
-import {
-  DocService,
-  useLiveData,
-  useServices,
-  WorkspaceService,
-} from '@toeverything/infra';
+import { EditorService } from '@affine/core/modules/editor';
+import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
+import { AiIcon } from '@blocksuite/icons/rc';
+import { useLiveData, useServices } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Lottie from 'lottie-react';
 import { useTheme } from 'next-themes';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
+import { toggleEdgelessAIOnboarding } from './apis';
 import * as styles from './edgeless.dialog.css';
 import mouseTrackDark from './lottie/edgeless/mouse-track-dark.json';
 import mouseTrackLight from './lottie/edgeless/mouse-track-light.json';
@@ -24,7 +21,6 @@ import {
   localNotifyId$,
   showAIOnboardingGeneral$,
 } from './state';
-import type { BaseAIOnboardingDialogProps } from './type';
 
 const EdgelessOnboardingAnimation = () => {
   const { resolvedTheme } = useTheme();
@@ -45,30 +41,25 @@ const EdgelessOnboardingAnimation = () => {
   );
 };
 
-export const AIOnboardingEdgeless = ({
-  onDismiss,
-}: BaseAIOnboardingDialogProps) => {
-  const { workspaceService, docService, subscriptionService } = useServices({
-    WorkspaceService,
-    DocService,
+export const AIOnboardingEdgeless = () => {
+  const { subscriptionService, editorService } = useServices({
     SubscriptionService,
+    EditorService,
   });
 
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const notifyId = useLiveData(edgelessNotifyId$);
   const generalAIOnboardingOpened = useLiveData(showAIOnboardingGeneral$);
   const aiSubscription = useLiveData(subscriptionService.subscription.ai$);
   const settingModalOpen = useAtomValue(openSettingModalAtom);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const isCloud =
-    workspaceService.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
 
   const setSettingModal = useSetAtom(openSettingModalAtom);
 
-  const doc = docService.doc;
-  const mode = useLiveData(doc.mode$);
+  const mode = useLiveData(editorService.editor.mode$);
 
   const goToPricingPlans = useCallback(() => {
+    track.$.aiOnboarding.dialog.viewPlans();
     setSettingModal({
       open: true,
       activeTab: 'plans',
@@ -81,7 +72,6 @@ export const AIOnboardingEdgeless = ({
     if (generalAIOnboardingOpened) return;
     if (notifyId) return;
     if (mode !== 'edgeless') return;
-    if (!isCloud) return;
     clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       // try to close local onboarding
@@ -95,15 +85,15 @@ export const AIOnboardingEdgeless = ({
           iconColor: cssVar('processingColor'),
           thumb: <EdgelessOnboardingAnimation />,
           alignMessage: 'icon',
-          onDismiss,
+          onDismiss: () => toggleEdgelessAIOnboarding(false),
           footer: (
             <FlexWrapper marginTop={8} justifyContent="flex-end" gap="12px">
               <Button
                 onClick={() => {
                   notify.dismiss(id);
-                  onDismiss();
+                  toggleEdgelessAIOnboarding(false);
                 }}
-                type="plain"
+                variant="plain"
                 className={styles.actionButton}
               >
                 <span className={styles.getStartedButtonText}>
@@ -113,11 +103,11 @@ export const AIOnboardingEdgeless = ({
               {aiSubscription ? null : (
                 <Button
                   className={styles.actionButton}
-                  type="plain"
+                  variant="plain"
                   onClick={() => {
                     goToPricingPlans();
                     notify.dismiss(id);
-                    onDismiss();
+                    toggleEdgelessAIOnboarding(false);
                   }}
                 >
                   <span className={styles.purchaseButtonText}>
@@ -136,10 +126,8 @@ export const AIOnboardingEdgeless = ({
     aiSubscription,
     generalAIOnboardingOpened,
     goToPricingPlans,
-    isCloud,
     mode,
     notifyId,
-    onDismiss,
     settingModalOpen,
     t,
   ]);

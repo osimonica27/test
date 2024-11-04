@@ -4,13 +4,14 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
-import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
+import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { AuthService } from '@affine/core/modules/cloud';
 import { UserFeatureService } from '@affine/core/modules/cloud/services/user-feature';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import { Logo1Icon } from '@blocksuite/icons';
+import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
+import { Logo1Icon } from '@blocksuite/icons/rc';
 import type { WorkspaceMetadata } from '@toeverything/infra';
 import {
   useLiveData,
@@ -20,11 +21,16 @@ import {
   WorkspacesService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useAtom } from 'jotai/react';
-import { Suspense, useCallback, useEffect, useMemo } from 'react';
+import { useSetAtom } from 'jotai/react';
+import {
+  type MouseEvent,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+} from 'react';
 
-import { authAtom } from '../../../../atoms';
-import { mixpanel } from '../../../../utils';
+import { authAtom } from '../../../atoms';
 import { UserPlanButton } from '../../auth/user-plan-button';
 import { useGeneralSettingList } from '../general-setting';
 import type { ActiveTab, WorkspaceSubTab } from '../types';
@@ -38,7 +44,7 @@ export type UserInfoProps = {
 export const UserInfo = ({ onAccountSettingClick, active }: UserInfoProps) => {
   const account = useLiveData(useService(AuthService).session.account$);
   if (!account) {
-    // TODO: loading ui
+    // TODO(@eyhn): loading ui
     return;
   }
   return (
@@ -51,6 +57,7 @@ export const UserInfo = ({ onAccountSettingClick, active }: UserInfoProps) => {
     >
       <Avatar
         size={28}
+        rounded={2}
         name={account.label}
         url={account.avatar}
         className="avatar"
@@ -73,8 +80,8 @@ export const UserInfo = ({ onAccountSettingClick, active }: UserInfoProps) => {
 };
 
 export const SignInButton = () => {
-  const t = useAFFiNEI18N();
-  const [, setAuthModal] = useAtom(authAtom);
+  const t = useI18n();
+  const setAuthModal = useSetAtom(authAtom);
 
   return (
     <div
@@ -111,25 +118,33 @@ export const SettingSidebar = ({
   ) => void;
   selectedWorkspaceId: string | null;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const loginStatus = useLiveData(useService(AuthService).session.status$);
   const generalList = useGeneralSettingList();
+  const gotoTab = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      const tab = e.currentTarget.dataset.eventArg;
+      if (!tab) return;
+      track.$.settingsPanel.menu.openSettings({ to: tab });
+      onTabChange(tab as ActiveTab, null);
+    },
+    [onTabChange]
+  );
   const onAccountSettingClick = useCallback(() => {
-    mixpanel.track('Button', {
-      resolve: 'AccountSetting',
-    });
+    track.$.settingsPanel.menu.openSettings({ to: 'account' });
     onTabChange('account', null);
   }, [onTabChange]);
   const onWorkspaceSettingClick = useCallback(
     (subTab: WorkspaceSubTab, workspaceMetadata: WorkspaceMetadata) => {
-      mixpanel.track('Button', {
-        resolve: 'WorkspaceSetting',
-        workspaceId: workspaceMetadata.id,
+      track.$.settingsPanel.menu.openSettings({
+        to: 'workspace',
+        control: subTab,
       });
       onTabChange(`workspace:${subTab}`, workspaceMetadata);
     },
     [onTabChange]
   );
+
   return (
     <div className={style.settingSlideBar} data-testid="settings-sidebar">
       <div className={style.sidebarTitle}>
@@ -147,12 +162,8 @@ export const SettingSidebar = ({
               })}
               key={key}
               title={title}
-              onClick={() => {
-                mixpanel.track('Button', {
-                  resolve: key,
-                });
-                onTabChange(key, null);
-              }}
+              data-event-arg={key}
+              onClick={gotoTab}
               data-testid={testId}
             >
               {icon({ className: 'icon' })}
@@ -176,11 +187,8 @@ export const SettingSidebar = ({
       </div>
 
       <div className={style.sidebarFooter}>
-        {runtimeConfig.enableCloud && loginStatus === 'unauthenticated' ? (
-          <SignInButton />
-        ) : null}
-
-        {runtimeConfig.enableCloud && loginStatus === 'authenticated' ? (
+        {loginStatus === 'unauthenticated' ? <SignInButton /> : null}
+        {loginStatus === 'authenticated' ? (
           <Suspense>
             <UserInfo
               onAccountSettingClick={onAccountSettingClick}
@@ -235,19 +243,14 @@ const subTabConfigs = [
     title: 'com.affine.settings.workspace.preferences',
   },
   {
-    key: 'experimental-features',
-    title: 'com.affine.settings.workspace.experimental-features',
-  },
-  {
     key: 'properties',
     title: 'com.affine.settings.workspace.properties',
   },
 ] satisfies {
   key: WorkspaceSubTab;
-  title: keyof ReturnType<typeof useAFFiNEI18N>;
+  title: keyof ReturnType<typeof useI18n>;
 }[];
 
-const avatarImageProps = { style: { borderRadius: 2 } };
 const WorkspaceListItem = ({
   activeSubTab,
   meta,
@@ -262,14 +265,10 @@ const WorkspaceListItem = ({
     UserFeatureService,
   });
   const information = useWorkspaceInfo(meta);
-  const avatarUrl = useWorkspaceBlobObjectUrl(meta, information?.avatar);
   const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
   const currentWorkspace = workspaceService.workspace;
   const isCurrent = currentWorkspace.id === meta.id;
-  const t = useAFFiNEI18N();
-  const isEarlyAccess = useLiveData(
-    userFeatureService.userFeature.isEarlyAccess$
-  );
+  const t = useI18n();
 
   useEffect(() => {
     userFeatureService.userFeature.revalidate();
@@ -280,30 +279,23 @@ const WorkspaceListItem = ({
   }, [onClick]);
 
   const subTabs = useMemo(() => {
-    return subTabConfigs
-      .filter(({ key }) => {
-        if (key === 'experimental-features') {
-          return information?.isOwner && isEarlyAccess;
-        }
-        return true;
-      })
-      .map(({ key, title }) => {
-        return (
-          <div
-            data-testid={`workspace-list-item-${key}`}
-            onClick={() => {
-              onClick(key);
-            }}
-            className={clsx(style.sidebarSelectSubItem, {
-              active: activeSubTab === key,
-            })}
-            key={key}
-          >
-            {t[title]()}
-          </div>
-        );
-      });
-  }, [activeSubTab, information?.isOwner, isEarlyAccess, onClick, t]);
+    return subTabConfigs.map(({ key, title }) => {
+      return (
+        <div
+          data-testid={`workspace-list-item-${key}`}
+          onClick={() => {
+            onClick(key);
+          }}
+          className={clsx(style.sidebarSelectSubItem, {
+            active: activeSubTab === key,
+          })}
+          key={key}
+        >
+          {t[title]()}
+        </div>
+      );
+    });
+  }, [activeSubTab, onClick, t]);
 
   return (
     <>
@@ -313,17 +305,16 @@ const WorkspaceListItem = ({
         onClick={onClickPreference}
         data-testid="workspace-list-item"
       >
-        <Avatar
+        <WorkspaceAvatar
+          key={meta.id}
+          meta={meta}
           size={16}
-          url={avatarUrl}
           name={name}
           colorfulFallback
           style={{
             marginRight: '10px',
           }}
-          imageProps={avatarImageProps}
-          fallbackProps={avatarImageProps}
-          hoverWrapperProps={avatarImageProps}
+          rounded={2}
         />
         <span className="setting-name">{name}</span>
         {isCurrent ? (

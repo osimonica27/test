@@ -2,8 +2,11 @@ import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import { waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
 import {
+  confirmExperimentalPrompt,
   openAboutPanel,
   openAppearancePanel,
+  openEditorSetting,
+  openExperimentalFeaturesPanel,
   openSettingModal,
   openShortcutsPanel,
 } from '@affine-test/kit/utils/setting';
@@ -28,6 +31,10 @@ test('change language using keyboard', async ({ page }) => {
   const oldName = await locator.textContent();
   await locator.click();
   await page.waitForTimeout(200);
+  await page.keyboard.press('ArrowDown', {
+    delay: 50,
+  });
+  // incase the current language is the top one
   await page.keyboard.press('ArrowDown', {
     delay: 50,
   });
@@ -59,8 +66,7 @@ test('Change theme', async ({ page }) => {
 test('Change layout width', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await openSettingModal(page);
-  await openAppearancePanel(page);
+  await openEditorSetting(page);
 
   await page.getByTestId('full-width-layout-trigger').click();
 
@@ -85,6 +91,18 @@ test('Open about panel', async ({ page }) => {
   await openAboutPanel(page);
   const title = page.getByTestId('about-title');
   await expect(title).toBeVisible();
+});
+
+test('Open experimental features panel', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await openSettingModal(page);
+  await openExperimentalFeaturesPanel(page);
+  const prompt = page.getByTestId('experimental-prompt');
+  await expect(prompt).toBeVisible();
+  await confirmExperimentalPrompt(page);
+  const settings = page.getByTestId('experimental-settings');
+  await expect(settings).toBeVisible();
 });
 
 test('Different workspace should have different name in the setting panel', async ({

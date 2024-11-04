@@ -1,9 +1,9 @@
 import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
-import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
+import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useI18n } from '@affine/i18n';
 import {
   useLiveData,
   useService,
@@ -11,17 +11,16 @@ import {
   WorkspaceService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
-import { openSettingModalAtom } from '../../../../../atoms';
-import { TmpDisableAffineCloudModal } from '../../../tmp-disable-affine-cloud-modal';
+import { openSettingModalAtom } from '../../../../atoms';
 
 export interface PublishPanelProps {
   workspace: Workspace | null;
 }
 
 export const EnableCloudPanel = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const confirmEnableCloud = useEnableCloud();
 
   const workspace = useService(WorkspaceService).workspace;
@@ -29,8 +28,6 @@ export const EnableCloudPanel = () => {
   const flavour = workspace.flavour;
 
   const setSettingModal = useSetAtom(openSettingModalAtom);
-
-  const [open, setOpen] = useState(false);
 
   const confirmEnableCloudAndClose = useCallback(() => {
     if (!workspace) return;
@@ -46,30 +43,25 @@ export const EnableCloudPanel = () => {
   }
 
   return (
-    <>
-      <SettingRow
-        name={t['Workspace saved locally']({
-          name: name ?? UNTITLED_WORKSPACE_NAME,
-        })}
-        desc={t['Enable cloud hint']()}
-        spreadCol={false}
-        style={{
-          padding: '10px',
-          background: 'var(--affine-background-secondary-color)',
-        }}
+    <SettingRow
+      name={t['Workspace saved locally']({
+        name: name ?? UNTITLED_WORKSPACE_NAME,
+      })}
+      desc={t['Enable cloud hint']()}
+      spreadCol={false}
+      style={{
+        padding: '10px',
+        background: 'var(--affine-background-secondary-color)',
+      }}
+    >
+      <Button
+        data-testid="publish-enable-affine-cloud-button"
+        variant="primary"
+        onClick={confirmEnableCloudAndClose}
+        style={{ marginTop: '12px' }}
       >
-        <Button
-          data-testid="publish-enable-affine-cloud-button"
-          type="primary"
-          onClick={confirmEnableCloudAndClose}
-          style={{ marginTop: '12px' }}
-        >
-          {t['Enable AFFiNE Cloud']()}
-        </Button>
-      </SettingRow>
-      {runtimeConfig.enableCloud ? null : (
-        <TmpDisableAffineCloudModal open={open} onOpenChange={setOpen} />
-      )}
-    </>
+        {t['Enable AFFiNE Cloud']()}
+      </Button>
+    </SettingRow>
   );
 };

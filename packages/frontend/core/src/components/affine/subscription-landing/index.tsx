@@ -1,8 +1,8 @@
 import { AuthPageContainer } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { Trans } from '@affine/i18n';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useSubscriptionNotifyWriter } from '@affine/core/components/hooks/affine/use-subscription-notify';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
+import { Trans, useI18n } from '@affine/i18n';
 import { type ReactNode, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -15,17 +15,17 @@ const UpgradeSuccessLayout = ({
   title?: ReactNode;
   description?: ReactNode;
 }) => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
   const [params] = useSearchParams();
 
-  const { jumpToIndex, openInApp } = useNavigateHelper();
+  const { jumpToIndex, jumpToOpenInApp } = useNavigateHelper();
   const openAffine = useCallback(() => {
-    if (params.get('schema')) {
-      openInApp(params.get('schema') ?? 'affine', 'bring-to-front');
+    if (params.get('scheme')) {
+      jumpToOpenInApp('bring-to-front');
     } else {
       jumpToIndex();
     }
-  }, [jumpToIndex, openInApp, params]);
+  }, [jumpToIndex, jumpToOpenInApp, params]);
 
   const subtitle = (
     <div className={styles.leftContentText}>
@@ -48,7 +48,7 @@ const UpgradeSuccessLayout = ({
 
   return (
     <AuthPageContainer title={title} subtitle={subtitle}>
-      <Button type="primary" size="extraLarge" onClick={openAffine}>
+      <Button variant="primary" size="extraLarge" onClick={openAffine}>
         {t['com.affine.other-page.nav.open-affine']()}
       </Button>
     </AuthPageContainer>
@@ -56,7 +56,8 @@ const UpgradeSuccessLayout = ({
 };
 
 export const CloudUpgradeSuccess = () => {
-  const t = useAFFiNEI18N();
+  const t = useI18n();
+  useSubscriptionNotifyWriter();
   return (
     <UpgradeSuccessLayout
       title={t['com.affine.payment.upgrade-success-page.title']()}
@@ -66,8 +67,8 @@ export const CloudUpgradeSuccess = () => {
 };
 
 export const AIUpgradeSuccess = () => {
-  const t = useAFFiNEI18N();
-
+  const t = useI18n();
+  useSubscriptionNotifyWriter();
   return (
     <UpgradeSuccessLayout
       title={t['com.affine.payment.ai-upgrade-success-page.title']()}

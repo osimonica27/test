@@ -1,5 +1,6 @@
 import { Skeleton } from '@affine/component';
 
+import { AIPlanLayout } from './ai/layout';
 import { CloudPlanLayout, PlanLayout } from './layout';
 import * as styles from './skeleton.css';
 
@@ -18,7 +19,7 @@ const RoundedSkeleton = ({
 );
 
 const TabsSkeleton = () => (
-  // TODO: height should be `32px` by design
+  // TODO(@catsjuice): height should be `32px` by design
   // but the RadioGroup component is not matching with the design currently
   // set to `24px` for now to avoid blinking
   <Skeleton variant="rounded" width="256px" height="24px" />
@@ -48,6 +49,34 @@ const ScrollSkeleton = () => (
 export const PlansSkeleton = () => {
   return (
     <PlanLayout
+      ai={
+        <AIPlanLayout
+          caption={
+            <RoundedSkeleton
+              variant="rectangular"
+              radius={2}
+              width="200px"
+              height="20px"
+            />
+          }
+          actionButtons={
+            <>
+              <RoundedSkeleton
+                variant="rectangular"
+                radius={20}
+                width="206px"
+                height="37px"
+              />
+              <RoundedSkeleton
+                variant="rectangular"
+                radius={20}
+                width="193px"
+                height="37px"
+              />
+            </>
+          }
+        />
+      }
       cloud={
         <CloudPlanLayout
           toggle={
