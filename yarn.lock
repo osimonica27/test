@@ -352,7 +352,6 @@ __metadata:
     "@storybook/react": "npm:^8.2.9"
     "@storybook/react-vite": "npm:^8.2.9"
     "@testing-library/react": "npm:^16.0.0"
-    "@toeverything/pdf-viewer": "npm:^0.1.0"
     "@toeverything/theme": "npm:^1.0.17"
     "@types/react": "npm:^18.2.75"
     "@types/react-dom": "npm:^18.2.24"
@@ -431,7 +430,7 @@ __metadata:
     "@radix-ui/react-toolbar": "npm:^1.0.4"
     "@sentry/react": "npm:^8.0.0"
     "@testing-library/react": "npm:^16.0.0"
-    "@toeverything/pdf-viewer": "npm:^0.1.0"
+    "@toeverything/pdf-viewer": "npm:^0.1.1"
     "@toeverything/theme": "npm:^1.0.17"
     "@types/animejs": "npm:^3.1.12"
     "@types/bytes": "npm:^3.1.4"
@@ -13111,27 +13110,27 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/pdf-viewer-types@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@toeverything/pdf-viewer-types@npm:0.1.0"
-  checksum: 10/aed8a2e9375e121a663e96147d6a726d4dd7b4917cfa35bac5c422c820125b2bc3e129281cad8c3983d1da12191ba4c6e0e45231123fce5d89091ce18dbc9560
+"@toeverything/pdf-viewer-types@npm:0.1.1":
+  version: 0.1.1
+  resolution: "@toeverything/pdf-viewer-types@npm:0.1.1"
+  checksum: 10/cd7e7785097924778899febaaffecb893451aa9eb0117a5b28047004f788efb6ec1facab74e93d6ac3464033d9a4ad57f09f83c6f45ab3ebf67ceedf2180fd23
   languageName: node
   linkType: hard
 
-"@toeverything/pdf-viewer@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "@toeverything/pdf-viewer@npm:0.1.0"
+"@toeverything/pdf-viewer@npm:^0.1.1":
+  version: 0.1.1
+  resolution: "@toeverything/pdf-viewer@npm:0.1.1"
   dependencies:
-    "@toeverything/pdf-viewer-types": "npm:0.1.0"
-    "@toeverything/pdfium": "npm:0.1.0"
-  checksum: 10/75e1df49ecce97e667ac9ec1a630ba4492f1b712d4380a9c999f05535e305e4fd2a069d004449477520ea308ec5928f02b51268659f75788ae4715a7b6e14da7
+    "@toeverything/pdf-viewer-types": "npm:0.1.1"
+    "@toeverything/pdfium": "npm:0.1.1"
+  checksum: 10/7fc4ac3156504467517ed4d99d5ba5ccd3beae0759464a6a9a3a62f2fc09acff44fbee9c2451cc437d97313c51746a631fb0d367b365f19469079588ba7c5ce0
   languageName: node
   linkType: hard
 
-"@toeverything/pdfium@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@toeverything/pdfium@npm:0.1.0"
-  checksum: 10/5fee0f76608d27d747b9266096cdd153027e8f3e8774571524f86afd88757833a61472400df5dcf2a6ea2e16bcfe9864b090ef7e483c260998ba3fad418a9ba8
+"@toeverything/pdfium@npm:0.1.1":
+  version: 0.1.1
+  resolution: "@toeverything/pdfium@npm:0.1.1"
+  checksum: 10/3d832eaef3ea4aba142561ed8529e216ed739026e7680e5d4fcd05d56fdd458a06273d6b18f1dbc0af9edcc538fa6fd0246757ebb4957a048a8d69bbf579549a
   languageName: node
   linkType: hard
 
