@@ -156,6 +156,26 @@
     "which-typed-array": "npm:@nolyfill/which-typed-array@latest",
     "@reforged/maker-appimage/@electron-forge/maker-base": "7.5.0",
     "macos-alias": "npm:@napi-rs/macos-alias@0.0.4",
-    "fs-xattr": "npm:@napi-rs/xattr@latest"
+    "fs-xattr": "npm:@napi-rs/xattr@latest",
+    "@blocksuite/affine": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/all",
+    "@blocksuite/affine-block-embed": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-embed",
+    "@blocksuite/affine-block-list": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-list",
+    "@blocksuite/affine-block-paragraph": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-paragraph",
+    "@blocksuite/affine-block-surface": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-surface",
+    "@blocksuite/affine-components": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/components",
+    "@blocksuite/data-view": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/data-view",
+    "@blocksuite/affine-model": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/model",
+    "@blocksuite/affine-shared": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/shared",
+    "@blocksuite/affine-widget-scroll-anchoring": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/widget-scroll-anchoring",
+    "@blocksuite/blocks": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/blocks",
+    "@blocksuite/block-std": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/block-std",
+    "@blocksuite/global": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/global",
+    "@blocksuite/inline": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/inline",
+    "@blocksuite/store": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/store",
+    "@blocksuite/sync": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/sync",
+    "@blocksuite/presets": "portal:/Users/fundon/dev/toeverything/blocksuite/packages/presets",
+    "@toeverything/pdf-viewer": "portal:/Users/fundon/dev/toeverything/pdfium-builder/packages/pdf-viewer",
+    "@toeverything/pdfium": "portal:/Users/fundon/dev/toeverything/pdfium-builder/packages/pdfium",
+    "@toeverything/pdf-viewer-types": "portal:/Users/fundon/dev/toeverything/pdfium-builder/packages/types"
   }
 }

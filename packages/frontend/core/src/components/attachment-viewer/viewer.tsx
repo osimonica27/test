@@ -1,6 +1,13 @@
 import { IconButton, observeResize, Scrollable } from '@affine/component';
+import {
+  type PDFChannel,
+  PDFService,
+  type PDFWorker,
+} from '@affine/core/modules/pdf';
+import { MessageOp, RenderKind } from '@affine/core/modules/pdf/workers/types';
 import type { AttachmentBlockModel } from '@blocksuite/affine/blocks';
 import { CollapseIcon, ExpandIcon } from '@blocksuite/icons/rc';
+import { LiveData, useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { debounce } from 'lodash-es';
 import type { ReactElement } from 'react';
@@ -18,8 +25,6 @@ import { Virtuoso } from 'react-virtuoso';
 
 import * as styles from './styles.css';
 import { getAttachmentBlob, renderItem } from './utils';
-import type { DocInfo, MessageData, MessageDataType } from './worker/types';
-import { MessageOp, RenderKind, State } from './worker/types';
 
 type ItemProps = VirtuosoProps<null, undefined>;
 
@@ -100,22 +105,31 @@ interface ViewerProps {
 
 export const Viewer = ({ model }: ViewerProps): ReactElement => {
   const { showBoundary } = useErrorBoundary();
-  const [state, setState] = useState(State.Connecting);
+  const service = useService(PDFService);
+  const [worker, setWorker] = useState<PDFWorker | null>(null);
+  const docInfo = useLiveData(
+    useMemo(
+      () =>
+        worker
+          ? worker.docInfo$
+          : new LiveData({
+              total: 0,
+              width: 1,
+              height: 1,
+            }),
+      [worker]
+    )
+  );
+  const [channel, setChannel] = useState<PDFChannel | null>(null);
+  const [cursor, setCursor] = useState(0);
   const [viewportInfo, setViewportInfo] = useState({
     dpi: window.devicePixelRatio,
     width: 1,
     height: 1,
   });
-  const [docInfo, setDocInfo] = useState<DocInfo>({
-    total: 0,
-    width: 1,
-    height: 1,
-  });
-  const [cursor, setCursor] = useState(0);
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
   const scrollerHandleRef = useRef<VirtuosoHandle | null>(null);
-  const workerRef = useRef<Worker | null>(null);
 
   const [mainVisibleRange, setMainVisibleRange] = useState({
     startIndex: 0,
@@ -129,22 +143,6 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
     startIndex: 0,
     endIndex: 0,
   });
-
-  const post = useCallback(
-    <T extends MessageOp>(
-      type: T,
-      data?: MessageDataType[T],
-      transfers?: Transferable[]
-    ) => {
-      const message = { type, [type]: data };
-      if (transfers?.length) {
-        workerRef.current?.postMessage(message, transfers);
-        return;
-      }
-      workerRef.current?.postMessage(message);
-    },
-    [workerRef]
-  );
 
   const render = useCallback(
     (id: number, kind: RenderKind, imageData: ImageData) => {
@@ -209,85 +207,35 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
   }, [viewerRef]);
 
   useEffect(() => {
-    post(MessageOp.Render, {
-      range: mainVisibleRange,
-      kind: RenderKind.Page,
-      scale: 1 * viewportInfo.dpi,
-    });
-  }, [viewportInfo, mainVisibleRange, post]);
+    if (!channel) return;
+
+    const { startIndex, endIndex } = mainVisibleRange;
+    const scale = 1 * viewportInfo.dpi;
+
+    for (let i = startIndex; i <= endIndex; i++) {
+      channel.post(MessageOp.Render, {
+        index: i,
+        scale,
+        kind: RenderKind.Page,
+      });
+    }
+  }, [viewportInfo, mainVisibleRange, channel]);
 
   useEffect(() => {
     if (collapsed) return;
+    if (!channel) return;
 
-    post(MessageOp.Render, {
-      range: thumbnailsVisibleRange,
-      kind: RenderKind.Thumbnail,
-      scale: (THUMBNAIL_WIDTH / docInfo.width) * viewportInfo.dpi,
-    });
-  }, [collapsed, docInfo, viewportInfo, thumbnailsVisibleRange, post]);
+    const { startIndex, endIndex } = thumbnailsVisibleRange;
+    const scale = (THUMBNAIL_WIDTH / docInfo.width) * viewportInfo.dpi;
 
-  useLayoutEffect(() => {
-    workerRef.current = new Worker(
-      /* webpackChunkName: "pdf.worker" */ new URL(
-        './worker/worker.ts',
-        import.meta.url
-      )
-    );
-
-    async function process({ data }: MessageEvent<MessageData>) {
-      const { type } = data;
-
-      switch (type) {
-        case MessageOp.Init: {
-          setState(State.Connecting);
-          break;
-        }
-
-        case MessageOp.Inited: {
-          setState(State.Connected);
-          break;
-        }
-
-        case MessageOp.Opened: {
-          const info = data[type];
-          setDocInfo(o => ({ ...o, ...info }));
-          setState(State.Opened);
-          break;
-        }
-
-        case MessageOp.Rendered: {
-          const { index, kind, imageData } = data[type];
-          render(index, kind, imageData);
-          break;
-        }
-      }
+    for (let i = startIndex; i <= endIndex; i++) {
+      channel.post(MessageOp.Render, {
+        index: i,
+        scale,
+        kind: RenderKind.Thumbnail,
+      });
     }
-
-    workerRef.current.addEventListener('message', event => {
-      process(event).catch(console.error);
-    });
-
-    return () => {
-      workerRef.current?.terminate();
-    };
-  }, [model, post, render]);
-
-  useEffect(() => {
-    if (!model.sourceId) return;
-    if (state !== State.Connected) return;
-
-    getAttachmentBlob(model)
-      .then(blob => {
-        if (!blob) return;
-        return blob.arrayBuffer();
-      })
-      .then(buffer => {
-        if (!buffer) return;
-        setState(State.Opening);
-        post(MessageOp.Open, buffer, [buffer]);
-      })
-      .catch(showBoundary);
-  }, [showBoundary, state, post, model, docInfo]);
+  }, [collapsed, docInfo, viewportInfo, thumbnailsVisibleRange, channel]);
 
   const pageContent = useCallback(
     (index: number) => {
@@ -348,10 +296,7 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
     const size = Math.min(5, docInfo.total);
     const itemHeight = docInfo.height + 20;
     const height = Math.ceil(size * itemHeight);
-    return {
-      top: height,
-      bottom: height,
-    };
+    return { top: height, bottom: height };
   }, [docInfo]);
 
   const mainStyle = useMemo(() => {
@@ -361,10 +306,46 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
       vh - 60 - 24 - 24 - 2 - 8,
       t * THUMBNAIL_WIDTH * (h / w) + (t - 1) * 12
     );
-    return {
-      height: `${height}px`,
-    };
+    return { height: `${height}px` };
   }, [docInfo, viewportInfo]);
+
+  useLayoutEffect(() => {
+    const { worker, release } = service.get(model.id);
+
+    setWorker(worker);
+
+    const channel = worker.channel();
+    channel
+      .on(({ index, kind, imageData }) => render(index, kind, imageData))
+      .start();
+
+    setChannel(channel);
+
+    const disposables = worker.on({
+      ready: () => {
+        if (worker.docInfo$.value.total) {
+          return;
+        }
+
+        getAttachmentBlob(model)
+          .then(blob => {
+            if (!blob) return;
+            return blob.arrayBuffer();
+          })
+          .then(buffer => {
+            if (!buffer) return;
+            worker.open(buffer);
+          })
+          .catch(showBoundary);
+      },
+    });
+
+    return () => {
+      channel.dispose();
+      disposables[Symbol.dispose]();
+      release();
+    };
+  }, [showBoundary, render, service, model]);
 
   return (
     <div
