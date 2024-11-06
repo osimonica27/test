@@ -1,8 +1,7 @@
 export enum State {
-  Connecting = 0,
-  Connected,
-  Opening,
-  Opened,
+  IDLE = 0,
+  Loading,
+  Loaded,
   Failed,
 }
 
@@ -19,18 +18,13 @@ export type ViewportInfo = {
   height: number;
 };
 
-export enum MessageState {
-  Poll,
-  Ready,
-}
-
 export enum MessageOp {
-  Init,
-  Inited,
-  Open,
+  Open = State.Failed + 1,
   Opened,
   Render,
   Rendered,
+  ChannelOpen,
+  ChannelClose,
 }
 
 export enum RenderKind {
@@ -38,26 +32,27 @@ export enum RenderKind {
   Thumbnail,
 }
 
-export type Range = {
-  startIndex: number;
-  endIndex: number;
-};
-
 export interface MessageDataMap {
-  [MessageOp.Init]: undefined;
-  [MessageOp.Inited]: undefined;
+  [State.IDLE]: undefined;
+  [State.Loading]: undefined;
+  [State.Loaded]: undefined;
+  [State.Failed]: undefined;
   [MessageOp.Open]: ArrayBuffer;
   [MessageOp.Opened]: DocInfo;
   [MessageOp.Render]: {
-    range: Range;
+    index: number;
     kind: RenderKind;
-    scale: number;
+    scale?: number;
   };
   [MessageOp.Rendered]: {
     index: number;
+    width: number;
+    height: number;
     kind: RenderKind;
-    imageData: ImageData;
+    buffer: Uint8ClampedArray;
   };
+  [MessageOp.ChannelOpen]: string;
+  [MessageOp.ChannelClose]: string;
 }
 
 export type MessageDataType<T = MessageDataMap> = {
