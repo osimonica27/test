@@ -151,14 +151,12 @@ export const OpenInAppPage = ({ urlToOpen, openHereClicked }: OpenAppProps) => {
 
       {maybeDocLink ? (
         <div className={styles.docFooter}>
-          <a
+          <button
             className={styles.editSettingsLink}
             onClick={goToAppearanceSetting}
-            target="_blank"
-            rel="noreferrer"
           >
             {t['com.affine.auth.open.affine.doc.edit-settings']()}
-          </a>
+          </button>
 
           <div className={styles.docFooterText}>
             <LocalWorkspaceIcon width={16} height={16} />
