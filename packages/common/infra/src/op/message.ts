@@ -95,6 +95,7 @@ export type MessageCommunicapable = Pick<
 > & {
   start?(): void;
   close?(): void;
+  terminate?(): void; // For Worker
 };
 
 export function ignoreUnknownEvent(handler: (data: Messages) => void) {
@@ -150,6 +151,7 @@ export abstract class AutoMessageHandler {
 
   close() {
     this.port.close?.();
+    this.port.terminate?.(); // For Worker
     this.port.removeEventListener('message', this.handleMessage);
   }
 }

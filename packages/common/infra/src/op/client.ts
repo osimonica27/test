@@ -22,7 +22,7 @@ interface PendingCall extends PromiseWithResolvers<any> {
   timeout: number | NodeJS.Timeout;
 }
 
-interface OpClientOptions {
+export interface OpClientOptions {
   timeout?: number;
 }
 
