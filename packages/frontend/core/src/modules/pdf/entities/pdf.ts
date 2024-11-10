@@ -1,37 +1,25 @@
-import type { WorkspaceService } from '@toeverything/infra';
-import { Entity, ObjectPool } from '@toeverything/infra';
+import type { AttachmentBlockModel } from '@blocksuite/affine/blocks';
+import { Entity, LiveData } from '@toeverything/infra';
 
-import { PDFWorker } from './worker';
+import { createPdfClient } from '../workers/client';
+import { defaultDocInfo, type DocState, State } from '../workers/types';
 
-export class PDFEntity extends Entity {
-  workers = new ObjectPool<string, PDFWorker>({
-    onDelete(worker) {
-      worker.dispose();
-    },
+export class Pdf extends Entity<{ id: string }> {
+  public readonly id: string = this.props.id;
+
+  public readonly info$ = new LiveData<DocState>({
+    state: State.IDLE,
+    ...defaultDocInfo(),
   });
 
-  constructor(private readonly workspaceService: WorkspaceService) {
-    super();
+  public readonly client = createPdfClient();
+
+  open(model: AttachmentBlockModel) {
+    return this.client.open(model, info => this.info$.next(info));
   }
 
-  get(id: string) {
-    let result = this.workers.get(id);
-    if (!result) {
-      const worker = new PDFWorker(id, this.name);
-      result = this.workers.put(id, worker);
-    }
-    return { worker: result.obj, release: result.release };
-  }
-
-  get name() {
-    return this.workspaceService.workspace.id;
-  }
-
-  override dispose(): void {
-    for (const worker of this.workers.objects.values()) {
-      worker.obj.dispose();
-    }
-    this.workers.clear();
+  override dispose() {
+    this.client.destroy();
     super.dispose();
   }
 }

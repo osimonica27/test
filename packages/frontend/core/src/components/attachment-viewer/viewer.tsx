@@ -1,10 +1,12 @@
 import { IconButton, observeResize, Scrollable } from '@affine/component';
+import type { Pdf, PdfSender } from '@affine/core/modules/pdf';
+import { PdfsService } from '@affine/core/modules/pdf';
 import {
-  type PDFChannel,
-  PDFService,
-  type PDFWorker,
-} from '@affine/core/modules/pdf';
-import { MessageOp, RenderKind } from '@affine/core/modules/pdf/workers/types';
+  defaultDocInfo,
+  RenderKind,
+  type RenderOut,
+  State,
+} from '@affine/core/modules/pdf/workers/types';
 import type { AttachmentBlockModel } from '@blocksuite/affine/blocks';
 import { CollapseIcon, ExpandIcon } from '@blocksuite/icons/rc';
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
@@ -24,7 +26,7 @@ import type { VirtuosoHandle, VirtuosoProps } from 'react-virtuoso';
 import { Virtuoso } from 'react-virtuoso';
 
 import * as styles from './styles.css';
-import { genSeq, getAttachmentBlob, renderItem } from './utils';
+import { genSeq, renderItem } from './utils';
 
 type ItemProps = VirtuosoProps<null, undefined>;
 
@@ -105,23 +107,20 @@ interface ViewerProps {
 
 export const Viewer = ({ model }: ViewerProps): ReactElement => {
   const { showBoundary } = useErrorBoundary();
-  const service = useService(PDFService);
-  const [worker, setWorker] = useState<PDFWorker | null>(null);
-  const docInfo = useLiveData(
+  const pdfsService = useService(PdfsService);
+  const [pdf, setPdf] = useState<Pdf | null>(null);
+  const [sender, setSender] = useState<PdfSender | null>(null);
+  const [cursor, setCursor] = useState(0);
+  const info = useLiveData(
     useMemo(
       () =>
-        worker
-          ? worker.docInfo$
-          : new LiveData({
-              total: 0,
-              width: 1,
-              height: 1,
-            }),
-      [worker]
+        pdf
+          ? pdf.info$
+          : new LiveData({ state: State.IDLE, ...defaultDocInfo() }),
+      [pdf]
     )
   );
-  const [channel, setChannel] = useState<PDFChannel | null>(null);
-  const [cursor, setCursor] = useState(0);
+
   const [viewportInfo, setViewportInfo] = useState({
     dpi: window.devicePixelRatio,
     width: 1,
@@ -135,7 +134,17 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
     startIndex: 0,
     endIndex: 0,
   });
-  const mainCaches = useMemo<Set<number>>(() => new Set(), []);
+  const mainRenderingSeq$ = useMemo(
+    () =>
+      new LiveData<{
+        seq: Set<number>;
+        diff: Set<number>;
+      }>({
+        seq: new Set(),
+        diff: new Set(),
+      }),
+    []
+  );
 
   const [collapsed, setCollapsed] = useState(true);
   const thumbnailsScrollerHandleRef = useRef<VirtuosoHandle | null>(null);
@@ -144,61 +153,33 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
     startIndex: 0,
     endIndex: 0,
   });
-  const thumbnailsCaches = useMemo<Set<number>>(() => new Set(), []);
-
-  const render = useCallback(
-    (
-      id: number,
-      kind: RenderKind,
-      width: number,
-      height: number,
-      buffer: Uint8ClampedArray
-    ) => {
-      const isPage = kind === RenderKind.Page;
-      const container = isPage ? scrollerRef : thumbnailsScrollerRef;
-      const name = isPage ? 'page' : 'thumbnail';
-      renderItem(container.current, `pdf-${name}`, id, width, height, buffer);
-    },
-    [scrollerRef, thumbnailsScrollerRef]
+  const thumbnailsRenderingSeq$ = useMemo(
+    () =>
+      new LiveData<{
+        seq: Set<number>;
+        diff: Set<number>;
+      }>({
+        seq: new Set(),
+        diff: new Set(),
+      }),
+    []
   );
 
-  const postQueue = useCallback(
-    (caches: Set<number>, start: number, end: number, kind: RenderKind) => {
-      if (!channel) return;
-
-      const scale =
-        viewportInfo.dpi *
-        (kind === RenderKind.Thumbnail ? THUMBNAIL_WIDTH / docInfo.width : 1);
-      const seq = new Set(genSeq(start, end, docInfo.total));
-
-      // fixes doc with only one page
-      if (seq.size === 1) {
-        channel.post(MessageOp.Render, {
-          index: 0,
-          scale,
-          kind,
-        });
-      } else {
-        seq.difference(caches).forEach(index => {
-          channel.post(MessageOp.Render, {
-            index,
-            scale,
-            kind,
-          });
-        });
-      }
-
-      caches.clear();
-      seq.forEach(index => caches.add(index));
+  const render = useCallback(
+    (data: RenderOut) => {
+      const isPage = data.kind === RenderKind.Page;
+      const container = isPage ? scrollerRef : thumbnailsScrollerRef;
+      const name = isPage ? 'page' : 'thumbnail';
+      renderItem(container.current, `pdf-${name}`, data);
     },
-    [docInfo, viewportInfo, channel]
+    [scrollerRef, thumbnailsScrollerRef]
   );
 
   const onScroll = useCallback(() => {
     const el = scrollerRef.current;
     if (!el) return;
 
-    const { total } = docInfo;
+    const { total } = info;
     if (!total) return;
 
     const { scrollTop, scrollHeight } = el;
@@ -209,7 +190,7 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
     const cursor = Math.min(index, total - 1);
 
     setCursor(cursor);
-  }, [scrollerRef, docInfo]);
+  }, [scrollerRef, info]);
 
   const onSelect = useCallback(
     (index: number) => {
@@ -232,30 +213,67 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
     [setThumbnailsVisibleRange]
   );
 
-  useEffect(() => {
-    const el = viewerRef.current;
-    if (!el) return;
+  const updateSeq = useCallback(
+    (
+      range: { startIndex: number; endIndex: number },
+      seq$: LiveData<{
+        seq: Set<number>;
+        diff: Set<number>;
+      }>
+    ) => {
+      if (!sender) return;
+      const { startIndex, endIndex } = range;
+      const seq = new Set(genSeq(startIndex, endIndex, info.total));
+      seq$.next({
+        seq,
+        diff: seq.difference(seq$.value.seq),
+      });
+    },
+    [info, sender]
+  );
 
-    return observeResize(el, entry => {
-      const rect = entry.contentRect;
-      setViewportInfo(info => ({
-        ...info,
-        width: rect.width,
-        height: rect.height,
-      }));
-    });
-  }, [viewerRef]);
+  const createRenderingSubscriber = useCallback(
+    (
+      seq$: LiveData<{
+        seq: Set<number>;
+        diff: Set<number>;
+      }>,
+      kind: RenderKind
+    ) => {
+      if (!sender) return;
 
-  useEffect(() => {
-    const { startIndex, endIndex } = mainVisibleRange;
-    postQueue(mainCaches, startIndex, endIndex, RenderKind.Page);
-  }, [postQueue, mainVisibleRange, mainCaches]);
+      const scale =
+        (kind === RenderKind.Page ? 1 : THUMBNAIL_WIDTH / info.width) *
+        viewportInfo.dpi;
 
-  useEffect(() => {
-    if (collapsed) return;
-    const { startIndex, endIndex } = thumbnailsVisibleRange;
-    postQueue(thumbnailsCaches, startIndex, endIndex, RenderKind.Thumbnail);
-  }, [postQueue, thumbnailsVisibleRange, thumbnailsCaches, collapsed]);
+      let unsubscribe: () => void;
+
+      const subscriber = seq$.subscribe(({ seq: _, diff }) => {
+        unsubscribe?.();
+
+        unsubscribe = sender.subscribe(
+          'render',
+          { seq: Array.from(diff), kind, scale },
+          {
+            next: data => {
+              if (!data) return;
+              render(data);
+            },
+            error: err => {
+              console.error(err);
+              unsubscribe();
+            },
+          }
+        );
+      });
+
+      return () => {
+        unsubscribe?.();
+        subscriber.unsubscribe();
+      };
+    },
+    [viewportInfo, info, render, sender]
+  );
 
   const pageContent = useCallback(
     (index: number) => {
@@ -264,12 +282,12 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
           key={index}
           index={index}
           className={clsx([styles.viewerPage, 'pdf-page'])}
-          width={docInfo.width}
-          height={docInfo.height}
+          width={info.width}
+          height={info.height}
         />
       );
     },
-    [docInfo]
+    [info]
   );
 
   const thumbnailContent = useCallback(
@@ -284,12 +302,12 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
             'pdf-thumbnail',
           ])}
           width={THUMBNAIL_WIDTH}
-          height={Math.ceil((docInfo.height / docInfo.width) * THUMBNAIL_WIDTH)}
+          height={Math.ceil((info.height / info.width) * THUMBNAIL_WIDTH)}
           onSelect={onSelect}
         />
       );
     },
-    [cursor, docInfo, onSelect]
+    [cursor, info, onSelect]
   );
 
   const mainComponents = useMemo(() => {
@@ -313,21 +331,68 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
   }, []);
 
   const increaseViewportBy = useMemo(() => {
-    const size = Math.min(5, docInfo.total);
-    const itemHeight = docInfo.height + 20;
+    const size = Math.min(5, info.total);
+    const itemHeight = info.height + 20;
     const height = Math.ceil(size * itemHeight);
     return { top: height, bottom: height };
-  }, [docInfo]);
+  }, [info]);
 
   const mainStyle = useMemo(() => {
     const { height: vh } = viewportInfo;
-    const { total: t, height: h, width: w } = docInfo;
+    const { total: t, height: h, width: w } = info;
     const height = Math.min(
       vh - 60 - 24 - 24 - 2 - 8,
       t * THUMBNAIL_WIDTH * (h / w) + (t - 1) * 12
     );
     return { height: `${height}px` };
-  }, [docInfo, viewportInfo]);
+  }, [info, viewportInfo]);
+
+  useEffect(() => {
+    const unsubscribe = createRenderingSubscriber(
+      mainRenderingSeq$,
+      RenderKind.Page
+    );
+    return () => {
+      unsubscribe?.();
+    };
+  }, [scrollerRef, createRenderingSubscriber, mainRenderingSeq$]);
+
+  useEffect(() => {
+    const unsubscribe = createRenderingSubscriber(
+      thumbnailsRenderingSeq$,
+      RenderKind.Thumbnail
+    );
+    return () => {
+      unsubscribe?.();
+    };
+  }, [
+    thumbnailsScrollerHandleRef,
+    createRenderingSubscriber,
+    thumbnailsRenderingSeq$,
+  ]);
+
+  useEffect(() => {
+    const el = viewerRef.current;
+    if (!el) return;
+
+    return observeResize(el, entry => {
+      const rect = entry.contentRect;
+      setViewportInfo(info => ({
+        ...info,
+        width: rect.width,
+        height: rect.height,
+      }));
+    });
+  }, [viewerRef]);
+
+  useEffect(() => {
+    updateSeq(mainVisibleRange, mainRenderingSeq$);
+  }, [updateSeq, mainVisibleRange, mainRenderingSeq$]);
+
+  useEffect(() => {
+    if (collapsed) return;
+    updateSeq(thumbnailsVisibleRange, thumbnailsRenderingSeq$);
+  }, [collapsed, updateSeq, thumbnailsVisibleRange, thumbnailsRenderingSeq$]);
 
   useEffect(() => {
     scrollerHandleRef.current?.scrollToIndex({
@@ -339,50 +404,41 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
       align: 'start',
     });
     setCursor(0);
-    mainCaches.clear();
-    thumbnailsCaches.clear();
+    mainRenderingSeq$.next({ seq: new Set(), diff: new Set() });
+    thumbnailsRenderingSeq$.next({ seq: new Set(), diff: new Set() });
     setMainVisibleRange({ startIndex: 0, endIndex: 0 });
     setThumbnailsVisibleRange({ startIndex: 0, endIndex: 0 });
-  }, [channel, mainCaches, thumbnailsCaches]);
+  }, [sender, mainRenderingSeq$, thumbnailsRenderingSeq$]);
 
   useLayoutEffect(() => {
-    const { worker, release } = service.get(model.id);
+    if (!model.sourceId) {
+      showBoundary('Attachment not found');
+      return;
+    }
 
-    const disposables = worker.on({
-      ready: () => {
-        if (worker.docInfo$.value.total) {
-          return;
-        }
+    let unsubscribe: () => void;
 
-        getAttachmentBlob(model)
-          .then(blob => {
-            if (!blob) return;
-            return blob.arrayBuffer();
-          })
-          .then(buffer => {
-            if (!buffer) return;
-            worker.open(buffer);
-          })
-          .catch(showBoundary);
+    const { pdf, release } = pdfsService.get(model);
+
+    setPdf(pdf);
+
+    const subscriber = pdf.open(model).subscribe({
+      error: error => {
+        console.log(error);
+      },
+      complete: () => {
+        const { sender, release } = pdf.client.channel();
+        setSender(sender);
+        unsubscribe = release;
       },
     });
 
-    const channel = worker.channel();
-    channel
-      .on(({ index, kind, height, width, buffer }) =>
-        render(index, kind, width, height, buffer)
-      )
-      .start();
-
-    setChannel(channel);
-    setWorker(worker);
-
     return () => {
-      channel.dispose();
-      disposables[Symbol.dispose]();
+      unsubscribe?.();
+      subscriber.unsubscribe();
       release();
     };
-  }, [showBoundary, render, service, model]);
+  }, [showBoundary, pdfsService, model]);
 
   return (
     <div
@@ -406,7 +462,7 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
         className={styles.virtuoso}
         rangeChanged={updateMainVisibleRange}
         increaseViewportBy={increaseViewportBy}
-        totalCount={docInfo.total}
+        totalCount={info.total}
         itemContent={pageContent}
         components={mainComponents}
       />
@@ -421,7 +477,7 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
             }}
             rangeChanged={updateThumbnailsVisibleRange}
             className={styles.virtuoso}
-            totalCount={docInfo.total}
+            totalCount={info.total}
             itemContent={thumbnailContent}
             components={thumbnailsComponents}
           />
@@ -429,9 +485,9 @@ export const Viewer = ({ model }: ViewerProps): ReactElement => {
         <div className={clsx(['indicator', styles.thumbnailsIndicator])}>
           <div>
             <span className="page-count">
-              {docInfo.total > 0 ? cursor + 1 : 0}
+              {info.total > 0 ? cursor + 1 : 0}
             </span>
-            /<span className="page-total">{docInfo.total}</span>
+            /<span className="page-total">{info.total}</span>
           </div>
           <IconButton
             icon={collapsed ? <CollapseIcon /> : <ExpandIcon />}

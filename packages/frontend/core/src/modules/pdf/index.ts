@@ -1,16 +1,18 @@
 import type { Framework } from '@toeverything/infra';
 import { WorkspaceScope, WorkspaceService } from '@toeverything/infra';
 
-import { PDFEntity } from './entities/pdf';
-import { PDFService } from './services/pdf';
+import { Pdf } from './entities/pdf';
+import { Pdfs } from './entities/pdfs';
+import { PdfsService } from './services/pdfs';
 
 export function configurePDFModule(framework: Framework) {
   framework
     .scope(WorkspaceScope)
-    .service(PDFService)
-    .entity(PDFEntity, [WorkspaceService]);
+    .service(PdfsService)
+    .entity(Pdfs, [WorkspaceService])
+    .entity(Pdf);
 }
 
-export { PDFChannel } from './entities/channel';
-export { PDFWorker } from './entities/worker';
-export { PDFService } from './services/pdf';
+export { Pdf } from './entities/pdf';
+export { PdfsService } from './services/pdfs';
+export { PdfClient, type PdfSender } from './workers/client';
