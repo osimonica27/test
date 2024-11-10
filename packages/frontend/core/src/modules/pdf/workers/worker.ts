@@ -1,3 +1,4 @@
+import { OpConsumer, transfer } from '@toeverything/infra/op';
 import type { Document } from '@toeverything/pdf-viewer';
 import {
   createPDFium,
@@ -5,184 +6,120 @@ import {
   Runtime,
   Viewer,
 } from '@toeverything/pdf-viewer';
+import { BehaviorSubject, filter, from, map, switchMap, take } from 'rxjs';
 
-import type { MessageData, MessageDataType } from './types';
-import { MessageOp, State } from './types';
+import type { ChannelOps, ClientOps } from './ops';
+import type { DocInfo } from './types';
+import { defaultDocInfo, State } from './types';
 import { renderToUint8ClampedArray } from './utils';
 
-let state = State.IDLE;
 let viewer: Viewer | null = null;
 let doc: Document | undefined = undefined;
-const docInfo = { total: 0, width: 1, height: 1 };
-const flags = PageRenderingflags.REVERSE_BYTE_ORDER | PageRenderingflags.ANNOT;
-const channels = new Set<MessagePort>();
+const info: DocInfo = defaultDocInfo();
+const state$ = new BehaviorSubject(State.IDLE);
+const FLAGS = PageRenderingflags.REVERSE_BYTE_ORDER | PageRenderingflags.ANNOT;
 
-// Waits for wasm to load and initialize.
-async function start() {
-  if (state !== State.IDLE) return;
+// Pipes
+const statePipe$ = state$.pipe(map(state => ({ state, ...info })));
 
-  waitForReady({ id: 0 });
+state$.next(State.Loading);
 
-  state = State.Loading;
+createPDFium()
+  .then(pdfium => {
+    viewer = new Viewer(new Runtime(pdfium));
+    state$.next(State.Loaded);
+  })
+  .catch(err => {
+    state$.error(err);
+  });
 
-  const pdfium = await createPDFium();
-  viewer = new Viewer(new Runtime(pdfium));
+// Multiple channels can be processed in a worker.
 
-  state = State.Loaded;
-}
+// @ts-expect-error fixme
+const consumer = new OpConsumer<ClientOps>(self);
 
-function post<T extends keyof MessageDataType>(
-  sender: typeof globalThis | MessagePort,
-  type: T,
-  data?: MessageDataType[T],
-  transfers?: Transferable[]
-) {
-  const message = { type };
-  if (data) {
-    Object.assign(message, { [type]: data });
-  }
-  if (transfers?.length) {
-    if (sender instanceof MessagePort) {
-      sender.postMessage(message, transfers);
-      return;
-    }
-    sender.postMessage(message, '*', transfers);
-    return;
-  }
-  sender.postMessage(message);
-}
-
-function waitForReady(tick: { id: number }) {
-  post(self, state);
-  if (state === State.Loaded || state === State.Failed) {
-    if (tick.id) {
-      clearTimeout(tick.id);
-      tick.id = 0;
-    }
-    return;
-  }
-  // @ts-expect-error allow
-  tick.id = setTimeout(waitForReady, 55, tick);
-}
-
-function rendering(
-  sender: typeof globalThis | MessagePort,
-  viewer: Viewer,
-  doc: Document,
-  data: MessageDataType[MessageOp.Render]
-) {
-  const { index, kind, scale = 1 } = data;
-
-  if (index < 0 || index >= docInfo.total) return;
-
-  const width = Math.ceil(docInfo.width * scale);
-  const height = Math.ceil(docInfo.height * scale);
-  const buffer = renderToUint8ClampedArray(
-    viewer,
-    doc,
-    flags,
-    index,
-    width,
-    height
-  );
-  if (!buffer) return;
-
-  post(sender, MessageOp.Rendered, { index, kind, width, height, buffer }, [
-    buffer.buffer,
-  ]);
-}
-
-function process({ data, ports: [port] }: MessageEvent<MessageData>) {
-  const { type } = data;
-
-  switch (type) {
-    case MessageOp.Open: {
-      if (!viewer) return;
-
-      const buffer = data[type];
-      if (!buffer) return;
-
-      // release loaded document
-      if (doc) {
-        doc.close();
-      }
-
-      doc = viewer.open(new Uint8Array(buffer));
-
-      if (!doc) return;
-
-      const page = doc.page(0);
-
-      if (!page) return;
-
-      Object.assign(docInfo, {
-        total: doc.pageCount(),
-        height: Math.ceil(page.height()),
-        width: Math.ceil(page.width()),
-      });
-      page.close();
-
-      post(self, MessageOp.Opened, docInfo);
-
-      break;
-    }
-
-    case MessageOp.Render: {
-      queueMicrotask(() => {
-        if (!viewer || !doc) return;
-        rendering(self, viewer, doc, data[type]);
-      });
-
-      break;
-    }
-
-    // process only images
-    case MessageOp.ChannelOpen: {
-      const id = data[type];
-      if (id && port) {
-        port.addEventListener(
-          'message',
-          ({ data }: MessageEvent<MessageData>) => {
-            const { type } = data;
-
-            if (type === MessageOp.ChannelClose) {
-              port.close();
-              channels.delete(port);
-              return;
-            }
-
-            if (type !== MessageOp.Render) return;
-
-            queueMicrotask(() => {
-              if (!viewer || !doc) return;
-              rendering(port, viewer, doc, data[type]);
-            });
-          }
-        );
-        port.start();
-      }
-
-      break;
-    }
-  }
-}
-
-self.addEventListener('message', process);
-
-start().catch(err => {
-  if (channels.size > 0) {
-    for (const channel of channels) {
-      channel.close();
-    }
-    channels.clear();
-  }
-  if (doc) {
-    doc.close();
-    doc = undefined;
-  }
-  if (viewer) {
-    viewer.close();
-    viewer = null;
-  }
-  console.error(err);
+consumer.register('pingpong', () => {
+  return statePipe$;
 });
+
+consumer.register('open', ({ id: _, buffer }) => {
+  if (!viewer) {
+    return statePipe$;
+  }
+
+  return state$
+    .pipe(
+      take(1),
+      filter(s => s === State.Loaded)
+    )
+    .pipe(
+      switchMap(() => {
+        if (doc) {
+          doc?.close();
+        }
+
+        state$.next(State.Opening);
+
+        doc = viewer?.open(new Uint8Array(buffer));
+
+        if (!doc) {
+          Object.assign(info, defaultDocInfo());
+          state$.next(State.Loaded);
+          return statePipe$;
+        }
+
+        const page = doc.page(0);
+        if (!page) {
+          doc.close();
+          Object.assign(info, defaultDocInfo());
+          state$.next(State.Loaded);
+          return statePipe$;
+        }
+
+        const rect = page.size();
+        page.close();
+
+        const total = doc.pageCount();
+
+        Object.assign(info, { total, ...rect });
+        state$.next(State.Opened);
+        return statePipe$;
+      })
+    );
+});
+
+consumer.register('channel', ({ id: _, port }) => {
+  const receiver = new OpConsumer<ChannelOps>(port);
+
+  receiver.register('render', ({ seq, kind, scale = 1 }) => {
+    if (!viewer || !doc) return from([]).pipe();
+
+    const width = Math.ceil(info.width * scale);
+    const height = Math.ceil(info.height * scale);
+
+    return from(seq).pipe(
+      map(index => {
+        if (!viewer || !doc) return;
+
+        const buffer = renderToUint8ClampedArray(
+          viewer,
+          doc,
+          FLAGS,
+          index,
+          width,
+          height
+        );
+        if (!buffer) return;
+
+        return transfer({ index, kind, width, height, buffer }, [
+          buffer.buffer,
+        ]);
+      })
+    );
+  });
+
+  receiver.listen();
+  return true;
+});
+
+consumer.listen();

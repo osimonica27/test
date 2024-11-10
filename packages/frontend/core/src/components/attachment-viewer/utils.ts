@@ -1,3 +1,4 @@
+import type { RenderOut } from '@affine/core/modules/pdf/workers/types';
 import type { AttachmentBlockModel } from '@blocksuite/affine/blocks';
 import { filesize } from 'filesize';
 
@@ -29,18 +30,17 @@ export async function download(model: AttachmentBlockModel) {
 export function renderItem(
   scroller: HTMLElement | null,
   className: string,
-  id: number,
-  width: number,
-  height: number,
-  buffer: Uint8ClampedArray
+  data: RenderOut
 ) {
   if (!scroller) return;
 
   const item = scroller.querySelector(
-    `[data-index="${id}"] > div.${className}`
+    `[data-index="${data.index}"] > div.${className}`
   );
   if (!item) return;
   if (item.firstElementChild) return;
+
+  const { width, height, buffer } = data;
 
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -67,6 +67,13 @@ export function buildAttachmentProps(model: AttachmentBlockModel) {
   return { model, name, ext, size, isPDF };
 }
 
+/**
+ * Generates a set of sequences.
+ *
+ * 1. when `start` is `0`, returns `[0, .., 5]`
+ * 2. when `end` is `total - 1`, returns `[total - 1, .., total - 5]`
+ * 2. when `start > 0` and `end < total - 1`, returns `[18, 17, 19, 16, 20, 15, 21]`
+ */
 export function genSeq(start: number, end: number, total: number) {
   start = Math.max(start, 0);
   end = Math.min(end, Math.max(total - 1, 0));
