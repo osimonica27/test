@@ -4,7 +4,6 @@ import { ObjectPool, Service } from '@toeverything/infra';
 import { PDF } from '../entities/pdf';
 
 // One PDF document one worker.
-// Multiple channels correspond to multiple views.
 
 export class PDFService extends Service {
   PDFs = new ObjectPool<string, PDF>({

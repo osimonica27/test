@@ -46,7 +46,6 @@ export interface TitlebarProps {
   name: string;
   ext: string;
   size: string;
-  isPDF: boolean;
   zoom?: number;
 }
 

@@ -18,7 +18,7 @@ export const AttachmentViewer = ({ model }: AttachmentViewerProps) => {
   return (
     <div className={styles.viewerContainer}>
       <Titlebar {...props} />
-      {props.isPDF ? (
+      {model.type.endsWith('pdf') ? (
         <AttachmentPreviewErrorBoundary>
           <PDFViewer {...props} />
         </AttachmentPreviewErrorBoundary>
@@ -39,7 +39,7 @@ export const AttachmentViewerView = ({ model }: AttachmentViewerProps) => {
         <Titlebar {...props} />
       </ViewHeader>
       <ViewBody>
-        {props.isPDF ? (
+        {model.type.endsWith('pdf') ? (
           <AttachmentPreviewErrorBoundary>
             <PDFViewer {...props} />
           </AttachmentPreviewErrorBoundary>
