@@ -1,4 +1,3 @@
-import type { RenderOut } from '@affine/core/modules/pdf/workers/types';
 import type { AttachmentBlockModel } from '@blocksuite/affine/blocks';
 import { filesize } from 'filesize';
 
@@ -27,37 +26,6 @@ export async function download(model: AttachmentBlockModel) {
   await downloadBlob(blob, model.name);
 }
 
-export function renderItem(
-  scroller: HTMLElement | null,
-  className: string,
-  data: RenderOut
-) {
-  if (!scroller) return;
-
-  const item = scroller.querySelector(
-    `[data-index="${data.index}"] > div.${className}`
-  );
-  if (!item) return;
-  if (item.firstElementChild) return;
-
-  const { width, height, buffer } = data;
-
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  const imageData = new ImageData(buffer, width, height);
-
-  canvas.width = width;
-  canvas.height = height;
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-
-  ctx.putImageData(imageData, 0, 0);
-
-  item.append(canvas);
-}
-
 export function buildAttachmentProps(model: AttachmentBlockModel) {
   const isPDF = model.type.endsWith('pdf');
   const pieces = model.name.split('.');
@@ -72,7 +40,7 @@ export function buildAttachmentProps(model: AttachmentBlockModel) {
  *
  * 1. when `start` is `0`, returns `[0, .., 5]`
  * 2. when `end` is `total - 1`, returns `[total - 1, .., total - 5]`
- * 2. when `start > 0` and `end < total - 1`, returns `[18, 17, 19, 16, 20, 15, 21]`
+ * 3. when `start > 0` and `end < total - 1`, returns `[18, 17, 19, 16, 20, 15, 21]`
  */
 export function genSeq(start: number, end: number, total: number) {
   start = Math.max(start, 0);
@@ -106,4 +74,14 @@ export function genSeq(start: number, end: number, total: number) {
       if (!a.includes(e)) a.push(e);
       return a;
     }, []);
+}
+
+export function calculatePageNum(el: HTMLElement, pageCount: number) {
+  const { scrollTop, scrollHeight } = el;
+  const pageHeight = scrollHeight / pageCount;
+  const n = scrollTop / pageHeight;
+  const t = n / pageCount;
+  const index = Math.floor(n + t);
+  const cursor = Math.min(index, pageCount - 1);
+  return cursor;
 }
