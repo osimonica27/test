@@ -21,9 +21,12 @@ export const titlebar = style({
   borderTopWidth: '0.5px',
   borderTopStyle: 'solid',
   borderTopColor: cssVarV2('layer/insideBorder/border'),
+  textWrap: 'nowrap',
+  overflow: 'hidden',
 });
 
 export const titlebarChild = style({
+  overflow: 'hidden',
   selectors: {
     [`${titlebar} > &`]: {
       display: 'flex',
@@ -40,36 +43,10 @@ export const titlebarChild = style({
 
 export const titlebarName = style({
   display: 'flex',
-});
-
-export const body = style({
-  position: 'relative',
-  zIndex: 0,
-  display: 'flex',
-  flex: 1,
-  selectors: {
-    '&:before': {
-      position: 'absolute',
-      content: '',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-      zIndex: -1,
-    },
-    '&:not(.gridding):before': {
-      backgroundColor: cssVarV2('layer/background/secondary'),
-    },
-    '&.gridding:before': {
-      opacity: 0.25,
-      backgroundSize: '20px 20px',
-      backgroundImage: `linear-gradient(${cssVarV2('button/grabber/default')} 1px, transparent 1px), linear-gradient(to right, ${cssVarV2('button/grabber/default')} 1px, transparent 1px)`,
-    },
-  },
-});
-
-export const virtuoso = style({
-  width: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'pre',
+  wordWrap: 'break-word',
 });
 
 export const error = style({
@@ -101,22 +78,44 @@ export const errorBtns = style({
   marginTop: '28px',
 });
 
-export const mainItemWrapper = style({
+export const viewer = style({
+  position: 'relative',
+  zIndex: 0,
   display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  margin: '20px auto',
+  flex: 1,
   selectors: {
-    '&:first-of-type': {
-      marginTop: 0,
+    '&:before': {
+      position: 'absolute',
+      content: '',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      zIndex: -1,
     },
-    '&:last-of-type': {
-      marginBottom: 0,
+    '&:not(.gridding):before': {
+      backgroundColor: cssVarV2('layer/background/secondary'),
+    },
+    '&.gridding:before': {
+      opacity: 0.25,
+      backgroundSize: '20px 20px',
+      backgroundImage: `linear-gradient(${cssVarV2('button/grabber/default')} 1px, transparent 1px), linear-gradient(to right, ${cssVarV2('button/grabber/default')} 1px, transparent 1px)`,
     },
   },
 });
 
-export const viewerPage = style({
+export const virtuoso = style({
+  width: '100%',
+});
+
+export const pdfIndicator = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '0 12px',
+});
+
+export const pdfPage = style({
   maxWidth: 'calc(100% - 40px)',
   background: cssVarV2('layer/white'),
   boxSizing: 'border-box',
@@ -125,9 +124,10 @@ export const viewerPage = style({
   borderColor: cssVarV2('layer/insideBorder/border'),
   boxShadow:
     '0px 4px 20px 0px var(--transparent-black-200, rgba(0, 0, 0, 0.10))',
+  overflow: 'hidden',
 });
 
-export const thumbnails = style({
+export const pdfThumbnails = style({
   display: 'flex',
   flexDirection: 'column',
   position: 'absolute',
@@ -148,13 +148,12 @@ export const thumbnails = style({
   color: cssVarV2('text/secondary'),
 });
 
-export const thumbnailsPages = style({
+export const pdfThumbnailsList = style({
   position: 'relative',
   display: 'flex',
   flexDirection: 'column',
   maxHeight: '100%',
   overflow: 'hidden',
-  // gap: '12px',
   selectors: {
     '&.collapsed': {
       display: 'none',
@@ -165,13 +164,9 @@ export const thumbnailsPages = style({
   },
 });
 
-export const thumbnailsItemWrapper = style({
-  margin: '0px 12px 12px',
-});
-
-export const thumbnailsPage = style({
+export const pdfThumbnail = style({
   display: 'flex',
-  overflow: 'clip',
+  overflow: 'hidden',
   // width: '100%',
   borderRadius: '4px',
   borderWidth: '1px',
@@ -182,11 +177,4 @@ export const thumbnailsPage = style({
       borderColor: '#29A3FA',
     },
   },
-});
-
-export const thumbnailsIndicator = style({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '0 12px',
 });

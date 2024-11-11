@@ -74,7 +74,7 @@ export const ErrorBase = ({
   buttons = [],
 }: ErrorBaseProps) => {
   return (
-    <div className={clsx([styles.body, styles.error])}>
+    <div className={clsx([styles.viewer, styles.error])}>
       {icon}
       <h3 className={styles.errorTitle}>{title}</h3>
       <p className={styles.errorMessage}>{subtitle}</p>

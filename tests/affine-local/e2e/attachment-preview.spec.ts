@@ -48,7 +48,7 @@ test('attachment preview should be shown', async ({ page }) => {
 
   await page.locator('affine-attachment').first().dblclick();
 
-  const attachmentViewer = page.getByTestId('attachment-viewer');
+  const attachmentViewer = page.getByTestId('pdf-viewer');
   await expect(attachmentViewer).toBeVisible();
 
   await page.waitForTimeout(500);
@@ -89,7 +89,7 @@ test('attachment preview can be expanded', async ({ page }) => {
 
   await page.locator('affine-attachment').first().dblclick();
 
-  const attachmentViewer = page.getByTestId('attachment-viewer');
+  const attachmentViewer = page.getByTestId('pdf-viewer');
 
   await page.waitForTimeout(500);
 
