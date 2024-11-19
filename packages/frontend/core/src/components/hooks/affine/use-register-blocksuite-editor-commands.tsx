@@ -253,6 +253,23 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
 
     unsubs.push(
       registerAffineCommand({
+        id: `editor:${mode}-export-to-snapshot`,
+        preconditionStrategy,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: t['Export to Snapshot'](),
+        async run() {
+          track.$.cmdk.editor.export({
+            type: 'snapshot',
+          });
+
+          exportHandler('snapshot');
+        },
+      })
+    );
+
+    unsubs.push(
+      registerAffineCommand({
         id: `editor:${mode}-move-to-trash`,
         preconditionStrategy,
         category: `editor:${mode}`,
