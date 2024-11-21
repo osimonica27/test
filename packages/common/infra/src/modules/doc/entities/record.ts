@@ -31,6 +31,10 @@ export class DocRecord extends Entity<{ id: string }> {
     { id: this.id }
   );
 
+  get properties() {
+    return this.docPropertiesStore.getDocProperties(this.id) as DocProperties;
+  }
+
   customProperty$(propertyId: string) {
     return this.properties$.selector(
       p => p['custom:' + propertyId]
@@ -72,6 +76,10 @@ export class DocRecord extends Entity<{ id: string }> {
 
   restoreFromTrash() {
     return this.setMeta({ trash: false, trashDate: undefined });
+  }
+
+  get title() {
+    return this.docsStore.meta.getDocMeta(this.id)?.title ?? '';
   }
 
   title$ = this.meta$.map(meta => meta.title ?? '');
