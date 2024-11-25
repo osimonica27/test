@@ -28,6 +28,7 @@ import { forwardRef, useCallback, useEffect, useState } from 'react';
 
 import { useCatchEventCallback } from '../../hooks/use-catch-event-hook';
 import * as styles from './styles.css';
+export { PureWorkspaceCard } from './pure-workspace-card';
 
 const CloudWorkspaceStatus = () => {
   return (
@@ -325,6 +326,12 @@ export const WorkspaceCard = forwardRef<
             {hideCollaborationIcon || information?.isOwner ? null : (
               <CollaborationIcon className={styles.collaborationIcon} />
             )}
+            {/* {hideTeamWorkspaceIcon || !isTeamWorkspace ? null : (
+              <Tooltip content={'team Workspace owned by xxx'}>
+                <TeamWorkspaceIcon className={styles.collaborationIcon} />
+              </Tooltip>
+              
+            )} */}
             {onClickOpenSettings && (
               <div className={styles.settingButton} onClick={onOpenSettings}>
                 <SettingsIcon width={16} height={16} />
@@ -336,7 +343,7 @@ export const WorkspaceCard = forwardRef<
 
         {active && (
           <div className={styles.activeContainer}>
-            <DoneIcon className={styles.activeIcon} />{' '}
+            <DoneIcon className={styles.activeIcon} />
           </div>
         )}
       </div>
