@@ -32,20 +32,12 @@ export class JournalService extends Service {
     });
   }
 
-  getJournalDate(docId: string) {
-    return this.store.getDocJournalDate(docId);
-  }
-
   setJournalDate(docId: string, date: string) {
     this.store.setDocJournalDate(docId, date);
   }
 
   removeJournalDate(docId: string) {
     this.store.removeDocJournalDate(docId);
-  }
-
-  getJournalsByDate(date: string) {
-    return this.store.getDocsByJournalDate(date);
   }
 
   journalsByDate$(date: string) {
@@ -80,7 +72,7 @@ export class JournalService extends Service {
   ensureJournalByDate(maybeDate: MaybeDate) {
     const day = dayjs(maybeDate);
     const title = day.format(JOURNAL_DATE_FORMAT);
-    const docs = this.getJournalsByDate(title);
+    const docs = this.journalsByDate$(title).value;
     if (docs.length) return docs[0];
     return this.createJournal(maybeDate);
   }

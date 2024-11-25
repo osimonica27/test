@@ -61,7 +61,7 @@ export class AtMenuConfigService extends Service {
     const currentWorkspace = this.workspaceService.workspace;
     const rawMetas = currentWorkspace.docCollection.meta.docMetas;
     const isJournal = (d: DocMeta) =>
-      !!this.journalService.getJournalDate(d.id);
+      !!this.journalService.journalDate$(d.id).value;
     const docItems = signal<LinkedMenuItem[]>([]);
 
     // recent docs should be at the top
@@ -96,11 +96,13 @@ export class AtMenuConfigService extends Service {
         return null;
       }
 
-      const title = I18n.t(
-        docDisplayMetaService.title(meta, {
-          reference: true,
-        })
-      );
+      let title = docDisplayMetaService.title$(meta.id, {
+        reference: true,
+      }).value;
+
+      if (typeof title === 'object' && 'i18nKey' in title) {
+        title = I18n.t(title);
+      }
 
       if (!fuzzyMatch(title, query)) {
         return null;
@@ -109,10 +111,12 @@ export class AtMenuConfigService extends Service {
       return {
         name: title,
         key: meta.id,
-        icon: docDisplayMetaService.icon(meta.id, {
-          type: 'lit',
-          reference: true,
-        })(),
+        icon: docDisplayMetaService
+          .icon$(meta.id, {
+            type: 'lit',
+            reference: true,
+          })
+          .value(),
         action: () => {
           close();
           track.doc.editor.atMenu.linkDoc();

@@ -24,10 +24,6 @@ export class DocsStore extends Store {
     return this.workspaceService.workspace.docCollection.createDoc();
   }
 
-  get meta() {
-    return this.workspaceService.workspace.docCollection.meta;
-  }
-
   watchDocIds() {
     return yjsObserveByPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),

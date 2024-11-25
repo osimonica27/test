@@ -34,18 +34,6 @@ export const useJournalHelper = () => {
   });
 
   /**
-   * query all journals by date
-   */
-  const getJournalsByDate = useCallback(
-    (maybeDate: MaybeDate) => {
-      return journalService.getJournalsByDate(
-        dayjs(maybeDate).format(JOURNAL_DATE_FORMAT)
-      );
-    },
-    [journalService]
-  );
-
-  /**
    * get journal by date, create one if not exist
    */
   const getJournalByDate = useCallback(
@@ -57,10 +45,9 @@ export const useJournalHelper = () => {
 
   return useMemo(
     () => ({
-      getJournalsByDate,
       getJournalByDate,
     }),
-    [getJournalsByDate, getJournalByDate]
+    [getJournalByDate]
   );
 };
 

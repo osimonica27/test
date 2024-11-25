@@ -1,6 +1,5 @@
 import { extractEmojiIcon } from '@affine/core/utils';
 import { i18nTime } from '@affine/i18n';
-import type { DocMeta } from '@blocksuite/affine/store';
 import {
   BlockLinkIcon as LitBlockLinkIcon,
   EdgelessIcon as LitEdgelessIcon,
@@ -119,76 +118,6 @@ export class DocDisplayMetaService extends Service {
         : iconSet.TodayIcon;
   }
 
-  icon(docId: string, options?: DocDisplayIconOptions<'rc'>): typeof TodayIcon;
-
-  icon(
-    docId: string,
-    options?: DocDisplayIconOptions<'lit'>
-  ): typeof LitTodayIcon;
-
-  icon<T extends IconType = 'rc'>(
-    docId: string,
-    options?: DocDisplayIconOptions<T>
-  ) {
-    const get = <V>(data$: LiveData<V>) => data$.value;
-
-    const iconSet = icons[options?.type ?? 'rc'];
-
-    const doc = get(this.docsService.list.doc$(docId));
-    const title = doc ? get(doc.title$) : '';
-    const mode = doc ? get(doc.primaryMode$) : undefined;
-    const finalMode = options?.mode ?? mode ?? 'page';
-    const referenceToNode = !!(options?.reference && options.referenceToNode);
-
-    // increases block link priority
-    if (referenceToNode) {
-      return iconSet.BlockLinkIcon;
-    }
-
-    // journal icon
-    const journalDate = this._toDayjs(
-      this.journalService.getJournalDate(docId)
-    );
-
-    if (journalDate) {
-      return this.getJournalIcon(journalDate, options);
-    }
-
-    // reference icon
-    if (options?.reference) {
-      return finalMode === 'edgeless'
-        ? iconSet.LinkedEdgelessIcon
-        : iconSet.LinkedPageIcon;
-    }
-
-    // emoji icon
-    const enableEmojiIcon =
-      get(this.featureFlagService.flags.enable_emoji_doc_icon.$) &&
-      options?.enableEmojiIcon !== false;
-    if (enableEmojiIcon) {
-      const { emoji } = extractEmojiIcon(title);
-      if (emoji) return () => emoji;
-    }
-
-    // default icon
-    return finalMode === 'edgeless' ? iconSet.EdgelessIcon : iconSet.PageIcon;
-  }
-
-  icon$(
-    docId: string,
-    options?: DocDisplayIconOptions<'rc'>
-  ): LiveData<typeof TodayIcon>;
-
-  icon$(
-    docId: string,
-    options?: DocDisplayIconOptions<'lit'>
-  ): LiveData<typeof LitTodayIcon>;
-
-  icon$<T extends IconType = 'rc'>(
-    docId: string,
-    options?: DocDisplayIconOptions<T>
-  ): LiveData<T extends 'rc' ? typeof TodayIcon : typeof LitTodayIcon>;
-
   icon$<T extends IconType = 'rc'>(
     docId: string,
     options?: DocDisplayIconOptions<T>
@@ -211,7 +140,6 @@ export class DocDisplayMetaService extends Service {
       const journalDate = this._toDayjs(
         this.journalService.journalDate$(docId).value
       );
-
       if (journalDate) {
         return this.getJournalIcon(journalDate, options);
       }
@@ -235,41 +163,6 @@ export class DocDisplayMetaService extends Service {
       // default icon
       return finalMode === 'edgeless' ? iconSet.EdgelessIcon : iconSet.PageIcon;
     });
-  }
-
-  title(idOrMeta: string | DocMeta, options?: DocDisplayTitleOptions) {
-    const docId = typeof idOrMeta === 'string' ? idOrMeta : idOrMeta.id;
-    const docTitle =
-      typeof idOrMeta === 'string'
-        ? this.docsService.list.doc(idOrMeta).title
-        : idOrMeta.title;
-
-    const journalDateString = this.journalService.getJournalDate(docId);
-
-    // journal
-    if (journalDateString) {
-      return i18nTime(journalDateString, { absolute: { accuracy: 'day' } });
-    }
-
-    if (options?.originalTitle) return options.originalTitle;
-
-    // empty title
-    if (!docTitle) return { i18nKey: 'Untitled' } as const;
-
-    // reference
-    if (options?.reference) return docTitle;
-
-    // check emoji
-    const enableEmojiIcon =
-      this.featureFlagService.flags.enable_emoji_doc_icon.value &&
-      options?.enableEmojiIcon !== false;
-    if (enableEmojiIcon) {
-      const { rest } = extractEmojiIcon(docTitle);
-      return rest;
-    }
-
-    // default
-    return docTitle;
   }
 
   title$(docId: string, options?: DocDisplayTitleOptions) {

@@ -17,7 +17,13 @@ export class DocRecordList extends Entity {
     this.store.watchDocIds().pipe(
       map(ids =>
         ids.map(id => {
-          return this.doc(id);
+          const exists = this.pool.get(id);
+          if (exists) {
+            return exists;
+          }
+          const record = this.framework.createEntity(DocRecord, { id });
+          this.pool.set(id, record);
+          return record;
         })
       )
     ),
@@ -45,16 +51,6 @@ export class DocRecordList extends Entity {
     this.store.watchDocListReady(),
     false
   );
-
-  public doc(id: string) {
-    const exists = this.pool.get(id);
-    if (exists) {
-      return exists;
-    }
-    const record = this.framework.createEntity(DocRecord, { id });
-    this.pool.set(id, record);
-    return record;
-  }
 
   public doc$(id: string) {
     return this.docs$.map(record => record.find(record => record.id === id));

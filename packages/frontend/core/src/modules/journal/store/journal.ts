@@ -37,18 +37,6 @@ export class JournalStore extends Store {
     });
   }
 
-  getDocJournalDate(docId: string) {
-    const doc = this.docsService.list.doc(docId);
-    if (!doc) {
-      return undefined;
-    }
-    const journal = doc.properties.journal;
-    if (journal && !isJournalString(journal)) {
-      return undefined;
-    }
-    return journal ?? undefined;
-  }
-
   setDocJournalDate(docId: string, date: string) {
     const doc = this.docsService.list.doc$(docId).value;
     if (!doc) {
