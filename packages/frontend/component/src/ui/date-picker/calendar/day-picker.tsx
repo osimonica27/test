@@ -190,7 +190,7 @@ export const DayPicker = memo(function DayPicker(
             // eslint-disable-next-line react/no-array-index-key
             <div key={i} className={clsx(styles.monthViewRow)}>
               {week.map(cell => {
-                const dateValue = cell.date.format();
+                const dateValue = cell.date.format(format);
                 return (
                   <div
                     className={clsx(
