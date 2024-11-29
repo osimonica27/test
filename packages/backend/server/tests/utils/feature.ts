@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 
 import { Permission } from '../../src/core/permission';
 import { UserType } from '../../src/core/user/types';
@@ -17,6 +17,7 @@ export class WorkspaceResolverMock {
             type: Permission.Owner,
             userId: user.id,
             accepted: true,
+            status: WorkspaceMemberStatus.Accepted,
           },
         },
       },
