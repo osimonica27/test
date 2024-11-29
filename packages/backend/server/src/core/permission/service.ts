@@ -412,7 +412,7 @@ export class PermissionService {
           workspaceId: ws,
           pageId: page,
           userId: user,
-          OR: this.acceptedCondition,
+          accepted: true,
           type: {
             gte: permission,
           },
