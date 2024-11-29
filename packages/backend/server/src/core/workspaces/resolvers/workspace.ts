@@ -22,6 +22,7 @@ import {
   InternalServerError,
   MailService,
   MemberQuotaExceeded,
+  NotInSpace,
   RequestMutex,
   SpaceAccessDenied,
   SpaceNotFound,
@@ -390,7 +391,7 @@ export class WorkspaceResolver {
     }
 
     try {
-      // lock to prevent concurrent invite
+      // lock to prevent concurrent invite and grant
       const lockFlag = `invite:${workspaceId}`;
       await using lock = await this.mutex.lock(lockFlag);
       if (!lock) {
@@ -462,6 +463,47 @@ export class WorkspaceResolver {
         }
       }
       return inviteId;
+    } catch (e) {
+      this.logger.error('failed to invite user', e);
+      return new TooManyRequest();
+    }
+  }
+
+  @Mutation(() => String)
+  async grant(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string,
+    @Args('userId') userId: string,
+    @Args('permission', { type: () => Permission }) permission: Permission
+  ) {
+    await this.permissions.checkWorkspace(
+      workspaceId,
+      user.id,
+      Permission.Owner
+    );
+
+    if (permission === Permission.Owner) {
+      throw new CantChangeSpaceOwner();
+    }
+
+    try {
+      // lock to prevent concurrent invite and grant
+      const lockFlag = `invite:${workspaceId}`;
+      await using lock = await this.mutex.lock(lockFlag);
+      if (!lock) {
+        return new TooManyRequest();
+      }
+
+      const isMember = await this.permissions.isWorkspaceMember(
+        workspaceId,
+        userId,
+        Permission.Read
+      );
+      if (isMember) {
+        return await this.permissions.grant(workspaceId, userId, permission);
+      } else {
+        return new NotInSpace({ spaceId: workspaceId });
+      }
     } catch (e) {
       this.logger.error('failed to invite user', e);
       return new TooManyRequest();
