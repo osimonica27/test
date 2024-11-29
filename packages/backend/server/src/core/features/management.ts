@@ -168,6 +168,29 @@ export class FeatureManagementService {
     return this.feature.listFeatureWorkspaces(feature);
   }
 
+  // ======== Team Workspace Features ========
+  async addTeamWorkspace(workspaceId: string, reason: string) {
+    return this.feature.addWorkspaceFeature(
+      workspaceId,
+      FeatureType.TeamWorkspace,
+      reason
+    );
+  }
+
+  async removeTeamWorkspace(workspaceId: string) {
+    return this.feature.removeWorkspaceFeature(
+      workspaceId,
+      FeatureType.TeamWorkspace
+    );
+  }
+
+  async isTeamWorkspace(workspaceId: string) {
+    return this.feature.hasWorkspaceFeature(
+      workspaceId,
+      FeatureType.TeamWorkspace
+    );
+  }
+
   @OnEvent('user.admin.created')
   async onAdminUserCreated({ id }: EventPayload<'user.admin.created'>) {
     await this.addAdmin(id);

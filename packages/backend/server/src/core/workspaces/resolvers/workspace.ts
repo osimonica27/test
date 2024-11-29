@@ -32,6 +32,7 @@ import {
 import { CurrentUser, Public } from '../../auth';
 import { type Editor, PgWorkspaceDocStorageAdapter } from '../../doc';
 import { DocContentService } from '../../doc-renderer';
+import { FeatureManagementService } from '../../features';
 import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService, QuotaQueryType } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
@@ -81,6 +82,7 @@ export class WorkspaceResolver {
     private readonly mailer: MailService,
     private readonly prisma: PrismaClient,
     private readonly permissions: PermissionService,
+    private readonly feature: FeatureManagementService,
     private readonly quota: QuotaManagementService,
     private readonly users: UserService,
     private readonly event: EventEmitter,
@@ -520,11 +522,26 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string
   ) {
-    await this.permissions.checkWorkspace(
+    const isTeam = await this.feature.isTeamWorkspace(workspaceId);
+    const isAdmin = await this.permissions.tryCheckWorkspaceIs(
       workspaceId,
-      user.id,
+      userId,
       Permission.Admin
     );
+    if (isTeam && isAdmin) {
+      // only owner can revoke team workspace admin
+      await this.permissions.checkWorkspaceIs(
+        workspaceId,
+        user.id,
+        Permission.Owner
+      );
+    } else {
+      await this.permissions.checkWorkspace(
+        workspaceId,
+        user.id,
+        Permission.Admin
+      );
+    }
 
     return this.permissions.revokeWorkspace(workspaceId, userId);
   }
@@ -563,7 +580,18 @@ export class WorkspaceResolver {
     @Args('workspaceName') workspaceName: string,
     @Args('sendLeaveMail', { nullable: true }) sendLeaveMail: boolean
   ) {
-    await this.permissions.checkWorkspace(workspaceId, user.id);
+    const isTeam = await this.feature.isTeamWorkspace(workspaceId);
+
+    if (isTeam) {
+      // only admin can leave team workspace voluntarily
+      await this.permissions.checkWorkspaceIs(
+        workspaceId,
+        user.id,
+        Permission.Admin
+      );
+    } else {
+      await this.permissions.checkWorkspace(workspaceId, user.id);
+    }
 
     const owner = await this.permissions.getWorkspaceOwner(workspaceId);
 
