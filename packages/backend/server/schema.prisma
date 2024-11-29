@@ -227,6 +227,7 @@ model WorkspaceFeature {
   feature   Feature   @relation(fields: [featureId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  @@index([workspaceId])
   @@map("workspace_features")
 }
 

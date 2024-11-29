@@ -10,3 +10,6 @@ CREATE TYPE "WorkspaceMemberStatus" AS ENUM ('Pending', 'NeedMoreSeat', 'UnderRe
 -- AlterTable
 ALTER TABLE "workspace_user_permissions" ADD COLUMN     "status" "WorkspaceMemberStatus" NOT NULL DEFAULT 'Pending',
 ADD COLUMN     "updated_at" TIMESTAMPTZ(3) NOT NULL;
+
+-- CreateIndex
+CREATE INDEX "workspace_features_workspace_id_idx" ON "workspace_features"("workspace_id");
