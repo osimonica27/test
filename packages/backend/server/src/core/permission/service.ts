@@ -1,17 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 
 import {
   DocAccessDenied,
   SpaceAccessDenied,
   SpaceOwnerNotFound,
 } from '../../fundamentals';
+import { FeatureKind, FeatureType } from '../features/types';
 import { Permission, PublicPageMode } from './types';
 
 @Injectable()
 export class PermissionService {
   constructor(private readonly prisma: PrismaClient) {}
+
+  private get acceptedCondition() {
+    return [
+      {
+        accepted: true,
+      },
+      {
+        status: WorkspaceMemberStatus.Accepted,
+      },
+    ];
+  }
 
   /// Start regin: workspace permission
   async get(ws: string, user: string) {
@@ -19,7 +31,7 @@ export class PermissionService {
       where: {
         workspaceId: ws,
         userId: user,
-        accepted: true,
+        OR: this.acceptedCondition,
       },
     });
 
@@ -36,7 +48,7 @@ export class PermissionService {
       .count({
         where: {
           workspaceId,
-          accepted: true,
+          OR: this.acceptedCondition,
         },
       })
       .then(count => count > 0);
@@ -47,8 +59,8 @@ export class PermissionService {
       .findMany({
         where: {
           userId,
-          accepted: true,
           type: Permission.Owner,
+          OR: this.acceptedCondition,
         },
         select: {
           workspaceId: true,
@@ -132,7 +144,7 @@ export class PermissionService {
       where: {
         workspaceId: ws,
         userId: user,
-        accepted: true,
+        OR: this.acceptedCondition,
         type: {
           gte: permission,
         },
@@ -193,7 +205,7 @@ export class PermissionService {
         where: {
           workspaceId: ws,
           userId: user,
-          accepted: true,
+          OR: this.acceptedCondition,
           type: {
             gte: permission,
           },
@@ -228,7 +240,7 @@ export class PermissionService {
       where: {
         workspaceId: ws,
         userId: user,
-        accepted: true,
+        OR: this.acceptedCondition,
       },
     });
 
@@ -292,14 +304,33 @@ export class PermissionService {
   }
 
   async acceptWorkspaceInvitation(invitationId: string, workspaceId: string) {
-    const result = await this.prisma.workspaceUserPermission.updateMany({
-      where: {
-        id: invitationId,
-        workspaceId: workspaceId,
-      },
-      data: {
-        accepted: true,
-      },
+    const result = await this.prisma.$transaction(async tx => {
+      // TODO(@darkskygit): use feature to check after data layer is ready
+      const isTeam = await tx.workspaceFeature
+        .count({
+          where: {
+            workspaceId,
+            activated: true,
+            feature: {
+              feature: FeatureType.TeamWorkspace,
+              type: FeatureKind.Feature,
+            },
+          },
+        })
+        .then(count => count > 0);
+      return await tx.workspaceUserPermission.updateMany({
+        where: {
+          id: invitationId,
+          workspaceId: workspaceId,
+          AND: [{ accepted: false }, { status: WorkspaceMemberStatus.Pending }],
+        },
+        data: {
+          accepted: true,
+          status: isTeam
+            ? WorkspaceMemberStatus.UnderReview
+            : WorkspaceMemberStatus.Accepted,
+        },
+      });
     });
 
     return result.count > 0;
@@ -381,7 +412,7 @@ export class PermissionService {
           workspaceId: ws,
           pageId: page,
           userId: user,
-          accepted: true,
+          OR: this.acceptedCondition,
           type: {
             gte: permission,
           },
