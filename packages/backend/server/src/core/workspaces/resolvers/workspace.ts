@@ -173,11 +173,12 @@ export class WorkspaceResolver {
 
     return data
       .filter(({ user }) => !!user)
-      .map(({ id, accepted, type, user }) => ({
+      .map(({ id, accepted, status, type, user }) => ({
         ...user,
         permission: type,
         inviteId: id,
         accepted,
+        status,
       }));
   }
 
