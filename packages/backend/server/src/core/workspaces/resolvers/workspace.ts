@@ -10,7 +10,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 import { getStreamAsBuffer } from 'get-stream';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
@@ -240,7 +240,14 @@ export class WorkspaceResolver {
     const data = await this.prisma.workspaceUserPermission.findMany({
       where: {
         userId: user.id,
-        accepted: true,
+        OR: [
+          {
+            accepted: true,
+          },
+          {
+            status: WorkspaceMemberStatus.Accepted,
+          },
+        ],
       },
       include: {
         workspace: true,
@@ -287,6 +294,7 @@ export class WorkspaceResolver {
             type: Permission.Owner,
             userId: user.id,
             accepted: true,
+            status: WorkspaceMemberStatus.Accepted,
           },
         },
       },

@@ -8,7 +8,7 @@ import {
   PickType,
   registerEnumType,
 } from '@nestjs/graphql';
-import type { Workspace } from '@prisma/client';
+import { Workspace, WorkspaceMemberStatus } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
 
 import { Permission } from '../permission';
@@ -17,6 +17,11 @@ import { UserType } from '../user/types';
 registerEnumType(Permission, {
   name: 'Permission',
   description: 'User permission in workspace',
+});
+
+registerEnumType(WorkspaceMemberStatus, {
+  name: 'WorkspaceMemberStatus',
+  description: 'Member invite status in workspace',
 });
 
 @ObjectType()
@@ -34,8 +39,16 @@ export class InviteUserType extends OmitType(
   @Field({ description: 'Invite id' })
   inviteId!: string;
 
-  @Field({ description: 'User accepted' })
+  @Field({
+    description: 'User accepted',
+    deprecationReason: 'Use `status` instead',
+  })
   accepted!: boolean;
+
+  @Field(() => WorkspaceMemberStatus, {
+    description: 'Member invite status in workspace',
+  })
+  status!: WorkspaceMemberStatus;
 }
 
 @ObjectType()

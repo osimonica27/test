@@ -364,7 +364,7 @@ type InvitationWorkspaceType {
 
 type InviteUserType {
   """User accepted"""
-  accepted: Boolean!
+  accepted: Boolean! @deprecated(reason: "Use `status` instead")
 
   """User avatar url"""
   avatarUrl: String
@@ -390,6 +390,9 @@ type InviteUserType {
 
   """User permission in workspace"""
   permission: Permission!
+
+  """Member invite status in workspace"""
+  status: WorkspaceMemberStatus!
 }
 
 enum InvoiceStatus {
@@ -901,6 +904,14 @@ type VersionRejectedDataType {
 
 type WorkspaceBlobSizes {
   size: SafeInt!
+}
+
+"""Member invite status in workspace"""
+enum WorkspaceMemberStatus {
+  Accepted
+  NeedMoreSeat
+  Pending
+  UnderReview
 }
 
 type WorkspacePage {
