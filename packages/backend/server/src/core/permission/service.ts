@@ -220,6 +220,33 @@ export class PermissionService {
     return false;
   }
 
+  async checkWorkspaceIs(
+    ws: string,
+    user: string,
+    permission: Permission = Permission.Read
+  ) {
+    if (!(await this.tryCheckWorkspaceIs(ws, user, permission))) {
+      throw new SpaceAccessDenied({ spaceId: ws });
+    }
+  }
+
+  async tryCheckWorkspaceIs(
+    ws: string,
+    user: string,
+    permission: Permission = Permission.Read
+  ) {
+    const count = await this.prisma.workspaceUserPermission.count({
+      where: {
+        workspaceId: ws,
+        userId: user,
+        OR: this.acceptedCondition,
+        type: permission,
+      },
+    });
+
+    return count > 0;
+  }
+
   async allowUrlPreview(ws: string) {
     const count = await this.prisma.workspace.count({
       where: {
