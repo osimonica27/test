@@ -19,6 +19,7 @@
 		9D90BE2E2CCB9876006677DB /* public in Resources */ = {isa = PBXBuildFile; fileRef = 9D90BE232CCB9876006677DB /* public */; };
 		C4C413792CBE705D00337889 /* Pods_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */; };
 		E93B276C2CED92B1001409B8 /* NavigationGesturePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93B276B2CED92B1001409B8 /* NavigationGesturePlugin.swift */; };
+		E97774C12CF846B9009FF983 /* afdevkey.plist in Resources */ = {isa = PBXBuildFile; fileRef = E97774C02CF846AE009FF983 /* afdevkey.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +38,7 @@
 		AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
 		E93B276B2CED92B1001409B8 /* NavigationGesturePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationGesturePlugin.swift; sourceTree = "<group>"; };
+		E97774C02CF846AE009FF983 /* afdevkey.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = afdevkey.plist; sourceTree = "<group>"; };
 		FC68EB0AF532CFC21C3344DD /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -111,6 +113,7 @@
 		9D90BE242CCB9876006677DB /* App */ = {
 			isa = PBXGroup;
 			children = (
+				E97774C02CF846AE009FF983 /* afdevkey.plist */,
 				9D90BE1A2CCB9876006677DB /* plugins */,
 				9D90BE1B2CCB9876006677DB /* AFFiNEViewController.swift */,
 				9D90BE1C2CCB9876006677DB /* AppDelegate.swift */,
@@ -144,6 +147,7 @@
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
 				9592DBEFFC6D2A0C8D5DEB22 /* [CP] Embed Pods Frameworks */,
+				06BC71AE56DF9F7D9910CD4F /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -196,6 +200,7 @@
 				9D90BE292CCB9876006677DB /* Assets.xcassets in Resources */,
 				9D90BE2A2CCB9876006677DB /* capacitor.config.json in Resources */,
 				9D90BE2B2CCB9876006677DB /* config.xml in Resources */,
+				E97774C12CF846B9009FF983 /* afdevkey.plist in Resources */,
 				9D90BE2D2CCB9876006677DB /* Main.storyboard in Resources */,
 				9D90BE2E2CCB9876006677DB /* public in Resources */,
 			);
@@ -204,6 +209,21 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		06BC71AE56DF9F7D9910CD4F /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-App/Pods-App-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		6634F4EFEBD30273BCE97C65 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;

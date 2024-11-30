@@ -123,6 +123,10 @@ jobs:
           enableScripts: false
       - name: Cap sync
         run: yarn workspace @affine/ios cap sync
+      - name: Write afdevkey
+        working-directory: packages/frontend/apps/ios/App
+        run: |
+          echo "${{ env.APPSFLYER_DEV_KEY }}" | base64 --decode -o App/afdevkey.plist
       - name: Signing By Apple Developer ID
         uses: apple-actions/import-codesign-certs@v3
         id: import-codesign-certs

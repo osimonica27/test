@@ -17,3 +17,5 @@ App/**/*.p8
 *.zip
 *.cer
 App/fastlane/report.xml
+
+afdevkey.plist

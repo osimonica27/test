@@ -63,5 +63,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>AFFiNE needs access to track your activity on other apps and websites.</string>
 </dict>
 </plist>
