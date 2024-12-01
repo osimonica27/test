@@ -147,20 +147,14 @@ export const SettingSidebar = ({
     [onTabChange]
   );
 
-  const isMobile = window.innerWidth <= 768;
-
   return (
     <div className={style.settingSlideBar} data-testid="settings-sidebar">
-      {!isMobile && (
-        <div className={style.sidebarTitle}>
-          {t['com.affine.settingSidebar.title']()}
-        </div>
-      )}
-      {!isMobile && (
-        <div className={style.sidebarSubtitle}>
-          {t['com.affine.settingSidebar.settings.general']()}
-        </div>
-      )}
+      <div className={style.sidebarTitle}>
+        {t['com.affine.settingSidebar.title']()}
+      </div>
+      <div className={style.sidebarSubtitle}>
+        {t['com.affine.settingSidebar.settings.general']()}
+      </div>
       <div className={style.sidebarItemsWrapper}>
         {generalList.map(({ title, icon, key, testId }) => {
           return (
@@ -181,11 +175,9 @@ export const SettingSidebar = ({
         })}
       </div>
 
-      {!isMobile && (
-        <div className={style.sidebarSubtitle}>
-          {t['com.affine.settingSidebar.settings.workspace']()}
-        </div>
-      )}
+      <div className={style.sidebarSubtitle}>
+        {t['com.affine.settingSidebar.settings.workspace']()}
+      </div>
       <div className={clsx(style.sidebarItemsWrapper, 'scroll')}>
         <Suspense fallback={<WorkspaceListSkeleton />}>
           <WorkspaceList

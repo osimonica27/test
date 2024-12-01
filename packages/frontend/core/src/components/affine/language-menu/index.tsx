@@ -64,7 +64,7 @@ export const LanguageMenu = () => {
     >
       <MenuTrigger
         data-testid="language-menu-button"
-        style={{ textTransform: 'capitalize', fontWeight: 600, width: '250px' }}
+        className={styles.menuTriggerStyle}
         block={true}
       >
         {currentLanguage.originalName}

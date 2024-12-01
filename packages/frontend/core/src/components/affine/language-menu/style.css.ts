@@ -22,3 +22,14 @@ export const languageLabelWrapper = style({
   alignItems: 'center',
   marginRight: '8px',
 });
+
+export const menuTriggerStyle = style({
+  textTransform: 'capitalize',
+  fontWeight: 600,
+  width: '250px',
+  '@media': {
+    'screen and (max-width: 768px)': {
+      width: '180px',
+    },
+  },
+});

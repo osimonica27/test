@@ -15,6 +15,11 @@ export const sidebarTitle = style({
   fontWeight: '600',
   lineHeight: cssVar('lineHeight'),
   padding: '0px 16px 0px 24px',
+  '@media': {
+    'screen and (max-width: 768px)': {
+      display: 'none',
+    },
+  },
 });
 export const sidebarSubtitle = style({
   fontSize: cssVar('fontSm'),
@@ -26,6 +31,11 @@ export const sidebarSubtitle = style({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  '@media': {
+    'screen and (max-width: 768px)': {
+      display: 'none',
+    },
+  },
 });
 export const sidebarItemsWrapper = style({
   display: 'flex',
