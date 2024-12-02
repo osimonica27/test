@@ -1,7 +1,10 @@
+import { EventPayload } from '@affine/server/fundamentals';
 import { Injectable } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 
 import {
   FeatureConfigType,
+  FeatureManagementService,
   FeatureService,
   FeatureType,
 } from '../../core/features';
@@ -13,7 +16,6 @@ import {
   QuotaOverride,
   QuotaOverrideService,
 } from '../../core/quota';
-import { SubscriptionService } from './service';
 
 @Injectable()
 export class TeamQuotaOverride implements QuotaOverride {
@@ -22,9 +24,9 @@ export class TeamQuotaOverride implements QuotaOverride {
   >;
 
   constructor(
-    private readonly subscription: SubscriptionService,
     feature: FeatureService,
-    quotaOverride: QuotaOverrideService
+    quotaOverride: QuotaOverrideService,
+    private readonly manager: FeatureManagementService
   ) {
     quotaOverride.registerOverride(this);
     this.teamFeature = feature.getFeature(FeatureType.TeamWorkspace);
@@ -63,5 +65,43 @@ export class TeamQuotaOverride implements QuotaOverride {
       };
     }
     return orig;
+  }
+
+  @OnEvent('workspace.subscription.activated')
+  async onSubscriptionUpdated({
+    workspaceId,
+    plan,
+    recurring,
+    quantity,
+  }: EventPayload<'workspace.subscription.activated'>) {
+    switch (plan) {
+      case 'team':
+        await this.manager.addTeamWorkspace(
+          workspaceId,
+          `${recurring} team subscription activated`
+        );
+        await this.manager.updateWorkspaceFeatureConfig(
+          workspaceId,
+          FeatureType.TeamWorkspace,
+          { seatStorage: quantity }
+        );
+        break;
+      default:
+        break;
+    }
+  }
+
+  @OnEvent('user.subscription.canceled')
+  async onSubscriptionCanceled({
+    workspaceId,
+    plan,
+  }: EventPayload<'workspace.subscription.canceled'>) {
+    switch (plan) {
+      case 'team':
+        await this.manager.removeTeamWorkspace(workspaceId);
+        break;
+      default:
+        break;
+    }
   }
 }
