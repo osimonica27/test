@@ -374,6 +374,7 @@ export enum FeatureType {
   Admin = 'Admin',
   Copilot = 'Copilot',
   EarlyAccess = 'EarlyAccess',
+  TeamWorkspace = 'TeamWorkspace',
   UnlimitedCopilot = 'UnlimitedCopilot',
   UnlimitedWorkspace = 'UnlimitedWorkspace',
 }
@@ -440,7 +441,10 @@ export interface InvitationWorkspaceType {
 
 export interface InviteUserType {
   __typename?: 'InviteUserType';
-  /** User accepted */
+  /**
+   * User accepted
+   * @deprecated Use `status` instead
+   */
   accepted: Scalars['Boolean']['output'];
   /** User avatar url */
   avatarUrl: Maybe<Scalars['String']['output']>;
@@ -462,6 +466,8 @@ export interface InviteUserType {
   name: Maybe<Scalars['String']['output']>;
   /** User permission in workspace */
   permission: Permission;
+  /** Member invite status in workspace */
+  status: WorkspaceMemberStatus;
 }
 
 export enum InvoiceStatus {
@@ -1220,6 +1226,14 @@ export interface VersionRejectedDataType {
 export interface WorkspaceBlobSizes {
   __typename?: 'WorkspaceBlobSizes';
   size: Scalars['SafeInt']['output'];
+}
+
+/** Member invite status in workspace */
+export enum WorkspaceMemberStatus {
+  Accepted = 'Accepted',
+  NeedMoreSeat = 'NeedMoreSeat',
+  Pending = 'Pending',
+  UnderReview = 'UnderReview',
 }
 
 export interface WorkspacePage {
