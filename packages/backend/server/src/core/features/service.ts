@@ -5,7 +5,12 @@ import type { JsonObject } from '@prisma/client/runtime/library';
 import { CannotDeleteAllAdminAccount } from '../../fundamentals';
 import { WorkspaceType } from '../workspaces/types';
 import { FeatureConfigType, getFeature } from './feature';
-import { FeatureConfigSchema, FeatureKind, FeatureType } from './types';
+import {
+  FeatureConfig,
+  FeatureConfigSchema,
+  FeatureKind,
+  FeatureType,
+} from './types';
 
 @Injectable()
 export class FeatureService {
@@ -147,7 +152,7 @@ export class FeatureService {
     return configs.filter(feature => !!feature.feature);
   }
 
-  async getActivatedUserFeatures(userId: string) {
+  async getUserActivatedFeatures(userId: string) {
     const features = await this.prisma.userFeature.findMany({
       where: {
         userId,
@@ -174,7 +179,7 @@ export class FeatureService {
     return configs.filter(feature => !!feature.feature);
   }
 
-  async listFeatureUsers(feature: FeatureType) {
+  async listUsersByFeature(feature: FeatureType) {
     return this.prisma.userFeature
       .findMany({
         where: {
@@ -287,35 +292,34 @@ export class FeatureService {
       .then(r => r.count);
   }
 
-  async getWorkspaceFeatureConfig(
+  async getWorkspaceConfig<F extends FeatureType>(
     workspaceId: string,
-    feature: FeatureType
-  ): Promise<JsonObject | undefined> {
-    return this.prisma.workspaceFeature
-      .findFirst({
-        where: {
-          workspaceId,
-          feature: { feature, type: FeatureKind.Feature },
-          activated: true,
-        },
-        select: { feature: true, configs: true },
-      })
-      .then(r => {
-        if (r) {
-          const { feature, configs } = r.feature;
-          const ret = FeatureConfigSchema.safeParse({
-            feature,
-            configs: Object.assign({}, configs, r.configs),
-          });
-          if (ret.success) {
-            return ret.data.configs as JsonObject;
-          }
-        }
-        return undefined;
+    feature: F
+  ): Promise<FeatureConfig<F> | undefined> {
+    const f = await this.prisma.workspaceFeature.findFirst({
+      where: {
+        workspaceId,
+        feature: { feature, type: FeatureKind.Feature },
+        activated: true,
+      },
+      select: { feature: true, configs: true },
+    });
+
+    if (f) {
+      const { feature, configs } = f.feature;
+      const ret = FeatureConfigSchema.safeParse({
+        feature,
+        configs: Object.assign({}, configs, f.configs),
       });
+      if (ret.success) {
+        // @ts-expect-error already check by zod
+        return ret.data.configs;
+      }
+    }
+    return undefined;
   }
 
-  async updateWorkspaceFeatureConfig(
+  async updateWorkspaceConfig(
     workspaceId: string,
     feature: FeatureType,
     configs: JsonObject
@@ -327,17 +331,15 @@ export class FeatureService {
     if (!ret.success) {
       throw new Error(`Invalid feature config: ${ret.error.message}`);
     }
-    return this.prisma.workspaceFeature
-      .updateMany({
-        where: {
-          workspaceId,
-          feature: { feature, type: FeatureKind.Feature },
-          activated: true,
-        },
-
-        data: { configs },
-      })
-      .then(r => r.count);
+    const r = await this.prisma.workspaceFeature.updateMany({
+      where: {
+        workspaceId,
+        feature: { feature, type: FeatureKind.Feature },
+        activated: true,
+      },
+      data: { configs },
+    });
+    return r.count;
   }
 
   /**
@@ -372,7 +374,9 @@ export class FeatureService {
     return configs.filter(feature => !!feature.feature);
   }
 
-  async listFeatureWorkspaces(feature: FeatureType): Promise<WorkspaceType[]> {
+  async listWorkspacesByFeature(
+    feature: FeatureType
+  ): Promise<WorkspaceType[]> {
     return this.prisma.workspaceFeature
       .findMany({
         where: {

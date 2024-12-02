@@ -101,9 +101,9 @@ export const FeatureSchema = commonFeatureSchema
   })
   .and(FeatureConfigSchema);
 
-export type FeatureConfig<F extends FeatureType> = z.infer<
+export type FeatureConfig<F extends FeatureType> = (z.infer<
   typeof FeatureConfigSchema
-> & { feature: F };
+> & { feature: F })['configs'];
 
 export type Feature = z.infer<typeof FeatureSchema>;
 

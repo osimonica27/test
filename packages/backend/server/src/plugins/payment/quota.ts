@@ -1,13 +1,7 @@
-import { EventPayload } from '@affine/server/fundamentals';
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
-import {
-  FeatureConfigType,
-  FeatureManagementService,
-  FeatureService,
-  FeatureType,
-} from '../../core/features';
+import { FeatureManagementService, FeatureType } from '../../core/features';
 import {
   formatSize,
   OneGB,
@@ -16,20 +10,15 @@ import {
   QuotaOverride,
   QuotaOverrideService,
 } from '../../core/quota';
+import { EventPayload } from '../../fundamentals';
 
 @Injectable()
 export class TeamQuotaOverride implements QuotaOverride {
-  private readonly teamFeature: Promise<
-    FeatureConfigType<FeatureType.TeamWorkspace> | undefined
-  >;
-
   constructor(
-    feature: FeatureService,
     quotaOverride: QuotaOverrideService,
     private readonly manager: FeatureManagementService
   ) {
     quotaOverride.registerOverride(this);
-    this.teamFeature = feature.getFeature(FeatureType.TeamWorkspace);
   }
 
   get name() {
@@ -38,15 +27,17 @@ export class TeamQuotaOverride implements QuotaOverride {
 
   async overrideQuota(
     _ownerId: string,
-    _workspaceId: string,
+    workspaceId: string,
     features: FeatureType[],
     orig: QuotaBusinessType
   ): Promise<QuotaBusinessType> {
-    const feature = await this.teamFeature;
-    if (features.includes(FeatureType.TeamWorkspace) && feature) {
-      const seatStorage = feature.config.configs.seatStorage;
+    const config = await this.manager.getWorkspaceConfig(
+      workspaceId,
+      FeatureType.TeamWorkspace
+    );
+    if (features.includes(FeatureType.TeamWorkspace) && config) {
+      const seatStorage = config.seatStorage;
       const blobLimit = 500 * OneMB;
-      // TODO: get member limit from subscription
       const memberLimit = orig.memberCount;
       const storageQuota = 100 * OneGB + seatStorage * memberLimit;
       return {
@@ -80,7 +71,7 @@ export class TeamQuotaOverride implements QuotaOverride {
           workspaceId,
           `${recurring} team subscription activated`
         );
-        await this.manager.updateWorkspaceFeatureConfig(
+        await this.manager.updateWorkspaceConfig(
           workspaceId,
           FeatureType.TeamWorkspace,
           { seatStorage: quantity }

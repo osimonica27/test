@@ -82,7 +82,7 @@ test('should be able to check early access', async t => {
   const f2 = await management.canEarlyAccess(u1.email);
   t.true(f2, 'should have early access');
 
-  const f3 = await feature.listFeatureUsers(FeatureType.EarlyAccess);
+  const f3 = await feature.listUsersByFeature(FeatureType.EarlyAccess);
   t.is(f3.length, 1, 'should have 1 user');
   t.is(f3[0].id, u1.id, 'should be the same user');
 });
@@ -156,7 +156,7 @@ test('should be able to check workspace feature', async t => {
   const f2 = await management.hasWorkspaceFeature(w1.id, FeatureType.Copilot);
   t.true(f2, 'should have copilot');
 
-  const f3 = await feature.listFeatureWorkspaces(FeatureType.Copilot);
+  const f3 = await feature.listWorkspacesByFeature(FeatureType.Copilot);
   t.is(f3.length, 1, 'should have 1 workspace');
   t.is(f3[0].id, w1.id, 'should be the same workspace');
 });
