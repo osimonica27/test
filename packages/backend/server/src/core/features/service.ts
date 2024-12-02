@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import type { JsonObject } from '@prisma/client/runtime/library';
 
 import { CannotDeleteAllAdminAccount } from '../../fundamentals';
 import { WorkspaceType } from '../workspaces/types';
 import { FeatureConfigType, getFeature } from './feature';
-import { FeatureKind, FeatureType } from './types';
+import { FeatureConfigSchema, FeatureKind, FeatureType } from './types';
 
 @Injectable()
 export class FeatureService {
@@ -282,6 +283,59 @@ export class FeatureService {
         data: {
           activated: false,
         },
+      })
+      .then(r => r.count);
+  }
+
+  async getWorkspaceFeatureConfig(
+    workspaceId: string,
+    feature: FeatureType
+  ): Promise<JsonObject | undefined> {
+    return this.prisma.workspaceFeature
+      .findFirst({
+        where: {
+          workspaceId,
+          feature: { feature, type: FeatureKind.Feature },
+          activated: true,
+        },
+        select: { feature: true, configs: true },
+      })
+      .then(r => {
+        if (r) {
+          const { feature, configs } = r.feature;
+          const ret = FeatureConfigSchema.safeParse({
+            feature,
+            configs: Object.assign({}, configs, r.configs),
+          });
+          if (ret.success) {
+            return ret.data.configs as JsonObject;
+          }
+        }
+        return undefined;
+      });
+  }
+
+  async updateWorkspaceFeatureConfig(
+    workspaceId: string,
+    feature: FeatureType,
+    configs: JsonObject
+  ) {
+    const ret = FeatureConfigSchema.safeParse({
+      feature,
+      configs,
+    });
+    if (!ret.success) {
+      throw new Error(`Invalid feature config: ${ret.error.message}`);
+    }
+    return this.prisma.workspaceFeature
+      .updateMany({
+        where: {
+          workspaceId,
+          feature: { feature, type: FeatureKind.Feature },
+          activated: true,
+        },
+
+        data: { configs },
       })
       .then(r => r.count);
   }

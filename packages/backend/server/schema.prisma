@@ -145,7 +145,7 @@ model WorkspaceUserPermission {
   status      WorkspaceMemberStatus @default(Pending)
   createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
   /// When the invite status changed
-  updatedAt   DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedAt   DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -211,6 +211,8 @@ model WorkspaceFeature {
   workspaceId String @map("workspace_id") @db.VarChar
   featureId   Int    @map("feature_id") @db.Integer
 
+  // override feature's configs
+  configs   Json      @default("{}") @db.Json
   // we will record the reason why the feature is enabled/disabled
   // for example:
   // - copilet_v1: "owner buy the copilet feature package"
@@ -237,7 +239,7 @@ model Feature {
   version   Int      @default(0) @db.Integer
   // 0: feature, 1: quota
   type      Int      @db.Integer
-  // configs, define by feature conntroller
+  // configs, define by feature controller
   configs   Json     @db.Json
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 

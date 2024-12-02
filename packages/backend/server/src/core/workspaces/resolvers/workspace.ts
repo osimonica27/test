@@ -156,22 +156,11 @@ export class WorkspaceResolver {
     @Args('take', { type: () => Int, nullable: true }) take?: number
   ) {
     const data = await this.prisma.workspaceUserPermission.findMany({
-      where: {
-        workspaceId: workspace.id,
-      },
+      where: { workspaceId: workspace.id },
       skip,
       take: take || 8,
-      orderBy: [
-        {
-          createdAt: 'asc',
-        },
-        {
-          type: 'desc',
-        },
-      ],
-      include: {
-        user: true,
-      },
+      orderBy: [{ createdAt: 'asc' }, { type: 'desc' }],
+      include: { user: true },
     });
 
     return data

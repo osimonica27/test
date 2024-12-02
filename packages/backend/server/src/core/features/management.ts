@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Config, type EventPayload, OnEvent } from '../../fundamentals';
 import { UserService } from '../user/service';
 import { FeatureService } from './service';
-import { FeatureType } from './types';
+import { FeatureConfig, FeatureType } from './types';
 
 const STAFF = ['@toeverything.info', '@affine.pro'];
 
@@ -166,6 +166,22 @@ export class FeatureManagementService {
 
   async listFeatureWorkspaces(feature: FeatureType) {
     return this.feature.listFeatureWorkspaces(feature);
+  }
+
+  async updateWorkspaceFeatureConfig<F extends FeatureType>(
+    workspaceId: string,
+    feature: F,
+    configs: FeatureConfig<F>
+  ) {
+    const orig = await this.feature.getWorkspaceFeatureConfig(
+      workspaceId,
+      feature
+    );
+    return this.feature.updateWorkspaceFeatureConfig(
+      workspaceId,
+      feature,
+      Object.assign({}, orig, configs)
+    );
   }
 
   // ======== Team Workspace Features ========
