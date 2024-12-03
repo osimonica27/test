@@ -130,7 +130,7 @@ export class QuotaManagementService {
     // todo(@darkskygit): need a mechanism to allow feature as a middleware to edit quota
     const features = await this.feature
       .getWorkspaceFeatures(workspaceId)
-      .then(f => f.map(f => f.feature.name));
+      .then(f => f.filter(f => f.activated).map(f => f.feature.name));
     const unlimited = features.includes(FeatureType.UnlimitedWorkspace);
 
     const quota = {

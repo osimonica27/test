@@ -442,6 +442,7 @@ query getMembersByWorkspaceId($workspaceId: String!, $skip: Int!, $take: Int!) {
       inviteId
       accepted
       emailVerified
+      status
     }
   }
 }`,

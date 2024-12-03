@@ -1346,7 +1346,7 @@ export interface WorkspaceType {
   /** The team subscription of the workspace, if exists. */
   subscription: Maybe<SubscriptionType>;
   /** Team workspace config */
-  teamConfig: TeamWorkspaceConfigType;
+  teamConfig: Maybe<TeamWorkspaceConfigType>;
 }
 
 export interface WorkspaceTypeHistoriesArgs {
@@ -1769,6 +1769,7 @@ export type GetMembersByWorkspaceIdQuery = {
       inviteId: string;
       accepted: boolean;
       emailVerified: boolean | null;
+      status: WorkspaceMemberStatus;
     }>;
   };
 };
@@ -2593,7 +2594,7 @@ export type WorkspaceTeamConfigQuery = {
       __typename?: 'TeamWorkspaceConfigType';
       enableAi: boolean;
       enableShare: boolean;
-    };
+    } | null;
   };
 };
 

@@ -362,6 +362,16 @@ type InvitationWorkspaceType {
   name: String!
 }
 
+type InviteResult {
+  email: String!
+
+  """Invite id, null if invite record create failed"""
+  inviteId: String
+
+  """Invite email sent success"""
+  sentSuccess: Boolean!
+}
+
 type InviteUserType {
   """User accepted"""
   accepted: Boolean! @deprecated(reason: "Use `status` instead")
@@ -497,6 +507,7 @@ type Mutation {
   forkCopilotSession(options: ForkChatSessionInput!): String!
   grant(permission: Permission!, userId: String!, workspaceId: String!): String!
   invite(email: String!, permission: Permission!, sendInviteMail: Boolean, workspaceId: String!): String!
+  inviteBatch(emails: [String!]!, sendInviteMail: Boolean, workspaceId: String!): [InviteResult!]!
   leaveWorkspace(sendLeaveMail: Boolean, workspaceId: String!, workspaceName: String!): Boolean!
   publishPage(mode: PublicPageMode = Page, pageId: String!, workspaceId: String!): WorkspacePage!
   recoverDoc(guid: String!, timestamp: DateTime!, workspaceId: String!): DateTime!
@@ -1005,7 +1016,7 @@ type WorkspaceType {
   subscription: SubscriptionType
 
   """Team workspace config"""
-  teamConfig: TeamWorkspaceConfigType!
+  teamConfig: TeamWorkspaceConfigType
 }
 
 type tokenType {
