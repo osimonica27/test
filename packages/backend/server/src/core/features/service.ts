@@ -18,14 +18,9 @@ export class FeatureService {
 
   async getFeature<F extends FeatureType>(feature: F) {
     const data = await this.prisma.feature.findFirst({
-      where: {
-        feature,
-        type: FeatureKind.Feature,
-      },
+      where: { feature, type: FeatureKind.Feature },
       select: { id: true },
-      orderBy: {
-        version: 'desc',
-      },
+      orderBy: { version: 'desc' },
     });
 
     if (data) {
@@ -296,20 +291,21 @@ export class FeatureService {
     workspaceId: string,
     feature: F
   ): Promise<FeatureConfig<F> | undefined> {
-    const f = await this.prisma.workspaceFeature.findFirst({
+    const origFeature = await this.getFeature(feature);
+    const workspaceFeature = await this.prisma.workspaceFeature.findFirst({
       where: {
         workspaceId,
         feature: { feature, type: FeatureKind.Feature },
         activated: true,
       },
-      select: { feature: true, configs: true },
+      select: { configs: true },
     });
 
-    if (f) {
-      const { feature, configs } = f.feature;
+    if (origFeature && workspaceFeature) {
+      const { name, configs } = origFeature;
       const ret = FeatureConfigSchema.safeParse({
-        feature,
-        configs: Object.assign({}, configs, f.configs),
+        feature: name,
+        configs: Object.assign({}, configs, workspaceFeature.configs),
       });
       if (ret.success) {
         // @ts-expect-error already check by zod

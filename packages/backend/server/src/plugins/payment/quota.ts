@@ -3,7 +3,9 @@ import { OnEvent } from '@nestjs/event-emitter';
 
 import { FeatureManagementService, FeatureType } from '../../core/features';
 import {
+  formatDate,
   formatSize,
+  OneDay,
   OneGB,
   OneMB,
   QuotaBusinessType,
@@ -39,18 +41,21 @@ export class TeamQuotaOverride implements QuotaOverride {
       const { seatStorage, maxMembers: memberLimit = 1 } = config;
       const blobLimit = 500 * OneMB;
       const storageQuota = 100 * OneGB + seatStorage * memberLimit;
+      const historyPeriod = 30 * OneDay;
       return {
         ...orig,
-        name: 'team_plan_v1',
+        name: FeatureType.TeamWorkspace.toString(),
         storageQuota,
         blobLimit,
         businessBlobLimit: blobLimit,
+        historyPeriod,
         memberLimit,
         humanReadable: {
           ...orig.humanReadable,
           name: 'Team',
           blobLimit: formatSize(blobLimit),
           storageQuota: formatSize(storageQuota),
+          historyPeriod: formatDate(historyPeriod),
           memberLimit: memberLimit.toString(),
         },
       };
