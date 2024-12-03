@@ -623,10 +623,32 @@ export class WorkspaceResolver {
     }
 
     if (sendAcceptMail) {
+      // TODO(@darkskygit): team accept mail
       await this.mailer.sendAcceptedEmail(inviter.email, {
         inviteeName: invitee.name,
         workspaceName: workspace.name,
       });
+    }
+
+    return this.permissions.acceptWorkspaceInvitation(inviteId, workspaceId);
+  }
+
+  @Mutation(() => Boolean)
+  async declineInviteById(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string,
+    @Args('inviteId') inviteId: string
+  ) {
+    await this.permissions.checkWorkspace(
+      workspaceId,
+      user.id,
+      Permission.Admin
+    );
+
+    const { invitee, user: inviter } = await this.getInviteInfo(inviteId);
+
+    if (!inviter || !invitee) {
+      throw new UserNotFound();
     }
 
     return this.permissions.acceptWorkspaceInvitation(inviteId, workspaceId);

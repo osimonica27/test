@@ -4,6 +4,7 @@ import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 
 import {
   DocAccessDenied,
+  PrismaTransaction,
   SpaceAccessDenied,
   SpaceOwnerNotFound,
 } from '../../fundamentals';
@@ -330,21 +331,25 @@ export class PermissionService {
     });
   }
 
+  private async isTeamWorkspace(tx: PrismaTransaction, workspaceId: string) {
+    return await tx.workspaceFeature
+      .count({
+        where: {
+          workspaceId,
+          activated: true,
+          feature: {
+            feature: FeatureType.TeamWorkspace,
+            type: FeatureKind.Feature,
+          },
+        },
+      })
+      .then(count => count > 0);
+  }
+
   async acceptWorkspaceInvitation(invitationId: string, workspaceId: string) {
     const result = await this.prisma.$transaction(async tx => {
       // TODO(@darkskygit): use feature to check after data layer is ready
-      const isTeam = await tx.workspaceFeature
-        .count({
-          where: {
-            workspaceId,
-            activated: true,
-            feature: {
-              feature: FeatureType.TeamWorkspace,
-              type: FeatureKind.Feature,
-            },
-          },
-        })
-        .then(count => count > 0);
+      const isTeam = await this.isTeamWorkspace(tx, workspaceId);
       return await tx.workspaceUserPermission.updateMany({
         where: {
           id: invitationId,
@@ -354,10 +359,36 @@ export class PermissionService {
         data: {
           accepted: true,
           status: isTeam
-            ? WorkspaceMemberStatus.UnderReview
+            ? // TODO(@darkskygit): switch to NeedMoreSeat if seat is full
+              WorkspaceMemberStatus.UnderReview
             : WorkspaceMemberStatus.Accepted,
         },
       });
+    });
+
+    return result.count > 0;
+  }
+
+  async declineWorkspaceInvitation(invitationId: string, workspaceId: string) {
+    const result = await this.prisma.$transaction(async tx => {
+      const isTeam = await this.isTeamWorkspace(tx, workspaceId);
+      if (isTeam) {
+        return await tx.workspaceUserPermission.updateMany({
+          where: {
+            id: invitationId,
+            workspaceId: workspaceId,
+            AND: [
+              { accepted: true },
+              { status: WorkspaceMemberStatus.UnderReview },
+            ],
+          },
+          data: {
+            accepted: true,
+            status: WorkspaceMemberStatus.Declined,
+          },
+        });
+      }
+      return { count: 0 };
     });
 
     return result.count > 0;
