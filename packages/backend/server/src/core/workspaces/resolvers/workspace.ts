@@ -33,7 +33,7 @@ import {
 import { CurrentUser, Public } from '../../auth';
 import { type Editor, PgWorkspaceDocStorageAdapter } from '../../doc';
 import { DocContentService } from '../../doc-renderer';
-import { FeatureManagementService } from '../../features';
+import { FeatureManagementService, FeatureType } from '../../features';
 import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService, QuotaQueryType } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
@@ -41,6 +41,7 @@ import { UserService, UserType } from '../../user';
 import {
   InvitationType,
   InviteUserType,
+  UpdateTeamWorkspaceConfigInput,
   UpdateWorkspaceInput,
   WorkspaceType,
 } from '../types';
@@ -340,6 +341,21 @@ export class WorkspaceResolver {
       },
       data: updates,
     });
+  }
+
+  @Mutation(() => Boolean)
+  async updateTeamWorkspaceConfig(
+    @CurrentUser() user: CurrentUser,
+    @Args({ name: 'configs', type: () => UpdateTeamWorkspaceConfigInput })
+    { id, ...configs }: UpdateTeamWorkspaceConfigInput
+  ) {
+    await this.permissions.checkWorkspace(id, user.id, Permission.Admin);
+
+    return this.feature.updateWorkspaceConfig(
+      id,
+      FeatureType.TeamWorkspace,
+      configs
+    );
   }
 
   @Mutation(() => Boolean)
