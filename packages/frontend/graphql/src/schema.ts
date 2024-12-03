@@ -546,6 +546,7 @@ export interface Mutation {
   createUser: UserType;
   /** Create a new workspace */
   createWorkspace: WorkspaceType;
+  declineInviteById: Scalars['Boolean']['output'];
   deleteAccount: DeleteAccount;
   deleteBlob: Scalars['Boolean']['output'];
   /** Delete a user account */
@@ -654,6 +655,11 @@ export interface MutationCreateUserArgs {
 
 export interface MutationCreateWorkspaceArgs {
   init?: InputMaybe<Scalars['Upload']['input']>;
+}
+
+export interface MutationDeclineInviteByIdArgs {
+  inviteId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationDeleteBlobArgs {
@@ -1255,6 +1261,7 @@ export interface WorkspaceBlobSizes {
 /** Member invite status in workspace */
 export enum WorkspaceMemberStatus {
   Accepted = 'Accepted',
+  Declined = 'Declined',
   NeedMoreSeat = 'NeedMoreSeat',
   Pending = 'Pending',
   UnderReview = 'UnderReview',
