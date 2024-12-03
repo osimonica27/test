@@ -439,6 +439,15 @@ export interface InvitationWorkspaceType {
   name: Scalars['String']['output'];
 }
 
+export interface InviteResult {
+  __typename?: 'InviteResult';
+  email: Scalars['String']['output'];
+  /** Invite id, null if invite record create failed */
+  inviteId: Maybe<Scalars['String']['output']>;
+  /** Invite email sent success */
+  sentSuccess: Scalars['Boolean']['output'];
+}
+
 export interface InviteUserType {
   __typename?: 'InviteUserType';
   /**
@@ -556,6 +565,7 @@ export interface Mutation {
   forkCopilotSession: Scalars['String']['output'];
   grant: Scalars['String']['output'];
   invite: Scalars['String']['output'];
+  inviteBatch: Array<InviteResult>;
   leaveWorkspace: Scalars['Boolean']['output'];
   publishPage: WorkspacePage;
   recoverDoc: Scalars['DateTime']['output'];
@@ -688,6 +698,12 @@ export interface MutationGrantArgs {
 export interface MutationInviteArgs {
   email: Scalars['String']['input'];
   permission: Permission;
+  sendInviteMail?: InputMaybe<Scalars['Boolean']['input']>;
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationInviteBatchArgs {
+  emails: Array<Scalars['String']['input']>;
   sendInviteMail?: InputMaybe<Scalars['Boolean']['input']>;
   workspaceId: Scalars['String']['input'];
 }
@@ -2505,6 +2521,16 @@ export type InviteByEmailMutationVariables = Exact<{
 
 export type InviteByEmailMutation = { __typename?: 'Mutation'; invite: string };
 
+export type DeclineInviteByIdMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  inviteId: Scalars['String']['input'];
+}>;
+
+export type DeclineInviteByIdMutation = {
+  __typename?: 'Mutation';
+  declineInviteById: boolean;
+};
+
 export type AcceptInviteByInviteIdMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   inviteId: Scalars['String']['input'];
@@ -2569,6 +2595,17 @@ export type WorkspaceTeamConfigQuery = {
       enableShare: boolean;
     };
   };
+};
+
+export type GrantWorkspaceTeamMemberMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+  permission: Permission;
+}>;
+
+export type GrantWorkspaceTeamMemberMutation = {
+  __typename?: 'Mutation';
+  grant: string;
 };
 
 export type SetTeamShareMutationVariables = Exact<{
@@ -3005,6 +3042,11 @@ export type Mutations =
       response: InviteByEmailMutation;
     }
   | {
+      name: 'declineInviteByIdMutation';
+      variables: DeclineInviteByIdMutationVariables;
+      response: DeclineInviteByIdMutation;
+    }
+  | {
       name: 'acceptInviteByInviteIdMutation';
       variables: AcceptInviteByInviteIdMutationVariables;
       response: AcceptInviteByInviteIdMutation;
@@ -3013,6 +3055,11 @@ export type Mutations =
       name: 'setTeamAiMutation';
       variables: SetTeamAiMutationVariables;
       response: SetTeamAiMutation;
+    }
+  | {
+      name: 'grantWorkspaceTeamMemberMutation';
+      variables: GrantWorkspaceTeamMemberMutationVariables;
+      response: GrantWorkspaceTeamMemberMutation;
     }
   | {
       name: 'setTeamShareMutation';
