@@ -36,12 +36,12 @@ export class TeamQuotaOverride implements QuotaOverride {
       FeatureType.TeamWorkspace
     );
     if (features.includes(FeatureType.TeamWorkspace) && config) {
-      const seatStorage = config.seatStorage;
+      const { seatStorage, maxMembers: memberLimit = 1 } = config;
       const blobLimit = 500 * OneMB;
-      const memberLimit = orig.memberCount;
       const storageQuota = 100 * OneGB + seatStorage * memberLimit;
       return {
         ...orig,
+        name: 'team_plan_v1',
         storageQuota,
         blobLimit,
         businessBlobLimit: blobLimit,
@@ -74,7 +74,7 @@ export class TeamQuotaOverride implements QuotaOverride {
         await this.manager.updateWorkspaceConfig(
           workspaceId,
           FeatureType.TeamWorkspace,
-          { seatStorage: quantity }
+          { maxMembers: quantity }
         );
         break;
       default:
