@@ -1291,6 +1291,17 @@ mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Perm
 }`,
 };
 
+export const declineInviteByIdMutation = {
+  id: 'declineInviteByIdMutation' as const,
+  operationName: 'declineInviteById',
+  definitionName: 'declineInviteById',
+  containsFile: false,
+  query: `
+mutation declineInviteById($workspaceId: String!, $inviteId: String!) {
+  declineInviteById(workspaceId: $workspaceId, inviteId: $inviteId)
+}`,
+};
+
 export const acceptInviteByInviteIdMutation = {
   id: 'acceptInviteByInviteIdMutation' as const,
   operationName: 'acceptInviteByInviteId',
@@ -1358,6 +1369,17 @@ query workspaceTeamConfig($id: String!) {
       enableShare
     }
   }
+}`,
+};
+
+export const grantWorkspaceTeamMemberMutation = {
+  id: 'grantWorkspaceTeamMemberMutation' as const,
+  operationName: 'grantWorkspaceTeamMember',
+  definitionName: 'grant',
+  containsFile: false,
+  query: `
+mutation grantWorkspaceTeamMember($workspaceId: String!, $userId: String!, $permission: Permission!) {
+  grant(workspaceId: $workspaceId, userId: $userId, permission: $permission)
 }`,
 };
 

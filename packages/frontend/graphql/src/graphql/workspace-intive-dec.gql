@@ -1,0 +1,3 @@
+mutation declineInviteById($workspaceId: String!, $inviteId: String!) {
+  declineInviteById(workspaceId: $workspaceId, inviteId: $inviteId)
+}
