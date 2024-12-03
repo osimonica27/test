@@ -485,6 +485,7 @@ type Mutation {
 
   """Create a new workspace"""
   createWorkspace(init: Upload): WorkspaceType!
+  declineInviteById(inviteId: String!, workspaceId: String!): Boolean!
   deleteAccount: DeleteAccount!
   deleteBlob(hash: String!, workspaceId: String!): Boolean!
 
@@ -922,6 +923,7 @@ type WorkspaceBlobSizes {
 """Member invite status in workspace"""
 enum WorkspaceMemberStatus {
   Accepted
+  Declined
   NeedMoreSeat
   Pending
   UnderReview
