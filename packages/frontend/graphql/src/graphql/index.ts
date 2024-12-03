@@ -1333,3 +1333,41 @@ query workspaceQuota($id: String!) {
   }
 }`,
 };
+
+export const setTeamAiMutation = {
+  id: 'setTeamAiMutation' as const,
+  operationName: 'setTeamAi',
+  definitionName: 'updateWorkspaceTeamConfig',
+  containsFile: false,
+  query: `
+mutation setTeamAi($id: ID!, $enableAi: Boolean) {
+  updateWorkspaceTeamConfig(input: {id: $id, enableAi: $enableAi})
+}`,
+};
+
+export const workspaceTeamConfigQuery = {
+  id: 'workspaceTeamConfigQuery' as const,
+  operationName: 'workspaceTeamConfig',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query workspaceTeamConfig($id: String!) {
+  workspace(id: $id) {
+    teamConfig {
+      enableAi
+      enableShare
+    }
+  }
+}`,
+};
+
+export const setTeamShareMutation = {
+  id: 'setTeamShareMutation' as const,
+  operationName: 'setTeamShare',
+  definitionName: 'updateWorkspaceTeamConfig',
+  containsFile: false,
+  query: `
+mutation setTeamShare($id: ID!, $enableShare: Boolean) {
+  updateWorkspaceTeamConfig(input: {id: $id, enableShare: $enableShare})
+}`,
+};

@@ -10,7 +10,7 @@ import {
   QuotaOverride,
   QuotaOverrideService,
 } from '../../core/quota';
-import { EventPayload } from '../../fundamentals';
+import type { EventPayload } from '../../fundamentals';
 
 @Injectable()
 export class TeamQuotaOverride implements QuotaOverride {

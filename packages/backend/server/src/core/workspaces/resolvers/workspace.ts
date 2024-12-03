@@ -41,6 +41,7 @@ import { UserService, UserType } from '../../user';
 import {
   InvitationType,
   InviteUserType,
+  TeamWorkspaceConfigType,
   UpdateTeamWorkspaceConfigInput,
   UpdateWorkspaceInput,
   WorkspaceType,
@@ -343,13 +344,24 @@ export class WorkspaceResolver {
     });
   }
 
+  @ResolveField(() => TeamWorkspaceConfigType, {
+    description: 'Team workspace config',
+    complexity: 2,
+  })
+  async teamConfig(@Parent() workspace: WorkspaceType) {
+    return this.feature.getWorkspaceConfig(
+      workspace.id,
+      FeatureType.TeamWorkspace
+    );
+  }
+
   @Mutation(() => Boolean)
-  async updateTeamWorkspaceConfig(
+  async updateWorkspaceTeamConfig(
     @CurrentUser() user: CurrentUser,
-    @Args({ name: 'configs', type: () => UpdateTeamWorkspaceConfigInput })
+    @Args({ name: 'input', type: () => UpdateTeamWorkspaceConfigInput })
     { id, ...configs }: UpdateTeamWorkspaceConfigInput
   ) {
-    await this.permissions.checkWorkspace(id, user.id, Permission.Admin);
+    await this.permissions.checkWorkspace(id, user.id, Permission.Owner);
 
     return this.feature.updateWorkspaceConfig(
       id,

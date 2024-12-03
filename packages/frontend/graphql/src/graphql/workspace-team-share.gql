@@ -1,0 +1,3 @@
+mutation setTeamShare($id: ID!, $enableShare: Boolean) {
+  updateWorkspaceTeamConfig(input: { id: $id, enableShare: $enableShare })
+}
