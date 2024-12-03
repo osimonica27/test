@@ -553,6 +553,7 @@ export interface Mutation {
   deleteWorkspace: Scalars['Boolean']['output'];
   /** Create a chat session */
   forkCopilotSession: Scalars['String']['output'];
+  grant: Scalars['String']['output'];
   invite: Scalars['String']['output'];
   leaveWorkspace: Scalars['Boolean']['output'];
   publishPage: WorkspacePage;
@@ -588,6 +589,7 @@ export interface Mutation {
   updateUserFeatures: Array<FeatureType>;
   /** Update workspace */
   updateWorkspace: WorkspaceType;
+  updateWorkspaceTeamConfig: Scalars['Boolean']['output'];
   /** Upload user avatar */
   uploadAvatar: UserType;
   verifyEmail: Scalars['Boolean']['output'];
@@ -669,6 +671,12 @@ export interface MutationDeleteWorkspaceArgs {
 
 export interface MutationForkCopilotSessionArgs {
   options: ForkChatSessionInput;
+}
+
+export interface MutationGrantArgs {
+  permission: Permission;
+  userId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationInviteArgs {
@@ -800,6 +808,10 @@ export interface MutationUpdateUserFeaturesArgs {
 
 export interface MutationUpdateWorkspaceArgs {
   input: UpdateWorkspaceInput;
+}
+
+export interface MutationUpdateWorkspaceTeamConfigArgs {
+  input: UpdateTeamWorkspaceConfigInput;
 }
 
 export interface MutationUploadAvatarArgs {
@@ -1134,6 +1146,12 @@ export enum SubscriptionVariant {
   Onetime = 'Onetime',
 }
 
+export interface TeamWorkspaceConfigType {
+  __typename?: 'TeamWorkspaceConfigType';
+  enableAi: Scalars['Boolean']['output'];
+  enableShare: Scalars['Boolean']['output'];
+}
+
 export interface UnknownOauthProviderDataType {
   __typename?: 'UnknownOauthProviderDataType';
   name: Scalars['String']['output'];
@@ -1142,6 +1160,12 @@ export interface UnknownOauthProviderDataType {
 export interface UnsupportedSubscriptionPlanDataType {
   __typename?: 'UnsupportedSubscriptionPlanDataType';
   plan: Scalars['String']['output'];
+}
+
+export interface UpdateTeamWorkspaceConfigInput {
+  enableAi?: InputMaybe<Scalars['Boolean']['input']>;
+  enableShare?: InputMaybe<Scalars['Boolean']['input']>;
+  id: Scalars['ID']['input'];
 }
 
 export interface UpdateUserInput {
@@ -1298,6 +1322,8 @@ export interface WorkspaceType {
   sharedPages: Array<Scalars['String']['output']>;
   /** The team subscription of the workspace, if exists. */
   subscription: Maybe<SubscriptionType>;
+  /** Team workspace config */
+  teamConfig: TeamWorkspaceConfigType;
 }
 
 export interface WorkspaceTypeHistoriesArgs {
@@ -2512,6 +2538,42 @@ export type WorkspaceQuotaQuery = {
   };
 };
 
+export type SetTeamAiMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  enableAi?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+export type SetTeamAiMutation = {
+  __typename?: 'Mutation';
+  updateWorkspaceTeamConfig: boolean;
+};
+
+export type WorkspaceTeamConfigQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type WorkspaceTeamConfigQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    teamConfig: {
+      __typename?: 'TeamWorkspaceConfigType';
+      enableAi: boolean;
+      enableShare: boolean;
+    };
+  };
+};
+
+export type SetTeamShareMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  enableShare?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+export type SetTeamShareMutation = {
+  __typename?: 'Mutation';
+  updateWorkspaceTeamConfig: boolean;
+};
+
 export type Queries =
   | {
       name: 'adminServerConfigQuery';
@@ -2712,6 +2774,11 @@ export type Queries =
       name: 'workspaceQuotaQuery';
       variables: WorkspaceQuotaQueryVariables;
       response: WorkspaceQuotaQuery;
+    }
+  | {
+      name: 'workspaceTeamConfigQuery';
+      variables: WorkspaceTeamConfigQueryVariables;
+      response: WorkspaceTeamConfigQuery;
     };
 
 export type Mutations =
@@ -2934,4 +3001,14 @@ export type Mutations =
       name: 'acceptInviteByInviteIdMutation';
       variables: AcceptInviteByInviteIdMutationVariables;
       response: AcceptInviteByInviteIdMutation;
+    }
+  | {
+      name: 'setTeamAiMutation';
+      variables: SetTeamAiMutationVariables;
+      response: SetTeamAiMutation;
+    }
+  | {
+      name: 'setTeamShareMutation';
+      variables: SetTeamShareMutationVariables;
+      response: SetTeamShareMutation;
     };

@@ -113,20 +113,31 @@ export class UpdateWorkspaceInput extends PickType(
   id!: string;
 }
 
-@InputType()
-export class UpdateTeamWorkspaceConfigInput
+@ObjectType()
+export class TeamWorkspaceConfigType
   implements
     Omit<
       Partial<FeatureConfig<FeatureType.TeamWorkspace>>,
       'seatStorage' | 'maxMembers'
     >
 {
-  @Field(() => ID)
-  id!: string;
-
   @Field(() => Boolean)
   enableAi!: boolean;
 
   @Field(() => Boolean)
   enableShare!: boolean;
+}
+
+@InputType()
+export class UpdateTeamWorkspaceConfigInput extends PartialType(
+  TeamWorkspaceConfigType
+) {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => Boolean, { nullable: true })
+  override enableAi!: boolean;
+
+  @Field(() => Boolean, { nullable: true })
+  override enableShare!: boolean;
 }

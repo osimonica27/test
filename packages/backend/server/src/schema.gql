@@ -535,6 +535,7 @@ type Mutation {
 
   """Update workspace"""
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
+  updateWorkspaceTeamConfig(input: UpdateTeamWorkspaceConfigInput!): Boolean!
 
   """Upload user avatar"""
   uploadAvatar(avatar: Upload!): UserType!
@@ -822,12 +823,23 @@ enum SubscriptionVariant {
   Onetime
 }
 
+type TeamWorkspaceConfigType {
+  enableAi: Boolean!
+  enableShare: Boolean!
+}
+
 type UnknownOauthProviderDataType {
   name: String!
 }
 
 type UnsupportedSubscriptionPlanDataType {
   plan: String!
+}
+
+input UpdateTeamWorkspaceConfigInput {
+  enableAi: Boolean
+  enableShare: Boolean
+  id: ID!
 }
 
 input UpdateUserInput {
@@ -989,6 +1001,9 @@ type WorkspaceType {
 
   """The team subscription of the workspace, if exists."""
   subscription: SubscriptionType
+
+  """Team workspace config"""
+  teamConfig: TeamWorkspaceConfigType!
 }
 
 type tokenType {
