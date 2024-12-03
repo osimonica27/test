@@ -178,7 +178,7 @@ export class FeatureManagementService {
   async updateWorkspaceConfig<F extends FeatureType>(
     workspaceId: string,
     feature: F,
-    configs: FeatureConfig<F>
+    configs: Partial<FeatureConfig<F>>
   ) {
     const orig = await this.getWorkspaceConfig(workspaceId, feature);
     return await this.feature.updateWorkspaceConfig(

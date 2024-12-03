@@ -11,6 +11,7 @@ import {
 import { Workspace, WorkspaceMemberStatus } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
 
+import { type FeatureConfig, FeatureType } from '../features/types';
 import { Permission } from '../permission';
 import { UserType } from '../user/types';
 
@@ -110,4 +111,22 @@ export class UpdateWorkspaceInput extends PickType(
 ) {
   @Field(() => ID)
   id!: string;
+}
+
+@InputType()
+export class UpdateTeamWorkspaceConfigInput
+  implements
+    Omit<
+      Partial<FeatureConfig<FeatureType.TeamWorkspace>>,
+      'seatStorage' | 'maxMembers'
+    >
+{
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => Boolean)
+  enableAi!: boolean;
+
+  @Field(() => Boolean)
+  enableShare!: boolean;
 }
