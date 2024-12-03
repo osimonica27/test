@@ -27,10 +27,11 @@ import { QuotaManagementService } from './storage';
 export class QuotaModule {}
 
 export { QuotaManagementService, QuotaService };
-export { OneGB, OneMB } from './constant';
+export { OneDay, OneGB, OneMB } from './constant';
 export { QuotaOverride, QuotaOverrideService } from './override';
 export { Quota_FreePlanV1_1, Quota_ProPlanV1 } from './schema';
 export {
+  formatDate,
   formatSize,
   type QuotaBusinessType,
   QuotaQueryType,

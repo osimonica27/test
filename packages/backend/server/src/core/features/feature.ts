@@ -19,6 +19,10 @@ class FeatureConfig<T extends FeatureType> {
   get name() {
     return this.config.feature;
   }
+
+  get configs() {
+    return this.config.configs;
+  }
 }
 
 export type FeatureConfigType<F extends FeatureType> = FeatureConfig<F>;
