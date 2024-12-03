@@ -141,3 +141,18 @@ export class UpdateTeamWorkspaceConfigInput extends PartialType(
   @Field(() => Boolean, { nullable: true })
   override enableShare!: boolean;
 }
+
+@ObjectType()
+export class InviteResult {
+  @Field(() => String)
+  email!: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Invite id, null if invite record create failed',
+  })
+  inviteId!: string;
+
+  @Field(() => Boolean, { description: 'Invite email sent success' })
+  sentSuccess!: boolean;
+}
