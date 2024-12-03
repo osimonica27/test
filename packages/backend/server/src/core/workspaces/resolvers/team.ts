@@ -8,7 +8,6 @@ import {
 } from '@nestjs/graphql';
 
 import {
-  CantChangeSpaceOwner,
   NotInSpace,
   RequestMutex,
   TooManyRequest,
@@ -77,10 +76,6 @@ export class TeamWorkspaceResolver {
       Permission.Owner
     );
 
-    if (permission === Permission.Owner) {
-      throw new CantChangeSpaceOwner();
-    }
-
     try {
       // lock to prevent concurrent invite and grant
       const lockFlag = `invite:${workspaceId}`;
@@ -95,7 +90,17 @@ export class TeamWorkspaceResolver {
         Permission.Read
       );
       if (isMember) {
-        return await this.permissions.grant(workspaceId, userId, permission);
+        const result = await this.permissions.grant(
+          workspaceId,
+          userId,
+          permission
+        );
+
+        if (result) {
+          // TODO(@darkskygit): send team role changed mail
+        }
+
+        return result;
       } else {
         return new NotInSpace({ spaceId: workspaceId });
       }

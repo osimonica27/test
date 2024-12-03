@@ -532,7 +532,13 @@ export class WorkspaceResolver {
       );
     }
 
-    return this.permissions.revokeWorkspace(workspaceId, userId);
+    const result = await this.permissions.revokeWorkspace(workspaceId, userId);
+
+    if (result && isTeam) {
+      // TODO(@darkskygit): send team revoke mail
+    }
+
+    return result;
   }
 
   @Mutation(() => Boolean)
