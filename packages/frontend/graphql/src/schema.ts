@@ -1995,6 +1995,7 @@ export type GetWorkspacesQuery = {
     __typename?: 'WorkspaceType';
     id: string;
     initialized: boolean;
+    features: Array<FeatureType>;
     owner: { __typename?: 'UserType'; id: string };
   }>;
 };

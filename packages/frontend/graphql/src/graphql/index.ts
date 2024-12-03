@@ -703,6 +703,7 @@ query getWorkspaces {
   workspaces {
     id
     initialized
+    features
     owner {
       id
     }

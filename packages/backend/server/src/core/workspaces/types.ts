@@ -151,7 +151,7 @@ export class InviteResult {
     nullable: true,
     description: 'Invite id, null if invite record create failed',
   })
-  inviteId!: string;
+  inviteId!: string | null;
 
   @Field(() => Boolean, { description: 'Invite email sent success' })
   sentSuccess!: boolean;

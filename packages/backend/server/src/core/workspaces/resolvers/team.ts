@@ -6,21 +6,28 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
+import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 
 import {
+  MailService,
   NotInSpace,
   RequestMutex,
+  SpaceNotFound,
   TooManyRequest,
   UserNotFound,
 } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
 import { FeatureManagementService, FeatureType } from '../../features';
 import { Permission, PermissionService } from '../../permission';
+import { QuotaManagementService } from '../../quota';
+import { UserService } from '../../user';
 import {
+  InviteResult,
   TeamWorkspaceConfigType,
   UpdateTeamWorkspaceConfigInput,
   WorkspaceType,
 } from '../types';
+import { WorkspaceResolver } from './workspace';
 
 /**
  * Workspace team resolver
@@ -32,20 +39,28 @@ export class TeamWorkspaceResolver {
   private readonly logger = new Logger(TeamWorkspaceResolver.name);
 
   constructor(
+    private readonly mailer: MailService,
+    private readonly prisma: PrismaClient,
     private readonly permissions: PermissionService,
+    private readonly users: UserService,
     private readonly feature: FeatureManagementService,
-    private readonly mutex: RequestMutex
+    private readonly quota: QuotaManagementService,
+    private readonly mutex: RequestMutex,
+    private readonly workspace: WorkspaceResolver
   ) {}
 
   @ResolveField(() => TeamWorkspaceConfigType, {
     description: 'Team workspace config',
     complexity: 2,
+    nullable: true,
   })
   async teamConfig(@Parent() workspace: WorkspaceType) {
-    return this.feature.getWorkspaceConfig(
+    const ret = await this.feature.getWorkspaceConfig(
       workspace.id,
       FeatureType.TeamWorkspace
     );
+    if (ret) return ret;
+    throw new SpaceNotFound({ spaceId: workspace.id });
   }
 
   @Mutation(() => Boolean)
@@ -61,6 +76,89 @@ export class TeamWorkspaceResolver {
       FeatureType.TeamWorkspace,
       configs
     );
+  }
+
+  @Mutation(() => [InviteResult])
+  async inviteBatch(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string,
+    @Args({ name: 'emails', type: () => [String] }) emails: string[],
+    @Args('sendInviteMail', { nullable: true }) sendInviteMail: boolean
+  ) {
+    await this.permissions.checkWorkspace(
+      workspaceId,
+      user.id,
+      Permission.Admin
+    );
+
+    // lock to prevent concurrent invite
+    const lockFlag = `invite:${workspaceId}`;
+    await using lock = await this.mutex.lock(lockFlag);
+    if (!lock) {
+      return new TooManyRequest();
+    }
+
+    const quota = await this.quota.getWorkspaceUsage(workspaceId);
+
+    const results = [];
+    for (const [idx, email] of emails.entries()) {
+      const ret: InviteResult = { email, sentSuccess: false, inviteId: null };
+      try {
+        let target = await this.users.findUserByEmail(email);
+        if (target) {
+          const originRecord =
+            await this.prisma.workspaceUserPermission.findFirst({
+              where: {
+                workspaceId,
+                userId: target.id,
+              },
+            });
+          // only invite if the user is not already in the workspace
+          if (originRecord) continue;
+        } else {
+          target = await this.users.createUser({
+            email,
+            registered: false,
+          });
+        }
+        const NeedMoreSeat = quota.memberCount + idx + 1 > quota.memberLimit;
+
+        ret.inviteId = await this.permissions.grant(
+          workspaceId,
+          target.id,
+          Permission.Read,
+          NeedMoreSeat
+            ? WorkspaceMemberStatus.NeedMoreSeat
+            : WorkspaceMemberStatus.Pending
+        );
+        if (!NeedMoreSeat && sendInviteMail) {
+          const inviteInfo = await this.workspace.getInviteInfo(ret.inviteId);
+
+          try {
+            await this.mailer.sendInviteEmail(email, ret.inviteId, {
+              workspace: {
+                id: inviteInfo.workspace.id,
+                name: inviteInfo.workspace.name,
+                avatar: inviteInfo.workspace.avatar,
+              },
+              user: {
+                avatar: inviteInfo.user?.avatarUrl || '',
+                name: inviteInfo.user?.name || '',
+              },
+            });
+            ret.sentSuccess = true;
+          } catch (e) {
+            this.logger.warn(
+              `failed to send ${workspaceId} invite email to ${email}: ${e}`
+            );
+          }
+        }
+      } catch (e) {
+        this.logger.error('failed to invite user', e);
+      }
+      results.push(ret);
+    }
+    return results;
   }
 
   @Mutation(() => String)

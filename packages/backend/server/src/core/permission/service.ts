@@ -262,7 +262,8 @@ export class PermissionService {
   async grant(
     ws: string,
     user: string,
-    permission: Permission = Permission.Read
+    permission: Permission = Permission.Read,
+    status: WorkspaceMemberStatus = WorkspaceMemberStatus.Pending
   ): Promise<string> {
     const data = await this.prisma.workspaceUserPermission.findFirst({
       where: {
@@ -314,6 +315,7 @@ export class PermissionService {
           workspaceId: ws,
           userId: user,
           type: permission,
+          status,
         },
       })
       .then(p => p.id);
