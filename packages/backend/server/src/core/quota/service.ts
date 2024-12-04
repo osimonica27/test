@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { JsonObject } from '@prisma/client/runtime/library';
 
 import type { EventPayload } from '../../fundamentals';
 import { OnEvent, PrismaTransaction } from '../../fundamentals';
@@ -14,6 +15,23 @@ export class QuotaService {
     private readonly prisma: PrismaClient,
     private readonly feature: FeatureManagementService
   ) {}
+
+  async getQuota<Q extends QuotaType>(
+    quota: Q
+  ): Promise<QuotaConfig | undefined> {
+    const data = await this.prisma.feature.findFirst({
+      where: { feature: quota, type: FeatureKind.Quota },
+      select: { id: true },
+      orderBy: { version: 'desc' },
+    });
+
+    if (data) {
+      return QuotaConfig.get(this.prisma, data.id);
+    }
+    return undefined;
+  }
+
+  // ======== User Quota ========
 
   // get activated user quota
   async getUserQuota(userId: string) {
@@ -148,6 +166,173 @@ export class QuotaService {
         },
       })
       .then(count => count > 0);
+  }
+
+  // ======== Workspace Quota ========
+
+  // get activated workspace quota
+  async getWorkspaceQuota(workspaceId: string) {
+    const quota = await this.prisma.workspaceFeature.findFirst({
+      where: {
+        workspaceId,
+        feature: {
+          type: FeatureKind.Quota,
+        },
+        activated: true,
+      },
+      select: {
+        reason: true,
+        createdAt: true,
+        expiredAt: true,
+        featureId: true,
+      },
+    });
+
+    if (quota) {
+      const feature = await QuotaConfig.get(this.prisma, quota.featureId);
+      return { ...quota, feature };
+    }
+    return null;
+  }
+
+  // switch user to a new quota
+  // currently each user can only have one quota
+  async switchWorkspaceQuota(
+    workspaceId: string,
+    quota: QuotaType,
+    reason?: string,
+    expiredAt?: Date
+  ) {
+    await this.prisma.$transaction(async tx => {
+      const hasSameActivatedQuota = await this.hasWorkspaceQuota(
+        workspaceId,
+        quota,
+        tx
+      );
+
+      if (hasSameActivatedQuota) {
+        // don't need to switch
+        return;
+      }
+
+      const featureId = await tx.feature
+        .findFirst({
+          where: {
+            feature: quota,
+            type: FeatureKind.Quota,
+          },
+          select: {
+            id: true,
+          },
+          orderBy: {
+            version: 'desc',
+          },
+        })
+        .then(f => f?.id);
+
+      if (!featureId) {
+        throw new Error(`Quota ${quota} not found`);
+      }
+
+      // we will deactivate all exists quota for this workspace
+      await this.deactivateWorkspaceQuota(workspaceId, undefined, tx);
+
+      await tx.workspaceFeature.create({
+        data: {
+          workspaceId,
+          featureId,
+          reason: reason ?? 'switch quota',
+          activated: true,
+          expiredAt,
+        },
+      });
+    });
+  }
+
+  async deactivateWorkspaceQuota(
+    workspaceId: string,
+    quota?: QuotaType,
+    tx?: PrismaTransaction
+  ) {
+    const executor = tx ?? this.prisma;
+
+    await executor.workspaceFeature.updateMany({
+      where: {
+        id: undefined,
+        workspaceId,
+        feature: quota
+          ? { feature: quota, type: FeatureKind.Quota }
+          : { type: FeatureKind.Quota },
+      },
+      data: { activated: false },
+    });
+  }
+
+  async hasWorkspaceQuota(
+    workspaceId: string,
+    quota: QuotaType,
+    tx?: PrismaTransaction
+  ) {
+    const executor = tx ?? this.prisma;
+
+    return executor.workspaceFeature
+      .count({
+        where: {
+          workspaceId,
+          feature: {
+            feature: quota,
+            type: FeatureKind.Quota,
+          },
+          activated: true,
+        },
+      })
+      .then(count => count > 0);
+  }
+
+  async getWorkspaceConfig<Q extends QuotaType>(
+    workspaceId: string,
+    type: Q
+  ): Promise<QuotaConfig | undefined> {
+    const quota = await this.getQuota(type);
+    const configs = await this.prisma.workspaceFeature
+      .findFirst({
+        where: {
+          workspaceId,
+          feature: { feature: type, type: FeatureKind.Feature },
+          activated: true,
+        },
+        select: { configs: true },
+      })
+      .then(q => q?.configs);
+
+    if (quota && configs) {
+      return quota.withOverride(configs);
+    }
+    return undefined;
+  }
+
+  async updateWorkspaceConfig(
+    workspaceId: string,
+    quota: QuotaType,
+    configs: JsonObject
+  ) {
+    const current = await this.getWorkspaceConfig(workspaceId, quota);
+
+    const ret = current?.checkOverride(configs);
+    if (!ret || !ret.success) {
+      throw new Error(
+        `Invalid quota config: ${ret?.error.message || 'quota not defined'}`
+      );
+    }
+    const r = await this.prisma.workspaceFeature.updateMany({
+      where: {
+        workspaceId,
+        feature: { feature: quota, type: FeatureKind.Feature },
+        activated: true,
+      },
+      data: { configs },
+    });
+    return r.count;
   }
 
   @OnEvent('user.subscription.activated')

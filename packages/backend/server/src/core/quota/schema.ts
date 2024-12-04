@@ -174,6 +174,28 @@ export const Quotas: Quota[] = [
       copilotActionLimit: 10,
     },
   },
+
+  {
+    feature: QuotaType.TeamPlanV1,
+    type: FeatureKind.Quota,
+    version: 1,
+    configs: {
+      // quota name
+      name: 'Team Workspace',
+      // single blob limit 100MB
+      blobLimit: 100 * OneMB,
+      // total blob limit 100GB
+      storageQuota: 100 * OneGB,
+      // seat quota 20GB per seat
+      seatQuota: 20 * OneGB,
+      // history period of validity 30 days
+      historyPeriod: 30 * OneDay,
+      // member limit 1, override by workspace config
+      memberLimit: 1,
+      // copilot action limit 10
+      copilotActionLimit: 10,
+    },
+  },
 ];
 
 export function getLatestQuota(type: QuotaType) {

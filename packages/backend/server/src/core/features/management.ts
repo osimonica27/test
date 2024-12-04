@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Config, type EventPayload, OnEvent } from '../../fundamentals';
 import { UserService } from '../user/service';
 import { FeatureService } from './service';
-import { FeatureConfig, FeatureType } from './types';
+import { FeatureType } from './types';
 
 const STAFF = ['@toeverything.info', '@affine.pro'];
 
@@ -166,49 +166,6 @@ export class FeatureManagementService {
 
   async listFeatureWorkspaces(feature: FeatureType) {
     return this.feature.listWorkspacesByFeature(feature);
-  }
-
-  async getWorkspaceConfig<F extends FeatureType>(
-    workspaceId: string,
-    feature: F
-  ): Promise<FeatureConfig<F> | undefined> {
-    return this.feature.getWorkspaceConfig(workspaceId, feature);
-  }
-
-  async updateWorkspaceConfig<F extends FeatureType>(
-    workspaceId: string,
-    feature: F,
-    configs: Partial<FeatureConfig<F>>
-  ) {
-    const orig = await this.getWorkspaceConfig(workspaceId, feature);
-    return await this.feature.updateWorkspaceConfig(
-      workspaceId,
-      feature,
-      Object.assign({}, orig, configs)
-    );
-  }
-
-  // ======== Team Workspace Features ========
-  async addTeamWorkspace(workspaceId: string, reason: string) {
-    return this.feature.addWorkspaceFeature(
-      workspaceId,
-      FeatureType.TeamWorkspace,
-      reason
-    );
-  }
-
-  async removeTeamWorkspace(workspaceId: string) {
-    return this.feature.removeWorkspaceFeature(
-      workspaceId,
-      FeatureType.TeamWorkspace
-    );
-  }
-
-  async isTeamWorkspace(workspaceId: string) {
-    return this.feature.hasWorkspaceFeature(
-      workspaceId,
-      FeatureType.TeamWorkspace
-    );
   }
 
   @OnEvent('user.admin.created')

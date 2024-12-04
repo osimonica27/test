@@ -11,7 +11,6 @@ import {
 import { Workspace, WorkspaceMemberStatus } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
 
-import { type FeatureConfig, FeatureType } from '../features/types';
 import { Permission } from '../permission';
 import { UserType } from '../user/types';
 
@@ -115,11 +114,7 @@ export class UpdateWorkspaceInput extends PickType(
 
 @ObjectType()
 export class TeamWorkspaceConfigType
-  implements
-    Omit<
-      Partial<FeatureConfig<FeatureType.TeamWorkspace>>,
-      'seatStorage' | 'maxMembers'
-    >
+  implements Omit<Partial<Workspace>, 'seatStorage' | 'maxMembers'>
 {
   @Field(() => Boolean)
   enableAi!: boolean;

@@ -1,32 +1,19 @@
 import { Logger } from '@nestjs/common';
-import {
-  Args,
-  Mutation,
-  Parent,
-  ResolveField,
-  Resolver,
-} from '@nestjs/graphql';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 
 import {
   MailService,
   NotInSpace,
   RequestMutex,
-  SpaceNotFound,
   TooManyRequest,
   UserNotFound,
 } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
-import { FeatureManagementService, FeatureType } from '../../features';
 import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService } from '../../quota';
 import { UserService } from '../../user';
-import {
-  InviteResult,
-  TeamWorkspaceConfigType,
-  UpdateTeamWorkspaceConfigInput,
-  WorkspaceType,
-} from '../types';
+import { InviteResult, WorkspaceType } from '../types';
 import { WorkspaceResolver } from './workspace';
 
 /**
@@ -43,40 +30,10 @@ export class TeamWorkspaceResolver {
     private readonly prisma: PrismaClient,
     private readonly permissions: PermissionService,
     private readonly users: UserService,
-    private readonly feature: FeatureManagementService,
     private readonly quota: QuotaManagementService,
     private readonly mutex: RequestMutex,
     private readonly workspace: WorkspaceResolver
   ) {}
-
-  @ResolveField(() => TeamWorkspaceConfigType, {
-    description: 'Team workspace config',
-    complexity: 2,
-    nullable: true,
-  })
-  async teamConfig(@Parent() workspace: WorkspaceType) {
-    const ret = await this.feature.getWorkspaceConfig(
-      workspace.id,
-      FeatureType.TeamWorkspace
-    );
-    if (ret) return ret;
-    throw new SpaceNotFound({ spaceId: workspace.id });
-  }
-
-  @Mutation(() => Boolean)
-  async updateWorkspaceTeamConfig(
-    @CurrentUser() user: CurrentUser,
-    @Args({ name: 'input', type: () => UpdateTeamWorkspaceConfigInput })
-    { id, ...configs }: UpdateTeamWorkspaceConfigInput
-  ) {
-    await this.permissions.checkWorkspace(id, user.id, Permission.Owner);
-
-    return this.feature.updateWorkspaceConfig(
-      id,
-      FeatureType.TeamWorkspace,
-      configs
-    );
-  }
 
   @Mutation(() => [InviteResult])
   async inviteBatch(
