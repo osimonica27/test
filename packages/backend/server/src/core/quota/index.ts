@@ -3,7 +3,6 @@ import { Module } from '@nestjs/common';
 import { FeatureModule } from '../features';
 import { PermissionModule } from '../permission';
 import { StorageModule } from '../storage';
-import { QuotaOverrideService } from './override';
 import { QuotaManagementResolver } from './resolver';
 import { QuotaService } from './service';
 import { QuotaManagementService } from './storage';
@@ -16,19 +15,12 @@ import { QuotaManagementService } from './storage';
  */
 @Module({
   imports: [FeatureModule, StorageModule, PermissionModule],
-  providers: [
-    QuotaService,
-    QuotaOverrideService,
-    QuotaManagementResolver,
-    QuotaManagementService,
-  ],
-  exports: [QuotaService, QuotaOverrideService, QuotaManagementService],
+  providers: [QuotaService, QuotaManagementResolver, QuotaManagementService],
+  exports: [QuotaService, QuotaManagementService],
 })
 export class QuotaModule {}
 
 export { QuotaManagementService, QuotaService };
-export { OneDay, OneGB, OneMB } from './constant';
-export { QuotaOverride, QuotaOverrideService } from './override';
 export { Quota_FreePlanV1_1, Quota_ProPlanV1 } from './schema';
 export {
   formatDate,

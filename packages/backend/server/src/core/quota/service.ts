@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { JsonObject } from '@prisma/client/runtime/library';
 
 import type { EventPayload } from '../../fundamentals';
 import { OnEvent, PrismaTransaction } from '../../fundamentals';
@@ -17,9 +16,12 @@ export class QuotaService {
   ) {}
 
   async getQuota<Q extends QuotaType>(
-    quota: Q
+    quota: Q,
+    tx?: PrismaTransaction
   ): Promise<QuotaConfig | undefined> {
-    const data = await this.prisma.feature.findFirst({
+    const executor = tx ?? this.prisma;
+
+    const data = await executor.feature.findFirst({
       where: { feature: quota, type: FeatureKind.Quota },
       select: { id: true },
       orderBy: { version: 'desc' },
@@ -38,9 +40,7 @@ export class QuotaService {
     const quota = await this.prisma.userFeature.findFirst({
       where: {
         userId,
-        feature: {
-          type: FeatureKind.Quota,
-        },
+        feature: { type: FeatureKind.Quota },
         activated: true,
       },
       select: {
@@ -65,9 +65,7 @@ export class QuotaService {
     const quotas = await this.prisma.userFeature.findMany({
       where: {
         userId,
-        feature: {
-          type: FeatureKind.Quota,
-        },
+        feature: { type: FeatureKind.Quota },
       },
       select: {
         activated: true,
@@ -76,9 +74,7 @@ export class QuotaService {
         expiredAt: true,
         featureId: true,
       },
-      orderBy: {
-        id: 'asc',
-      },
+      orderBy: { id: 'asc' },
     });
     const configs = await Promise.all(
       quotas.map(async quota => {
@@ -107,11 +103,7 @@ export class QuotaService {
   ) {
     await this.prisma.$transaction(async tx => {
       const hasSameActivatedQuota = await this.hasUserQuota(userId, quota, tx);
-
-      if (hasSameActivatedQuota) {
-        // don't need to switch
-        return;
-      }
+      if (hasSameActivatedQuota) return; // don't need to switch
 
       const featureId = await tx.feature
         .findFirst({
@@ -175,12 +167,11 @@ export class QuotaService {
     const quota = await this.prisma.workspaceFeature.findFirst({
       where: {
         workspaceId,
-        feature: {
-          type: FeatureKind.Quota,
-        },
+        feature: { type: FeatureKind.Quota },
         activated: true,
       },
       select: {
+        configs: true,
         reason: true,
         createdAt: true,
         expiredAt: true,
@@ -190,7 +181,7 @@ export class QuotaService {
 
     if (quota) {
       const feature = await QuotaConfig.get(this.prisma, quota.featureId);
-      return { ...quota, feature };
+      return { ...quota, feature: feature.withOverride(quota.configs) };
     }
     return null;
   }
@@ -209,24 +200,13 @@ export class QuotaService {
         quota,
         tx
       );
-
-      if (hasSameActivatedQuota) {
-        // don't need to switch
-        return;
-      }
+      if (hasSameActivatedQuota) return; // don't need to switch
 
       const featureId = await tx.feature
         .findFirst({
-          where: {
-            feature: quota,
-            type: FeatureKind.Quota,
-          },
-          select: {
-            id: true,
-          },
-          orderBy: {
-            version: 'desc',
-          },
+          where: { feature: quota, type: FeatureKind.Quota },
+          select: { id: true },
+          orderBy: { version: 'desc' },
         })
         .then(f => f?.id);
 
@@ -294,18 +274,17 @@ export class QuotaService {
     type: Q
   ): Promise<QuotaConfig | undefined> {
     const quota = await this.getQuota(type);
-    const configs = await this.prisma.workspaceFeature
-      .findFirst({
-        where: {
-          workspaceId,
-          feature: { feature: type, type: FeatureKind.Feature },
-          activated: true,
-        },
-        select: { configs: true },
-      })
-      .then(q => q?.configs);
-
-    if (quota && configs) {
+    if (quota) {
+      const configs = await this.prisma.workspaceFeature
+        .findFirst({
+          where: {
+            workspaceId,
+            feature: { feature: type, type: FeatureKind.Feature },
+            activated: true,
+          },
+          select: { configs: true },
+        })
+        .then(q => q?.configs);
       return quota.withOverride(configs);
     }
     return undefined;
@@ -314,7 +293,7 @@ export class QuotaService {
   async updateWorkspaceConfig(
     workspaceId: string,
     quota: QuotaType,
-    configs: JsonObject
+    configs: any
   ) {
     const current = await this.getWorkspaceConfig(workspaceId, quota);
 
@@ -327,7 +306,7 @@ export class QuotaService {
     const r = await this.prisma.workspaceFeature.updateMany({
       where: {
         workspaceId,
-        feature: { feature: quota, type: FeatureKind.Feature },
+        feature: { feature: quota, type: FeatureKind.Quota },
         activated: true,
       },
       data: { configs },
