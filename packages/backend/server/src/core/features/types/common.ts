@@ -8,7 +8,7 @@ export enum FeatureType {
   UnlimitedCopilot = 'unlimited_copilot',
   // workspace feature
   Copilot = 'copilot',
-  TeamWorkspace = 'team_workspace_v1',
+  TeamWorkspace = 'team_workspace',
   UnlimitedWorkspace = 'unlimited_workspace',
 }
 
