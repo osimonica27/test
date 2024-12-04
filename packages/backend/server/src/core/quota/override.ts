@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { FeatureType } from '../features';
 import type { QuotaBusinessType } from './types';
 
 export abstract class QuotaOverride {
@@ -8,7 +7,6 @@ export abstract class QuotaOverride {
   abstract overrideQuota(
     ownerId: string,
     workspaceId: string,
-    features: FeatureType[],
     quota: QuotaBusinessType
   ): Promise<QuotaBusinessType>;
 }
@@ -30,7 +28,6 @@ export class QuotaOverrideService {
   async overrideQuota(
     ownerId: string,
     workspaceId: string,
-    features: FeatureType[],
     quota: QuotaBusinessType
   ): Promise<QuotaBusinessType> {
     let lastQuota = quota;
@@ -39,7 +36,6 @@ export class QuotaOverrideService {
         const quota = await override.overrideQuota(
           ownerId,
           workspaceId,
-          features,
           lastQuota
         );
         if (quota) {

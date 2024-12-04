@@ -4,7 +4,6 @@ import { featureAdministrator } from './admin';
 import { FeatureType } from './common';
 import { featureCopilot } from './copilot';
 import { featureAIEarlyAccess, featureEarlyAccess } from './early-access';
-import { featureTeamWorkspace } from './team-workspace';
 import { featureUnlimitedCopilot } from './unlimited-copilot';
 import { featureUnlimitedWorkspace } from './unlimited-workspace';
 
@@ -73,14 +72,6 @@ export const Features: Feature[] = [
     version: 1,
     configs: {},
   },
-  {
-    feature: FeatureType.TeamWorkspace,
-    type: FeatureKind.Feature,
-    version: 1,
-    configs: {
-      seatStorage: 20 * 1024 * 1024 * 1024,
-    },
-  },
 ];
 
 /// ======== schema infer ========
@@ -92,7 +83,6 @@ export const FeatureConfigSchema = z.discriminatedUnion('feature', [
   featureUnlimitedWorkspace,
   featureUnlimitedCopilot,
   featureAdministrator,
-  featureTeamWorkspace,
 ]);
 
 export const FeatureSchema = commonFeatureSchema

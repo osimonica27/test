@@ -5,8 +5,9 @@ import { PermissionService } from '../permission';
 import { WorkspaceBlobStorage } from '../storage';
 import { OneGB } from './constant';
 import { QuotaOverrideService } from './override';
+import { QuotaConfig } from './quota';
 import { QuotaService } from './service';
-import { formatSize, type QuotaBusinessType } from './types';
+import { formatSize, Quota, type QuotaBusinessType, QuotaType } from './types';
 
 @Injectable()
 export class QuotaManagementService {
@@ -35,6 +36,46 @@ export class QuotaManagementService {
       memberLimit: quota.feature.memberLimit,
       copilotActionLimit: quota.feature.copilotActionLimit,
     };
+  }
+
+  async getWorkspaceConfig<Q extends QuotaType>(
+    workspaceId: string,
+    quota: Q
+  ): Promise<QuotaConfig | undefined> {
+    return this.quota.getWorkspaceConfig(workspaceId, quota);
+  }
+
+  async updateWorkspaceConfig<Q extends QuotaType>(
+    workspaceId: string,
+    quota: Q,
+    configs: Partial<Quota['configs']>
+  ) {
+    const orig = await this.getWorkspaceConfig(workspaceId, quota);
+    return await this.quota.updateWorkspaceConfig(
+      workspaceId,
+      quota,
+      Object.assign({}, orig?.override, configs)
+    );
+  }
+
+  // ======== Team Workspace ========
+  async addTeamWorkspace(workspaceId: string, reason: string) {
+    return this.quota.switchWorkspaceQuota(
+      workspaceId,
+      QuotaType.TeamPlanV1,
+      reason
+    );
+  }
+
+  async removeTeamWorkspace(workspaceId: string) {
+    return this.quota.deactivateWorkspaceQuota(
+      workspaceId,
+      QuotaType.TeamPlanV1
+    );
+  }
+
+  async isTeamWorkspace(workspaceId: string) {
+    return this.quota.hasWorkspaceQuota(workspaceId, QuotaType.TeamPlanV1);
   }
 
   async getUserUsage(userId: string) {
@@ -128,10 +169,10 @@ export class QuotaManagementService {
     const usedSize = await this.getUserUsage(owner.id);
     // relax restrictions if workspace has unlimited feature
     // todo(@darkskygit): need a mechanism to allow feature as a middleware to edit quota
-    const features = await this.feature
-      .getWorkspaceFeatures(workspaceId)
-      .then(f => f.filter(f => f.activated).map(f => f.feature.name));
-    const unlimited = features.includes(FeatureType.UnlimitedWorkspace);
+    const unlimited = await this.feature.hasWorkspaceFeature(
+      workspaceId,
+      FeatureType.UnlimitedWorkspace
+    );
 
     const quota = {
       name,
@@ -151,12 +192,7 @@ export class QuotaManagementService {
       return this.mergeUnlimitedQuota(quota);
     }
 
-    return await this.override.overrideQuota(
-      owner.id,
-      workspaceId,
-      features,
-      quota
-    );
+    return await this.override.overrideQuota(owner.id, workspaceId, quota);
   }
 
   private mergeUnlimitedQuota(orig: QuotaBusinessType): QuotaBusinessType {

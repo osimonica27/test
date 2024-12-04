@@ -1,16 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import type { JsonObject } from '@prisma/client/runtime/library';
 
 import { CannotDeleteAllAdminAccount } from '../../fundamentals';
 import { WorkspaceType } from '../workspaces/types';
 import { FeatureConfigType, getFeature } from './feature';
-import {
-  FeatureConfig,
-  FeatureConfigSchema,
-  FeatureKind,
-  FeatureType,
-} from './types';
+import { FeatureKind, FeatureType } from './types';
 
 @Injectable()
 export class FeatureService {
@@ -285,57 +279,6 @@ export class FeatureService {
         },
       })
       .then(r => r.count);
-  }
-
-  async getWorkspaceConfig<F extends FeatureType>(
-    workspaceId: string,
-    feature: F
-  ): Promise<FeatureConfig<F> | undefined> {
-    const origFeature = await this.getFeature(feature);
-    const workspaceFeature = await this.prisma.workspaceFeature.findFirst({
-      where: {
-        workspaceId,
-        feature: { feature, type: FeatureKind.Feature },
-        activated: true,
-      },
-      select: { configs: true },
-    });
-
-    if (origFeature && workspaceFeature) {
-      const { name, configs } = origFeature;
-      const ret = FeatureConfigSchema.safeParse({
-        feature: name,
-        configs: Object.assign({}, configs, workspaceFeature.configs),
-      });
-      if (ret.success) {
-        // @ts-expect-error already check by zod
-        return ret.data.configs;
-      }
-    }
-    return undefined;
-  }
-
-  async updateWorkspaceConfig(
-    workspaceId: string,
-    feature: FeatureType,
-    configs: JsonObject
-  ) {
-    const ret = FeatureConfigSchema.safeParse({
-      feature,
-      configs,
-    });
-    if (!ret.success) {
-      throw new Error(`Invalid feature config: ${ret.error.message}`);
-    }
-    const r = await this.prisma.workspaceFeature.updateMany({
-      where: {
-        workspaceId,
-        feature: { feature, type: FeatureKind.Feature },
-        activated: true,
-      },
-      data: { configs },
-    });
-    return r.count;
   }
 
   /**

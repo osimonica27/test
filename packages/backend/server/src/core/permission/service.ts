@@ -8,7 +8,8 @@ import {
   SpaceAccessDenied,
   SpaceOwnerNotFound,
 } from '../../fundamentals';
-import { FeatureKind, FeatureType } from '../features/types';
+import { FeatureKind } from '../features/types';
+import { QuotaType } from '../quota/types';
 import { Permission, PublicPageMode } from './types';
 
 @Injectable()
@@ -340,7 +341,7 @@ export class PermissionService {
           workspaceId,
           activated: true,
           feature: {
-            feature: FeatureType.TeamWorkspace,
+            feature: QuotaType.TeamPlanV1,
             type: FeatureKind.Feature,
           },
         },

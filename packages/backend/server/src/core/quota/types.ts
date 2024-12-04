@@ -17,6 +17,7 @@ import { ByteUnit, OneDay, OneKB } from './constant';
 export enum QuotaType {
   FreePlanV1 = 'free_plan_v1',
   ProPlanV1 = 'pro_plan_v1',
+  TeamPlanV1 = 'team_plan_v1',
   LifetimeProPlanV1 = 'lifetime_pro_plan_v1',
   // only for test, smaller quota
   RestrictedPlanV1 = 'restricted_plan_v1',
@@ -26,6 +27,7 @@ const quotaPlan = z.object({
   feature: z.enum([
     QuotaType.FreePlanV1,
     QuotaType.ProPlanV1,
+    QuotaType.TeamPlanV1,
     QuotaType.LifetimeProPlanV1,
     QuotaType.RestrictedPlanV1,
   ]),
@@ -33,6 +35,7 @@ const quotaPlan = z.object({
     name: z.string(),
     blobLimit: z.number().positive().int(),
     storageQuota: z.number().positive().int(),
+    seatQuota: z.number().positive().int().nullish(),
     historyPeriod: z.number().positive().int(),
     memberLimit: z.number().positive().int(),
     businessBlobLimit: z.number().positive().int().nullish(),

@@ -32,7 +32,6 @@ import {
 import { CurrentUser, Public } from '../../auth';
 import { type Editor, PgWorkspaceDocStorageAdapter } from '../../doc';
 import { DocContentService } from '../../doc-renderer';
-import { FeatureManagementService } from '../../features';
 import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService, QuotaQueryType } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
@@ -82,7 +81,6 @@ export class WorkspaceResolver {
     private readonly mailer: MailService,
     private readonly prisma: PrismaClient,
     private readonly permissions: PermissionService,
-    private readonly feature: FeatureManagementService,
     private readonly quota: QuotaManagementService,
     private readonly users: UserService,
     private readonly event: EventEmitter,
@@ -511,7 +509,7 @@ export class WorkspaceResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string
   ) {
-    const isTeam = await this.feature.isTeamWorkspace(workspaceId);
+    const isTeam = await this.quota.isTeamWorkspace(workspaceId);
     const isAdmin = await this.permissions.tryCheckWorkspaceIs(
       workspaceId,
       userId,
@@ -576,7 +574,7 @@ export class WorkspaceResolver {
     @Args('workspaceName') workspaceName: string,
     @Args('sendLeaveMail', { nullable: true }) sendLeaveMail: boolean
   ) {
-    const isTeam = await this.feature.isTeamWorkspace(workspaceId);
+    const isTeam = await this.quota.isTeamWorkspace(workspaceId);
 
     if (isTeam) {
       // only admin can leave team workspace voluntarily
