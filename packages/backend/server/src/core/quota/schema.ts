@@ -174,7 +174,6 @@ export const Quotas: Quota[] = [
       copilotActionLimit: 10,
     },
   },
-
   {
     feature: QuotaType.TeamPlanV1,
     type: FeatureKind.Quota,
@@ -183,7 +182,7 @@ export const Quotas: Quota[] = [
       // quota name
       name: 'Team Workspace',
       // single blob limit 100MB
-      blobLimit: 100 * OneMB,
+      blobLimit: 500 * OneMB,
       // total blob limit 100GB
       storageQuota: 100 * OneGB,
       // seat quota 20GB per seat

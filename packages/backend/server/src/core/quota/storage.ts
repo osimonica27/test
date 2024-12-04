@@ -4,7 +4,6 @@ import { FeatureService, FeatureType } from '../features';
 import { PermissionService } from '../permission';
 import { WorkspaceBlobStorage } from '../storage';
 import { OneGB } from './constant';
-import { QuotaOverrideService } from './override';
 import { QuotaConfig } from './quota';
 import { QuotaService } from './service';
 import { formatSize, Quota, type QuotaBusinessType, QuotaType } from './types';
@@ -17,8 +16,7 @@ export class QuotaManagementService {
     private readonly feature: FeatureService,
     private readonly quota: QuotaService,
     private readonly permissions: PermissionService,
-    private readonly storage: WorkspaceBlobStorage,
-    private readonly override: QuotaOverrideService
+    private readonly storage: WorkspaceBlobStorage
   ) {}
 
   async getUserQuota(userId: string) {
@@ -147,6 +145,12 @@ export class QuotaManagementService {
     );
   }
 
+  private async getWorkspaceQuota(userId: string, workspaceId: string) {
+    const workspaceQuota = await this.quota.getWorkspaceQuota(workspaceId);
+    if (workspaceQuota) return workspaceQuota;
+    return await this.quota.getUserQuota(userId);
+  }
+
   // get workspace's owner quota and total size of used
   // quota was apply to owner's account
   async getWorkspaceUsage(workspaceId: string): Promise<QuotaBusinessType> {
@@ -164,7 +168,7 @@ export class QuotaManagementService {
         copilotActionLimit,
         humanReadable,
       },
-    } = await this.quota.getUserQuota(owner.id);
+    } = await this.getWorkspaceQuota(owner.id, workspaceId);
     // get all workspaces size of owner used
     const usedSize = await this.getUserUsage(owner.id);
     // relax restrictions if workspace has unlimited feature
@@ -192,7 +196,7 @@ export class QuotaManagementService {
       return this.mergeUnlimitedQuota(quota);
     }
 
-    return await this.override.overrideQuota(owner.id, workspaceId, quota);
+    return quota;
   }
 
   private mergeUnlimitedQuota(orig: QuotaBusinessType): QuotaBusinessType {

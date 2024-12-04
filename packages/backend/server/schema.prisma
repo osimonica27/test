@@ -214,7 +214,7 @@ model WorkspaceFeature {
   workspaceId String @map("workspace_id") @db.VarChar
   featureId   Int    @map("feature_id") @db.Integer
 
-  // override feature's configs
+  // override quota's configs
   configs   Json      @default("{}") @db.Json
   // we will record the reason why the feature is enabled/disabled
   // for example:

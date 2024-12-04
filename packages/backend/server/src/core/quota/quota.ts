@@ -61,11 +61,17 @@ export class QuotaConfig {
   }
 
   withOverride(override: any) {
-    return new QuotaConfig(this.config, override);
+    if (override) {
+      return new QuotaConfig(this.config, override);
+    }
+    return this;
   }
 
   checkOverride(override: any) {
-    return QuotaSchema.safeParse(Object.assign({}, this.config, override));
+    return QuotaSchema.safeParse({
+      ...this.config,
+      configs: Object.assign({}, this.config.configs, override),
+    });
   }
 
   get version() {
@@ -84,8 +90,8 @@ export class QuotaConfig {
   get businessBlobLimit() {
     return (
       this.override?.businessBlobLimit ||
-      this.override?.blobLimit ||
       this.config.configs.businessBlobLimit ||
+      this.override?.blobLimit ||
       this.config.configs.blobLimit
     );
   }
