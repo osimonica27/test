@@ -4,6 +4,7 @@ import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 
 import {
   DocAccessDenied,
+  EventEmitter,
   PrismaTransaction,
   SpaceAccessDenied,
   SpaceOwnerNotFound,
@@ -14,7 +15,10 @@ import { Permission, PublicPageMode } from './types';
 
 @Injectable()
 export class PermissionService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly event: EventEmitter
+  ) {}
 
   private get acceptedCondition() {
     return [
@@ -375,36 +379,63 @@ export class PermissionService {
     const result = await this.prisma.$transaction(async tx => {
       const isTeam = await this.isTeamWorkspace(tx, workspaceId);
       if (isTeam) {
-        return await tx.workspaceUserPermission.deleteMany({
+        const result = await tx.workspaceUserPermission.deleteMany({
           where: {
             id: invitationId,
-            workspaceId: workspaceId,
+            workspaceId,
             AND: [
               { accepted: true },
               { status: WorkspaceMemberStatus.UnderReview },
             ],
           },
         });
+
+        if (result.count > 0) {
+          const count = await tx.workspaceUserPermission.count({
+            where: { workspaceId },
+          });
+          this.event.emit('workspace.members.updated', {
+            workspaceId,
+            count,
+          });
+        }
+        return result;
       }
+
       return { count: 0 };
     });
 
     return result.count > 0;
   }
 
-  async revokeWorkspace(ws: string, user: string) {
-    const result = await this.prisma.workspaceUserPermission.deleteMany({
-      where: {
-        workspaceId: ws,
-        userId: user,
-        type: {
-          // We shouldn't revoke owner permission, should auto deleted by workspace/user delete cascading
-          not: Permission.Owner,
+  async revokeWorkspace(workspaceId: string, user: string) {
+    return await this.prisma.$transaction(async tx => {
+      const result = await tx.workspaceUserPermission.deleteMany({
+        where: {
+          workspaceId,
+          userId: user,
+          // We shouldn't revoke owner permission
+          // should auto deleted by workspace/user delete cascading
+          type: { not: Permission.Owner },
         },
-      },
-    });
+      });
 
-    return result.count > 0;
+      const success = result.count > 0;
+
+      if (success) {
+        const isTeam = await this.isTeamWorkspace(tx, workspaceId);
+        if (isTeam) {
+          const count = await tx.workspaceUserPermission.count({
+            where: { workspaceId },
+          });
+          this.event.emit('workspace.members.updated', {
+            workspaceId,
+            count,
+          });
+        }
+      }
+      return success;
+    });
   }
   /// End regin: workspace permission
 

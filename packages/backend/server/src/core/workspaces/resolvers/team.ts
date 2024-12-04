@@ -3,6 +3,7 @@ import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 
 import {
+  EventEmitter,
   MailService,
   NotInSpace,
   RequestMutex,
@@ -26,6 +27,7 @@ export class TeamWorkspaceResolver {
   private readonly logger = new Logger(TeamWorkspaceResolver.name);
 
   constructor(
+    private readonly event: EventEmitter,
     private readonly mailer: MailService,
     private readonly prisma: PrismaClient,
     private readonly permissions: PermissionService,
@@ -115,6 +117,15 @@ export class TeamWorkspaceResolver {
       }
       results.push(ret);
     }
+
+    const memberCount = quota.memberCount + results.length;
+    if (memberCount > quota.memberLimit) {
+      this.event.emit('workspace.members.updated', {
+        workspaceId,
+        count: memberCount,
+      });
+    }
+
     return results;
   }
 
