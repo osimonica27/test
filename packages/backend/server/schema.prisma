@@ -127,7 +127,6 @@ model WorkspacePage {
 }
 
 enum WorkspaceMemberStatus {
-  Declined // 0. invitation declined by workspace manager
   Pending // 1. old state accepted = false
   NeedMoreSeat // 2. for team: workspace owner need to buy more seat
   UnderReview // 3. for team: member is under review

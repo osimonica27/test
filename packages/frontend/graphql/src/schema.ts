@@ -1277,7 +1277,6 @@ export interface WorkspaceBlobSizes {
 /** Member invite status in workspace */
 export enum WorkspaceMemberStatus {
   Accepted = 'Accepted',
-  Declined = 'Declined',
   NeedMoreSeat = 'NeedMoreSeat',
   Pending = 'Pending',
   UnderReview = 'UnderReview',

@@ -361,8 +361,7 @@ export class PermissionService {
         data: {
           accepted: true,
           status: isTeam
-            ? // TODO(@darkskygit): switch to NeedMoreSeat if seat is full
-              WorkspaceMemberStatus.UnderReview
+            ? WorkspaceMemberStatus.UnderReview
             : WorkspaceMemberStatus.Accepted,
         },
       });
@@ -375,7 +374,7 @@ export class PermissionService {
     const result = await this.prisma.$transaction(async tx => {
       const isTeam = await this.isTeamWorkspace(tx, workspaceId);
       if (isTeam) {
-        return await tx.workspaceUserPermission.updateMany({
+        return await tx.workspaceUserPermission.deleteMany({
           where: {
             id: invitationId,
             workspaceId: workspaceId,
@@ -383,10 +382,6 @@ export class PermissionService {
               { accepted: true },
               { status: WorkspaceMemberStatus.UnderReview },
             ],
-          },
-          data: {
-            accepted: true,
-            status: WorkspaceMemberStatus.Declined,
           },
         });
       }

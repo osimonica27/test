@@ -934,7 +934,6 @@ type WorkspaceBlobSizes {
 """Member invite status in workspace"""
 enum WorkspaceMemberStatus {
   Accepted
-  Declined
   NeedMoreSeat
   Pending
   UnderReview
