@@ -1,8 +1,0 @@
-query workspaceTeamConfig($id: String!) {
-  workspace(id: $id) {
-    teamConfig {
-      enableAi
-      enableShare
-    }
-  }
-}

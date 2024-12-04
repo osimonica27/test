@@ -1,0 +1,7 @@
+query getWorkspaceConfig($id: String!) {
+  workspace(id: $id) {
+    enableAi
+    enableShare
+    enableUrlPreview
+  }
+}
