@@ -1277,7 +1277,6 @@ export interface WorkspaceBlobSizes {
 /** Member invite status in workspace */
 export enum WorkspaceMemberStatus {
   Accepted = 'Accepted',
-  Declined = 'Declined',
   NeedMoreSeat = 'NeedMoreSeat',
   Pending = 'Pending',
   UnderReview = 'UnderReview',
@@ -1317,6 +1316,9 @@ export interface WorkspaceType {
   id: Scalars['ID']['output'];
   /** is current workspace initialized */
   initialized: Scalars['Boolean']['output'];
+  /** Get user invoice count */
+  invoiceCount: Scalars['Int']['output'];
+  invoices: Array<InvoiceType>;
   /** member count of workspace */
   memberCount: Scalars['Int']['output'];
   /** Members of workspace */
@@ -1349,6 +1351,11 @@ export interface WorkspaceType {
 export interface WorkspaceTypeHistoriesArgs {
   before?: InputMaybe<Scalars['DateTime']['input']>;
   guid: Scalars['String']['input'];
+  take?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface WorkspaceTypeInvoicesArgs {
+  skip?: InputMaybe<Scalars['Int']['input']>;
   take?: InputMaybe<Scalars['Int']['input']>;
 }
 
