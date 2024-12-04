@@ -17,6 +17,7 @@
 // ====================================================================================
 const env = process.env;
 
+AFFiNE.serverName = 'AFFiNE Cloud';
 AFFiNE.metrics.enabled = !AFFiNE.node.test;
 
 if (env.R2_OBJECT_STORAGE_ACCOUNT_ID) {
