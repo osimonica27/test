@@ -59,6 +59,12 @@ export class WorkspaceType implements Partial<Workspace> {
   @Field({ description: 'is Public workspace' })
   public!: boolean;
 
+  @Field({ description: 'Enable AI' })
+  enableAi!: boolean;
+
+  @Field({ description: 'Enable share' })
+  enableShare!: boolean;
+
   @Field({ description: 'Enable url previous when sharing' })
   enableUrlPreview!: boolean;
 
@@ -105,7 +111,7 @@ export class InvitationType {
 @InputType()
 export class UpdateWorkspaceInput extends PickType(
   PartialType(WorkspaceType),
-  ['public', 'enableUrlPreview'],
+  ['public', 'enableAi', 'enableShare', 'enableUrlPreview'],
   InputType
 ) {
   @Field(() => ID)

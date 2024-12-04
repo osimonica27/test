@@ -1168,15 +1168,43 @@ mutation verifyEmail($token: String!) {
 }`,
 };
 
-export const getEnableUrlPreviewQuery = {
-  id: 'getEnableUrlPreviewQuery' as const,
-  operationName: 'getEnableUrlPreview',
+export const getWorkspaceConfigQuery = {
+  id: 'getWorkspaceConfigQuery' as const,
+  operationName: 'getWorkspaceConfig',
   definitionName: 'workspace',
   containsFile: false,
   query: `
-query getEnableUrlPreview($id: String!) {
+query getWorkspaceConfig($id: String!) {
   workspace(id: $id) {
+    enableAi
+    enableShare
     enableUrlPreview
+  }
+}`,
+};
+
+export const setEnableAiMutation = {
+  id: 'setEnableAiMutation' as const,
+  operationName: 'setEnableAi',
+  definitionName: 'updateWorkspace',
+  containsFile: false,
+  query: `
+mutation setEnableAi($id: ID!, $enableAi: Boolean!) {
+  updateWorkspace(input: {id: $id, enableAi: $enableAi}) {
+    id
+  }
+}`,
+};
+
+export const setEnableShareMutation = {
+  id: 'setEnableShareMutation' as const,
+  operationName: 'setEnableShare',
+  definitionName: 'updateWorkspace',
+  containsFile: false,
+  query: `
+mutation setEnableShare($id: ID!, $enableShare: Boolean!) {
+  updateWorkspace(input: {id: $id, enableShare: $enableShare}) {
+    id
   }
 }`,
 };
@@ -1347,33 +1375,6 @@ query workspaceQuota($id: String!) {
 }`,
 };
 
-export const setTeamAiMutation = {
-  id: 'setTeamAiMutation' as const,
-  operationName: 'setTeamAi',
-  definitionName: 'updateWorkspaceTeamConfig',
-  containsFile: false,
-  query: `
-mutation setTeamAi($id: ID!, $enableAi: Boolean) {
-  updateWorkspaceTeamConfig(input: {id: $id, enableAi: $enableAi})
-}`,
-};
-
-export const workspaceTeamConfigQuery = {
-  id: 'workspaceTeamConfigQuery' as const,
-  operationName: 'workspaceTeamConfig',
-  definitionName: 'workspace',
-  containsFile: false,
-  query: `
-query workspaceTeamConfig($id: String!) {
-  workspace(id: $id) {
-    teamConfig {
-      enableAi
-      enableShare
-    }
-  }
-}`,
-};
-
 export const grantWorkspaceTeamMemberMutation = {
   id: 'grantWorkspaceTeamMemberMutation' as const,
   operationName: 'grantWorkspaceTeamMember',
@@ -1382,16 +1383,5 @@ export const grantWorkspaceTeamMemberMutation = {
   query: `
 mutation grantWorkspaceTeamMember($workspaceId: String!, $userId: String!, $permission: Permission!) {
   grant(workspaceId: $workspaceId, userId: $userId, permission: $permission)
-}`,
-};
-
-export const setTeamShareMutation = {
-  id: 'setTeamShareMutation' as const,
-  operationName: 'setTeamShare',
-  definitionName: 'updateWorkspaceTeamConfig',
-  containsFile: false,
-  query: `
-mutation setTeamShare($id: ID!, $enableShare: Boolean) {
-  updateWorkspaceTeamConfig(input: {id: $id, enableShare: $enableShare})
 }`,
 };

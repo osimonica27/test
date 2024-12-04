@@ -847,6 +847,12 @@ input UpdateUserInput {
 }
 
 input UpdateWorkspaceInput {
+  """Enable AI"""
+  enableAi: Boolean
+
+  """Enable share"""
+  enableShare: Boolean
+
   """Enable url previous when sharing"""
   enableUrlPreview: Boolean
   id: ID!
@@ -952,6 +958,12 @@ type WorkspaceType {
 
   """Workspace created date"""
   createdAt: DateTime!
+
+  """Enable AI"""
+  enableAi: Boolean!
+
+  """Enable share"""
+  enableShare: Boolean!
 
   """Enable url previous when sharing"""
   enableUrlPreview: Boolean!

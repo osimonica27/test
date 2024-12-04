@@ -1,3 +1,0 @@
-mutation setTeamAi($id: ID!, $enableAi: Boolean) {
-  updateWorkspaceTeamConfig(input: { id: $id, enableAi: $enableAi })
-}

@@ -374,7 +374,6 @@ export enum FeatureType {
   Admin = 'Admin',
   Copilot = 'Copilot',
   EarlyAccess = 'EarlyAccess',
-  TeamWorkspace = 'TeamWorkspace',
   UnlimitedCopilot = 'UnlimitedCopilot',
   UnlimitedWorkspace = 'UnlimitedWorkspace',
 }
@@ -600,7 +599,6 @@ export interface Mutation {
   updateUserFeatures: Array<FeatureType>;
   /** Update workspace */
   updateWorkspace: WorkspaceType;
-  updateWorkspaceTeamConfig: Scalars['Boolean']['output'];
   /** Upload user avatar */
   uploadAvatar: UserType;
   verifyEmail: Scalars['Boolean']['output'];
@@ -830,10 +828,6 @@ export interface MutationUpdateUserFeaturesArgs {
 
 export interface MutationUpdateWorkspaceArgs {
   input: UpdateWorkspaceInput;
-}
-
-export interface MutationUpdateWorkspaceTeamConfigArgs {
-  input: UpdateTeamWorkspaceConfigInput;
 }
 
 export interface MutationUploadAvatarArgs {
@@ -1168,12 +1162,6 @@ export enum SubscriptionVariant {
   Onetime = 'Onetime',
 }
 
-export interface TeamWorkspaceConfigType {
-  __typename?: 'TeamWorkspaceConfigType';
-  enableAi: Scalars['Boolean']['output'];
-  enableShare: Scalars['Boolean']['output'];
-}
-
 export interface UnknownOauthProviderDataType {
   __typename?: 'UnknownOauthProviderDataType';
   name: Scalars['String']['output'];
@@ -1184,18 +1172,16 @@ export interface UnsupportedSubscriptionPlanDataType {
   plan: Scalars['String']['output'];
 }
 
-export interface UpdateTeamWorkspaceConfigInput {
-  enableAi?: InputMaybe<Scalars['Boolean']['input']>;
-  enableShare?: InputMaybe<Scalars['Boolean']['input']>;
-  id: Scalars['ID']['input'];
-}
-
 export interface UpdateUserInput {
   /** User name */
   name?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface UpdateWorkspaceInput {
+  /** Enable AI */
+  enableAi?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Enable share */
+  enableShare?: InputMaybe<Scalars['Boolean']['input']>;
   /** Enable url previous when sharing */
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
@@ -1308,6 +1294,10 @@ export interface WorkspaceType {
   blobsSize: Scalars['Int']['output'];
   /** Workspace created date */
   createdAt: Scalars['DateTime']['output'];
+  /** Enable AI */
+  enableAi: Scalars['Boolean']['output'];
+  /** Enable share */
+  enableShare: Scalars['Boolean']['output'];
   /** Enable url previous when sharing */
   enableUrlPreview: Scalars['Boolean']['output'];
   /** Enabled features of workspace */
@@ -1344,8 +1334,6 @@ export interface WorkspaceType {
   sharedPages: Array<Scalars['String']['output']>;
   /** The team subscription of the workspace, if exists. */
   subscription: Maybe<SubscriptionType>;
-  /** Team workspace config */
-  teamConfig: Maybe<TeamWorkspaceConfigType>;
 }
 
 export interface WorkspaceTypeHistoriesArgs {
@@ -2425,13 +2413,38 @@ export type VerifyEmailMutation = {
   verifyEmail: boolean;
 };
 
-export type GetEnableUrlPreviewQueryVariables = Exact<{
+export type GetWorkspaceConfigQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
-export type GetEnableUrlPreviewQuery = {
+export type GetWorkspaceConfigQuery = {
   __typename?: 'Query';
-  workspace: { __typename?: 'WorkspaceType'; enableUrlPreview: boolean };
+  workspace: {
+    __typename?: 'WorkspaceType';
+    enableAi: boolean;
+    enableShare: boolean;
+    enableUrlPreview: boolean;
+  };
+};
+
+export type SetEnableAiMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  enableAi: Scalars['Boolean']['input'];
+}>;
+
+export type SetEnableAiMutation = {
+  __typename?: 'Mutation';
+  updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
+};
+
+export type SetEnableShareMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  enableShare: Scalars['Boolean']['input'];
+}>;
+
+export type SetEnableShareMutation = {
+  __typename?: 'Mutation';
+  updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
 
 export type SetEnableUrlPreviewMutationVariables = Exact<{
@@ -2572,32 +2585,6 @@ export type WorkspaceQuotaQuery = {
   };
 };
 
-export type SetTeamAiMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-  enableAi?: InputMaybe<Scalars['Boolean']['input']>;
-}>;
-
-export type SetTeamAiMutation = {
-  __typename?: 'Mutation';
-  updateWorkspaceTeamConfig: boolean;
-};
-
-export type WorkspaceTeamConfigQueryVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type WorkspaceTeamConfigQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    teamConfig: {
-      __typename?: 'TeamWorkspaceConfigType';
-      enableAi: boolean;
-      enableShare: boolean;
-    } | null;
-  };
-};
-
 export type GrantWorkspaceTeamMemberMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -2607,16 +2594,6 @@ export type GrantWorkspaceTeamMemberMutationVariables = Exact<{
 export type GrantWorkspaceTeamMemberMutation = {
   __typename?: 'Mutation';
   grant: string;
-};
-
-export type SetTeamShareMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-  enableShare?: InputMaybe<Scalars['Boolean']['input']>;
-}>;
-
-export type SetTeamShareMutation = {
-  __typename?: 'Mutation';
-  updateWorkspaceTeamConfig: boolean;
 };
 
 export type Queries =
@@ -2796,9 +2773,9 @@ export type Queries =
       response: SubscriptionQuery;
     }
   | {
-      name: 'getEnableUrlPreviewQuery';
-      variables: GetEnableUrlPreviewQueryVariables;
-      response: GetEnableUrlPreviewQuery;
+      name: 'getWorkspaceConfigQuery';
+      variables: GetWorkspaceConfigQueryVariables;
+      response: GetWorkspaceConfigQuery;
     }
   | {
       name: 'enabledFeaturesQuery';
@@ -2819,11 +2796,6 @@ export type Queries =
       name: 'workspaceQuotaQuery';
       variables: WorkspaceQuotaQueryVariables;
       response: WorkspaceQuotaQuery;
-    }
-  | {
-      name: 'workspaceTeamConfigQuery';
-      variables: WorkspaceTeamConfigQueryVariables;
-      response: WorkspaceTeamConfigQuery;
     };
 
 export type Mutations =
@@ -3018,6 +2990,16 @@ export type Mutations =
       response: VerifyEmailMutation;
     }
   | {
+      name: 'setEnableAiMutation';
+      variables: SetEnableAiMutationVariables;
+      response: SetEnableAiMutation;
+    }
+  | {
+      name: 'setEnableShareMutation';
+      variables: SetEnableShareMutationVariables;
+      response: SetEnableShareMutation;
+    }
+  | {
       name: 'setEnableUrlPreviewMutation';
       variables: SetEnableUrlPreviewMutationVariables;
       response: SetEnableUrlPreviewMutation;
@@ -3053,17 +3035,7 @@ export type Mutations =
       response: AcceptInviteByInviteIdMutation;
     }
   | {
-      name: 'setTeamAiMutation';
-      variables: SetTeamAiMutationVariables;
-      response: SetTeamAiMutation;
-    }
-  | {
       name: 'grantWorkspaceTeamMemberMutation';
       variables: GrantWorkspaceTeamMemberMutationVariables;
       response: GrantWorkspaceTeamMemberMutation;
-    }
-  | {
-      name: 'setTeamShareMutation';
-      variables: SetTeamShareMutationVariables;
-      response: SetTeamShareMutation;
     };
