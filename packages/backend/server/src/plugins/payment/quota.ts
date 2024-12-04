@@ -87,7 +87,7 @@ export class TeamQuotaOverride implements QuotaOverride {
     }
   }
 
-  @OnEvent('user.subscription.canceled')
+  @OnEvent('workspace.subscription.canceled')
   async onSubscriptionCanceled({
     workspaceId,
     plan,
