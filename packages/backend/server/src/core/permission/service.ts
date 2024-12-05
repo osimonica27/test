@@ -386,6 +386,41 @@ export class PermissionService {
     return result.count > 0;
   }
 
+  async refreshSeatStatus(workspaceId: string, memberLimit: number) {
+    return this.prisma.$transaction(async tx => {
+      const members = await tx.workspaceUserPermission.findMany({
+        where: {
+          workspaceId,
+        },
+        select: {
+          userId: true,
+          status: true,
+          updatedAt: true,
+        },
+      });
+      const memberCount = members.filter(
+        m => m.status === WorkspaceMemberStatus.Accepted
+      ).length;
+      const needChange = members
+        .filter(m => m.status === WorkspaceMemberStatus.NeedMoreSeat)
+        .toSorted((a, b) => Number(a.updatedAt) - Number(b.updatedAt))
+        .slice(0, memberLimit - memberCount)
+        .map(m => m.userId);
+      return await tx.workspaceUserPermission
+        .updateMany({
+          where: {
+            userId: {
+              in: needChange,
+            },
+          },
+          data: {
+            status: WorkspaceMemberStatus.Accepted,
+          },
+        })
+        .then(r => r.count === needChange.length);
+    });
+  }
+
   async revokeWorkspace(workspaceId: string, user: string) {
     return await this.prisma.$transaction(async tx => {
       const result = await tx.workspaceUserPermission.deleteMany({

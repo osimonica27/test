@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
+import { PermissionService } from '../../core/permission';
 import { QuotaManagementService, QuotaType } from '../../core/quota';
 import type { EventPayload } from '../../fundamentals';
 
 @Injectable()
 export class TeamQuotaOverride {
-  constructor(private readonly manager: QuotaManagementService) {}
+  constructor(
+    private readonly manager: QuotaManagementService,
+    private readonly permission: PermissionService
+  ) {}
 
   @OnEvent('workspace.subscription.activated')
   async onSubscriptionUpdated({
@@ -26,6 +30,7 @@ export class TeamQuotaOverride {
           QuotaType.TeamPlanV1,
           { memberLimit: quantity }
         );
+        await this.permission.refreshSeatStatus(workspaceId, quantity);
         break;
       default:
         break;
