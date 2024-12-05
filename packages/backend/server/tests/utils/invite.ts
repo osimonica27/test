@@ -3,13 +3,14 @@ import request from 'supertest';
 
 import type { InvitationType } from '../../src/core/workspaces';
 import { gql } from './common';
+import { PermissionEnum } from './utils';
 
 export async function inviteUser(
   app: INestApplication,
   token: string,
   workspaceId: string,
   email: string,
-  permission: string,
+  permission: PermissionEnum,
   sendInviteMail = false
 ): Promise<string> {
   const res = await request(app.getHttpServer())
@@ -24,7 +25,44 @@ export async function inviteUser(
           `,
     })
     .expect(200);
+  if (res.body.errors) {
+    throw new Error(res.body.errors[0].message);
+  }
   return res.body.data.invite;
+}
+
+export async function inviteUsers(
+  app: INestApplication,
+  token: string,
+  workspaceId: string,
+  emails: string[],
+  sendInviteMail = false
+): Promise<Array<{ email: string; inviteId?: string; sentSuccess?: boolean }>> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          mutation inviteBatch($workspaceId: String!, $emails: [String!]!, $sendInviteMail: Boolean) {
+            inviteBatch(
+              workspaceId: $workspaceId
+              emails: $emails
+              sendInviteMail: $sendInviteMail
+            ) {
+              email
+              inviteId
+              sentSuccess
+            }
+          }
+          `,
+      variables: { workspaceId, emails, sendInviteMail },
+    })
+    .expect(200);
+  if (res.body.errors) {
+    throw new Error(res.body.errors[0].message);
+  }
+  return res.body.data.inviteBatch;
 }
 
 export async function acceptInviteById(
@@ -44,6 +82,9 @@ export async function acceptInviteById(
           `,
     })
     .expect(200);
+  if (res.body.errors) {
+    throw new Error(res.body.errors[0].message);
+  }
   return res.body.data.acceptInviteById;
 }
 
@@ -65,6 +106,9 @@ export async function leaveWorkspace(
           `,
     })
     .expect(200);
+  if (res.body.errors) {
+    throw new Error(res.body.errors[0].message);
+  }
   return res.body.data.leaveWorkspace;
 }
 

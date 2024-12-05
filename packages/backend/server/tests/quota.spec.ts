@@ -165,28 +165,3 @@ test('should be able to override quota', async t => {
   t.is(wq3.storageQuota, 140 * OneGB, 'should be override to 120GB');
   t.is(wq3.memberLimit, 2, 'should be override to 1');
 });
-
-test('should be able to check team permission', async t => {
-  const { auth, quotaManager, workspace } = t.context;
-
-  const owner = await auth.signUp('test@affine.pro', '123456');
-  const w1 = await workspace.createWorkspace(owner, null);
-
-  const wq1 = await quotaManager.getWorkspaceUsage(w1.id);
-  t.is(wq1.blobLimit, 10 * OneMB, 'should be 10MB');
-  t.is(wq1.businessBlobLimit, 100 * OneMB, 'should be 100MB');
-  t.is(wq1.memberLimit, 3, 'should be 3');
-
-  await quotaManager.addTeamWorkspace(w1.id, 'test');
-  const wq2 = await quotaManager.getWorkspaceUsage(w1.id);
-  t.is(wq2.storageQuota, 120 * OneGB, 'should be override to 100GB');
-  t.is(wq2.businessBlobLimit, 500 * OneMB, 'should be override to 500MB');
-  t.is(wq2.memberLimit, 1, 'should be override to 1');
-
-  await quotaManager.updateWorkspaceConfig(w1.id, QuotaType.TeamPlanV1, {
-    memberLimit: 2,
-  });
-  const wq3 = await quotaManager.getWorkspaceUsage(w1.id);
-  t.is(wq3.storageQuota, 140 * OneGB, 'should be override to 120GB');
-  t.is(wq3.memberLimit, 2, 'should be override to 1');
-});

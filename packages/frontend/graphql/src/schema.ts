@@ -2550,6 +2550,22 @@ export type AcceptInviteByInviteIdMutation = {
   acceptInviteById: boolean;
 };
 
+export type InviteBatchMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  emails: Array<Scalars['String']['input']> | Scalars['String']['input'];
+  sendInviteMail?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+export type InviteBatchMutation = {
+  __typename?: 'Mutation';
+  inviteBatch: Array<{
+    __typename?: 'InviteResult';
+    email: string;
+    inviteId: string | null;
+    sentSuccess: boolean;
+  }>;
+};
+
 export type InviteLinkMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   expireTime: WorkspaceInviteLinkExpireTime;
@@ -3046,6 +3062,11 @@ export type Mutations =
       name: 'acceptInviteByInviteIdMutation';
       variables: AcceptInviteByInviteIdMutationVariables;
       response: AcceptInviteByInviteIdMutation;
+    }
+  | {
+      name: 'inviteBatchMutation';
+      variables: InviteBatchMutationVariables;
+      response: InviteBatchMutation;
     }
   | {
       name: 'inviteLinkMutation';

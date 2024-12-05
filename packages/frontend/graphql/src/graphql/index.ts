@@ -1322,6 +1322,25 @@ mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!, $send
 }`,
 };
 
+export const inviteBatchMutation = {
+  id: 'inviteBatchMutation' as const,
+  operationName: 'inviteBatch',
+  definitionName: 'inviteBatch',
+  containsFile: false,
+  query: `
+mutation inviteBatch($workspaceId: String!, $emails: [String!]!, $sendInviteMail: Boolean) {
+  inviteBatch(
+    workspaceId: $workspaceId
+    emails: $emails
+    sendInviteMail: $sendInviteMail
+  ) {
+    email
+    inviteId
+    sentSuccess
+  }
+}`,
+};
+
 export const inviteLinkMutation = {
   id: 'inviteLinkMutation' as const,
   operationName: 'inviteLink',
