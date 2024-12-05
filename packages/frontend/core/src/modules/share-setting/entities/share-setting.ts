@@ -17,7 +17,6 @@ import { isBackendError, isNetworkError } from '../../cloud';
 import type { WorkspaceShareSettingStore } from '../stores/share-setting';
 
 type EnableAi = GetWorkspaceConfigQuery['workspace']['enableAi'];
-type EnableShare = GetWorkspaceConfigQuery['workspace']['enableShare'];
 type EnableUrlPreview =
   GetWorkspaceConfigQuery['workspace']['enableUrlPreview'];
 
@@ -25,7 +24,6 @@ const logger = new DebugLogger('affine:workspace-permission');
 
 export class WorkspaceShareSetting extends Entity {
   enableAi$ = new LiveData<EnableAi | null>(null);
-  enableShare$ = new LiveData<EnableShare | null>(null);
   enableUrlPreview$ = new LiveData<EnableUrlPreview | null>(null);
   isLoading$ = new LiveData(false);
   error$ = new LiveData<any>(null);
@@ -57,7 +55,6 @@ export class WorkspaceShareSetting extends Entity {
         mergeMap(value => {
           if (value) {
             this.enableAi$.next(value.enableAi);
-            this.enableShare$.next(value.enableShare);
             this.enableUrlPreview$.next(value.enableUrlPreview);
           }
           return EMPTY;

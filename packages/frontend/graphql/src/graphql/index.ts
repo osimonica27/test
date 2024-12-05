@@ -1177,7 +1177,6 @@ export const getWorkspaceConfigQuery = {
 query getWorkspaceConfig($id: String!) {
   workspace(id: $id) {
     enableAi
-    enableShare
     enableUrlPreview
   }
 }`,
@@ -1191,19 +1190,6 @@ export const setEnableAiMutation = {
   query: `
 mutation setEnableAi($id: ID!, $enableAi: Boolean!) {
   updateWorkspace(input: {id: $id, enableAi: $enableAi}) {
-    id
-  }
-}`,
-};
-
-export const setEnableShareMutation = {
-  id: 'setEnableShareMutation' as const,
-  operationName: 'setEnableShare',
-  definitionName: 'updateWorkspace',
-  containsFile: false,
-  query: `
-mutation setEnableShare($id: ID!, $enableShare: Boolean!) {
-  updateWorkspace(input: {id: $id, enableShare: $enableShare}) {
     id
   }
 }`,
@@ -1318,17 +1304,6 @@ mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Perm
     permission: $permission
     sendInviteMail: $sendInviteMail
   )
-}`,
-};
-
-export const declineInviteByIdMutation = {
-  id: 'declineInviteByIdMutation' as const,
-  operationName: 'declineInviteById',
-  definitionName: 'declineInviteById',
-  containsFile: false,
-  query: `
-mutation declineInviteById($workspaceId: String!, $inviteId: String!) {
-  declineInviteById(workspaceId: $workspaceId, inviteId: $inviteId)
 }`,
 };
 

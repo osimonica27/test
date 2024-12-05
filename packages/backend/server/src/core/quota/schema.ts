@@ -191,16 +191,14 @@ export const Quotas: Quota[] = [
       historyPeriod: 30 * OneDay,
       // member limit 1, override by workspace config
       memberLimit: 1,
-      // copilot action limit 10
-      copilotActionLimit: 10,
     },
   },
 ];
 
-export function getLatestQuota(type: QuotaType) {
+export function getLatestQuota<Q extends QuotaType>(type: Q): Quota<Q> {
   const quota = Quotas.filter(f => f.feature === type);
   quota.sort((a, b) => b.version - a.version);
-  return quota[0];
+  return quota[0] as Quota<Q>;
 }
 
 export const FreePlan = getLatestQuota(QuotaType.FreePlanV1);

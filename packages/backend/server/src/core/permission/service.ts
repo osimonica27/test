@@ -355,7 +355,6 @@ export class PermissionService {
 
   async acceptWorkspaceInvitation(invitationId: string, workspaceId: string) {
     const result = await this.prisma.$transaction(async tx => {
-      // TODO(@darkskygit): use feature to check after data layer is ready
       const isTeam = await this.isTeamWorkspace(tx, workspaceId);
       return await tx.workspaceUserPermission.updateMany({
         where: {
@@ -370,39 +369,6 @@ export class PermissionService {
             : WorkspaceMemberStatus.Accepted,
         },
       });
-    });
-
-    return result.count > 0;
-  }
-
-  async declineWorkspaceInvitation(invitationId: string, workspaceId: string) {
-    const result = await this.prisma.$transaction(async tx => {
-      const isTeam = await this.isTeamWorkspace(tx, workspaceId);
-      if (isTeam) {
-        const result = await tx.workspaceUserPermission.deleteMany({
-          where: {
-            id: invitationId,
-            workspaceId,
-            AND: [
-              { accepted: true },
-              { status: WorkspaceMemberStatus.UnderReview },
-            ],
-          },
-        });
-
-        if (result.count > 0) {
-          const count = await tx.workspaceUserPermission.count({
-            where: { workspaceId },
-          });
-          this.event.emit('workspace.members.updated', {
-            workspaceId,
-            count,
-          });
-        }
-        return result;
-      }
-
-      return { count: 0 };
     });
 
     return result.count > 0;

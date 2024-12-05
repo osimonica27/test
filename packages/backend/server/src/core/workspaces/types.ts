@@ -62,9 +62,6 @@ export class WorkspaceType implements Partial<Workspace> {
   @Field({ description: 'Enable AI' })
   enableAi!: boolean;
 
-  @Field({ description: 'Enable share' })
-  enableShare!: boolean;
-
   @Field({ description: 'Enable url previous when sharing' })
   enableUrlPreview!: boolean;
 
@@ -111,36 +108,11 @@ export class InvitationType {
 @InputType()
 export class UpdateWorkspaceInput extends PickType(
   PartialType(WorkspaceType),
-  ['public', 'enableAi', 'enableShare', 'enableUrlPreview'],
+  ['public', 'enableAi', 'enableUrlPreview'],
   InputType
 ) {
   @Field(() => ID)
   id!: string;
-}
-
-@ObjectType()
-export class TeamWorkspaceConfigType
-  implements Omit<Partial<Workspace>, 'seatStorage' | 'maxMembers'>
-{
-  @Field(() => Boolean)
-  enableAi!: boolean;
-
-  @Field(() => Boolean)
-  enableShare!: boolean;
-}
-
-@InputType()
-export class UpdateTeamWorkspaceConfigInput extends PartialType(
-  TeamWorkspaceConfigType
-) {
-  @Field(() => ID)
-  id!: string;
-
-  @Field(() => Boolean, { nullable: true })
-  override enableAi!: boolean;
-
-  @Field(() => Boolean, { nullable: true })
-  override enableShare!: boolean;
 }
 
 @ObjectType()
