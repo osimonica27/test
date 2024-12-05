@@ -400,6 +400,17 @@ query getInviteInfo($inviteId: String!) {
 }`,
 };
 
+export const getIsAdminQuery = {
+  id: 'getIsAdminQuery' as const,
+  operationName: 'getIsAdmin',
+  definitionName: 'isAdmin',
+  containsFile: false,
+  query: `
+query getIsAdmin($workspaceId: String!) {
+  isAdmin(workspaceId: $workspaceId)
+}`,
+};
+
 export const getIsOwnerQuery = {
   id: 'getIsOwnerQuery' as const,
   operationName: 'getIsOwner',

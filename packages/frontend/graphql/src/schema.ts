@@ -891,6 +891,8 @@ export interface Query {
   error: ErrorDataUnion;
   /** send workspace invitation */
   getInviteInfo: InvitationType;
+  /** Get is admin of workspace */
+  isAdmin: Scalars['Boolean']['output'];
   /** Get is owner of workspace */
   isOwner: Scalars['Boolean']['output'];
   /**
@@ -934,6 +936,10 @@ export interface QueryErrorArgs {
 
 export interface QueryGetInviteInfoArgs {
   inviteId: Scalars['String']['input'];
+}
+
+export interface QueryIsAdminArgs {
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface QueryIsOwnerArgs {
@@ -1734,6 +1740,12 @@ export type GetInviteInfoQuery = {
     };
   };
 };
+
+export type GetIsAdminQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type GetIsAdminQuery = { __typename?: 'Query'; isAdmin: boolean };
 
 export type GetIsOwnerQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
@@ -2664,6 +2676,11 @@ export type Queries =
       name: 'getInviteInfoQuery';
       variables: GetInviteInfoQueryVariables;
       response: GetInviteInfoQuery;
+    }
+  | {
+      name: 'getIsAdminQuery';
+      variables: GetIsAdminQueryVariables;
+      response: GetIsAdminQuery;
     }
   | {
       name: 'getIsOwnerQuery';
