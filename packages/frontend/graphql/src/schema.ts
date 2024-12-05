@@ -533,6 +533,7 @@ export interface Mutation {
   __typename?: 'Mutation';
   acceptInviteById: Scalars['Boolean']['output'];
   addWorkspaceFeature: Scalars['Int']['output'];
+  approveMember: Scalars['String']['output'];
   cancelSubscription: SubscriptionType;
   changeEmail: UserType;
   changePassword: Scalars['Boolean']['output'];
@@ -561,7 +562,7 @@ export interface Mutation {
   deleteWorkspace: Scalars['Boolean']['output'];
   /** Create a chat session */
   forkCopilotSession: Scalars['String']['output'];
-  grant: Scalars['String']['output'];
+  grantMember: Scalars['String']['output'];
   invite: Scalars['String']['output'];
   inviteBatch: Array<InviteResult>;
   leaveWorkspace: Scalars['Boolean']['output'];
@@ -611,6 +612,11 @@ export interface MutationAcceptInviteByIdArgs {
 
 export interface MutationAddWorkspaceFeatureArgs {
   feature: FeatureType;
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationApproveMemberArgs {
+  userId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
@@ -681,7 +687,7 @@ export interface MutationForkCopilotSessionArgs {
   options: ForkChatSessionInput;
 }
 
-export interface MutationGrantArgs {
+export interface MutationGrantMemberArgs {
   permission: Permission;
   userId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
@@ -2554,6 +2560,16 @@ export type WorkspaceQuotaQuery = {
   };
 };
 
+export type ApproveWorkspaceTeamMemberMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+}>;
+
+export type ApproveWorkspaceTeamMemberMutation = {
+  __typename?: 'Mutation';
+  approveMember: string;
+};
+
 export type GrantWorkspaceTeamMemberMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -2562,7 +2578,7 @@ export type GrantWorkspaceTeamMemberMutationVariables = Exact<{
 
 export type GrantWorkspaceTeamMemberMutation = {
   __typename?: 'Mutation';
-  grant: string;
+  grantMember: string;
 };
 
 export type Queries =
@@ -2992,6 +3008,11 @@ export type Mutations =
       name: 'acceptInviteByInviteIdMutation';
       variables: AcceptInviteByInviteIdMutationVariables;
       response: AcceptInviteByInviteIdMutation;
+    }
+  | {
+      name: 'approveWorkspaceTeamMemberMutation';
+      variables: ApproveWorkspaceTeamMemberMutationVariables;
+      response: ApproveWorkspaceTeamMemberMutation;
     }
   | {
       name: 'grantWorkspaceTeamMemberMutation';
