@@ -574,18 +574,7 @@ export class WorkspaceResolver {
     @Args('workspaceName') workspaceName: string,
     @Args('sendLeaveMail', { nullable: true }) sendLeaveMail: boolean
   ) {
-    const isTeam = await this.quota.isTeamWorkspace(workspaceId);
-
-    if (isTeam) {
-      // only admin can leave team workspace voluntarily
-      await this.permissions.checkWorkspaceIs(
-        workspaceId,
-        user.id,
-        Permission.Admin
-      );
-    } else {
-      await this.permissions.checkWorkspace(workspaceId, user.id);
-    }
+    await this.permissions.checkWorkspace(workspaceId, user.id);
 
     const owner = await this.permissions.getWorkspaceOwner(workspaceId);
 
