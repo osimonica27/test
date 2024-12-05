@@ -20,6 +20,7 @@ const logger = new DebugLogger('affine:workspace-permission');
 
 export class WorkspacePermission extends Entity {
   isOwner$ = new LiveData<boolean | null>(null);
+  isAdmin$ = new LiveData<boolean | null>(null);
   isLoading$ = new LiveData(false);
   error$ = new LiveData<any>(null);
 
@@ -52,6 +53,32 @@ export class WorkspacePermission extends Entity {
         mapInto(this.isOwner$),
         catchErrorInto(this.error$, error => {
           logger.error('Failed to fetch isOwner', error);
+        }),
+        onStart(() => this.isLoading$.setValue(true)),
+        onComplete(() => this.isLoading$.setValue(false))
+      );
+    }),
+    exhaustMap(() => {
+      return fromPromise(async signal => {
+        if (this.workspaceService.workspace.flavour !== 'local') {
+          return await this.store.fetchIsAdmin(
+            this.workspaceService.workspace.id,
+            signal
+          );
+        } else {
+          return true;
+        }
+      }).pipe(
+        backoffRetry({
+          when: isNetworkError,
+          count: Infinity,
+        }),
+        backoffRetry({
+          when: isBackendError,
+        }),
+        mapInto(this.isAdmin$),
+        catchErrorInto(this.error$, error => {
+          logger.error('Failed to fetch isAdmin', error);
         }),
         onStart(() => this.isLoading$.setValue(true)),
         onComplete(() => this.isLoading$.setValue(false))

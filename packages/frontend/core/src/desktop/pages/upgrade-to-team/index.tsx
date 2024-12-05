@@ -6,10 +6,13 @@ import {
   MenuItem,
   MenuTrigger,
   Modal,
+  notify,
 } from '@affine/component';
 import { AuthPageContainer } from '@affine/component/auth-components';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { PureWorkspaceCard } from '@affine/core/components/workspace-selector/workspace-card';
+import { buildShowcaseWorkspace } from '@affine/core/utils/first-app-data';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { type I18nString, Trans, useI18n } from '@affine/i18n';
@@ -236,6 +239,21 @@ const CreateAndUpgradeDialog = ({
   const onClose = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
+  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState('');
+  const workspacesService = useService(WorkspacesService);
+
+  const onConfirmName = useAsyncCallback(async () => {
+    if (loading) return;
+    setLoading(true);
+
+    await buildShowcaseWorkspace(workspacesService, 'affine-cloud', name);
+    notify.success({
+      title: 'Workspace Created',
+    });
+
+    setLoading(false);
+  }, [loading, name, workspacesService]);
 
   return (
     <Modal width={480} open={open} onOpenChange={onOpenChange}>
@@ -255,6 +273,8 @@ const CreateAndUpgradeDialog = ({
           placeholder={t[
             'com.affine.upgrade-to-team-page.create-and-upgrade-confirm.placeholder'
           ]()}
+          value={name}
+          onChange={setName}
         />
       </div>
 
@@ -262,9 +282,11 @@ const CreateAndUpgradeDialog = ({
         <Button onClick={onClose}>{t['Cancel']()}</Button>
         <Upgrade
           className={styles.upgradeButtonInDialog}
+          disabled={!name}
           recurring={SubscriptionRecurring.Monthly}
           plan={SubscriptionPlan.Team}
           onCheckoutSuccess={onClose}
+          onBeforeCheckout={onConfirmName}
         >
           {t[
             'com.affine.upgrade-to-team-page.create-and-upgrade-confirm.confirm'
