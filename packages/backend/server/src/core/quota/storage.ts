@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { MemberQuotaExceeded } from '../../fundamentals';
 import { FeatureService, FeatureType } from '../features';
 import { PermissionService } from '../permission';
 import { WorkspaceBlobStorage } from '../storage';
@@ -156,6 +157,13 @@ export class QuotaManagementService {
       });
     }
     return userQuota;
+  }
+
+  async checkWorkspaceSeat(workspaceId: string) {
+    const quota = await this.getWorkspaceUsage(workspaceId);
+    if (quota.memberCount >= quota.memberLimit) {
+      throw new MemberQuotaExceeded();
+    }
   }
 
   // get workspace's owner quota and total size of used

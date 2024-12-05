@@ -16,17 +16,18 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import type { FileUpload } from '../../../fundamentals';
 import {
+  Cache,
   CantChangeSpaceOwner,
   DocNotFound,
   EventEmitter,
   InternalServerError,
   MailService,
-  MemberQuotaExceeded,
   RequestMutex,
   SpaceAccessDenied,
   SpaceNotFound,
   Throttle,
   TooManyRequest,
+  UserFriendlyError,
   UserNotFound,
 } from '../../../fundamentals';
 import { CurrentUser, Public } from '../../auth';
@@ -78,6 +79,7 @@ export class WorkspaceResolver {
   private readonly logger = new Logger(WorkspaceResolver.name);
 
   constructor(
+    private readonly cache: Cache,
     private readonly mailer: MailService,
     private readonly prisma: PrismaClient,
     private readonly permissions: PermissionService,
@@ -329,7 +331,12 @@ export class WorkspaceResolver {
     @Args({ name: 'input', type: () => UpdateWorkspaceInput })
     { id, ...updates }: UpdateWorkspaceInput
   ) {
-    await this.permissions.checkWorkspace(id, user.id, Permission.Admin);
+    const isTeam = await this.quota.isTeamWorkspace(id);
+    await this.permissions.checkWorkspace(
+      id,
+      user.id,
+      isTeam ? Permission.Owner : Permission.Admin
+    );
 
     return this.prisma.workspace.update({
       where: {
@@ -385,10 +392,7 @@ export class WorkspaceResolver {
       }
 
       // member limit check
-      const quota = await this.quota.getWorkspaceUsage(workspaceId);
-      if (quota.memberCount >= quota.memberLimit) {
-        return new MemberQuotaExceeded();
-      }
+      await this.quota.checkWorkspaceSeat(workspaceId);
 
       let target = await this.users.findUserByEmail(email);
       if (target) {
@@ -450,6 +454,10 @@ export class WorkspaceResolver {
       }
       return inviteId;
     } catch (e) {
+      // pass through user friendly error
+      if (e instanceof UserFriendlyError) {
+        return e;
+      }
       this.logger.error('failed to invite user', e);
       return new TooManyRequest();
     }
@@ -542,10 +550,33 @@ export class WorkspaceResolver {
   @Mutation(() => Boolean)
   @Public()
   async acceptInviteById(
+    @CurrentUser() user: CurrentUser | undefined,
     @Args('workspaceId') workspaceId: string,
     @Args('inviteId') inviteId: string,
     @Args('sendAcceptMail', { nullable: true }) sendAcceptMail: boolean
   ) {
+    if (user) {
+      // invite link
+      const invite = await this.cache.get<{ inviteId: string }>(
+        `workspace:inviteLink:${workspaceId}`
+      );
+      if (invite?.inviteId === inviteId) {
+        const lockFlag = `invite:${workspaceId}`;
+        await using lock = await this.mutex.lock(lockFlag);
+        if (!lock) {
+          return new TooManyRequest();
+        }
+        // member limit check
+        await this.quota.checkWorkspaceSeat(workspaceId);
+
+        const inviteId = await this.permissions.grant(workspaceId, user.id);
+        return this.permissions.acceptWorkspaceInvitation(
+          inviteId,
+          workspaceId
+        );
+      }
+    }
+
     const {
       invitee,
       user: inviter,
