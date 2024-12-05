@@ -1,6 +1,7 @@
 import { Button, Tooltip } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
+import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { useI18n } from '@affine/i18n';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
@@ -15,12 +16,16 @@ export const MembersPanel = ({
   onChangeSettingState: (settingState: SettingState) => void;
 }): ReactElement | null => {
   const workspace = useService(WorkspaceService).workspace;
+  const isTeam = useWorkspaceInfo(workspace.meta)?.isTeam;
   if (workspace.flavour === 'local') {
     return <MembersPanelLocal />;
   }
   return (
     <AffineErrorBoundary>
-      <CloudWorkspaceMembersPanel onChangeSettingState={onChangeSettingState} />
+      <CloudWorkspaceMembersPanel
+        onChangeSettingState={onChangeSettingState}
+        isTeam={isTeam}
+      />
     </AffineErrorBoundary>
   );
 };

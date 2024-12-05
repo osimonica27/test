@@ -280,8 +280,7 @@ const WorkspaceListItem = ({
     onClick('workspace:preference');
   }, [onClick]);
 
-  //TODO(@JimmFly): implement isTeamWorkspace
-  const isTeamWorkspace = true;
+  const showBilling = information?.isTeam && information?.isOwner;
   const subTabs = useMemo(() => {
     const subTabConfigs = [
       {
@@ -292,10 +291,14 @@ const WorkspaceListItem = ({
         key: 'workspace:properties',
         title: 'com.affine.settings.workspace.properties',
       },
-      isTeamWorkspace && {
-        key: 'workspace:billing',
-        title: 'com.affine.settings.workspace.billing',
-      },
+      ...(showBilling
+        ? [
+            {
+              key: 'workspace:billing' as SettingTab,
+              title: 'com.affine.settings.workspace.billing',
+            },
+          ]
+        : []),
     ] satisfies {
       key: SettingTab;
       title: keyof ReturnType<typeof useI18n>;
@@ -317,7 +320,7 @@ const WorkspaceListItem = ({
         </div>
       );
     });
-  }, [activeTab, isTeamWorkspace, onClick, t]);
+  }, [activeTab, onClick, showBilling, t]);
 
   return (
     <>

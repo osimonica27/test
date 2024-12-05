@@ -7,9 +7,12 @@ import {
   grantWorkspaceTeamMemberMutation,
   inviteByEmailMutation,
   inviteByEmailsMutation,
+  inviteLinkMutation,
   leaveWorkspaceMutation,
   type Permission,
+  revokeInviteLinkMutation,
   revokeMemberPermissionMutation,
+  type WorkspaceInviteLinkExpireTime,
 } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
@@ -86,6 +89,37 @@ export class WorkspacePermissionStore extends Store {
       },
     });
     return inviteBatch.inviteBatch;
+  }
+
+  async generateInviteLink(
+    workspaceId: string,
+    expireTime: WorkspaceInviteLinkExpireTime
+  ) {
+    if (!this.workspaceServerService.server) {
+      throw new Error('No Server');
+    }
+    const inviteLink = await this.workspaceServerService.server.gql({
+      query: inviteLinkMutation,
+      variables: {
+        workspaceId,
+        expireTime,
+      },
+    });
+    return inviteLink.inviteLink;
+  }
+
+  async revokeInviteLink(workspaceId: string, signal?: AbortSignal) {
+    if (!this.workspaceServerService.server) {
+      throw new Error('No Server');
+    }
+    const revoke = await this.workspaceServerService.server.gql({
+      query: revokeInviteLinkMutation,
+      variables: {
+        workspaceId,
+      },
+      context: { signal },
+    });
+    return revoke.revokeInviteLink;
   }
 
   async revokeMemberPermission(

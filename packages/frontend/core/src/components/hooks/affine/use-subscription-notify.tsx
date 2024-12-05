@@ -19,7 +19,13 @@ type TypeFormInfo = {
 const getTypeFormLink = (id: string, info: TypeFormInfo) => {
   const plans = Array.isArray(info.plan) ? info.plan : [info.plan];
   const product_id = plans
-    .map(plan => (plan === SubscriptionPlan.AI ? 'ai' : 'cloud'))
+    .map(plan =>
+      plan === SubscriptionPlan.AI
+        ? 'ai'
+        : plan === SubscriptionPlan.Team
+          ? 'team'
+          : 'cloud'
+    )
     .join('-');
   const product_price =
     info.recurring === SubscriptionRecurring.Monthly

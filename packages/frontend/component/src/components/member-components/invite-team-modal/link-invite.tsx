@@ -1,3 +1,4 @@
+import { WorkspaceInviteLinkExpireTime } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { CloseIcon } from '@blocksuite/icons/rc';
 import { cssVar } from '@toeverything/theme';
@@ -15,35 +16,43 @@ const getMenuItems = (t: ReturnType<typeof useI18n>) => [
     label: t['com.affine.payment.member.team.invite.expiration-date']({
       number: '1',
     }),
-    value: 1,
+    value: WorkspaceInviteLinkExpireTime.OneDay,
   },
   {
     label: t['com.affine.payment.member.team.invite.expiration-date']({
       number: '3',
     }),
-    value: 3,
+    value: WorkspaceInviteLinkExpireTime.ThreeDays,
   },
   {
     label: t['com.affine.payment.member.team.invite.expiration-date']({
       number: '7',
     }),
-    value: 7,
+    value: WorkspaceInviteLinkExpireTime.OneWeek,
   },
   {
     label: t['com.affine.payment.member.team.invite.expiration-date']({
       number: '30',
     }),
-    value: 30,
+    value: WorkspaceInviteLinkExpireTime.OneMonth,
   },
 ];
 
 export const LinkInvite = ({
   copyTextToClipboard,
+  generateInvitationLink,
+  revokeInvitationLink,
 }: {
+  generateInvitationLink: (
+    expireTime: WorkspaceInviteLinkExpireTime
+  ) => Promise<string>;
+  revokeInvitationLink: () => Promise<boolean>;
   copyTextToClipboard: (text: string) => Promise<boolean>;
 }) => {
   const t = useI18n();
-  const [selectedValue, setSelectedValue] = useState(7);
+  const [selectedValue, setSelectedValue] = useState(
+    WorkspaceInviteLinkExpireTime.OneWeek
+  );
   const [invitationLink, setInvitationLink] = useState('');
   const menuItems = getMenuItems(t);
   const items = useMemo(() => {
@@ -59,10 +68,19 @@ export const LinkInvite = ({
     [menuItems, selectedValue]
   );
 
-  //TODO(@JimmFly): implement team feature
   const onGenerate = useCallback(() => {
-    setInvitationLink('ggsimida');
-  }, []);
+    generateInvitationLink(selectedValue)
+      .then(link => {
+        setInvitationLink(link);
+      })
+      .catch(err => {
+        console.error('Failed to generate invitation link: ', err);
+        notify.error({
+          title: 'Failed to generate invitation link',
+          message: err.message,
+        });
+      });
+  }, [generateInvitationLink, selectedValue]);
 
   const onCopy = useCallback(() => {
     copyTextToClipboard(invitationLink)
@@ -81,8 +99,18 @@ export const LinkInvite = ({
   }, [copyTextToClipboard, invitationLink, t]);
 
   const onReset = useCallback(() => {
-    setInvitationLink('');
-  }, []);
+    revokeInvitationLink()
+      .then(() => {
+        setInvitationLink('');
+      })
+      .catch(err => {
+        console.error('Failed to revoke invitation link: ', err);
+        notify.error({
+          title: 'Failed to revoke invitation link',
+          message: err.message,
+        });
+      });
+  }, [revokeInvitationLink]);
 
   return (
     <>

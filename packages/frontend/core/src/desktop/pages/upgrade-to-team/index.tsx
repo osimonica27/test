@@ -116,9 +116,10 @@ export const Component = () => {
             workspaceName={name}
             workspaceId={selectedWorkspace?.id ?? ''}
           />
-          <CreateAndUpgradeDialog
+          <CreateWorkspaceDialog
             open={openCreate}
             onOpenChange={setOpenCreate}
+            onSelect={setSelectedWorkspace}
           />
         </div>
       </div>
@@ -188,7 +189,6 @@ const WorkspaceSelector = ({
 }) => {
   const t = useI18n();
 
-  // TODO(@JimmFly): filter out team workspaces and not owned by the user
   const cloudWorkspaces = useMemo(
     () =>
       metas.filter(
@@ -208,17 +208,11 @@ const WorkspaceSelector = ({
     <div>
       {cloudWorkspaces.length > 0 &&
         cloudWorkspaces.map(workspace => (
-          <MenuItem
-            className={styles.plainMenuItem}
+          <WorkspaceItem
             key={workspace.id}
-            onClick={() => handleSelect(workspace)}
-          >
-            <PureWorkspaceCard
-              className={styles.workspaceItem}
-              workspaceMetadata={workspace}
-              avatarSize={28}
-            />
-          </MenuItem>
+            meta={workspace}
+            onSelect={handleSelect}
+          />
         ))}
       {cloudWorkspaces.length > 0 && <Divider size="thinner" />}
       <MenuItem
@@ -236,11 +230,40 @@ const WorkspaceSelector = ({
   );
 };
 
-const CreateAndUpgradeDialog = ({
+const WorkspaceItem = ({
+  meta,
+  onSelect,
+}: {
+  meta: WorkspaceMetadata;
+  onSelect: (meta: WorkspaceMetadata) => void;
+}) => {
+  const information = useWorkspaceInfo(meta);
+
+  const onClick = useCallback(() => {
+    onSelect(meta);
+  }, [onSelect, meta]);
+  if (information?.isTeam || !information?.isOwner) {
+    return null;
+  }
+
+  return (
+    <MenuItem className={styles.plainMenuItem} onClick={onClick}>
+      <PureWorkspaceCard
+        className={styles.workspaceItem}
+        workspaceMetadata={meta}
+        avatarSize={28}
+      />
+    </MenuItem>
+  );
+};
+
+const CreateWorkspaceDialog = ({
   open,
   onOpenChange,
+  onSelect,
 }: {
   open: boolean;
+  onSelect: (workspace: WorkspaceMetadata) => void;
   onOpenChange: (open: boolean) => void;
 }) => {
   const t = useI18n();
@@ -249,7 +272,6 @@ const CreateAndUpgradeDialog = ({
   }, [onOpenChange]);
   const [name, setName] = useState('');
   const workspacesService = useService(WorkspacesService);
-  const [newWorkspaceId, setNewWorkspaceId] = useState<string | null>(null);
 
   const onCreate = useCallback(async () => {
     const newWorkspace = await buildShowcaseWorkspace(
@@ -260,8 +282,9 @@ const CreateAndUpgradeDialog = ({
     notify.success({
       title: 'Workspace Created',
     });
-    setNewWorkspaceId(newWorkspace.meta.id);
-  }, [name, workspacesService]);
+    onSelect(newWorkspace.meta);
+    onOpenChange(false);
+  }, [name, onOpenChange, onSelect, workspacesService]);
 
   const onBeforeCheckout = useAsyncCallback(async () => {
     await onCreate();
@@ -292,23 +315,15 @@ const CreateAndUpgradeDialog = ({
 
       <div className={styles.dialogFooter}>
         <Button onClick={onClose}>{t['Cancel']()}</Button>
-        <Upgrade
+        <Button
+          variant="primary"
           className={styles.upgradeButtonInDialog}
-          disabled={!name}
-          recurring={SubscriptionRecurring.Monthly}
-          plan={SubscriptionPlan.Team}
-          onCheckoutSuccess={onClose}
-          onBeforeCheckout={onBeforeCheckout}
-          checkoutInput={{
-            args: {
-              workspaceId: newWorkspaceId,
-            },
-          }}
+          onClick={onBeforeCheckout}
         >
           {t[
             'com.affine.upgrade-to-team-page.create-and-upgrade-confirm.confirm'
           ]()}
-        </Upgrade>
+        </Button>
       </div>
     </Modal>
   );

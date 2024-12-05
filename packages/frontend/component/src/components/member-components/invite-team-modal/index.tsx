@@ -1,4 +1,5 @@
 import { emailRegex } from '@affine/component/auth-components';
+import type { WorkspaceInviteLinkExpireTime } from '@affine/graphql';
 import { Permission } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useCallback, useEffect, useState } from 'react';
@@ -14,6 +15,10 @@ export interface InviteTeamMemberModalProps {
   onConfirm: (params: { email: string; permission: Permission }) => void;
   isMutating: boolean;
   copyTextToClipboard: (text: string) => Promise<boolean>;
+  onGenerateInviteLink: (
+    expireTime: WorkspaceInviteLinkExpireTime
+  ) => Promise<string>;
+  onRevokeInviteLink: () => Promise<boolean>;
 }
 
 export const InviteTeamMemberModal = ({
@@ -22,6 +27,8 @@ export const InviteTeamMemberModal = ({
   onConfirm,
   isMutating,
   copyTextToClipboard,
+  onGenerateInviteLink,
+  onRevokeInviteLink,
 }: InviteTeamMemberModalProps) => {
   const t = useI18n();
   const [inviteEmail, setInviteEmail] = useState('');
@@ -91,6 +98,8 @@ export const InviteTeamMemberModal = ({
         inviteMethod={inviteMethod}
         onInviteMethodChange={setInviteMethod}
         copyTextToClipboard={copyTextToClipboard}
+        onGenerateInviteLink={onGenerateInviteLink}
+        onRevokeInviteLink={onRevokeInviteLink}
       />
     </ConfirmModal>
   );

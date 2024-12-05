@@ -1,5 +1,8 @@
 import { DebugLogger } from '@affine/debug';
-import type { Permission } from '@affine/graphql';
+import type {
+  Permission,
+  WorkspaceInviteLinkExpireTime,
+} from '@affine/graphql';
 import type { WorkspaceService } from '@toeverything/infra';
 import {
   backoffRetry,
@@ -93,6 +96,25 @@ export class WorkspacePermission extends Entity {
       this.workspaceService.workspace.id,
       emails,
       sendInviteMail
+    );
+  }
+
+  async generateInviteLink(expireTime: WorkspaceInviteLinkExpireTime) {
+    if (!this.isAdmin$.value && !this.isOwner$.value) {
+      throw new Error('User has no permission to generate invite link');
+    }
+    return await this.store.generateInviteLink(
+      this.workspaceService.workspace.id,
+      expireTime
+    );
+  }
+
+  async revokeInviteLink() {
+    if (!this.isAdmin$.value && !this.isOwner$.value) {
+      throw new Error('User has no permission to revoke invite link');
+    }
+    return await this.store.revokeInviteLink(
+      this.workspaceService.workspace.id
     );
   }
 

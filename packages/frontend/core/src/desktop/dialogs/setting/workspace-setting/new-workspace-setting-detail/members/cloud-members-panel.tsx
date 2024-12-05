@@ -10,6 +10,7 @@ import { ServerService, SubscriptionService } from '@affine/core/modules/cloud';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { copyTextToClipboard } from '@affine/core/utils/clipboard';
+import type { WorkspaceInviteLinkExpireTime } from '@affine/graphql';
 import { UserFriendlyError } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
@@ -20,19 +21,17 @@ import type { SettingState } from '../../../types';
 import { MemberList } from './member-list';
 import * as styles from './styles.css';
 
-//TODO(@JimmFly): implement team feature
-const isTeam = true;
-
 export const CloudWorkspaceMembersPanel = ({
   onChangeSettingState,
+  isTeam,
 }: {
   onChangeSettingState: (settingState: SettingState) => void;
+  isTeam?: boolean;
 }) => {
   const serverService = useService(ServerService);
   const hasPaymentFeature = useLiveData(
     serverService.server.features$.map(f => f?.payment)
   );
-
   const permissionService = useService(WorkspacePermissionService);
   const isOwner = useLiveData(permissionService.permission.isOwner$);
   const isAdmin = useLiveData(permissionService.permission.isAdmin$);
@@ -64,6 +63,20 @@ export const CloudWorkspaceMembersPanel = ({
   const openModal = useCallback(() => {
     setOpen(true);
   }, []);
+
+  const onGenerateInviteLink = useCallback(
+    async (expireTime: WorkspaceInviteLinkExpireTime) => {
+      const link =
+        await permissionService.permission.generateInviteLink(expireTime);
+      return link;
+    },
+    [permissionService.permission]
+  );
+
+  const onRevokeInviteLink = useCallback(async () => {
+    const success = await permissionService.permission.revokeInviteLink();
+    return success;
+  }, [permissionService.permission]);
 
   const onInviteConfirm = useCallback<InviteModalProps['onConfirm']>(
     async ({ email, permission }) => {
@@ -116,14 +129,14 @@ export const CloudWorkspaceMembersPanel = ({
         ) : null}
       </span>
     );
-  }, [handleUpgradeConfirm, hasPaymentFeature, t, workspaceQuota]);
+  }, [handleUpgradeConfirm, hasPaymentFeature, isTeam, t, workspaceQuota]);
 
   const title = useMemo(() => {
     if (isTeam) {
       return `${t['Members']()} (${workspaceQuota?.memberCount})`;
     }
     return `${t['Members']()} (${workspaceQuota?.memberCount}/${workspaceQuota?.memberLimit})`;
-  }, [t, workspaceQuota?.memberCount, workspaceQuota?.memberLimit]);
+  }, [isTeam, t, workspaceQuota?.memberCount, workspaceQuota?.memberLimit]);
 
   if (workspaceQuota === null) {
     if (isLoading) {
@@ -152,6 +165,8 @@ export const CloudWorkspaceMembersPanel = ({
                 onConfirm={onInviteConfirm}
                 isMutating={isMutating}
                 copyTextToClipboard={copyTextToClipboard}
+                onGenerateInviteLink={onGenerateInviteLink}
+                onRevokeInviteLink={onRevokeInviteLink}
               />
             ) : isLimited ? (
               <MemberLimitModal

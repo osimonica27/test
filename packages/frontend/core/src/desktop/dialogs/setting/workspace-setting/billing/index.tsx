@@ -34,7 +34,10 @@ import { cssVar } from '@toeverything/theme';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useWorkspace } from '../../../../../components/hooks/use-workspace';
-import { ResumeAction } from '../../general-setting/plans/actions';
+import {
+  CancelTeamAction,
+  ResumeAction,
+} from '../../general-setting/plans/actions';
 import * as styles from './styles.css';
 
 export const WorkspaceSettingBilling = ({
@@ -45,12 +48,18 @@ export const WorkspaceSettingBilling = ({
   const t = useI18n();
   const workspace = useWorkspace(workspaceMetadata);
   const workspaceInfo = useWorkspaceInfo(workspaceMetadata);
+  const subscriptionService = useService(SubscriptionService);
+  const team = useLiveData(subscriptionService.subscription.team$);
   const title = workspaceInfo?.name || 'untitled';
 
   if (workspace === null) {
     console.log('workspace is null', title);
 
     return null;
+  }
+
+  if (!team) {
+    return <Loading />;
   }
 
   return (
@@ -65,7 +74,9 @@ export const WorkspaceSettingBilling = ({
         <TeamCard />
         <TypeFormLink />
         <PaymentMethodUpdater />
-        <ResumeSubscription />
+        {team.end && team.canceledAt ? (
+          <ResumeSubscription expirationDate={team.end} />
+        ) : null}
       </SettingWrapper>
 
       <SettingWrapper title={t['com.affine.payment.billing-setting.history']()}>
@@ -75,12 +86,20 @@ export const WorkspaceSettingBilling = ({
   );
 };
 
-//TODO(@JimmFly): implement the logic for team plan
 const TeamCard = () => {
   const t = useI18n();
+  const subscriptionService = useService(SubscriptionService);
+  const teamSubscription = useLiveData(subscriptionService.subscription.team$);
+  const teamPrices = useLiveData(subscriptionService.prices.teamPrice$);
 
-  const expiration = false;
-  const recurring = SubscriptionRecurring.Yearly;
+  const [openCancelModal, setOpenCancelModal] = useState(false);
+  useEffect(() => {
+    subscriptionService.subscription.revalidate();
+    subscriptionService.prices.revalidate();
+  }, [subscriptionService]);
+  const expiration = teamSubscription?.end;
+  const nextBillingDate = teamSubscription?.nextBillAt;
+  const recurring = teamSubscription?.recurring;
 
   const description = useMemo(() => {
     if (recurring === SubscriptionRecurring.Yearly) {
@@ -101,15 +120,26 @@ const TeamCard = () => {
       return t[
         'com.affine.settings.workspace.billing.team-workspace.not-renewed'
       ]({
-        date: new Date().toLocaleDateString(),
+        date: new Date(expiration).toLocaleDateString(),
       });
     }
-    return t[
-      'com.affine.settings.workspace.billing.team-workspace.next-billing-date'
-    ]({
-      date: new Date().toLocaleDateString(),
-    });
-  }, [expiration, t]);
+    if (nextBillingDate) {
+      return t[
+        'com.affine.settings.workspace.billing.team-workspace.next-billing-date'
+      ]({
+        date: new Date(nextBillingDate).toLocaleDateString(),
+      });
+    }
+    return '';
+  }, [expiration, nextBillingDate, t]);
+
+  const amount = teamSubscription
+    ? teamPrices
+      ? teamSubscription.recurring === SubscriptionRecurring.Monthly
+        ? String((teamPrices.amount ?? 0) / 100)
+        : String((teamPrices.yearlyAmount ?? 0) / 100)
+      : '?'
+    : '0';
 
   return (
     <div className={styles.planCard}>
@@ -124,27 +154,33 @@ const TeamCard = () => {
             </>
           }
         />
-        <Button variant="primary" className={styles.cancelPlanButton}>
-          {t[
-            'com.affine.settings.workspace.billing.team-workspace.cancel-plan'
-          ]()}
-        </Button>
+        <CancelTeamAction
+          open={openCancelModal}
+          onOpenChange={setOpenCancelModal}
+        >
+          <Button variant="primary" className={styles.cancelPlanButton}>
+            {t[
+              'com.affine.settings.workspace.billing.team-workspace.cancel-plan'
+            ]()}
+          </Button>
+        </CancelTeamAction>
       </div>
       <p className={styles.planPrice}>
-        $??
+        ${amount}
         <span className={styles.billingFrequency}>
-          /{t['com.affine.payment.billing-setting.year']()}
+          /
+          {teamSubscription?.recurring === SubscriptionRecurring.Monthly
+            ? t['com.affine.payment.billing-setting.month']()
+            : t['com.affine.payment.billing-setting.year']()}
         </span>
       </p>
     </div>
   );
 };
 
-//TODO(@JimmFly): implement the logic for team plan
-const ResumeSubscription = () => {
+const ResumeSubscription = ({ expirationDate }: { expirationDate: string }) => {
   const t = useI18n();
   const [open, setOpen] = useState(false);
-  const subscription = useService(SubscriptionService).subscription;
   const handleClick = useCallback(() => {
     setOpen(true);
   }, []);
@@ -154,17 +190,12 @@ const ResumeSubscription = () => {
       name={t['com.affine.payment.billing-setting.expiration-date']()}
       desc={t['com.affine.payment.billing-setting.expiration-date.description'](
         {
-          expirationDate: new Date().toLocaleDateString(),
+          expirationDate: new Date(expirationDate).toLocaleDateString(),
         }
       )}
     >
       <ResumeAction open={open} onOpenChange={setOpen}>
-        <Button
-          onClick={handleClick}
-          data-event-props="$.settingsPanel.plans.resumeSubscription"
-          data-event-args-type={subscription.pro$.value?.plan}
-          data-event-args-category={subscription.pro$.value?.recurring}
-        >
+        <Button onClick={handleClick}>
           {t['com.affine.payment.billing-setting.resume-subscription']()}
         </Button>
       </ResumeAction>
@@ -177,22 +208,19 @@ const TypeFormLink = () => {
   const subscriptionService = useService(SubscriptionService);
   const authService = useService(AuthService);
 
-  //TODO(@JimmFly): implement the logic for Team plan
-  const pro = useLiveData(subscriptionService.subscription.pro$);
-  const ai = useLiveData(subscriptionService.subscription.ai$);
+  const team = useLiveData(subscriptionService.subscription.team$);
   const account = useLiveData(authService.session.account$);
 
   if (!account) return null;
 
   const plan = [];
-  if (pro) plan.push(SubscriptionPlan.Pro);
-  if (ai) plan.push(SubscriptionPlan.AI);
+  if (team) plan.push(SubscriptionPlan.Team);
 
   const link = getUpgradeQuestionnaireLink({
     name: account.info?.name,
     id: account.id,
     email: account.email,
-    recurring: pro?.recurring ?? ai?.recurring ?? SubscriptionRecurring.Yearly,
+    recurring: team?.recurring ?? SubscriptionRecurring.Yearly,
     plan,
   });
 
@@ -216,7 +244,6 @@ const PaymentMethodUpdater = () => {
   const urlService = useService(UrlService);
   const t = useI18n();
 
-  //TODO(@JimmFly): implement the logic for team plan
   const update = useAsyncCallback(async () => {
     await trigger(null, {
       onSuccess: data => {
@@ -240,7 +267,6 @@ const PaymentMethodUpdater = () => {
   );
 };
 
-//TODO(@JimmFly): implement the logic for team plan
 const BillingHistory = () => {
   const t = useI18n();
 

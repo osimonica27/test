@@ -1,3 +1,4 @@
+import type { WorkspaceInviteLinkExpireTime } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { EmailIcon, LinkIcon } from '@blocksuite/icons/rc';
 
@@ -16,6 +17,8 @@ export const ModalContent = ({
   isMutating,
   isValidEmail,
   copyTextToClipboard,
+  onGenerateInviteLink,
+  onRevokeInviteLink,
 }: {
   inviteEmail: string;
   setInviteEmail: (value: string) => void;
@@ -25,6 +28,10 @@ export const ModalContent = ({
   isMutating: boolean;
   isValidEmail: boolean;
   copyTextToClipboard: (text: string) => Promise<boolean>;
+  onGenerateInviteLink: (
+    expireTime: WorkspaceInviteLinkExpireTime
+  ) => Promise<string>;
+  onRevokeInviteLink: () => Promise<boolean>;
 }) => {
   const t = useI18n();
 
@@ -67,7 +74,11 @@ export const ModalContent = ({
           isValidEmail={isValidEmail}
         />
       ) : (
-        <LinkInvite copyTextToClipboard={copyTextToClipboard} />
+        <LinkInvite
+          copyTextToClipboard={copyTextToClipboard}
+          generateInvitationLink={onGenerateInviteLink}
+          revokeInvitationLink={onRevokeInviteLink}
+        />
       )}
     </div>
   );
