@@ -139,7 +139,31 @@ export class TeamWorkspaceResolver {
   async inviteLink(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
-    @Args('expireTime') expireTime: WorkspaceInviteLinkExpireTime
+    @Args('expireTime', { type: () => WorkspaceInviteLinkExpireTime })
+    expireTime: WorkspaceInviteLinkExpireTime
+  ) {
+    await this.permissions.checkWorkspace(
+      workspaceId,
+      user.id,
+      Permission.Admin
+    );
+    const cacheWorkspaceId = `workspace:inviteLink:${workspaceId}`;
+    const invite = await this.cache.get<{ inviteId: string }>(cacheWorkspaceId);
+    if (typeof invite?.inviteId === 'string') {
+      return invite.inviteId;
+    }
+
+    const inviteId = nanoid();
+    const cacheInviteId = `workspace:inviteLinkId:${inviteId}`;
+    await this.cache.set(cacheWorkspaceId, { inviteId }, { ttl: expireTime });
+    await this.cache.set(cacheInviteId, { workspaceId }, { ttl: expireTime });
+    return inviteId;
+  }
+
+  @Mutation(() => Boolean)
+  async revokeInviteLink(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string
   ) {
     await this.permissions.checkWorkspace(
       workspaceId,
@@ -147,13 +171,7 @@ export class TeamWorkspaceResolver {
       Permission.Admin
     );
     const cacheId = `workspace:inviteLink:${workspaceId}`;
-    const invite = await this.cache.get<{ inviteId: string }>(cacheId);
-    if (typeof invite?.inviteId === 'string') {
-      return invite.inviteId;
-    }
-    const inviteId = nanoid();
-    await this.cache.set(cacheId, { inviteId }, { ttl: expireTime });
-    return inviteId;
+    return await this.cache.delete(cacheId);
   }
 
   @Mutation(() => String)

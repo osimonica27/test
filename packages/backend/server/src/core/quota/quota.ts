@@ -62,7 +62,10 @@ export class QuotaConfig {
 
   withOverride(override: any) {
     if (override) {
-      return new QuotaConfig(this.config, override);
+      return new QuotaConfig(
+        this.config,
+        Object.assign({}, this.override, override)
+      );
     }
     return this;
   }

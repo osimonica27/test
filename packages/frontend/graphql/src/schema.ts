@@ -565,6 +565,7 @@ export interface Mutation {
   grantMember: Scalars['String']['output'];
   invite: Scalars['String']['output'];
   inviteBatch: Array<InviteResult>;
+  inviteLink: Scalars['String']['output'];
   leaveWorkspace: Scalars['Boolean']['output'];
   publishPage: WorkspacePage;
   recoverDoc: Scalars['DateTime']['output'];
@@ -573,6 +574,7 @@ export interface Mutation {
   removeWorkspaceFeature: Scalars['Int']['output'];
   resumeSubscription: SubscriptionType;
   revoke: Scalars['Boolean']['output'];
+  revokeInviteLink: Scalars['Boolean']['output'];
   /** @deprecated use revokePublicPage */
   revokePage: Scalars['Boolean']['output'];
   revokePublicPage: WorkspacePage;
@@ -706,6 +708,11 @@ export interface MutationInviteBatchArgs {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface MutationInviteLinkArgs {
+  expireTime: WorkspaceInviteLinkExpireTime;
+  workspaceId: Scalars['String']['input'];
+}
+
 export interface MutationLeaveWorkspaceArgs {
   sendLeaveMail?: InputMaybe<Scalars['Boolean']['input']>;
   workspaceId: Scalars['String']['input'];
@@ -737,6 +744,10 @@ export interface MutationResumeSubscriptionArgs {
 
 export interface MutationRevokeArgs {
   userId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRevokeInviteLinkArgs {
   workspaceId: Scalars['String']['input'];
 }
 
@@ -1256,6 +1267,14 @@ export interface VersionRejectedDataType {
 export interface WorkspaceBlobSizes {
   __typename?: 'WorkspaceBlobSizes';
   size: Scalars['SafeInt']['output'];
+}
+
+/** Workspace invite link expire time */
+export enum WorkspaceInviteLinkExpireTime {
+  OneDay = 'OneDay',
+  OneMonth = 'OneMonth',
+  OneWeek = 'OneWeek',
+  ThreeDays = 'ThreeDays',
 }
 
 /** Member invite status in workspace */
@@ -2531,6 +2550,25 @@ export type AcceptInviteByInviteIdMutation = {
   acceptInviteById: boolean;
 };
 
+export type InviteLinkMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  expireTime: WorkspaceInviteLinkExpireTime;
+}>;
+
+export type InviteLinkMutation = {
+  __typename?: 'Mutation';
+  inviteLink: string;
+};
+
+export type RevokeInviteLinkMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type RevokeInviteLinkMutation = {
+  __typename?: 'Mutation';
+  revokeInviteLink: boolean;
+};
+
 export type WorkspaceQuotaQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -3008,6 +3046,16 @@ export type Mutations =
       name: 'acceptInviteByInviteIdMutation';
       variables: AcceptInviteByInviteIdMutationVariables;
       response: AcceptInviteByInviteIdMutation;
+    }
+  | {
+      name: 'inviteLinkMutation';
+      variables: InviteLinkMutationVariables;
+      response: InviteLinkMutation;
+    }
+  | {
+      name: 'revokeInviteLinkMutation';
+      variables: RevokeInviteLinkMutationVariables;
+      response: RevokeInviteLinkMutation;
     }
   | {
       name: 'approveWorkspaceTeamMemberMutation';

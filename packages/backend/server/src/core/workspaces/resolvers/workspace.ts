@@ -469,16 +469,26 @@ export class WorkspaceResolver {
     description: 'send workspace invitation',
   })
   async getInviteInfo(@Args('inviteId') inviteId: string) {
-    const workspaceId = await this.prisma.workspaceUserPermission
-      .findUniqueOrThrow({
-        where: {
-          id: inviteId,
-        },
-        select: {
-          workspaceId: true,
-        },
-      })
-      .then(({ workspaceId }) => workspaceId);
+    let workspaceId = null;
+    // invite link
+    const invite = await this.cache.get<{ workspaceId: string }>(
+      `workspace:inviteLinkId:${inviteId}`
+    );
+    if (typeof invite?.workspaceId === 'string') {
+      workspaceId = invite.workspaceId;
+    }
+    if (!workspaceId) {
+      workspaceId = await this.prisma.workspaceUserPermission
+        .findUniqueOrThrow({
+          where: {
+            id: inviteId,
+          },
+          select: {
+            workspaceId: true,
+          },
+        })
+        .then(({ workspaceId }) => workspaceId);
+    }
 
     const workspaceContent = await this.doc.getWorkspaceContent(workspaceId);
 

@@ -1322,6 +1322,28 @@ mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!, $send
 }`,
 };
 
+export const inviteLinkMutation = {
+  id: 'inviteLinkMutation' as const,
+  operationName: 'inviteLink',
+  definitionName: 'inviteLink',
+  containsFile: false,
+  query: `
+mutation inviteLink($workspaceId: String!, $expireTime: WorkspaceInviteLinkExpireTime!) {
+  inviteLink(workspaceId: $workspaceId, expireTime: $expireTime)
+}`,
+};
+
+export const revokeInviteLinkMutation = {
+  id: 'revokeInviteLinkMutation' as const,
+  operationName: 'revokeInviteLink',
+  definitionName: 'revokeInviteLink',
+  containsFile: false,
+  query: `
+mutation revokeInviteLink($workspaceId: String!) {
+  revokeInviteLink(workspaceId: $workspaceId)
+}`,
+};
+
 export const workspaceQuotaQuery = {
   id: 'workspaceQuotaQuery' as const,
   operationName: 'workspaceQuota',

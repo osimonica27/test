@@ -2,7 +2,6 @@ import type { WorkspaceServerService } from '@affine/core/modules/cloud';
 import {
   getWorkspaceConfigQuery,
   setEnableAiMutation,
-  setEnableShareMutation,
   setEnableUrlPreviewMutation,
 } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
@@ -41,26 +40,6 @@ export class WorkspaceShareSettingStore extends Store {
       variables: {
         id: workspaceId,
         enableAi,
-      },
-      context: {
-        signal,
-      },
-    });
-  }
-
-  async updateWorkspaceEnableShare(
-    workspaceId: string,
-    enableShare: boolean,
-    signal?: AbortSignal
-  ) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
-    await this.workspaceServerService.server.gql({
-      query: setEnableShareMutation,
-      variables: {
-        id: workspaceId,
-        enableShare,
       },
       context: {
         signal,
