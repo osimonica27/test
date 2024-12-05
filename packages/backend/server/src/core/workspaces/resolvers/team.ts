@@ -79,17 +79,17 @@ export class TeamWorkspaceResolver {
             registered: false,
           });
         }
-        const NeedMoreSeat = quota.memberCount + idx + 1 > quota.memberLimit;
+        const needMoreSeat = quota.memberCount + idx + 1 > quota.memberLimit;
 
         ret.inviteId = await this.permissions.grant(
           workspaceId,
           target.id,
           Permission.Read,
-          NeedMoreSeat
+          needMoreSeat
             ? WorkspaceMemberStatus.NeedMoreSeat
             : WorkspaceMemberStatus.Pending
         );
-        if (!NeedMoreSeat && sendInviteMail) {
+        if (!needMoreSeat && sendInviteMail) {
           const inviteInfo = await this.workspace.getInviteInfo(ret.inviteId);
 
           try {
@@ -129,7 +129,54 @@ export class TeamWorkspaceResolver {
   }
 
   @Mutation(() => String)
-  async grant(
+  async approveMember(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string,
+    @Args('userId') userId: string
+  ) {
+    await this.permissions.checkWorkspace(
+      workspaceId,
+      user.id,
+      Permission.Admin
+    );
+
+    try {
+      // lock to prevent concurrent invite and grant
+      const lockFlag = `invite:${workspaceId}`;
+      await using lock = await this.mutex.lock(lockFlag);
+      if (!lock) {
+        return new TooManyRequest();
+      }
+
+      const isUnderReview =
+        (await this.permissions.getWorkspaceMemberStatus(
+          workspaceId,
+          userId
+        )) === WorkspaceMemberStatus.UnderReview;
+      if (isUnderReview) {
+        const result = await this.permissions.grant(
+          workspaceId,
+          userId,
+          Permission.Read,
+          WorkspaceMemberStatus.Accepted
+        );
+
+        if (result) {
+          // TODO(@darkskygit): send team approve mail
+        }
+
+        return result;
+      } else {
+        return new NotInSpace({ spaceId: workspaceId });
+      }
+    } catch (e) {
+      this.logger.error('failed to invite user', e);
+      return new TooManyRequest();
+    }
+  }
+
+  @Mutation(() => String)
+  async grantMember(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string,
@@ -151,8 +198,7 @@ export class TeamWorkspaceResolver {
 
       const isMember = await this.permissions.isWorkspaceMember(
         workspaceId,
-        userId,
-        Permission.Read
+        userId
       );
       if (isMember) {
         const result = await this.permissions.grant(

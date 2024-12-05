@@ -3,5 +3,9 @@ mutation grantWorkspaceTeamMember(
   $userId: String!
   $permission: Permission!
 ) {
-  grant(workspaceId: $workspaceId, userId: $userId, permission: $permission)
+  grantMember(
+    workspaceId: $workspaceId
+    userId: $userId
+    permission: $permission
+  )
 }

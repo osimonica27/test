@@ -1350,13 +1350,24 @@ query workspaceQuota($id: String!) {
 }`,
 };
 
+export const approveWorkspaceTeamMemberMutation = {
+  id: 'approveWorkspaceTeamMemberMutation' as const,
+  operationName: 'approveWorkspaceTeamMember',
+  definitionName: 'approveMember',
+  containsFile: false,
+  query: `
+mutation approveWorkspaceTeamMember($workspaceId: String!, $userId: String!) {
+  approveMember(workspaceId: $workspaceId, userId: $userId)
+}`,
+};
+
 export const grantWorkspaceTeamMemberMutation = {
   id: 'grantWorkspaceTeamMemberMutation' as const,
   operationName: 'grantWorkspaceTeamMember',
-  definitionName: 'grant',
+  definitionName: 'grantMember',
   containsFile: false,
   query: `
 mutation grantWorkspaceTeamMember($workspaceId: String!, $userId: String!, $permission: Permission!) {
-  grant(workspaceId: $workspaceId, userId: $userId, permission: $permission)
+  grantMember(workspaceId: $workspaceId, userId: $userId, permission: $permission)
 }`,
 };
