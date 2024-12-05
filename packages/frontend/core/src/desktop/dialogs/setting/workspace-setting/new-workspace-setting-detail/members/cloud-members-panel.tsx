@@ -6,9 +6,6 @@ import {
   MemberLimitModal,
 } from '@affine/component/member-components';
 import { SettingRow } from '@affine/component/setting-components';
-import { useInviteMember } from '@affine/core/components/hooks/affine/use-invite-member';
-import { useRevokeMemberPermission } from '@affine/core/components/hooks/affine/use-revoke-member-permission';
-import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { ServerService, SubscriptionService } from '@affine/core/modules/cloud';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
@@ -16,7 +13,7 @@ import { copyTextToClipboard } from '@affine/core/utils/clipboard';
 import { UserFriendlyError } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { SettingState } from '../../../types';
@@ -35,10 +32,10 @@ export const CloudWorkspaceMembersPanel = ({
   const hasPaymentFeature = useLiveData(
     serverService.server.features$.map(f => f?.payment)
   );
-  const workspace = useService(WorkspaceService).workspace;
 
   const permissionService = useService(WorkspacePermissionService);
   const isOwner = useLiveData(permissionService.permission.isOwner$);
+  const isAdmin = useLiveData(permissionService.permission.isAdmin$);
   useEffect(() => {
     permissionService.permission.revalidate();
   }, [permissionService]);
@@ -60,10 +57,9 @@ export const CloudWorkspaceMembersPanel = ({
       : null;
 
   const t = useI18n();
-  const { invite, isMutating } = useInviteMember(workspace.id);
-  const revokeMemberPermission = useRevokeMemberPermission(workspace.id);
 
   const [open, setOpen] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
 
   const openModal = useCallback(() => {
     setOpen(true);
@@ -71,10 +67,10 @@ export const CloudWorkspaceMembersPanel = ({
 
   const onInviteConfirm = useCallback<InviteModalProps['onConfirm']>(
     async ({ email, permission }) => {
-      const success = await invite(
+      setIsMutating(true);
+      const success = await permissionService.permission.inviteMember(
         email,
         permission,
-        // send invite email
         true
       );
       if (success) {
@@ -84,8 +80,9 @@ export const CloudWorkspaceMembersPanel = ({
         });
         setOpen(false);
       }
+      setIsMutating(false);
     },
-    [invite, t]
+    [permissionService.permission, t]
   );
 
   const handleUpgradeConfirm = useCallback(() => {
@@ -97,16 +94,6 @@ export const CloudWorkspaceMembersPanel = ({
       control: 'inviteMember',
     });
   }, [onChangeSettingState]);
-
-  const onRevoke = useAsyncCallback(
-    async (memberId: string) => {
-      const res = await revokeMemberPermission(memberId);
-      if (res?.revoke) {
-        notify.success({ title: t['Removed successfully']() });
-      }
-    },
-    [revokeMemberPermission, t]
-  );
 
   const desc = useMemo(() => {
     if (!workspaceQuota) return null;
@@ -188,7 +175,7 @@ export const CloudWorkspaceMembersPanel = ({
       </SettingRow>
 
       <div className={styles.membersPanel}>
-        <MemberList isOwner={!!isOwner} onRevoke={onRevoke} />
+        <MemberList isOwner={!!isOwner} isAdmin={!!isAdmin} />
       </div>
     </>
   );

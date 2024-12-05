@@ -1318,6 +1318,25 @@ mutation inviteByEmail($workspaceId: String!, $email: String!, $permission: Perm
 }`,
 };
 
+export const inviteByEmailsMutation = {
+  id: 'inviteByEmailsMutation' as const,
+  operationName: 'inviteByEmails',
+  definitionName: 'inviteBatch',
+  containsFile: false,
+  query: `
+mutation inviteByEmails($workspaceId: String!, $emails: [String!]!, $sendInviteMail: Boolean) {
+  inviteBatch(
+    workspaceId: $workspaceId
+    emails: $emails
+    sendInviteMail: $sendInviteMail
+  ) {
+    email
+    inviteId
+    sentSuccess
+  }
+}`,
+};
+
 export const acceptInviteByInviteIdMutation = {
   id: 'acceptInviteByInviteIdMutation' as const,
   operationName: 'acceptInviteByInviteId',

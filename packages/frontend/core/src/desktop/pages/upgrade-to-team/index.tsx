@@ -114,6 +114,7 @@ export const Component = () => {
             open={openUpgrade}
             onOpenChange={setOpenUpgrade}
             workspaceName={name}
+            workspaceId={selectedWorkspace?.id ?? ''}
           />
           <CreateAndUpgradeDialog
             open={openCreate}
@@ -129,9 +130,11 @@ const UpgradeDialog = ({
   open,
   onOpenChange,
   workspaceName,
+  workspaceId,
 }: {
   open: boolean;
   workspaceName: string;
+  workspaceId: string;
   onOpenChange: (open: boolean) => void;
 }) => {
   const t = useI18n();
@@ -162,6 +165,11 @@ const UpgradeDialog = ({
           recurring={SubscriptionRecurring.Monthly}
           plan={SubscriptionPlan.Team}
           onCheckoutSuccess={onClose}
+          checkoutInput={{
+            args: {
+              workspaceId,
+            },
+          }}
         >
           {t['com.affine.payment.upgrade']()}
         </Upgrade>
@@ -239,21 +247,25 @@ const CreateAndUpgradeDialog = ({
   const onClose = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
-  const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
   const workspacesService = useService(WorkspacesService);
+  const [newWorkspaceId, setNewWorkspaceId] = useState<string | null>(null);
 
-  const onConfirmName = useAsyncCallback(async () => {
-    if (loading) return;
-    setLoading(true);
-
-    await buildShowcaseWorkspace(workspacesService, 'affine-cloud', name);
+  const onCreate = useCallback(async () => {
+    const newWorkspace = await buildShowcaseWorkspace(
+      workspacesService,
+      'affine-cloud',
+      name
+    );
     notify.success({
       title: 'Workspace Created',
     });
+    setNewWorkspaceId(newWorkspace.meta.id);
+  }, [name, workspacesService]);
 
-    setLoading(false);
-  }, [loading, name, workspacesService]);
+  const onBeforeCheckout = useAsyncCallback(async () => {
+    await onCreate();
+  }, [onCreate]);
 
   return (
     <Modal width={480} open={open} onOpenChange={onOpenChange}>
@@ -286,7 +298,12 @@ const CreateAndUpgradeDialog = ({
           recurring={SubscriptionRecurring.Monthly}
           plan={SubscriptionPlan.Team}
           onCheckoutSuccess={onClose}
-          onBeforeCheckout={onConfirmName}
+          onBeforeCheckout={onBeforeCheckout}
+          checkoutInput={{
+            args: {
+              workspaceId: newWorkspaceId,
+            },
+          }}
         >
           {t[
             'com.affine.upgrade-to-team-page.create-and-upgrade-confirm.confirm'

@@ -14,6 +14,7 @@ import {
   LocalWorkspaceIcon,
   NoNetworkIcon,
   SettingsIcon,
+  TeamWorkspaceIcon,
   UnsyncIcon,
 } from '@blocksuite/icons/rc';
 import {
@@ -241,6 +242,7 @@ export const WorkspaceCard = forwardRef<
     avatarSize?: number;
     disable?: boolean;
     hideCollaborationIcon?: boolean;
+    hideTeamWorkspaceIcon?: boolean;
     active?: boolean;
     onClickOpenSettings?: (workspaceMetadata: WorkspaceMetadata) => void;
     onClickEnableCloud?: (workspaceMetadata: WorkspaceMetadata) => void;
@@ -257,6 +259,7 @@ export const WorkspaceCard = forwardRef<
       className,
       disable,
       hideCollaborationIcon,
+      hideTeamWorkspaceIcon,
       active,
       ...props
     },
@@ -326,12 +329,9 @@ export const WorkspaceCard = forwardRef<
             {hideCollaborationIcon || information?.isOwner ? null : (
               <CollaborationIcon className={styles.collaborationIcon} />
             )}
-            {/* {hideTeamWorkspaceIcon || !isTeamWorkspace ? null : (
-              <Tooltip content={'team Workspace owned by xxx'}>
-                <TeamWorkspaceIcon className={styles.collaborationIcon} />
-              </Tooltip>
-              
-            )} */}
+            {hideTeamWorkspaceIcon || !information?.isTeam ? null : (
+              <TeamWorkspaceIcon className={styles.collaborationIcon} />
+            )}
             {onClickOpenSettings && (
               <div className={styles.settingButton} onClick={onOpenSettings}>
                 <SettingsIcon width={16} height={16} />

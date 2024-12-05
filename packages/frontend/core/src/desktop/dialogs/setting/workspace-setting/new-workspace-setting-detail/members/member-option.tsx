@@ -1,112 +1,211 @@
 import { MenuItem, notify } from '@affine/component';
-import type { Member } from '@affine/core/modules/permissions';
+import {
+  type Member,
+  WorkspacePermissionService,
+} from '@affine/core/modules/permissions';
+import { Permission, WorkspaceMemberStatus } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
+import { useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 export const MemberOptions = ({
   member,
-  onRevoke,
+  isOwner,
+  isAdmin,
   openAssignModal,
 }: {
   member: Member;
-  onRevoke: (memberId: string) => void;
+  isOwner: boolean;
+  isAdmin: boolean;
   openAssignModal: () => void;
 }) => {
   const t = useI18n();
+  const permission = useService(WorkspacePermissionService).permission;
 
   const handleAssignOwner = useCallback(() => {
     openAssignModal();
   }, [openAssignModal]);
 
   const handleRevoke = useCallback(() => {
-    onRevoke(member.id);
-    notify.success({
-      title: t['com.affine.payment.member.team.revoke.notify.title'](),
-      message: t['com.affine.payment.member.team.revoke.notify.message']({
-        name: member.name || member.email || member.id,
-      }),
-    });
-  }, [onRevoke, member, t]);
+    permission
+      .revokeMember(member.id)
+      .then(result => {
+        if (result) {
+          notify.success({
+            title: t['com.affine.payment.member.team.revoke.notify.title'](),
+            message: t['com.affine.payment.member.team.revoke.notify.message']({
+              name: member.name || member.email || member.id,
+            }),
+          });
+        }
+      })
+      .catch(error => {
+        notify.error({
+          title: 'Operation failed',
+          message: error.message,
+        });
+      });
+  }, [permission, member, t]);
   const handleApprove = useCallback(() => {
-    notify.success({
-      title: t['com.affine.payment.member.team.approve.notify.title'](),
-      message: t['com.affine.payment.member.team.approve.notify.message']({
-        name: member.name || member.email || member.id,
-      }),
-    });
-  }, [member, t]);
+    permission
+      .approveMember(member.id)
+      .then(result => {
+        if (result) {
+          notify.success({
+            title: t['com.affine.payment.member.team.approve.notify.title'](),
+            message: t['com.affine.payment.member.team.approve.notify.message'](
+              {
+                name: member.name || member.email || member.id,
+              }
+            ),
+          });
+        }
+      })
+      .catch(error => {
+        notify.error({
+          title: 'Operation failed',
+          message: error.message,
+        });
+      });
+  }, [member, permission, t]);
+
   const handleDecline = useCallback(() => {
-    notify.success({
-      title: t['com.affine.payment.member.team.decline.notify.title'](),
-      message: t['com.affine.payment.member.team.decline.notify.message']({
-        name: member.name || member.email || member.id,
-      }),
-    });
-  }, [member.email, member.id, member.name, t]);
+    permission
+      .revokeMember(member.id)
+      .then(result => {
+        if (result) {
+          notify.success({
+            title: t['com.affine.payment.member.team.decline.notify.title'](),
+            message: t['com.affine.payment.member.team.decline.notify.message'](
+              {
+                name: member.name || member.email || member.id,
+              }
+            ),
+          });
+        }
+      })
+      .catch(error => {
+        notify.error({
+          title: 'Operation failed',
+          message: error.message,
+        });
+      });
+  }, [member, permission, t]);
+
   const handleRemove = useCallback(() => {
-    onRevoke(member.id);
-    notify.success({
-      title: t['com.affine.payment.member.team.remove.notify.title'](),
-      message: t['com.affine.payment.member.team.remove.notify.message']({
-        name: member.name || member.email || member.id,
-      }),
-    });
-  }, [member, onRevoke, t]);
+    permission
+      .revokeMember(member.id)
+      .then(result => {
+        if (result) {
+          notify.success({
+            title: t['com.affine.payment.member.team.remove.notify.title'](),
+            message: t['com.affine.payment.member.team.remove.notify.message']({
+              name: member.name || member.email || member.id,
+            }),
+          });
+        }
+      })
+      .catch(error => {
+        notify.error({
+          title: 'Operation failed',
+          message: error.message,
+        });
+      });
+  }, [member, permission, t]);
+
   const handleChangeToAdmin = useCallback(() => {
-    notify.success({
-      title: t['com.affine.payment.member.team.change.notify.title'](),
-      message: t['com.affine.payment.member.team.change.admin.notify.message']({
-        name: member.name || member.email || member.id,
-      }),
-    });
-  }, [member, t]);
+    permission
+      .adjustMemberPermission(member.id, Permission.Admin)
+      .then(result => {
+        if (result) {
+          notify.success({
+            title: t['com.affine.payment.member.team.change.notify.title'](),
+            message: t[
+              'com.affine.payment.member.team.change.admin.notify.message'
+            ]({
+              name: member.name || member.email || member.id,
+            }),
+          });
+        }
+      })
+      .catch(error => {
+        notify.error({
+          title: 'Operation failed',
+          message: error.message,
+        });
+      });
+  }, [member, permission, t]);
   const handleChangeToCollaborator = useCallback(() => {
-    notify.success({
-      title: t['com.affine.payment.member.team.change.notify.title'](),
-      message: t[
-        'com.affine.payment.member.team.change.collaborator.notify.message'
-      ]({
-        name: member.name || member.email || member.id,
-      }),
-    });
-  }, [member, t]);
+    permission
+      .adjustMemberPermission(member.id, Permission.Write)
+      .then(result => {
+        if (result) {
+          notify.success({
+            title: t['com.affine.payment.member.team.change.notify.title'](),
+            message: t[
+              'com.affine.payment.member.team.change.collaborator.notify.message'
+            ]({
+              name: member.name || member.email || member.id,
+            }),
+          });
+        }
+      })
+      .catch(error => {
+        notify.error({
+          title: 'Operation failed',
+          message: error.message,
+        });
+      });
+  }, [member, permission, t]);
 
   const operationButtonInfo = useMemo(() => {
     return [
       {
         label: t['com.affine.payment.member.team.approve'](),
         onClick: handleApprove,
-        show: true,
+        show: member.status === WorkspaceMemberStatus.UnderReview,
       },
       {
         label: t['com.affine.payment.member.team.decline'](),
         onClick: handleDecline,
-        show: true,
+        show:
+          (isAdmin || isOwner) &&
+          member.status === WorkspaceMemberStatus.UnderReview,
       },
       {
         label: t['com.affine.payment.member.team.revoke'](),
         onClick: handleRevoke,
-        show: true,
+        show:
+          (isAdmin || isOwner) &&
+          member.status === WorkspaceMemberStatus.Pending,
       },
       {
         label: t['com.affine.payment.member.team.remove'](),
         onClick: handleRemove,
-        show: true,
+        show:
+          (isAdmin || isOwner) &&
+          member.status === WorkspaceMemberStatus.Accepted,
       },
       {
         label: t['com.affine.payment.member.team.change.collaborator'](),
         onClick: handleChangeToCollaborator,
-        show: true,
+        show:
+          (isAdmin || isOwner) &&
+          member.status === WorkspaceMemberStatus.Accepted &&
+          member.permission === Permission.Admin,
       },
       {
         label: t['com.affine.payment.member.team.change.admin'](),
         onClick: handleChangeToAdmin,
-        show: true,
+        show:
+          isOwner &&
+          member.permission === Permission.Write &&
+          member.status === WorkspaceMemberStatus.Accepted,
       },
       {
         label: t['com.affine.payment.member.team.assign'](),
         onClick: handleAssignOwner,
-        show: true,
+        show: isOwner && member.status === WorkspaceMemberStatus.Accepted,
       },
     ];
   }, [
@@ -117,6 +216,9 @@ export const MemberOptions = ({
     handleDecline,
     handleRemove,
     handleRevoke,
+    isAdmin,
+    isOwner,
+    member,
     t,
   ]);
 

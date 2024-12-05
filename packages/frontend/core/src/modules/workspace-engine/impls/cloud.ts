@@ -2,7 +2,10 @@ import { DebugLogger } from '@affine/debug';
 import {
   createWorkspaceMutation,
   deleteWorkspaceMutation,
+  FeatureType,
+  getIsAdminQuery,
   getIsOwnerQuery,
+  getWorkspaceFeaturesQuery,
   getWorkspacesQuery,
 } from '@affine/graphql';
 import { DocCollection } from '@blocksuite/affine/store';
@@ -212,9 +215,11 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       }
     )
   );
+
   error$ = new LiveData<any>(null);
   isRevalidating$ = new LiveData(false);
   workspaces$ = new LiveData<WorkspaceMetadata[]>([]);
+
   async getWorkspaceProfile(
     id: string,
     signal?: AbortSignal
@@ -229,10 +234,13 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     const cloudData = await cloudStorage.pull(id);
 
     const isOwner = await this.getIsOwner(id, signal);
+    const isAdmin = await this.getIsAdmin(id, signal);
+    const isTeam = await this.getIsTeam(id, signal);
 
     if (!cloudData && !localData) {
       return {
         isOwner,
+        isTeam,
       };
     }
 
@@ -248,6 +256,8 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       name: bs.meta.name,
       avatar: bs.meta.avatar,
       isOwner,
+      isAdmin,
+      isTeam,
     };
   }
   async getWorkspaceBlob(id: string, blob: string): Promise<Blob | null> {
@@ -312,6 +322,29 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     ).isOwner;
   }
 
+  private async getIsAdmin(workspaceId: string, signal?: AbortSignal) {
+    return (
+      await this.graphqlService.gql({
+        query: getIsAdminQuery,
+        variables: {
+          workspaceId,
+        },
+        context: { signal },
+      })
+    ).isAdmin;
+  }
+
+  private async getIsTeam(workspaceId: string, signal?: AbortSignal) {
+    return (
+      await this.graphqlService.gql({
+        query: getWorkspaceFeaturesQuery,
+        variables: {
+          workspaceId,
+        },
+        context: { signal },
+      })
+    ).workspace.features.includes(FeatureType.TeamWorkspace);
+  }
   private waitForLoaded() {
     return this.isRevalidating$.waitFor(loading => !loading);
   }

@@ -1,12 +1,17 @@
-import { Avatar, IconButton, Loading, Menu } from '@affine/component';
+import { Avatar, IconButton, Loading, Menu, notify } from '@affine/component';
 import { Pagination } from '@affine/component/member-components';
 import { type AuthAccountInfo, AuthService } from '@affine/core/modules/cloud';
 import {
   type Member,
   WorkspaceMembersService,
+  WorkspacePermissionService,
 } from '@affine/core/modules/permissions';
-import { Permission, UserFriendlyError } from '@affine/graphql';
-import { useI18n } from '@affine/i18n';
+import {
+  Permission,
+  UserFriendlyError,
+  WorkspaceMemberStatus,
+} from '@affine/graphql';
+import { type I18nString, useI18n } from '@affine/i18n';
 import { MoreVerticalIcon } from '@blocksuite/icons/rc';
 import {
   useEnsureLiveData,
@@ -24,10 +29,10 @@ import * as styles from './styles.css';
 
 export const MemberList = ({
   isOwner,
-  onRevoke,
+  isAdmin,
 }: {
   isOwner: boolean;
-  onRevoke: (memberId: string) => void;
+  isAdmin: boolean;
 }) => {
   const membersService = useService(WorkspaceMembersService);
   const memberCount = useLiveData(membersService.members.memberCount$);
@@ -80,7 +85,7 @@ export const MemberList = ({
             key={member.id}
             member={member}
             isOwner={isOwner}
-            onRevoke={onRevoke}
+            isAdmin={isAdmin}
           />
         ))
       )}
@@ -100,29 +105,51 @@ export const MemberList = ({
 const MemberItem = ({
   member,
   isOwner,
+  isAdmin,
   currentAccount,
-  onRevoke,
 }: {
   member: Member;
+  isAdmin: boolean;
   isOwner: boolean;
   currentAccount: AuthAccountInfo;
-  onRevoke: (memberId: string) => void;
 }) => {
   const t = useI18n();
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const workspace = useService(WorkspaceService).workspace;
   const workspaceName = useLiveData(workspace.name$);
+  const permission = useService(WorkspacePermissionService).permission;
   const isEquals = workspaceName === inputValue;
 
   const show = isOwner && currentAccount.id !== member.id;
 
-  //TODO(@JimmFly): implement team feature
-  const underReview = member.accepted === false;
-
   const handleOpenAssignModal = useCallback(() => {
     setOpen(true);
   }, []);
+
+  const confirmAssign = useCallback(() => {
+    permission
+      .adjustMemberPermission(member.id, Permission.Owner)
+      .then(result => {
+        if (result) {
+          setOpen(false);
+          notify.success({
+            title: t['com.affine.payment.member.team.assign.notify.title'](),
+            message: t['com.affine.payment.member.team.assign.notify.message']({
+              name: member.name || member.email || member.id,
+            }),
+          });
+        }
+      })
+      .catch(error => {
+        notify.error({
+          title: 'Operation failed',
+          message: error.message,
+        });
+      });
+  }, [permission, member, t]);
+
+  const memberStatus = useMemo(() => getMemberStatus(member), [member]);
 
   return (
     <div
@@ -150,22 +177,15 @@ const MemberItem = ({
           pending: !member.accepted,
         })}
       >
-        {member.accepted
-          ? member.permission === Permission.Owner
-            ? t.t('Workspace Owner')
-            : member.permission === Permission.Admin
-              ? t.t('Admin')
-              : t.t('Collaborator')
-          : underReview
-            ? t.t('Under-Review')
-            : t.t('Pending')}
+        {t.t(memberStatus)}
       </div>
       <Menu
         items={
           <MemberOptions
             member={member}
-            onRevoke={onRevoke}
             openAssignModal={handleOpenAssignModal}
+            isAdmin={isAdmin}
+            isOwner={isOwner}
           />
         }
       >
@@ -186,9 +206,31 @@ const MemberItem = ({
         inputValue={inputValue}
         setInputValue={setInputValue}
         isEquals={isEquals}
+        onConfirm={confirmAssign}
       />
     </div>
   );
+};
+
+const getMemberStatus = (member: Member): I18nString => {
+  if (member.status === WorkspaceMemberStatus.Pending) {
+    return 'Pending';
+  } else if (member.status === WorkspaceMemberStatus.UnderReview) {
+    return 'Under-Review';
+  } else if (member.status === WorkspaceMemberStatus.Accepted) {
+    switch (member.permission) {
+      case Permission.Owner:
+        return 'Workspace Owner';
+      case Permission.Admin:
+        return 'Admin';
+      case Permission.Write:
+        return 'Collaborator';
+      default:
+        return 'Member';
+    }
+  } else {
+    return 'Need-More-Seats';
+  }
 };
 
 export const MemberListFallback = ({

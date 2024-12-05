@@ -1,4 +1,4 @@
-import { ConfirmModal, Input, notify } from '@affine/component';
+import { ConfirmModal, Input } from '@affine/component';
 import type { Member } from '@affine/core/modules/permissions';
 import { useI18n } from '@affine/i18n';
 import { cssVar } from '@toeverything/theme';
@@ -12,12 +12,14 @@ export const ConfirmAssignModal = ({
   inputValue,
   setInputValue,
   isEquals,
+  onConfirm,
 }: {
   open: boolean;
   setOpen: (value: boolean) => void;
   isEquals: boolean;
   member: Member;
   inputValue: string;
+  onConfirm: () => void;
   setInputValue: (value: string) => void;
 }) => {
   const t = useI18n();
@@ -29,14 +31,7 @@ export const ConfirmAssignModal = ({
       onOpenChange={setOpen}
       title={t['com.affine.payment.member.team.assign.confirm.title']()}
       confirmText={t['com.affine.payment.member.team.assign.confirm.button']()}
-      onConfirm={() => {
-        notify.success({
-          title: t['com.affine.payment.member.team.assign.notify.title'](),
-          message: t['com.affine.payment.member.team.assign.notify.message']({
-            name: member.name || member.email || member.id,
-          }),
-        });
-      }}
+      onConfirm={onConfirm}
       confirmButtonOptions={{ disabled: !isEquals, variant: 'error' }}
     >
       <div className={styles.confirmAssignModalContent}>
