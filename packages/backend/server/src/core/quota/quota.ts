@@ -117,11 +117,10 @@ export class QuotaConfig {
   }
 
   get copilotActionLimit() {
-    return (
-      this.override?.copilotActionLimit ||
-      this.config.configs.copilotActionLimit ||
-      undefined
-    );
+    if ('copilotActionLimit' in this.config.configs) {
+      return this.config.configs.copilotActionLimit || undefined;
+    }
+    return undefined;
   }
 
   get humanReadable() {

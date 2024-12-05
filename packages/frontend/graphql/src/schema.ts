@@ -554,7 +554,6 @@ export interface Mutation {
   createUser: UserType;
   /** Create a new workspace */
   createWorkspace: WorkspaceType;
-  declineInviteById: Scalars['Boolean']['output'];
   deleteAccount: DeleteAccount;
   deleteBlob: Scalars['Boolean']['output'];
   /** Delete a user account */
@@ -663,11 +662,6 @@ export interface MutationCreateUserArgs {
 
 export interface MutationCreateWorkspaceArgs {
   init?: InputMaybe<Scalars['Upload']['input']>;
-}
-
-export interface MutationDeclineInviteByIdArgs {
-  inviteId: Scalars['String']['input'];
-  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationDeleteBlobArgs {
@@ -1180,8 +1174,6 @@ export interface UpdateUserInput {
 export interface UpdateWorkspaceInput {
   /** Enable AI */
   enableAi?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Enable share */
-  enableShare?: InputMaybe<Scalars['Boolean']['input']>;
   /** Enable url previous when sharing */
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
@@ -1296,8 +1288,6 @@ export interface WorkspaceType {
   createdAt: Scalars['DateTime']['output'];
   /** Enable AI */
   enableAi: Scalars['Boolean']['output'];
-  /** Enable share */
-  enableShare: Scalars['Boolean']['output'];
   /** Enable url previous when sharing */
   enableUrlPreview: Scalars['Boolean']['output'];
   /** Enabled features of workspace */
@@ -2422,7 +2412,6 @@ export type GetWorkspaceConfigQuery = {
   workspace: {
     __typename?: 'WorkspaceType';
     enableAi: boolean;
-    enableShare: boolean;
     enableUrlPreview: boolean;
   };
 };
@@ -2433,16 +2422,6 @@ export type SetEnableAiMutationVariables = Exact<{
 }>;
 
 export type SetEnableAiMutation = {
-  __typename?: 'Mutation';
-  updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
-};
-
-export type SetEnableShareMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-  enableShare: Scalars['Boolean']['input'];
-}>;
-
-export type SetEnableShareMutation = {
   __typename?: 'Mutation';
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
@@ -2534,16 +2513,6 @@ export type InviteByEmailMutationVariables = Exact<{
 }>;
 
 export type InviteByEmailMutation = { __typename?: 'Mutation'; invite: string };
-
-export type DeclineInviteByIdMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  inviteId: Scalars['String']['input'];
-}>;
-
-export type DeclineInviteByIdMutation = {
-  __typename?: 'Mutation';
-  declineInviteById: boolean;
-};
 
 export type AcceptInviteByInviteIdMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
@@ -2995,11 +2964,6 @@ export type Mutations =
       response: SetEnableAiMutation;
     }
   | {
-      name: 'setEnableShareMutation';
-      variables: SetEnableShareMutationVariables;
-      response: SetEnableShareMutation;
-    }
-  | {
       name: 'setEnableUrlPreviewMutation';
       variables: SetEnableUrlPreviewMutationVariables;
       response: SetEnableUrlPreviewMutation;
@@ -3023,11 +2987,6 @@ export type Mutations =
       name: 'inviteByEmailMutation';
       variables: InviteByEmailMutationVariables;
       response: InviteByEmailMutation;
-    }
-  | {
-      name: 'declineInviteByIdMutation';
-      variables: DeclineInviteByIdMutationVariables;
-      response: DeclineInviteByIdMutation;
     }
   | {
       name: 'acceptInviteByInviteIdMutation';

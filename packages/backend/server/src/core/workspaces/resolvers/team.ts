@@ -8,7 +8,6 @@ import {
   NotInSpace,
   RequestMutex,
   TooManyRequest,
-  UserNotFound,
 } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
 import { Permission, PermissionService } from '../../permission';
@@ -174,30 +173,5 @@ export class TeamWorkspaceResolver {
       this.logger.error('failed to invite user', e);
       return new TooManyRequest();
     }
-  }
-
-  @Mutation(() => Boolean)
-  async declineInviteById(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args('inviteId') inviteId: string
-  ) {
-    await this.permissions.checkWorkspace(
-      workspaceId,
-      user.id,
-      Permission.Admin
-    );
-
-    const owner = await this.permissions.getWorkspaceOwner(workspaceId);
-    const invitee = await this.permissions.getWorkspaceInvitation(
-      inviteId,
-      workspaceId
-    );
-
-    if (!owner || !invitee) {
-      throw new UserNotFound();
-    }
-
-    return this.permissions.declineWorkspaceInvitation(inviteId, workspaceId);
   }
 }

@@ -1,5 +1,0 @@
-mutation setEnableShare($id: ID!, $enableShare: Boolean!) {
-  updateWorkspace(input: { id: $id, enableShare: $enableShare }) {
-    id
-  }
-}

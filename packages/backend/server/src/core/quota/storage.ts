@@ -46,7 +46,7 @@ export class QuotaManagementService {
   async updateWorkspaceConfig<Q extends QuotaType>(
     workspaceId: string,
     quota: Q,
-    configs: Partial<Quota['configs']>
+    configs: Partial<Quota<Q>['configs']>
   ) {
     const orig = await this.getWorkspaceConfig(workspaceId, quota);
     return await this.quota.updateWorkspaceConfig(
@@ -146,9 +146,16 @@ export class QuotaManagementService {
   }
 
   private async getWorkspaceQuota(userId: string, workspaceId: string) {
-    const workspaceQuota = await this.quota.getWorkspaceQuota(workspaceId);
-    if (workspaceQuota) return workspaceQuota;
-    return await this.quota.getUserQuota(userId);
+    const { feature: workspaceQuota } =
+      (await this.quota.getWorkspaceQuota(workspaceId)) || {};
+    const { feature: userQuota } = await this.quota.getUserQuota(userId);
+    if (workspaceQuota) {
+      return workspaceQuota.withOverride({
+        // override user quota with workspace quota
+        copilotActionLimit: userQuota.copilotActionLimit,
+      });
+    }
+    return userQuota;
   }
 
   // get workspace's owner quota and total size of used
@@ -158,16 +165,14 @@ export class QuotaManagementService {
     const memberCount =
       await this.permissions.getWorkspaceMemberCount(workspaceId);
     const {
-      feature: {
-        name,
-        blobLimit,
-        businessBlobLimit,
-        historyPeriod,
-        memberLimit,
-        storageQuota,
-        copilotActionLimit,
-        humanReadable,
-      },
+      name,
+      blobLimit,
+      businessBlobLimit,
+      historyPeriod,
+      memberLimit,
+      storageQuota,
+      copilotActionLimit,
+      humanReadable,
     } = await this.getWorkspaceQuota(owner.id, workspaceId);
     // get all workspaces size of owner used
     const usedSize = await this.getUserUsage(owner.id);

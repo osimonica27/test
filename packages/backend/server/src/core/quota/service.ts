@@ -181,7 +181,8 @@ export class QuotaService {
 
     if (quota) {
       const feature = await QuotaConfig.get(this.prisma, quota.featureId);
-      return { ...quota, feature: feature.withOverride(quota.configs) };
+      const { configs, ...rest } = quota;
+      return { ...rest, feature: feature.withOverride(configs) };
     }
     return null;
   }

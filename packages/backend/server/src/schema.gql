@@ -494,7 +494,6 @@ type Mutation {
 
   """Create a new workspace"""
   createWorkspace(init: Upload): WorkspaceType!
-  declineInviteById(inviteId: String!, workspaceId: String!): Boolean!
   deleteAccount: DeleteAccount!
   deleteBlob(hash: String!, workspaceId: String!): Boolean!
 
@@ -850,9 +849,6 @@ input UpdateWorkspaceInput {
   """Enable AI"""
   enableAi: Boolean
 
-  """Enable share"""
-  enableShare: Boolean
-
   """Enable url previous when sharing"""
   enableUrlPreview: Boolean
   id: ID!
@@ -961,9 +957,6 @@ type WorkspaceType {
 
   """Enable AI"""
   enableAi: Boolean!
-
-  """Enable share"""
-  enableShare: Boolean!
 
   """Enable url previous when sharing"""
   enableUrlPreview: Boolean!
