@@ -129,3 +129,17 @@ export class InviteResult {
   @Field(() => Boolean, { description: 'Invite email sent success' })
   sentSuccess!: boolean;
 }
+
+const Day = 24 * 60 * 60 * 1000;
+
+export enum WorkspaceInviteLinkExpireTime {
+  OneDay = Day,
+  ThreeDays = 3 * Day,
+  OneWeek = 7 * Day,
+  OneMonth = 30 * Day,
+}
+
+registerEnumType(WorkspaceInviteLinkExpireTime, {
+  name: 'WorkspaceInviteLinkExpireTime',
+  description: 'Workspace invite link expire time',
+});

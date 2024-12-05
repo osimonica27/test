@@ -1,8 +1,10 @@
 import { Logger } from '@nestjs/common';
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
+import { nanoid } from 'nanoid';
 
 import {
+  Cache,
   EventEmitter,
   MailService,
   NotInSpace,
@@ -13,7 +15,11 @@ import { CurrentUser } from '../../auth';
 import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService } from '../../quota';
 import { UserService } from '../../user';
-import { InviteResult, WorkspaceType } from '../types';
+import {
+  InviteResult,
+  WorkspaceInviteLinkExpireTime,
+  WorkspaceType,
+} from '../types';
 import { WorkspaceResolver } from './workspace';
 
 /**
@@ -26,6 +32,7 @@ export class TeamWorkspaceResolver {
   private readonly logger = new Logger(TeamWorkspaceResolver.name);
 
   constructor(
+    private readonly cache: Cache,
     private readonly event: EventEmitter,
     private readonly mailer: MailService,
     private readonly prisma: PrismaClient,
@@ -126,6 +133,27 @@ export class TeamWorkspaceResolver {
     }
 
     return results;
+  }
+
+  @Mutation(() => String)
+  async inviteLink(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string,
+    @Args('expireTime') expireTime: WorkspaceInviteLinkExpireTime
+  ) {
+    await this.permissions.checkWorkspace(
+      workspaceId,
+      user.id,
+      Permission.Admin
+    );
+    const cacheId = `workspace:inviteLink:${workspaceId}`;
+    const invite = await this.cache.get<{ inviteId: string }>(cacheId);
+    if (typeof invite?.inviteId === 'string') {
+      return invite.inviteId;
+    }
+    const inviteId = nanoid();
+    await this.cache.set(cacheId, { inviteId }, { ttl: expireTime });
+    return inviteId;
   }
 
   @Mutation(() => String)
