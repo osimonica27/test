@@ -18,12 +18,14 @@ import {
   createTestingApp,
   createWorkspace,
   grantMember,
+  inviteLink,
   inviteUser,
   inviteUsers,
   leaveWorkspace,
   PermissionEnum,
   signUp,
   sleep,
+  UserAuthedType,
 } from './utils';
 
 const test = ava as TestFn<{
@@ -91,11 +93,29 @@ const init = async (app: INestApplication, memberLimit = 10) => {
     return [members, invites] as const;
   };
 
+  const createInviteLink = async () => {
+    const inviteId = await inviteLink(app, owner.token.token, ws.id, 'OneDay');
+    return async (email: string): Promise<UserAuthedType> => {
+      const member = await signUp(app, email.split('@')[0], email, '123456');
+      await acceptInviteById(app, ws.id, inviteId, false, member.token.token);
+      return member;
+    };
+  };
+
   const admin = await invite('admin@affine.pro', 'Admin');
   const write = await invite('member1@affine.pro');
   const read = await invite('member2@affine.pro', 'Read');
 
-  return { invite, inviteBatch, owner, ws, admin, write, read };
+  return {
+    invite,
+    inviteBatch,
+    createInviteLink,
+    owner,
+    ws,
+    admin,
+    write,
+    read,
+  };
 };
 
 test('should be able to check seat limit', async t => {
@@ -213,4 +233,55 @@ test('should be able to leave workspace', async t => {
     await leaveWorkspace(app, read.token.token, ws.id),
     'read should be able to leave workspace'
   );
+});
+
+test.only('should be able to invite by link', async t => {
+  const { app, permissions, quotaManager } = t.context;
+  const { createInviteLink, ws } = await init(app, 4);
+  const invite = await createInviteLink();
+  {
+    // invite link
+    const members: UserAuthedType[] = [];
+    await t.notThrowsAsync(async () => {
+      members.push(await invite('member3@affine.pro'));
+      members.push(await invite('member4@affine.pro'));
+    }, 'should not throw error even exceed member limit');
+    const [m3, m4] = members;
+
+    t.is(
+      await permissions.getWorkspaceMemberStatus(ws.id, m3.id),
+      WorkspaceMemberStatus.NeedMoreSeatAndReview,
+      'should not change status'
+    );
+    t.is(
+      await permissions.getWorkspaceMemberStatus(ws.id, m4.id),
+      WorkspaceMemberStatus.NeedMoreSeatAndReview,
+      'should not change status'
+    );
+
+    await quotaManager.updateWorkspaceConfig(ws.id, QuotaType.TeamPlanV1, {
+      memberLimit: 5,
+    });
+    await permissions.refreshSeatStatus(ws.id, 5);
+    t.is(
+      await permissions.getWorkspaceMemberStatus(ws.id, m3.id),
+      WorkspaceMemberStatus.UnderReview,
+      'should not change status'
+    );
+    t.is(
+      await permissions.getWorkspaceMemberStatus(ws.id, m4.id),
+      WorkspaceMemberStatus.NeedMoreSeatAndReview,
+      'should not change status'
+    );
+
+    await quotaManager.updateWorkspaceConfig(ws.id, QuotaType.TeamPlanV1, {
+      memberLimit: 6,
+    });
+    await permissions.refreshSeatStatus(ws.id, 6);
+    t.is(
+      await permissions.getWorkspaceMemberStatus(ws.id, m4.id),
+      WorkspaceMemberStatus.UnderReview,
+      'should not change status'
+    );
+  }
 });

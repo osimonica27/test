@@ -585,6 +585,7 @@ export class WorkspaceResolver {
             Permission.Write,
             WorkspaceMemberStatus.NeedMoreSeatAndReview
           );
+          return true;
         } else {
           const inviteId = await this.permissions.grant(workspaceId, user.id);
           // invite by link need admin to approve

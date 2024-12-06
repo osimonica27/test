@@ -65,15 +65,41 @@ export async function inviteUsers(
   return res.body.data.inviteBatch;
 }
 
+export async function inviteLink(
+  app: INestApplication,
+  token: string,
+  workspaceId: string,
+  expireTime: 'OneDay' | 'ThreeDays' | 'OneWeek' | 'OneMonth'
+): Promise<string> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(token, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+            mutation {
+              inviteLink(workspaceId: "${workspaceId}", expireTime: ${expireTime})
+            }
+          `,
+    })
+    .expect(200);
+  if (res.body.errors) {
+    throw new Error(res.body.errors[0].message);
+  }
+  return res.body.data.inviteLink;
+}
+
 export async function acceptInviteById(
   app: INestApplication,
   workspaceId: string,
   inviteId: string,
-  sendAcceptMail = false
+  sendAcceptMail = false,
+  token: string = ''
 ): Promise<boolean> {
   const res = await request(app.getHttpServer())
     .post(gql)
     .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .auth(token, { type: 'bearer' })
     .send({
       query: `
             mutation {
