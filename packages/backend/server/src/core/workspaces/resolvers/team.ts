@@ -106,7 +106,7 @@ export class TeamWorkspaceResolver {
         ret.inviteId = await this.permissions.grant(
           workspaceId,
           target.id,
-          Permission.Read,
+          Permission.Write,
           needMoreSeat
             ? WorkspaceMemberStatus.NeedMoreSeat
             : WorkspaceMemberStatus.Pending
@@ -218,7 +218,7 @@ export class TeamWorkspaceResolver {
         const result = await this.permissions.grant(
           workspaceId,
           userId,
-          Permission.Read,
+          Permission.Write,
           WorkspaceMemberStatus.Accepted
         );
 
