@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
+import { groupBy } from 'lodash-es';
 
 import {
   DocAccessDenied,
@@ -408,7 +409,7 @@ export class PermissionService {
         .filter(m => NeedUpdateStatus.has(m.status))
         .toSorted((a, b) => Number(a.updatedAt) - Number(b.updatedAt))
         .slice(0, memberLimit - memberCount);
-      const { NeedMoreSeat, NeedMoreSeatAndReview } = Object.groupBy(
+      const { NeedMoreSeat, NeedMoreSeatAndReview } = groupBy(
         needChange,
         m => m.status
       );

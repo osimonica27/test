@@ -565,10 +565,6 @@ export class WorkspaceResolver {
     @Args('inviteId') inviteId: string,
     @Args('sendAcceptMail', { nullable: true }) sendAcceptMail: boolean
   ) {
-    // we added seats when sending invitation emails, but the deduction may fail
-    // so we need to check seat again here
-    await this.quota.checkWorkspaceSeat(workspaceId, true);
-
     if (user) {
       // invite link
       const invite = await this.cache.get<{ inviteId: string }>(
@@ -581,15 +577,29 @@ export class WorkspaceResolver {
           return new TooManyRequest();
         }
 
-        const inviteId = await this.permissions.grant(workspaceId, user.id);
-        // invite by link need admin to approve
-        return this.permissions.acceptWorkspaceInvitation(
-          inviteId,
-          workspaceId,
-          WorkspaceMemberStatus.UnderReview
-        );
+        const quota = await this.quota.getWorkspaceUsage(workspaceId);
+        if (quota.memberCount >= quota.memberLimit) {
+          await this.permissions.grant(
+            workspaceId,
+            user.id,
+            Permission.Write,
+            WorkspaceMemberStatus.NeedMoreSeatAndReview
+          );
+        } else {
+          const inviteId = await this.permissions.grant(workspaceId, user.id);
+          // invite by link need admin to approve
+          return this.permissions.acceptWorkspaceInvitation(
+            inviteId,
+            workspaceId,
+            WorkspaceMemberStatus.UnderReview
+          );
+        }
       }
     }
+
+    // we added seats when sending invitation emails, but the deduction may fail
+    // so we need to check seat again here
+    await this.quota.checkWorkspaceSeat(workspaceId, true);
 
     const {
       invitee,
