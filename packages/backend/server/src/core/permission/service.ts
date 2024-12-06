@@ -365,22 +365,21 @@ export class PermissionService {
       .then(count => count > 0);
   }
 
-  async acceptWorkspaceInvitation(invitationId: string, workspaceId: string) {
-    const result = await this.prisma.$transaction(async tx => {
-      const isTeam = await this.isTeamWorkspace(tx, workspaceId);
-      return await tx.workspaceUserPermission.updateMany({
-        where: {
-          id: invitationId,
-          workspaceId: workspaceId,
-          AND: [{ accepted: false }, { status: WorkspaceMemberStatus.Pending }],
-        },
-        data: {
-          accepted: true,
-          status: isTeam
-            ? WorkspaceMemberStatus.UnderReview
-            : WorkspaceMemberStatus.Accepted,
-        },
-      });
+  async acceptWorkspaceInvitation(
+    invitationId: string,
+    workspaceId: string,
+    status: WorkspaceMemberStatus = WorkspaceMemberStatus.Accepted
+  ) {
+    const result = await this.prisma.workspaceUserPermission.updateMany({
+      where: {
+        id: invitationId,
+        workspaceId: workspaceId,
+        AND: [{ accepted: false }, { status: WorkspaceMemberStatus.Pending }],
+      },
+      data: {
+        accepted: true,
+        status: status,
+      },
     });
 
     return result.count > 0;
@@ -401,23 +400,43 @@ export class PermissionService {
       const memberCount = members.filter(
         m => m.status === WorkspaceMemberStatus.Accepted
       ).length;
+      const NeedUpdateStatus = new Set<WorkspaceMemberStatus>([
+        WorkspaceMemberStatus.NeedMoreSeat,
+        WorkspaceMemberStatus.NeedMoreSeatAndReview,
+      ]);
       const needChange = members
-        .filter(m => m.status === WorkspaceMemberStatus.NeedMoreSeat)
+        .filter(m => NeedUpdateStatus.has(m.status))
         .toSorted((a, b) => Number(a.updatedAt) - Number(b.updatedAt))
-        .slice(0, memberLimit - memberCount)
-        .map(m => m.userId);
-      return await tx.workspaceUserPermission
+        .slice(0, memberLimit - memberCount);
+      const { NeedMoreSeat, NeedMoreSeatAndReview } = Object.groupBy(
+        needChange,
+        m => m.status
+      );
+      const approvedCount = await tx.workspaceUserPermission
         .updateMany({
           where: {
             userId: {
-              in: needChange,
+              in: NeedMoreSeat?.map(m => m.userId) ?? [],
             },
           },
           data: {
             status: WorkspaceMemberStatus.Accepted,
           },
         })
-        .then(r => r.count === needChange.length);
+        .then(r => r.count);
+      const needReviewCount = await tx.workspaceUserPermission
+        .updateMany({
+          where: {
+            userId: {
+              in: NeedMoreSeatAndReview?.map(m => m.userId) ?? [],
+            },
+          },
+          data: {
+            status: WorkspaceMemberStatus.UnderReview,
+          },
+        })
+        .then(r => r.count);
+      return approvedCount + needReviewCount === needChange.length;
     });
   }
 

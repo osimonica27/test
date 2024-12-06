@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "WorkspaceMemberStatus" AS ENUM ('Pending', 'NeedMoreSeat', 'UnderReview', 'Accepted');
+CREATE TYPE "WorkspaceMemberStatus" AS ENUM ('Pending', 'NeedMoreSeat', 'NeedMoreSeatAndReview', 'UnderReview', 'Accepted');
 
 -- AlterTable
 ALTER TABLE "workspace_features" ADD COLUMN     "configs" JSON NOT NULL DEFAULT '{}';

@@ -88,14 +88,7 @@ const init = async (app: INestApplication, memberLimit = 10) => {
       members.push(member);
     }
     const invites = await inviteUsers(app, owner.token.token, ws.id, emails);
-    for (const { inviteId } of invites) {
-      if (!inviteId) {
-        throw new Error('Invite failed');
-      }
-      await acceptInviteById(app, ws.id, inviteId);
-    }
-
-    return members;
+    return [members, invites] as const;
   };
 
   const admin = await invite('admin@affine.pro', 'Admin');
@@ -134,18 +127,24 @@ test('should be able to check seat limit', async t => {
     );
 
     t.is(
-      await permissions.getWorkspaceMemberStatus(ws.id, (await members1)[0].id),
+      await permissions.getWorkspaceMemberStatus(
+        ws.id,
+        (await members1)[0][0].id
+      ),
       WorkspaceMemberStatus.NeedMoreSeat,
       'should be able to check member status'
     );
 
     // refresh seat, fifo
     sleep(1000);
-    const [members2] = await inviteBatch(['member6@affine.pro']);
+    const [[members2]] = await inviteBatch(['member6@affine.pro']);
     await permissions.refreshSeatStatus(ws.id, 6);
 
     t.is(
-      await permissions.getWorkspaceMemberStatus(ws.id, (await members1)[0].id),
+      await permissions.getWorkspaceMemberStatus(
+        ws.id,
+        (await members1)[0][0].id
+      ),
       WorkspaceMemberStatus.Accepted,
       'should become accepted after refresh'
     );

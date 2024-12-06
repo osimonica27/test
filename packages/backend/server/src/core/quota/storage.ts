@@ -159,9 +159,9 @@ export class QuotaManagementService {
     return userQuota;
   }
 
-  async checkWorkspaceSeat(workspaceId: string) {
+  async checkWorkspaceSeat(workspaceId: string, excludeSelf = false) {
     const quota = await this.getWorkspaceUsage(workspaceId);
-    if (quota.memberCount >= quota.memberLimit) {
+    if (quota.memberCount - (excludeSelf ? 1 : 0) >= quota.memberLimit) {
       throw new MemberQuotaExceeded();
     }
   }

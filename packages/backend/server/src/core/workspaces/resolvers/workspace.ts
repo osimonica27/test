@@ -565,6 +565,10 @@ export class WorkspaceResolver {
     @Args('inviteId') inviteId: string,
     @Args('sendAcceptMail', { nullable: true }) sendAcceptMail: boolean
   ) {
+    // we added seats when sending invitation emails, but the deduction may fail
+    // so we need to check seat again here
+    await this.quota.checkWorkspaceSeat(workspaceId, true);
+
     if (user) {
       // invite link
       const invite = await this.cache.get<{ inviteId: string }>(
@@ -576,13 +580,13 @@ export class WorkspaceResolver {
         if (!lock) {
           return new TooManyRequest();
         }
-        // member limit check
-        await this.quota.checkWorkspaceSeat(workspaceId);
 
         const inviteId = await this.permissions.grant(workspaceId, user.id);
+        // invite by link need admin to approve
         return this.permissions.acceptWorkspaceInvitation(
           inviteId,
-          workspaceId
+          workspaceId,
+          WorkspaceMemberStatus.UnderReview
         );
       }
     }

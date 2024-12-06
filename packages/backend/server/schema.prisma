@@ -130,7 +130,8 @@ model WorkspacePage {
 
 enum WorkspaceMemberStatus {
   Pending // 1. old state accepted = false
-  NeedMoreSeat // 2. for team: workspace owner need to buy more seat
+  NeedMoreSeat // 2.1 for team: workspace owner need to buy more seat
+  NeedMoreSeatAndReview // 2.2 for team: workspace owner need to buy more seat and member need review
   UnderReview // 3. for team: member is under review
   Accepted // 4. old state accepted = true
 }
