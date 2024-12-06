@@ -1016,6 +1016,9 @@ type WorkspaceType {
 
   """The team subscription of the workspace, if exists."""
   subscription: SubscriptionType
+
+  """if workspace is team workspace"""
+  team: Boolean!
 }
 
 type tokenType {

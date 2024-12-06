@@ -1,5 +1,11 @@
 import { Logger } from '@nestjs/common';
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Parent,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 import { nanoid } from 'nanoid';
 
@@ -42,6 +48,15 @@ export class TeamWorkspaceResolver {
     private readonly mutex: RequestMutex,
     private readonly workspace: WorkspaceResolver
   ) {}
+
+  @ResolveField(() => Boolean, {
+    name: 'team',
+    description: 'if workspace is team workspace',
+    complexity: 2,
+  })
+  team(@Parent() workspace: WorkspaceType) {
+    return this.quota.isTeamWorkspace(workspace.id);
+  }
 
   @Mutation(() => [InviteResult])
   async inviteBatch(

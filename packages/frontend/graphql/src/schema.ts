@@ -1349,6 +1349,8 @@ export interface WorkspaceType {
   sharedPages: Array<Scalars['String']['output']>;
   /** The team subscription of the workspace, if exists. */
   subscription: Maybe<SubscriptionType>;
+  /** if workspace is team workspace */
+  team: Scalars['Boolean']['output'];
 }
 
 export interface WorkspaceTypeHistoriesArgs {
@@ -2005,7 +2007,7 @@ export type GetWorkspacesQuery = {
     __typename?: 'WorkspaceType';
     id: string;
     initialized: boolean;
-    features: Array<FeatureType>;
+    team: boolean;
     owner: { __typename?: 'UserType'; id: string };
   }>;
 };
