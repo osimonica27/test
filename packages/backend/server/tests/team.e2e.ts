@@ -235,7 +235,7 @@ test('should be able to leave workspace', async t => {
   );
 });
 
-test.only('should be able to invite by link', async t => {
+test('should be able to invite by link', async t => {
   const { app, permissions, quotaManager } = t.context;
   const { createInviteLink, ws } = await init(app, 4);
   const invite = await createInviteLink();
