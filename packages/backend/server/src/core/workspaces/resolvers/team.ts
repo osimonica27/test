@@ -13,6 +13,7 @@ import {
   Cache,
   EventEmitter,
   MailService,
+  MemberQuotaExceeded,
   NotInSpace,
   RequestMutex,
   TooManyRequest,
@@ -82,6 +83,9 @@ export class TeamWorkspaceResolver {
     }
 
     const quota = await this.quota.getWorkspaceUsage(workspaceId);
+    if (quota.memberCount >= quota.memberLimit) {
+      throw new MemberQuotaExceeded();
+    }
 
     const results = [];
     for (const [idx, email] of emails.entries()) {
