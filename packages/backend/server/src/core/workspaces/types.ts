@@ -117,11 +117,11 @@ export class UpdateWorkspaceInput extends PickType(
 
 @ObjectType()
 export class InviteLink {
-  @Field(() => String, { description: 'Invite id' })
-  id!: string;
+  @Field(() => String, { description: 'Invite link' })
+  link!: string;
 
-  @Field(() => SafeIntResolver, { description: 'Invite link expire time' })
-  expireTime!: number;
+  @Field(() => Date, { description: 'Invite link expire time' })
+  expireTime!: Date;
 }
 
 @ObjectType()

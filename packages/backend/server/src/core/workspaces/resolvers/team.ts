@@ -16,6 +16,7 @@ import {
   NotInSpace,
   RequestMutex,
   TooManyRequest,
+  URLHelper,
 } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
 import { Permission, PermissionService } from '../../permission';
@@ -42,6 +43,7 @@ export class TeamWorkspaceResolver {
     private readonly cache: Cache,
     private readonly event: EventEmitter,
     private readonly mailer: MailService,
+    private readonly url: URLHelper,
     private readonly prisma: PrismaClient,
     private readonly permissions: PermissionService,
     private readonly users: UserService,
@@ -162,8 +164,8 @@ export class TeamWorkspaceResolver {
       const expireTime = await this.cache.ttl(cacheId);
       if (Number.isSafeInteger(expireTime)) {
         return {
-          id: id.inviteId,
-          expireTime: Date.now() + expireTime,
+          link: this.url.link(`/invite/${id.inviteId}`),
+          expireTime: new Date(Date.now() + expireTime),
         };
       }
     }

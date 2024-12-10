@@ -441,9 +441,9 @@ export interface InvitationWorkspaceType {
 export interface InviteLink {
   __typename?: 'InviteLink';
   /** Invite link expire time */
-  expireTime: Scalars['SafeInt']['output'];
-  /** Invite id */
-  id: Scalars['String']['output'];
+  expireTime: Scalars['DateTime']['output'];
+  /** Invite link */
+  link: Scalars['String']['output'];
 }
 
 export interface InviteResult {
@@ -2499,8 +2499,8 @@ export type GetWorkspaceConfigQuery = {
     enableUrlPreview: boolean;
     inviteLink: {
       __typename?: 'InviteLink';
-      id: string;
-      expireTime: number;
+      link: string;
+      expireTime: string;
     } | null;
   };
 };

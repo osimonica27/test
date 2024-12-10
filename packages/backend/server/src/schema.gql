@@ -363,10 +363,10 @@ type InvitationWorkspaceType {
 
 type InviteLink {
   """Invite link expire time"""
-  expireTime: SafeInt!
+  expireTime: DateTime!
 
-  """Invite id"""
-  id: String!
+  """Invite link"""
+  link: String!
 }
 
 type InviteResult {

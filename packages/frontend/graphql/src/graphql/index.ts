@@ -1228,7 +1228,7 @@ query getWorkspaceConfig($id: String!) {
     enableAi
     enableUrlPreview
     inviteLink {
-      id
+      link
       expireTime
     }
   }
