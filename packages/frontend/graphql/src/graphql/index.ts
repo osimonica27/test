@@ -170,7 +170,7 @@ export const createCopilotMessageMutation = {
   id: 'createCopilotMessageMutation' as const,
   operationName: 'createCopilotMessage',
   definitionName: 'createCopilotMessage',
-  containsFile: true,
+  containsFile: false,
   query: `
 mutation createCopilotMessage($options: CreateChatMessageInput!) {
   createCopilotMessage(options: $options)
@@ -1227,6 +1227,10 @@ query getWorkspaceConfig($id: String!) {
   workspace(id: $id) {
     enableAi
     enableUrlPreview
+    inviteLink {
+      id
+      expireTime
+    }
   }
 }`,
 };
@@ -1409,14 +1413,14 @@ mutation inviteBatch($workspaceId: String!, $emails: [String!]!, $sendInviteMail
 }`,
 };
 
-export const inviteLinkMutation = {
-  id: 'inviteLinkMutation' as const,
-  operationName: 'inviteLink',
-  definitionName: 'inviteLink',
+export const createInviteLinkMutation = {
+  id: 'createInviteLinkMutation' as const,
+  operationName: 'createInviteLink',
+  definitionName: 'createInviteLink',
   containsFile: false,
   query: `
-mutation inviteLink($workspaceId: String!, $expireTime: WorkspaceInviteLinkExpireTime!) {
-  inviteLink(workspaceId: $workspaceId, expireTime: $expireTime)
+mutation createInviteLink($workspaceId: String!, $expireTime: WorkspaceInviteLinkExpireTime!) {
+  createInviteLink(workspaceId: $workspaceId, expireTime: $expireTime)
 }`,
 };
 

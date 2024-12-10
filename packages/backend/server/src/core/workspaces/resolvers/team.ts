@@ -22,6 +22,7 @@ import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService } from '../../quota';
 import { UserService } from '../../user';
 import {
+  InviteLink,
   InviteResult,
   WorkspaceInviteLinkExpireTime,
   WorkspaceType,
@@ -150,8 +151,27 @@ export class TeamWorkspaceResolver {
     return results;
   }
 
+  @ResolveField(() => InviteLink, {
+    description: 'invite link for workspace',
+    nullable: true,
+  })
+  async inviteLink(@Parent() workspace: WorkspaceType) {
+    const cacheId = `workspace:inviteLink:${workspace.id}`;
+    const id = await this.cache.get<{ inviteId: string }>(cacheId);
+    if (id) {
+      const expireTime = await this.cache.ttl(cacheId);
+      if (Number.isSafeInteger(expireTime)) {
+        return {
+          id: id.inviteId,
+          expireTime: Date.now() + expireTime,
+        };
+      }
+    }
+    return null;
+  }
+
   @Mutation(() => String)
-  async inviteLink(
+  async createInviteLink(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('expireTime', { type: () => WorkspaceInviteLinkExpireTime })
