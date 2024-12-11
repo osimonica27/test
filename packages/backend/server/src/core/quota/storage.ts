@@ -180,6 +180,7 @@ export class QuotaManagementService {
       memberLimit,
       storageQuota,
       copilotActionLimit,
+      pendingSeatQuota,
       humanReadable,
     } = await this.getWorkspaceQuota(owner.id, workspaceId);
     // get all workspaces size of owner used
@@ -191,7 +192,7 @@ export class QuotaManagementService {
       FeatureType.UnlimitedWorkspace
     );
 
-    const quota = {
+    const quota: QuotaBusinessType = {
       name,
       blobLimit,
       businessBlobLimit,
@@ -204,6 +205,10 @@ export class QuotaManagementService {
       unlimited,
       memberCount,
     };
+
+    if (pendingSeatQuota && memberCount - memberLimit >= pendingSeatQuota) {
+      quota.reachedPendingSeatQuota = true;
+    }
 
     if (quota.unlimited) {
       return this.mergeUnlimitedQuota(quota);

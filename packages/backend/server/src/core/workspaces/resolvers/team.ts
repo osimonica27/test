@@ -83,7 +83,7 @@ export class TeamWorkspaceResolver {
     }
 
     const quota = await this.quota.getWorkspaceUsage(workspaceId);
-    if (quota.memberCount >= quota.memberLimit) {
+    if (quota.reachedPendingSeatQuota) {
       throw new MemberQuotaExceeded();
     }
 

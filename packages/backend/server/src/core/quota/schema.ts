@@ -191,6 +191,8 @@ export const Quotas: Quota[] = [
       historyPeriod: 30 * OneDay,
       // member limit 1, override by workspace config
       memberLimit: 1,
+      // seats that can be reserved with the status of NeedMoreSeat/NeedMoreSeatAndReview
+      pendingSeatQuota: 512,
     },
   },
 ];

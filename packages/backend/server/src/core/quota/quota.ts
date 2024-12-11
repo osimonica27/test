@@ -119,6 +119,13 @@ export class QuotaConfig {
     return this.override?.memberLimit || this.config.configs.memberLimit;
   }
 
+  get pendingSeatQuota() {
+    if ('pendingSeatQuota' in this.config.configs) {
+      return this.config.configs.pendingSeatQuota || undefined;
+    }
+    return undefined;
+  }
+
   get copilotActionLimit() {
     if ('copilotActionLimit' in this.config.configs) {
       return this.config.configs.copilotActionLimit || undefined;
