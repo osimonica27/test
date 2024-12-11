@@ -12,6 +12,7 @@ import { AuthPageContainer } from '@affine/component/auth-components';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { PureWorkspaceCard } from '@affine/core/components/workspace-selector/workspace-card';
+import { AuthService } from '@affine/core/modules/cloud';
 import { buildShowcaseWorkspace } from '@affine/core/utils/first-app-data';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
@@ -26,6 +27,7 @@ import {
 import { useCallback, useMemo, useState } from 'react';
 
 import { Upgrade } from '../../dialogs/setting/general-setting/plans/plan-card';
+import { PageNotFound } from '../404';
 import * as styles from './styles.css';
 
 const benefitList: I18nString[] = [
@@ -36,6 +38,16 @@ const benefitList: I18nString[] = [
 ];
 
 export const Component = () => {
+  const authService = useService(AuthService);
+  const authStatus = useLiveData(authService.session.status$);
+
+  if (authStatus === 'unauthenticated') {
+    return <PageNotFound noPermission />;
+  }
+  return <UpgradeToTeam />;
+};
+
+export const UpgradeToTeam = () => {
   const t = useI18n();
   const workspacesList = useService(WorkspacesService).list;
   const workspaces = useLiveData(workspacesList.workspaces$);
