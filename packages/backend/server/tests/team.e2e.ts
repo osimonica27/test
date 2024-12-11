@@ -158,6 +158,9 @@ test('should be able to check seat limit', async t => {
     // refresh seat, fifo
     sleep(1000);
     const [[members2]] = await inviteBatch(['member6@affine.pro']);
+    await quotaManager.updateWorkspaceConfig(ws.id, QuotaType.TeamPlanV1, {
+      memberLimit: 6,
+    });
     await permissions.refreshSeatStatus(ws.id, 6);
 
     t.is(
@@ -172,6 +175,29 @@ test('should be able to check seat limit', async t => {
       await permissions.getWorkspaceMemberStatus(ws.id, members2.id),
       WorkspaceMemberStatus.NeedMoreSeat,
       'should not change status'
+    );
+  }
+
+  {
+    await quotaManager.updateWorkspaceConfig(ws.id, QuotaType.TeamPlanV1, {
+      pendingSeatQuota: 1,
+    });
+    const members1 = inviteBatch(['member7@affine.pro']);
+    // invite batch
+    await t.throwsAsync(
+      members1,
+      { message: 'You have exceeded your workspace member quota.' },
+      'should throw error when reach pending seat limit'
+    );
+
+    await quotaManager.updateWorkspaceConfig(ws.id, QuotaType.TeamPlanV1, {
+      pendingSeatQuota: 2,
+    });
+    const members2 = inviteBatch(['member8@affine.pro']);
+    // invite batch
+    await t.notThrowsAsync(
+      members2,
+      'should not throw error when not reach pending seat limit'
     );
   }
 });
