@@ -17,6 +17,7 @@ import {
   acceptInviteById,
   createTestingApp,
   createWorkspace,
+  getInviteInfo,
   grantMember,
   inviteLink,
   inviteUser,
@@ -95,11 +96,14 @@ const init = async (app: INestApplication, memberLimit = 10) => {
 
   const createInviteLink = async () => {
     const inviteId = await inviteLink(app, owner.token.token, ws.id, 'OneDay');
-    return async (email: string): Promise<UserAuthedType> => {
-      const member = await signUp(app, email.split('@')[0], email, '123456');
-      await acceptInviteById(app, ws.id, inviteId, false, member.token.token);
-      return member;
-    };
+    return [
+      inviteId,
+      async (email: string): Promise<UserAuthedType> => {
+        const member = await signUp(app, email.split('@')[0], email, '123456');
+        await acceptInviteById(app, ws.id, inviteId, false, member.token.token);
+        return member;
+      },
+    ] as const;
   };
 
   const admin = await invite('admin@affine.pro', 'Admin');
@@ -158,9 +162,6 @@ test('should be able to check seat limit', async t => {
     // refresh seat, fifo
     sleep(1000);
     const [[members2]] = await inviteBatch(['member6@affine.pro']);
-    await quotaManager.updateWorkspaceConfig(ws.id, QuotaType.TeamPlanV1, {
-      memberLimit: 6,
-    });
     await permissions.refreshSeatStatus(ws.id, 6);
 
     t.is(
@@ -175,29 +176,6 @@ test('should be able to check seat limit', async t => {
       await permissions.getWorkspaceMemberStatus(ws.id, members2.id),
       WorkspaceMemberStatus.NeedMoreSeat,
       'should not change status'
-    );
-  }
-
-  {
-    await quotaManager.updateWorkspaceConfig(ws.id, QuotaType.TeamPlanV1, {
-      pendingSeatQuota: 1,
-    });
-    const members1 = inviteBatch(['member7@affine.pro']);
-    // invite batch
-    await t.throwsAsync(
-      members1,
-      { message: 'You have exceeded your workspace member quota.' },
-      'should throw error when reach pending seat limit'
-    );
-
-    await quotaManager.updateWorkspaceConfig(ws.id, QuotaType.TeamPlanV1, {
-      pendingSeatQuota: 2,
-    });
-    const members2 = inviteBatch(['member8@affine.pro']);
-    // invite batch
-    await t.notThrowsAsync(
-      members2,
-      'should not throw error when not reach pending seat limit'
     );
   }
 });
@@ -263,8 +241,15 @@ test('should be able to leave workspace', async t => {
 
 test('should be able to invite by link', async t => {
   const { app, permissions, quotaManager } = t.context;
-  const { createInviteLink, ws } = await init(app, 4);
-  const invite = await createInviteLink();
+  const { createInviteLink, owner, ws } = await init(app, 4);
+  const [inviteId, invite] = await createInviteLink();
+
+  {
+    // check invite link
+    const info = await getInviteInfo(app, owner.token.token, inviteId);
+    t.is(info.workspace.id, ws.id, 'should be able to get invite info');
+  }
+
   {
     // invite link
     const members: UserAuthedType[] = [];

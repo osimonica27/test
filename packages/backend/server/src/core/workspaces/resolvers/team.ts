@@ -13,7 +13,6 @@ import {
   Cache,
   EventEmitter,
   MailService,
-  MemberQuotaExceeded,
   NotInSpace,
   RequestMutex,
   TooManyRequest,
@@ -75,6 +74,10 @@ export class TeamWorkspaceResolver {
       Permission.Admin
     );
 
+    if (emails.length > 512) {
+      return new TooManyRequest();
+    }
+
     // lock to prevent concurrent invite
     const lockFlag = `invite:${workspaceId}`;
     await using lock = await this.mutex.lock(lockFlag);
@@ -83,9 +86,6 @@ export class TeamWorkspaceResolver {
     }
 
     const quota = await this.quota.getWorkspaceUsage(workspaceId);
-    if (quota.reachedPendingSeatQuota) {
-      throw new MemberQuotaExceeded();
-    }
 
     const results = [];
     for (const [idx, email] of emails.entries()) {
@@ -197,7 +197,11 @@ export class TeamWorkspaceResolver {
     const inviteId = nanoid();
     const cacheInviteId = `workspace:inviteLinkId:${inviteId}`;
     await this.cache.set(cacheWorkspaceId, { inviteId }, { ttl: expireTime });
-    await this.cache.set(cacheInviteId, { workspaceId }, { ttl: expireTime });
+    await this.cache.set(
+      cacheInviteId,
+      { workspaceId, inviteeUserId: user.id },
+      { ttl: expireTime }
+    );
     return inviteId;
   }
 

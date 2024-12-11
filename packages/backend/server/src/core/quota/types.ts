@@ -37,10 +37,6 @@ const userQuota = basicQuota.extend({
   copilotActionLimit: z.number().positive().int().nullish(),
 });
 
-const workspaceQuota = basicQuota.extend({
-  pendingSeatQuota: z.number().positive().int().nullish(),
-});
-
 const userQuotaPlan = z.object({
   feature: z.enum([
     QuotaType.FreePlanV1,
@@ -53,7 +49,7 @@ const userQuotaPlan = z.object({
 
 const workspaceQuotaPlan = z.object({
   feature: z.enum([QuotaType.TeamPlanV1]),
-  configs: workspaceQuota,
+  configs: basicQuota,
 });
 
 /// ======== schema infer ========
@@ -114,9 +110,6 @@ export class QuotaQueryType {
 
   @Field(() => SafeIntResolver, { nullable: true })
   copilotActionLimit?: number;
-
-  @Field(() => Boolean, { nullable: true })
-  reachedPendingSeatQuota?: boolean;
 
   @Field(() => HumanReadableQuotaType)
   humanReadable!: HumanReadableQuotaType;
