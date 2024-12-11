@@ -41,10 +41,12 @@ const benefitList: I18nString[] = [
 export const Component = () => {
   const authService = useService(AuthService);
   const authStatus = useLiveData(authService.session.status$);
+
   const [params] = useSearchParams();
   const recurring = params.get('recurring');
 
-  if (authStatus === 'unauthenticated') {
+  const authIsRevalidating = useLiveData(authService.session.isRevalidating$);
+  if (authStatus === 'unauthenticated' && !authIsRevalidating) {
     return <PageNotFound noPermission />;
   }
   return <UpgradeToTeam recurring={recurring} />;

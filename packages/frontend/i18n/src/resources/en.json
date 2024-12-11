@@ -992,6 +992,7 @@
   "com.affine.payment.modal.downgrade.cancel": "Cancel subscription",
   "com.affine.payment.modal.downgrade.caption": "You can still use AFFiNE Cloud Pro until the end of this billing period :)",
   "com.affine.payment.modal.downgrade.confirm": "Keep AFFiNE Cloud Pro",
+  "com.affine.payment.modal.downgrade.team-confirm": "Keep Team plan",
   "com.affine.payment.modal.downgrade.content": "We're sorry to see you go, but we're always working to improve, and your feedback is welcome. We hope to see you return in the future.",
   "com.affine.payment.modal.downgrade.title": "Are you sure?",
   "com.affine.payment.modal.resume.cancel": "Cancel",
