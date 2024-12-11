@@ -21,6 +21,7 @@ export abstract class AwarenessStorage<
 
   abstract subscribeUpdate(
     id: string,
-    callback: (update: AwarenessRecord, origin?: string) => void
+    onUpdate: (update: AwarenessRecord, origin?: string) => void,
+    onCollect: () => AwarenessRecord
   ): () => void;
 }
