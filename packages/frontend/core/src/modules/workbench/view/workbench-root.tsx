@@ -1,5 +1,6 @@
 import { ResizePanel } from '@affine/component/resize-panel';
 import { AffineErrorComponent } from '@affine/core/components/affine/affine-error-boundary/affine-error-fallback';
+import AskMe from '@affine/core/components/ask-me';
 import { rightSidebarWidthAtom } from '@affine/core/components/atoms';
 import { workbenchRoutes } from '@affine/core/desktop/workbench-router';
 import {
@@ -72,6 +73,7 @@ export const WorkbenchRoot = memo(() => {
         onMove={onMove}
       />
       <WorkbenchSidebar />
+      <AskMe />
     </ViewIslandRegistryProvider>
   );
 });
