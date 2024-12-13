@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { getStreamAsBuffer } from 'get-stream';
+import stream from 'get-stream';
 
 import { Cache, MailService } from '../../../base';
 import { DocContentService } from '../../doc-renderer';
@@ -67,7 +67,7 @@ export class WorkspaceService {
       );
 
       if (avatarBlob.body) {
-        avatar = (await getStreamAsBuffer(avatarBlob.body)).toString('base64');
+        avatar = (await stream.buffer(avatarBlob.body)).toString('base64');
       }
     }
 

@@ -1,14 +1,14 @@
 import { Readable } from 'node:stream';
 
 import { crc32 } from '@node-rs/crc32';
-import { getStreamAsBuffer } from 'get-stream';
+import stream from 'get-stream';
 
 import { getMime } from '../../../native';
 import { BlobInputType, PutObjectMetadata } from './provider';
 
 export async function toBuffer(input: BlobInputType): Promise<Buffer> {
   return input instanceof Readable
-    ? await getStreamAsBuffer(input)
+    ? await stream.buffer(input)
     : input instanceof Buffer
       ? input
       : Buffer.from(input);
