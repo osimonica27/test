@@ -22,6 +22,7 @@ import {
 import { getPopperPosition } from '../../utils/position.js';
 import type { LinkedDocContext, LinkedMenuGroup } from './config.js';
 import { linkedDocPopoverStyles } from './styles.js';
+import { resolveSignal } from './utils.js';
 
 @requiredProperties({
   context: PropTypes.object,
@@ -89,7 +90,7 @@ export class LinkedDocPopover extends SignalWatcher(
 
   private _getActionItems(group: LinkedMenuGroup) {
     const isExpanded = !!this._expanded.get(group.name);
-    const items = Array.isArray(group.items) ? group.items : group.items.value;
+    const items = resolveSignal(group.items);
     if (isExpanded) {
       return items;
     }

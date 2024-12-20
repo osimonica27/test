@@ -42,7 +42,7 @@ export const groupByMatchers = [
       return [
         {
           key: `${value}`,
-          value,
+          value: value.toString(),
         },
       ];
     },
@@ -72,14 +72,11 @@ export const groupByMatchers = [
       if (value == null) {
         return [ungroups];
       }
-      // eslint-disable-next-line sonarjs/no-collapsible-if
-      if (Array.isArray(value)) {
-        if (value.length) {
-          return value.map(id => ({
-            key: `${id}`,
-            value: id,
-          }));
-        }
+      if (Array.isArray(value) && value.length) {
+        return value.map(id => ({
+          key: `${id}`,
+          value: id,
+        }));
       }
       return [ungroups];
     },
