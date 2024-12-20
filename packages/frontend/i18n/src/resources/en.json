@@ -1647,5 +1647,10 @@
   "com.affine.settings.workspace.template.page": "New doc with template",
   "com.affine.settings.workspace.template.page-desc": "New docs will use the specified template, ignoring default settings.",
   "com.affine.settings.workspace.template.page-select": "Template for new doc",
-  "com.affine.settings.workspace.template.remove": "Remove template"
+  "com.affine.settings.workspace.template.remove": "Remove template",
+  "com.affine.minimum-client.title": "Client is outdated",
+  "com.affine.minimum-client.outdated.message": "This client is outdated, for the security of your data, please update the client, before accessing the data, or visit our web app.",
+  "com.affine.minimum-client.advanced.message": "This client app is not supported by the server yet, for the security of your data, please download the matching client, before accessing the data, or visit our web app.",
+  "com.affine.minimum-client.outdated.button": "Update client",
+  "com.affine.minimum-client.advanced.button": "Download client"
 }
