@@ -70,6 +70,7 @@ export class AuthController {
   }
 
   @Public()
+  @UseNamedGuard('version')
   @Post('/preflight')
   async preflight(
     @Body() params?: { email: string }
@@ -235,6 +236,7 @@ export class AuthController {
   }
 
   @Public()
+  @UseNamedGuard('version')
   @Post('/magic-link')
   async magicLinkSignIn(
     @Req() req: Request,
