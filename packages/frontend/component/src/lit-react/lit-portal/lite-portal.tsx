@@ -98,21 +98,29 @@ export const useLitPortalFactory = () => {
 
   return [
     useCallback(
-      (elementOrFactory: React.ReactElement | (() => React.ReactElement)) => {
+      (
+        elementOrFactory: React.ReactElement | (() => React.ReactElement),
+        nonRerendering?: boolean
+      ) => {
         const element =
           typeof elementOrFactory === 'function'
             ? elementOrFactory()
             : elementOrFactory;
         return createLitPortalAnchor(event => {
-          const portalId = event.target.portalId;
+          const { name } = event;
+          if (nonRerendering && name === 'willUpdate') {
+            return;
+          }
+
+          const { target, previousPortalId } = event;
           setPortals(portals => {
             const newPortals = portals.filter(
-              p => p.id !== event.previousPortalId && p.id !== portalId
+              p => p.id !== previousPortalId && p.id !== target.portalId
             );
-            if (event.name !== 'disconnectedCallback') {
+            if (name !== 'disconnectedCallback') {
               newPortals.push({
-                id: portalId,
-                portal: ReactDOM.createPortal(element, event.target),
+                id: target.portalId,
+                portal: ReactDOM.createPortal(element, target),
               });
             }
             return newPortals;
