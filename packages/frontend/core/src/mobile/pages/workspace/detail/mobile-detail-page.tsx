@@ -136,10 +136,6 @@ const DetailPageImpl = () => {
   }, [aIButtonService]);
 
   useEffect(() => {
-    if (!enableKeyboardToolbar) setDocReadonly(doc.id, true);
-  }, [enableKeyboardToolbar, doc.id, setDocReadonly]);
-
-  useEffect(() => {
     globalContext.isTrashDoc.set(!!isInTrash);
 
     return () => {
