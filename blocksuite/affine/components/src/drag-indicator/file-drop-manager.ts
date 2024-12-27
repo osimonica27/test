@@ -10,13 +10,16 @@ import {
   type EditorHost,
   type ExtensionType,
   LifeCycleWatcher,
+  type UIEventHandler,
 } from '@blocksuite/block-std';
 import { createIdentifier } from '@blocksuite/global/di';
 import type { IVec } from '@blocksuite/global/utils';
-import { Point } from '@blocksuite/global/utils';
+import { Point, throttle } from '@blocksuite/global/utils';
 import type { BlockModel } from '@blocksuite/store';
 
 import type { DragIndicator } from './index.js';
+
+const DRAG_OVER_THROTTLE_TIME = 40;
 
 export type onDropProps = {
   std: BlockStdScope;
@@ -166,14 +169,16 @@ export class FileDropExtension extends LifeCycleWatcher {
     return drop;
   };
 
+  private readonly _handleDragOver: UIEventHandler = throttle(context => {
+    const event = context.get('dndState');
+    this.onDragOver(event.raw);
+  }, DRAG_OVER_THROTTLE_TIME);
+
   override mounted() {
     super.mounted();
     const std = this.std;
 
-    std.event.add('nativeDragOver', context => {
-      const event = context.get('dndState');
-      this.onDragOver(event.raw);
-    });
+    std.event.add('nativeDragOver', this._handleDragOver);
     std.event.add('nativeDragLeave', () => {
       this.onDragLeave();
     });

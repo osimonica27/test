@@ -25,13 +25,13 @@ import {
   type UIEventStateContext,
 } from '@blocksuite/block-std';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
-import { Bound, Point } from '@blocksuite/global/utils';
+import { Bound, Point, throttle } from '@blocksuite/global/utils';
 import { Job, Slice, type SliceSnapshot } from '@blocksuite/store';
 
 import type { EdgelessRootBlockComponent } from '../../../edgeless/index.js';
 import { addNoteAtPoint } from '../../../edgeless/utils/common.js';
 import { DropIndicator } from '../components/drop-indicator.js';
-import { AFFINE_DRAG_HANDLE_WIDGET } from '../consts.js';
+import { AFFINE_DRAG_HANDLE_WIDGET, DRAG_THROTTLE_TIME } from '../consts.js';
 import type { AffineDragHandleWidget } from '../drag-handle.js';
 import { newIdCrossDoc } from '../middleware/new-id-cross-doc.js';
 import { reorderList } from '../middleware/reorder-list';
@@ -592,9 +592,13 @@ export class DragEventWatcher {
     this.widget.handleEvent('nativeDragStart', this._dragStartHandler, {
       global: true,
     });
-    this.widget.handleEvent('nativeDragMove', this._dragMoveHandler, {
-      global: true,
-    });
+    this.widget.handleEvent(
+      'nativeDragMove',
+      throttle(this._dragMoveHandler, DRAG_THROTTLE_TIME),
+      {
+        global: true,
+      }
+    );
     this.widget.handleEvent('nativeDragEnd', this._dragEndHandler, {
       global: true,
     });
