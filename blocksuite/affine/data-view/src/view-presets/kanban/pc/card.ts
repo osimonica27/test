@@ -10,6 +10,7 @@ import { html } from 'lit/static-html.js';
 
 import type { DataViewRenderer } from '../../../core/data-view.js';
 import type { KanbanColumn, KanbanSingleView } from '../kanban-view-manager.js';
+
 import { openDetail, popCardMenu } from './menu.js';
 
 const styles = css`
@@ -22,6 +23,7 @@ const styles = css`
     border-radius: 8px;
     transition: background-color 100ms ease-in-out;
     background-color: var(--affine-background-kanban-card-color);
+    touch-action: none;
   }
 
   affine-data-view-kanban-card:hover {
@@ -125,7 +127,7 @@ export class KanbanCard extends SignalWatcher(
 ) {
   static override styles = styles;
 
-  private readonly clickEdit = (e: MouseEvent) => {
+  private clickEdit = (e: MouseEvent) => {
     e.stopPropagation();
     const selection = this.getSelection();
     if (selection) {
@@ -133,7 +135,7 @@ export class KanbanCard extends SignalWatcher(
     }
   };
 
-  private readonly clickMore = (e: MouseEvent) => {
+  private clickMore = (e: MouseEvent) => {
     e.stopPropagation();
     const selection = this.getSelection();
     const ele = e.currentTarget as HTMLElement;
@@ -156,7 +158,7 @@ export class KanbanCard extends SignalWatcher(
     }
   };
 
-  private readonly contextMenu = (e: MouseEvent) => {
+  private contextMenu = (e: MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     const selection = this.getSelection();
