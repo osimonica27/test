@@ -2,6 +2,7 @@ import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   addDatabase,
+  addKanban,
   clickNewPageButton,
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
@@ -31,6 +32,38 @@ test('database is useable', async ({ page }) => {
   await addDatabase(page);
   const database2 = page.locator('affine-database');
   await expect(database2).toBeVisible();
+});
+
+
+test('kanban drag and drop is useable', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+
+  await page.locator('[data-testid=page-editor-blank]').click();
+  await addKanban(page);
+
+  const database = page.locator('affine-database');
+  await expect(database).toBeVisible();
+
+  // find the card in the 0th group
+  const cardId = await page.locator("affine-data-view-kanban-group").nth(0).locator('affine-data-view-kanban-card').getAttribute("data-card-id")
+  expect(cardId).toBeTruthy()
+
+  // drag the card across by one group
+  await page.locator(`[data-card-id="${cardId}"]`).hover()
+  await page.mouse.down();
+  await page.locator(".group-header").nth(1).hover()
+
+  // drag preview of card should be visible
+  await expect(page.locator(".with-data-view-css-variable .card-body")).toBeVisible()
+
+  // wiggle the card a bit and then drop it (not sure how to do this in a non-racey way)
+  await page.locator(".group-body").nth(1).hover({ force: true })
+  await page.mouse.up()
+
+  // assert that it is in the intended column
+  await expect(page.locator(".group-body").nth(1).locator(`[data-card-id="${cardId}"]`)).toBeVisible()
 });
 
 test('link page is useable', async ({ page }) => {

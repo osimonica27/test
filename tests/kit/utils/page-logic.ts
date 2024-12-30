@@ -217,3 +217,11 @@ export const addDatabaseRow = async (page: Page, databaseTitle: string) => {
   });
   await db.locator('.data-view-table-group-add-row-button').click();
 };
+
+
+export const addKanban = async (page: Page, title?: string) => {
+  await page.keyboard.press('/');
+  await expect(page.locator('affine-slash-menu .slash-menu')).toBeVisible();
+  await page.keyboard.type('kanban');
+  await page.getByTestId('Kanban View').click();
+}
