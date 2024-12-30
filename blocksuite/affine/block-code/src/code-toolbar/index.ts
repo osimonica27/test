@@ -37,7 +37,9 @@ export class AffineCodeToolbarWidget extends WidgetComponent<
         const textSelection = selection.find('text');
         if (
           !!textSelection &&
-          (!!textSelection.to || !!textSelection.from.length)
+          (!!textSelection.to ||
+            textSelection.from.length > 0 ||
+            textSelection.blockId === codeBlock.model.id)
         ) {
           return null;
         }
