@@ -16,7 +16,6 @@ import {
   type ViewMeta,
 } from '@blocksuite/data-view';
 import { propertyPresets } from '@blocksuite/data-view/property-presets';
-import { IS_MOBILE } from '@blocksuite/global/env';
 import { assertExists } from '@blocksuite/global/utils';
 import { type BlockModel, nanoid, Text } from '@blocksuite/store';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
@@ -69,11 +68,7 @@ export class DatabaseBlockDataSource extends DataSourceBase {
   });
 
   readonly$: ReadonlySignal<boolean> = computed(() => {
-    return (
-      this._model.doc.readonly ||
-      // TODO(@L-Sun): use block level readonly
-      IS_MOBILE
-    );
+    return this._model.doc.readonly;
   });
 
   rows$: ReadonlySignal<string[]> = computed(() => {
