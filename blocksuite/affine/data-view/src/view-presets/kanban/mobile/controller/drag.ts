@@ -147,11 +147,11 @@ export class MobileKanbanDragController implements ReactiveController {
   }
 
   hostConnected() {
-    if (this.host.props.view.readonly$.value) {
-      return;
-    }
     this.host.disposables.add(
       this.host.props.handleEvent('dragStart', context => {
+        if (this.host.props.view.readonly$.value) {
+          return;
+        }
         const event = context.get('pointerState').raw;
         const target = event.target;
         if (target instanceof Element) {
