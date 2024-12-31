@@ -222,6 +222,7 @@ export class AffinePageDraggingAreaWidget extends WidgetComponent<
         }
 
         state.raw.preventDefault();
+        this.block.topContenteditableElement?.focus();
       },
       {
         global: true,
