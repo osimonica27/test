@@ -8,6 +8,7 @@ export const PackageToDistribution = new Map<
 >([
   ['@affine/admin', 'admin'],
   ['@affine/web', 'web'],
+  ['@affine/electron-renderer', 'desktop'],
   ['@affine/electron', 'desktop'],
   ['@affine/mobile', 'mobile'],
   ['@affine/ios', 'ios'],
@@ -17,8 +18,9 @@ export const PackageToDistribution = new Map<
 export const AliasToPackage = new Map<string, PackageName>([
   ['admin', '@affine/admin'],
   ['web', '@affine/web'],
-  ['desktop', '@affine/electron'],
   ['electron', '@affine/electron'],
+  ['desktop', '@affine/electron-renderer'],
+  ['renderer', '@affine/electron-renderer'],
   ['mobile', '@affine/mobile'],
   ['ios', '@affine/ios'],
   ['android', '@affine/android'],

@@ -177,7 +177,7 @@ test('always get latest value in onChange', () => {
 
   let value: unknown;
   rootModel.propsUpdated.on(({ key }) => {
-    // @ts-expect-error FIXME: ts error
+    // @ts-expect-error ignore
     value = rootModel[key];
   });
 
@@ -258,13 +258,13 @@ test('local readonly', () => {
   expect(doc2?.readonly).toBeTruthy();
   expect(doc3?.readonly).toBeFalsy();
 
-  collection.awarenessStore.setReadonly(doc1.blockCollection, true);
+  doc1.readonly = true;
 
   expect(doc1.readonly).toBeTruthy();
   expect(doc2?.readonly).toBeTruthy();
   expect(doc3?.readonly).toBeTruthy();
 
-  collection.awarenessStore.setReadonly(doc1.blockCollection, false);
+  doc1.readonly = false;
 
   expect(doc1.readonly).toBeFalsy();
   expect(doc2?.readonly).toBeTruthy();

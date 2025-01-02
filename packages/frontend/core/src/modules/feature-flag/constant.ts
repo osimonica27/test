@@ -16,16 +16,6 @@ export const AFFINE_FLAGS = {
     configurable: true,
     defaultState: true,
   },
-  enable_new_dnd: {
-    category: 'blocksuite',
-    bsFlag: 'enable_new_dnd',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-new-dnd.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-new-dnd.description',
-    configurable: false,
-    defaultState: true,
-  },
   enable_database_full_width: {
     category: 'blocksuite',
     bsFlag: 'enable_database_full_width',
@@ -222,8 +212,8 @@ export const AFFINE_FLAGS = {
       'com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.name',
     description:
       'com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.description',
-    configurable: isDesktopEnvironment,
-    defaultState: false,
+    configurable: false,
+    defaultState: isDesktopEnvironment,
   },
   enable_mobile_edgeless_editing: {
     category: 'affine',

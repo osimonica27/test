@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* oxlint-disable @typescript-eslint/no-non-null-assertion */
 import {
   type MenuHandler,
   popMenu,
@@ -21,10 +21,10 @@ import {
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
 import { WidgetComponent } from '@blocksuite/block-std';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
-import { debounce } from '@blocksuite/global/utils';
-import { Slot } from '@blocksuite/store';
+import { debounce, Slot } from '@blocksuite/global/utils';
 import { autoPlacement, offset } from '@floating-ui/dom';
 import { ContextProvider } from '@lit/context';
+import { computed } from '@preact/signals-core';
 import { baseTheme, cssVar } from '@toeverything/theme';
 import { css, html, nothing, unsafeCSS } from 'lit';
 import { query, state } from 'lit/decorators.js';
@@ -221,6 +221,10 @@ export class EdgelessToolbarWidget extends WidgetComponent<
       transform: scale(1.15);
     }
   `;
+
+  private readonly _appTheme$ = computed(() => {
+    return this.std.get(ThemeProvider).app$.value;
+  });
 
   private _moreQuickToolsMenu: MenuHandler | null = null;
 
@@ -625,9 +629,11 @@ export class EdgelessToolbarWidget extends WidgetComponent<
       return nothing;
     }
 
-    const appTheme = this.std.get(ThemeProvider).app$.value;
     return html`
-      <div class="edgeless-toolbar-wrapper" data-app-theme=${appTheme}>
+      <div
+        class="edgeless-toolbar-wrapper"
+        data-app-theme=${this._appTheme$.value}
+      >
         <div
           class="edgeless-toolbar-toggle-control"
           data-enable=${this._enableAutoHide}
@@ -650,17 +656,18 @@ export class EdgelessToolbarWidget extends WidgetComponent<
               @mousedown=${stopPropagation}
               @pointerdown=${stopPropagation}
             >
-              <presentation-toolbar
-                .visible=${this.isPresentMode}
-                .edgeless=${this.block}
-                .settingMenuShow=${this.presentSettingMenuShow}
-                .frameMenuShow=${this.presentFrameMenuShow}
-                .setSettingMenuShow=${(show: boolean) =>
-                  (this.presentSettingMenuShow = show)}
-                .setFrameMenuShow=${(show: boolean) =>
-                  (this.presentFrameMenuShow = show)}
-                .containerWidth=${this.containerWidth}
-              ></presentation-toolbar>
+              ${this.isPresentMode
+                ? html`<presentation-toolbar
+                    .edgeless=${this.block}
+                    .settingMenuShow=${this.presentSettingMenuShow}
+                    .frameMenuShow=${this.presentFrameMenuShow}
+                    .setSettingMenuShow=${(show: boolean) =>
+                      (this.presentSettingMenuShow = show)}
+                    .setFrameMenuShow=${(show: boolean) =>
+                      (this.presentFrameMenuShow = show)}
+                    .containerWidth=${this.containerWidth}
+                  ></presentation-toolbar>`
+                : nothing}
               ${this.isPresentMode ? nothing : this._renderContent()}
             </div>
           </smooth-corner>

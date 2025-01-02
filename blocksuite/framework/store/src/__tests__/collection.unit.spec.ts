@@ -36,7 +36,7 @@ const spaceMetaId = 'meta';
 function serializCollection(doc: BlockSuiteDoc): Record<string, any> {
   const spaces = {};
   doc.spaces.forEach((subDoc, key) => {
-    // @ts-expect-error FIXME: ts error
+    // @ts-expect-error ignore
     spaces[key] = subDoc.toJSON();
   });
   const json = doc.toJSON();
@@ -94,16 +94,14 @@ describe('basic', () => {
     const options = createTestOptions();
     const collection = new DocCollection(options);
     collection.meta.initialize();
-    assert.equal(collection.isEmpty, true);
 
     const doc = collection.createDoc({ id: 'doc:home' });
     doc.load();
     const actual = serializCollection(collection.doc);
     const actualDoc = actual[spaceMetaId].pages[0] as DocMeta;
 
-    assert.equal(collection.isEmpty, false);
     assert.equal(typeof actualDoc.createDate, 'number');
-    // @ts-expect-error FIXME: ts error
+    // @ts-expect-error ignore
     delete actualDoc.createDate;
 
     assert.deepEqual(actual, {
@@ -165,17 +163,14 @@ describe('basic', () => {
     doc.slots.rootAdded.on(rootAddedCallback);
 
     doc.load(() => {
-      expect(doc.ready).toBe(false);
       const rootId = doc.addBlock('affine:page', {
         title: new doc.Text(),
       });
       expect(rootAddedCallback).toBeCalledTimes(1);
-      expect(doc.ready).toBe(false);
 
       doc.addBlock('affine:note', {}, rootId);
     });
 
-    expect(doc.ready).toBe(true);
     expect(readyCallback).toBeCalledTimes(1);
   });
 
@@ -862,68 +857,6 @@ describe('getBlock', () => {
 
     const invalid = doc.getPrev(rootModel.children[0].children[0]);
     assert.equal(invalid, null);
-  });
-});
-
-// Inline snapshot is not supported under describe.parallel config
-describe('collection.exportJSX works', () => {
-  it('collection matches snapshot', () => {
-    const options = createTestOptions();
-    const collection = new DocCollection(options);
-    collection.meta.initialize();
-    const doc = collection.createDoc({ id: 'doc:home' });
-
-    doc.addBlock('affine:page', { title: new doc.Text('hello') });
-
-    expect(collection.exportJSX()).toMatchInlineSnapshot(`
-      <affine:page
-        prop:count={0}
-        prop:items={[]}
-        prop:style={{}}
-        prop:title="hello"
-      />
-    `);
-  });
-
-  it('empty collection matches snapshot', () => {
-    const options = createTestOptions();
-    const collection = new DocCollection(options);
-    collection.meta.initialize();
-    collection.createDoc({ id: 'doc:home' });
-
-    expect(collection.exportJSX()).toMatchInlineSnapshot('null');
-  });
-
-  it('collection with multiple blocks children matches snapshot', () => {
-    const options = createTestOptions();
-    const collection = new DocCollection(options);
-    collection.meta.initialize();
-    const doc = collection.createDoc({ id: 'doc:home' });
-    doc.load(() => {
-      const rootId = doc.addBlock('affine:page', {
-        title: new doc.Text(),
-      });
-      const noteId = doc.addBlock('affine:note', {}, rootId);
-      doc.addBlock('affine:paragraph', {}, noteId);
-      doc.addBlock('affine:paragraph', {}, noteId);
-    });
-
-    expect(collection.exportJSX()).toMatchInlineSnapshot(/* xml */ `
-      <affine:page
-        prop:count={0}
-        prop:items={[]}
-        prop:style={{}}
-      >
-        <affine:note>
-          <affine:paragraph
-            prop:type="text"
-          />
-          <affine:paragraph
-            prop:type="text"
-          />
-        </affine:note>
-      </affine:page>
-    `);
   });
 });
 

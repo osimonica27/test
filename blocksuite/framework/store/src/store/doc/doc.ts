@@ -8,13 +8,12 @@ import { syncBlockProps } from '../../utils/utils.js';
 import type { BlockOptions } from './block/index.js';
 import { Block } from './block/index.js';
 import type { BlockCollection, BlockProps } from './block-collection.js';
-import type { DocCRUD } from './crud.js';
+import { DocCRUD } from './crud.js';
 import { type Query, runQuery } from './query.js';
 
 type DocOptions = {
   schema: Schema;
   blockCollection: BlockCollection;
-  crud: DocCRUD;
   readonly?: boolean;
   query?: Query;
 };
@@ -37,7 +36,7 @@ export class Doc {
     mode: 'loose',
   };
 
-  protected readonly _readonly?: boolean;
+  protected _readonly?: boolean;
 
   protected readonly _schema: Schema;
 
@@ -144,10 +143,6 @@ export class Doc {
     return this._blockCollection.awarenessStore;
   }
 
-  get awarenessSync() {
-    return this.collection.awarenessSync;
-  }
-
   get blobSync() {
     return this.collection.blobSync;
   }
@@ -184,10 +179,6 @@ export class Doc {
     return this._blockCollection.collection;
   }
 
-  get docSync() {
-    return this.collection.docSync;
-  }
-
   get generateBlockId() {
     return this._blockCollection.generateBlockId.bind(this._blockCollection);
   }
@@ -217,6 +208,16 @@ export class Doc {
       return true;
     }
     return this._readonly === true;
+  }
+
+  set readonly(value: boolean) {
+    this._blockCollection.awarenessStore.setReadonly(
+      this._blockCollection,
+      value
+    );
+    if (this._readonly !== undefined && this._readonly !== value) {
+      this._readonly = value;
+    }
   }
 
   get ready() {
@@ -265,7 +266,7 @@ export class Doc {
     return this._blockCollection.withoutTransact.bind(this._blockCollection);
   }
 
-  constructor({ schema, blockCollection, crud, readonly, query }: DocOptions) {
+  constructor({ schema, blockCollection, readonly, query }: DocOptions) {
     this._blockCollection = blockCollection;
 
     this.slots = {
@@ -277,7 +278,7 @@ export class Doc {
       yBlockUpdated: this._blockCollection.slots.yBlockUpdated,
     };
 
-    this._crud = crud;
+    this._crud = new DocCRUD(this._yBlocks, blockCollection.schema);
     this._schema = schema;
     this._readonly = readonly;
     if (query) {

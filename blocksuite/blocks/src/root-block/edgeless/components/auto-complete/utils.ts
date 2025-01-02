@@ -277,16 +277,18 @@ export function createEdgelessElement(
 ) {
   let id;
   const { service } = edgeless;
+  const { crud } = service;
 
   let element: GfxModel | null = null;
 
   if (isShape(current)) {
-    id = service.addElement(current.type, {
+    id = crud.addElement(current.type, {
       ...current.serialize(),
       text: new DocCollection.Y.Text(),
       xywh: bound.serialize(),
     });
-    element = service.getElementById(id);
+    if (!id) return null;
+    element = crud.getElementById(id);
   } else {
     const { doc } = edgeless;
     id = doc.addBlock(
@@ -334,13 +336,14 @@ export function createShapeElement(
   current: ShapeElementModel | NoteBlockModel,
   targetType: TARGET_SHAPE_TYPE
 ) {
-  const service = edgeless.service;
-  const id = service.addElement('shape', {
+  const { crud } = edgeless.service;
+  const id = crud.addElement('shape', {
     shapeType: getShapeType(targetType),
     radius: getShapeRadius(targetType),
     text: new DocCollection.Y.Text(),
   });
-  const element = service.getElementById(id);
+  if (!id) return null;
+  const element = crud.getElementById(id);
   const group = current.group;
   if (group instanceof GroupElementModel && element) {
     group.addChild(element);

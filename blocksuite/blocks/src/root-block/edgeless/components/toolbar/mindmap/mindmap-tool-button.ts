@@ -1,3 +1,4 @@
+import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
 import type {
   MindmapElementModel,
   MindmapStyle,
@@ -162,6 +163,10 @@ export class EdgelessMindmapToolButton extends EdgelessToolbarToolMixin(
     return getMindMaps(this.theme);
   }
 
+  get crud() {
+    return this.edgeless.std.get(EdgelessCRUDIdentifier);
+  }
+
   private _toggleMenu() {
     if (this.tryDisposePopper()) return;
     this.setEdgelessTool({ type: 'default' });
@@ -176,13 +181,12 @@ export class EdgelessMindmapToolButton extends EdgelessToolbarToolMixin(
       },
       onImportMindMap: (bound: Bound) => {
         return importMindmap(bound).then(mindmap => {
-          const id = this.edgeless.service.addElement('mindmap', {
+          const id = this.crud.addElement('mindmap', {
             children: mindmap,
             layoutType: mindmap?.layoutType === 'left' ? 1 : 0,
           });
-          const element = this.edgeless.service.getElementById(
-            id
-          ) as MindmapElementModel;
+          if (!id) return;
+          const element = this.crud.getElementById(id) as MindmapElementModel;
 
           this.tryDisposePopper();
           this.setEdgelessTool({ type: 'default' });

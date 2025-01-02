@@ -2,11 +2,13 @@ import type {
   SurfaceBlockComponent,
   SurfaceBlockModel,
 } from '@blocksuite/affine-block-surface';
+import type { EdgelessPreviewer } from '@blocksuite/affine-block-surface-ref';
 import type { RootBlockModel } from '@blocksuite/affine-model';
 import {
   FontLoaderService,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
+import { requestThrottledConnectedFrame } from '@blocksuite/affine-shared/utils';
 import type {
   GfxBlockComponent,
   SurfaceSelection,
@@ -17,16 +19,18 @@ import { assertExists } from '@blocksuite/global/utils';
 import { css, html } from 'lit';
 import { query, state } from 'lit/decorators.js';
 
-import { requestThrottledConnectedFrame } from '../../_common/utils/index.js';
 import type { EdgelessRootBlockWidgetName } from '../types.js';
 import type { EdgelessRootService } from './edgeless-root-service.js';
 import { getBackgroundGrid, isCanvasElement } from './utils/query.js';
 
-export class EdgelessRootPreviewBlockComponent extends BlockComponent<
-  RootBlockModel,
-  EdgelessRootService,
-  EdgelessRootBlockWidgetName
-> {
+export class EdgelessRootPreviewBlockComponent
+  extends BlockComponent<
+    RootBlockModel,
+    EdgelessRootService,
+    EdgelessRootBlockWidgetName
+  >
+  implements EdgelessPreviewer
+{
   static override styles = css`
     affine-edgeless-root-preview {
       pointer-events: none;
@@ -181,7 +185,7 @@ export class EdgelessRootPreviewBlockComponent extends BlockComponent<
       );
       if (!surface) return;
 
-      const el = this.service.getElementById(surface.elements[0]);
+      const el = this.service.crud.getElementById(surface.elements[0]);
       if (isCanvasElement(el)) {
         return true;
       }

@@ -8,16 +8,7 @@
   "include": ["./src"],
   "references": [
     {
-      "path": "../../framework/global"
-    },
-    {
-      "path": "../../framework/store"
-    },
-    {
-      "path": "../../framework/block-std"
-    },
-    {
-      "path": "../../framework/inline"
+      "path": "../../framework"
     },
     {
       "path": "../model"
@@ -30,6 +21,9 @@
     },
     {
       "path": "../block-embed"
+    },
+    {
+      "path": "../block-surface"
     }
   ]
 }

@@ -1,14 +1,14 @@
 {
   "name": "@affine/ios",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "AFFiNE Desktop Web application",
   "private": true,
   "browser": "src/index.tsx",
   "scripts": {
     "build": "affine bundle",
     "dev": "affine bundle --dev",
-    "sync": "yarn cap sync",
-    "sync:dev": "CAP_SERVER_URL=http://localhost:8080 yarn cap sync"
+    "sync": "cap sync",
+    "sync:dev": "CAP_SERVER_URL=http://localhost:8080 cap sync"
   },
   "dependencies": {
     "@affine/component": "workspace:*",
@@ -27,9 +27,11 @@
     "next-themes": "^0.4.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^6.28.0"
+    "react-router-dom": "^6.28.0",
+    "yjs": "^13.6.21"
   },
   "devDependencies": {
+    "@affine/native": "workspace:*",
     "@capacitor/cli": "^6.2.0",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",

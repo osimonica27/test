@@ -1,4 +1,7 @@
 import { BookmarkBlockHtmlAdapterExtension } from '@blocksuite/affine-block-bookmark';
+import { CodeBlockHtmlAdapterExtension } from '@blocksuite/affine-block-code';
+import { DatabaseBlockHtmlAdapterExtension } from '@blocksuite/affine-block-database';
+import { DividerBlockHtmlAdapterExtension } from '@blocksuite/affine-block-divider';
 import {
   EmbedFigmaBlockHtmlAdapterExtension,
   EmbedGithubBlockHtmlAdapterExtension,
@@ -11,9 +14,6 @@ import { ImageBlockHtmlAdapterExtension } from '@blocksuite/affine-block-image';
 import { ListBlockHtmlAdapterExtension } from '@blocksuite/affine-block-list';
 import { ParagraphBlockHtmlAdapterExtension } from '@blocksuite/affine-block-paragraph';
 
-import { CodeBlockHtmlAdapterExtension } from '../../../code-block/adapters/html.js';
-import { DatabaseBlockHtmlAdapterExtension } from '../../../database-block/adapters/html.js';
-import { DividerBlockHtmlAdapterExtension } from '../../../divider-block/adapters/html.js';
 import { RootBlockHtmlAdapterExtension } from '../../../root-block/adapters/html.js';
 
 export const defaultBlockHtmlAdapterMatchers = [

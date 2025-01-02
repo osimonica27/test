@@ -17,7 +17,7 @@ import {
 import { Bound } from '@blocksuite/global/utils';
 import { BlockModel, defineBlockSchema, type Text } from '@blocksuite/store';
 
-import type { Color } from '../../consts/index.js';
+import type { Color } from '../../themes/index.js';
 
 export type FrameBlockProps = {
   title: Text;
@@ -30,7 +30,7 @@ export const FrameBlockSchema = defineBlockSchema({
   flavour: 'affine:frame',
   props: (internal): FrameBlockProps => ({
     title: internal.Text(),
-    background: '--affine-palette-transparent',
+    background: 'transparent',
     xywh: `[0,0,100,100]`,
     index: 'a0',
     childElementIds: Object.create(null),

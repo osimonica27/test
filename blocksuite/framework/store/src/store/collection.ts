@@ -23,7 +23,6 @@ import {
   BlockSuiteDoc,
   type RawAwarenessState,
 } from '../yjs/index.js';
-import { DocCollectionAddonType, test } from './addon/index.js';
 import { BlockCollection, type GetDocOptions } from './doc/block-collection.js';
 import type { Doc, Query } from './doc/index.js';
 import type { IdGeneratorType } from './id.js';
@@ -53,7 +52,6 @@ const FLAGS_PRESET = {
   enable_database_number_formatting: false,
   enable_database_attachment_note: false,
   enable_database_full_width: false,
-  enable_legacy_validation: true,
   enable_block_query: false,
   enable_lasso_tool: false,
   enable_edgeless_text: true,
@@ -63,7 +61,6 @@ const FLAGS_PRESET = {
   enable_mind_map_import: false,
   enable_advanced_block_visibility: false,
   enable_shape_shadow_blur: false,
-  enable_new_dnd: true,
   enable_mobile_keyboard_toolbar: false,
   enable_mobile_linked_doc_menu: false,
   readonly: {},
@@ -73,10 +70,7 @@ export interface StackItem {
   meta: Map<'cursor-location' | 'selection-state', unknown>;
 }
 
-// oxlint-disable-next-line
-// @ts-ignore FIXME: typecheck error
-@test
-export class DocCollection extends DocCollectionAddonType {
+export class DocCollection {
   static Y = Y;
 
   protected readonly _schema: Schema;
@@ -110,20 +104,6 @@ export class DocCollection extends DocCollectionAddonType {
     return this.blockCollections;
   }
 
-  get isEmpty() {
-    if (this.doc.store.clients.size === 0) return true;
-
-    let flag = false;
-    if (this.doc.store.clients.size === 1) {
-      const items = Array.from(this.doc.store.clients.values())[0];
-      // workspaceVersion and pageVersion were set when the collection is initialized
-      if (items.length <= 2) {
-        flag = true;
-      }
-    }
-    return flag;
-  }
-
   get schema() {
     return this._schema;
   }
@@ -142,7 +122,6 @@ export class DocCollection extends DocCollectionAddonType {
     },
     logger = new NoopLogger(),
   }: DocCollectionOptions) {
-    super();
     this._schema = schema;
 
     this.id = id || '';

@@ -3,7 +3,8 @@
   "compilerOptions": {
     "rootDir": "./src/",
     "outDir": "./dist/",
-    "noEmit": false
+    "noEmit": false,
+    "noUncheckedIndexedAccess": true
   },
   "include": ["./src"],
   "references": [
@@ -14,13 +15,7 @@
       "path": "../shared"
     },
     {
-      "path": "../../framework/block-std"
-    },
-    {
-      "path": "../../framework/global"
-    },
-    {
-      "path": "../../framework/store"
+      "path": "../../framework"
     }
   ]
 }

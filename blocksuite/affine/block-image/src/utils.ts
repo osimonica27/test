@@ -242,7 +242,7 @@ export async function copyImageBlob(
   }
 
   try {
-    // @ts-expect-error FIXME: ts error
+    // @ts-expect-error FIXME: BS-2239
     if (window.apis?.clipboard?.copyAsImageFromString) {
       const dataURL = await convertToString(blob);
       if (!dataURL)
@@ -250,7 +250,7 @@ export async function copyImageBlob(
           ErrorCode.DefaultRuntimeError,
           'Cant convert a blob to data URL.'
         );
-      // @ts-expect-error FIXME: ts error
+      // @ts-expect-error FIXME: BS-2239
       await window.apis.clipboard?.copyAsImageFromString(dataURL);
     } else {
       // DOMException: Type image/jpeg not supported on write.
@@ -523,7 +523,6 @@ export async function addImages(
     editing: false,
   });
   if (isMultipleFiles) {
-    // @ts-expect-error FIXME(command): BS-2216
     std.command.exec('autoResizeElements');
   }
   return blockIds;

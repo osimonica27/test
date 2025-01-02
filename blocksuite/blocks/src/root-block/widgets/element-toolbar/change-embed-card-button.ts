@@ -1,7 +1,16 @@
+import type {
+  BuiltInEmbedBlockComponent,
+  BuiltInEmbedModel,
+} from '@blocksuite/affine-block-bookmark';
+import {
+  isInternalEmbedModel,
+  toggleEmbedCardEditModal,
+} from '@blocksuite/affine-block-bookmark';
 import {
   getDocContentWithMaxLength,
   getEmbedCardIcons,
 } from '@blocksuite/affine-block-embed';
+import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
 import {
   CaptionIcon,
   CenterPeekIcon,
@@ -19,7 +28,11 @@ import {
   type MenuItem,
   renderToolbarSeparator,
 } from '@blocksuite/affine-components/toolbar';
-import { type AliasInfo, BookmarkStyles } from '@blocksuite/affine-model';
+import {
+  type AliasInfo,
+  BookmarkStyles,
+  type EmbedCardStyle,
+} from '@blocksuite/affine-model';
 import {
   EMBED_CARD_HEIGHT,
   EMBED_CARD_WIDTH,
@@ -43,13 +56,6 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { join } from 'lit/directives/join.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { toggleEmbedCardEditModal } from '../../../_common/components/embed-card/modal/embed-card-edit-modal.js';
-import type {
-  EmbedBlockComponent,
-  EmbedModel,
-} from '../../../_common/components/embed-card/type.js';
-import { isInternalEmbedModel } from '../../../_common/components/embed-card/type.js';
-import type { EmbedCardStyle } from '../../../_common/types.js';
 import type { EdgelessRootBlockComponent } from '../../edgeless/edgeless-root-block.js';
 import {
   isBookmarkBlock,
@@ -114,6 +120,10 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
     }
   `;
 
+  get crud() {
+    return this.edgeless.std.get(EdgelessCRUDIdentifier);
+  }
+
   private readonly _convertToCardView = () => {
     if (this._isCardView) {
       return;
@@ -146,7 +156,7 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
     bound.w = EMBED_CARD_WIDTH[targetStyle];
     bound.h = EMBED_CARD_HEIGHT[targetStyle];
 
-    const newId = this.edgeless.service.addBlock(
+    const newId = this.crud.addBlock(
       targetFlavour,
       { url, xywh: bound.serialize(), style: targetStyle, caption },
       this.edgeless.surface.model
@@ -197,7 +207,7 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
     bound.w = EMBED_CARD_WIDTH[targetStyle];
     bound.h = EMBED_CARD_HEIGHT[targetStyle];
 
-    const newId = this.edgeless.service.addBlock(
+    const newId = this.crud.addBlock(
       flavour,
       {
         url,
@@ -206,6 +216,7 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
       },
       this.edgeless.surface.model
     );
+    if (!newId) return;
 
     this.std.command.exec('reassociateConnectors', {
       oldId: id,
@@ -367,7 +378,7 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
 
     const blockComponent = this.std.view.getBlock(
       blockSelection[0].blockId
-    ) as EmbedBlockComponent | null;
+    ) as BuiltInEmbedBlockComponent | null;
 
     if (!blockComponent) return;
 
@@ -831,7 +842,7 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
   accessor edgeless!: EdgelessRootBlockComponent;
 
   @property({ attribute: false })
-  accessor model!: EmbedModel;
+  accessor model!: BuiltInEmbedModel;
 
   @property({ attribute: false })
   accessor quickConnectButton!: TemplateResult<1> | typeof nothing;
@@ -855,7 +866,7 @@ export function renderEmbedButton(
 
 function track(
   std: BlockStdScope,
-  model: EmbedModel,
+  model: BuiltInEmbedModel,
   viewType: string,
   event: LinkEventType,
   props: Partial<TelemetryEvent>

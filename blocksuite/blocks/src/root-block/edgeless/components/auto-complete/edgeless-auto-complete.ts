@@ -2,6 +2,7 @@ import {
   CanvasElementType,
   type ConnectionOverlay,
   ConnectorPathGenerator,
+  EdgelessCRUDIdentifier,
   Overlay,
   OverlayIdentifier,
   type RoughCanvas,
@@ -20,7 +21,7 @@ import type {
 } from '@blocksuite/affine-model';
 import {
   DEFAULT_NOTE_HEIGHT,
-  DEFAULT_SHAPE_STROKE_COLOR,
+  DefaultTheme,
   LayoutType,
   MindmapElementModel,
   ShapeElementModel,
@@ -163,9 +164,8 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
   private _autoCompleteOverlay!: AutoCompleteOverlay;
 
   private readonly _onPointerDown = (e: PointerEvent, type: Direction) => {
-    const { service } = this.edgeless;
-    const viewportRect = service.viewport.boundingClientRect;
-    const start = service.viewport.toModelCoord(
+    const viewportRect = this.gfx.viewport.boundingClientRect;
+    const start = this.gfx.viewport.toModelCoord(
       e.clientX - viewportRect.left,
       e.clientY - viewportRect.top
     );
@@ -175,7 +175,7 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
     let connector: ConnectorElementModel | null;
 
     this._disposables.addFromEvent(document, 'pointermove', e => {
-      const point = service.viewport.toModelCoord(
+      const point = this.gfx.viewport.toModelCoord(
         e.clientX - viewportRect.left,
         e.clientY - viewportRect.top
       );
@@ -232,13 +232,21 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
     return this.std.get(OverlayIdentifier('connection')) as ConnectionOverlay;
   }
 
+  get crud() {
+    return this.std.get(EdgelessCRUDIdentifier);
+  }
+
+  get gfx() {
+    return this.std.get(GfxControllerIdentifier);
+  }
+
   private _addConnector(source: Connection, target: Connection) {
-    const { edgeless } = this;
-    const id = edgeless.service.addElement(CanvasElementType.CONNECTOR, {
+    const id = this.crud.addElement(CanvasElementType.CONNECTOR, {
       source,
       target,
     });
-    return edgeless.service.getElementById(id) as ConnectorElementModel;
+    if (!id) return null;
+    return this.crud.getElementById(id) as ConnectorElementModel;
   }
 
   private _addMindmapNode(target: 'sibling' | 'child') {
@@ -268,7 +276,7 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
 
     requestAnimationFrame(() => {
       mountShapeTextEditor(
-        this.edgeless.service.getElementById(newNode) as ShapeElementModel,
+        this.crud.getElementById(newNode) as ShapeElementModel,
         this.edgeless
       );
     });
@@ -354,6 +362,7 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
     const { doc, service } = this.edgeless;
     const bound = this._computeNextBound(type);
     const id = createEdgelessElement(this.edgeless, this.current, bound);
+    if (!id) return;
     if (isShape(this.current)) {
       const { startPosition, endPosition } = getPosition(type);
       this._addConnector(
@@ -368,7 +377,7 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
       );
 
       mountShapeTextEditor(
-        service.getElementById(id) as ShapeElementModel,
+        this.crud.getElementById(id) as ShapeElementModel,
         this.edgeless
       );
     } else {
@@ -396,12 +405,12 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
     return service.getConnectors(element.id).reduce((prev, current) => {
       if (current.target.id === element.id && current.source.id) {
         prev.push(
-          service.getElementById(current.source.id) as ShapeElementModel
+          this.crud.getElementById(current.source.id) as ShapeElementModel
         );
       }
       if (current.source.id === element.id && current.target.id) {
         prev.push(
-          service.getElementById(current.target.id) as ShapeElementModel
+          this.crud.getElementById(current.target.id) as ShapeElementModel
         );
       }
 
@@ -460,9 +469,7 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
 
   private _initOverlay() {
     const { surface } = this.edgeless;
-    this._autoCompleteOverlay = new AutoCompleteOverlay(
-      this.std.get(GfxControllerIdentifier)
-    );
+    this._autoCompleteOverlay = new AutoCompleteOverlay(this.gfx);
     surface.renderer.addOverlay(this._autoCompleteOverlay);
   }
 
@@ -636,7 +643,7 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
 
     this._autoCompleteOverlay.stroke = surface.renderer.getColorValue(
       current.strokeColor,
-      DEFAULT_SHAPE_STROKE_COLOR,
+      DefaultTheme.shapeStrokeColor,
       true
     );
     this._autoCompleteOverlay.linePoints = path;
@@ -649,7 +656,7 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
   override connectedCallback(): void {
     super.connectedCallback();
     this._pathGenerator = new ConnectorPathGenerator({
-      getElementById: id => this.edgeless.service.getElementById(id),
+      getElementById: id => this.crud.getElementById(id),
     });
     this._initOverlay();
   }
@@ -658,7 +665,7 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
     const { _disposables, edgeless } = this;
 
     _disposables.add(
-      this.edgeless.service.selection.slots.updated.on(() => {
+      this.gfx.selection.slots.updated.on(() => {
         this._autoCompleteOverlay.linePoints = [];
         this._autoCompleteOverlay.renderShape = null;
       })

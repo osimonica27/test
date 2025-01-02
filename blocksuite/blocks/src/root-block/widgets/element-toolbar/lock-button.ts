@@ -33,8 +33,6 @@ export class EdgelessLockButton extends SignalWatcher(
   private _lock() {
     const { service, doc, std } = this.edgeless;
 
-    doc.captureSync();
-
     // get most top selected elements(*) from tree, like in a tree below
     //         G0
     //        /  \
@@ -46,15 +44,19 @@ export class EdgelessLockButton extends SignalWatcher(
     // return [E1]
 
     const selectedElements = this._selectedElements;
+    if (selectedElements.length === 0) return;
+
     const levels = selectedElements.map(element => element.groups.length);
     const topElement = selectedElements[levels.indexOf(Math.min(...levels))];
     const otherElements = selectedElements.filter(
       element => element !== topElement
     );
 
+    doc.captureSync();
+
     // release other elements from their groups and group with top element
     otherElements.forEach(element => {
-      // eslint-disable-next-line
+      // oxlint-disable-next-line unicorn/prefer-dom-node-remove
       element.group?.removeChild(element);
       topElement.group?.addChild(element);
     });
@@ -72,7 +74,7 @@ export class EdgelessLockButton extends SignalWatcher(
     const groupId = service.createGroup([topElement, ...otherElements]);
 
     if (groupId) {
-      const group = service.getElementById(groupId);
+      const group = service.crud.getElementById(groupId);
       if (group) {
         group.lock();
         this.edgeless.gfx.selection.set({
@@ -97,9 +99,13 @@ export class EdgelessLockButton extends SignalWatcher(
 
   private _unlock() {
     const { service, doc } = this.edgeless;
+
+    const selectedElements = this._selectedElements;
+    if (selectedElements.length === 0) return;
+
     doc.captureSync();
 
-    this._selectedElements.forEach(element => {
+    selectedElements.forEach(element => {
       if (element instanceof GroupElementModel) {
         service.ungroup(element);
       } else {

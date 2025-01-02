@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "Affine Node.js server",
   "type": "module",
   "bin": {
@@ -14,8 +14,8 @@
     "test:copilot": "ava \"tests/**/copilot-*.spec.ts\"",
     "test:coverage": "c8 ava --concurrency 1 --serial",
     "test:copilot:coverage": "c8 ava --timeout=5m \"tests/**/copilot-*.spec.ts\"",
-    "data-migration": "cross-env NODE_ENV=script node ./src/data/index.ts",
-    "predeploy": "yarn prisma migrate deploy && node --import ./scripts/register.js ./dist/data/index.js run",
+    "data-migration": "cross-env NODE_ENV=script r ./src/data/index.ts",
+    "predeploy": "yarn prisma migrate deploy && NODE_ENV=script node --import ./scripts/register.js ./dist/data/index.js run",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -86,11 +86,12 @@
     "stripe": "^17.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2",
-    "yjs": "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch",
+    "yjs": "^13.6.21",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
+    "@affine-tools/cli": "workspace:*",
     "@affine/server-native": "workspace:*",
     "@nestjs/testing": "^10.4.15",
     "@types/cookie-parser": "^1.4.8",

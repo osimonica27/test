@@ -2,6 +2,7 @@ import { addAttachments } from '@blocksuite/affine-block-attachment';
 import { addImages } from '@blocksuite/affine-block-image';
 import {
   CanvasElementType,
+  EdgelessCRUDIdentifier,
   SurfaceGroupLikeModel,
   TextUtils,
 } from '@blocksuite/affine-block-surface';
@@ -25,6 +26,7 @@ import {
 } from '@blocksuite/affine-shared/services';
 import {
   isInsidePageEditor,
+  isTopLevelBlock,
   isUrlInClipboard,
   matchFlavours,
   referenceToNode,
@@ -82,11 +84,9 @@ import {
   isAttachmentBlock,
   isCanvasElementWithText,
   isImageBlock,
-  isTopLevelBlock,
 } from '../utils/query.js';
 
 const BLOCKSUITE_SURFACE = 'blocksuite/surface';
-const IMAGE_PNG = 'image/png';
 
 const { GROUP, MINDMAP, CONNECTOR } = CanvasElementType;
 const IMAGE_PADDING = 5; // for rotated shapes some padding is needed
@@ -329,11 +329,7 @@ export class EdgelessClipboardController extends PageClipboard {
       ).serialize();
       options.style = style;
 
-      const id = this.host.service.addBlock(
-        flavour,
-        options,
-        this.surface.model.id
-      );
+      const id = this.crud.addBlock(flavour, options, this.surface.model.id);
 
       this.std.getOptional(TelemetryProvider)?.track('CanvasElementAdded', {
         control: 'canvas:paste',
@@ -418,6 +414,10 @@ export class EdgelessClipboardController extends PageClipboard {
     return this.host.surface;
   }
 
+  private get crud() {
+    return this.std.get(EdgelessCRUDIdentifier);
+  }
+
   private get toolManager() {
     return this.host.gfx.tool;
   }
@@ -470,7 +470,7 @@ export class EdgelessClipboardController extends PageClipboard {
     if (!(await this.host.std.collection.blobSync.get(sourceId as string))) {
       return null;
     }
-    const attachmentId = this.host.service.addBlock(
+    const attachmentId = this.crud.addBlock(
       'affine:attachment',
       {
         xywh,
@@ -491,7 +491,7 @@ export class EdgelessClipboardController extends PageClipboard {
     const { xywh, style, url, caption, description, icon, image, title } =
       bookmark.props;
 
-    const bookmarkId = this.host.service.addBlock(
+    const bookmarkId = this.crud.addBlock(
       'affine:bookmark',
       {
         xywh,
@@ -581,10 +581,13 @@ export class EdgelessClipboardController extends PageClipboard {
 
     clipboardData.lockedBySelf = false;
 
-    const id = this.host.service.addElement(
+    const id = this.crud.addElement(
       clipboardData.type as CanvasElementType,
       clipboardData
     );
+    if (!id) {
+      return null;
+    }
     this.std.getOptional(TelemetryProvider)?.track('CanvasElementAdded', {
       control: 'canvas:paste',
       page: 'whiteboard editor',
@@ -592,9 +595,7 @@ export class EdgelessClipboardController extends PageClipboard {
       segment: 'toolbar',
       type: clipboardData.type as string,
     });
-    const element = this.host.service.getElementById(
-      id
-    ) as BlockSuite.SurfaceModel;
+    const element = this.crud.getElementById(id) as BlockSuite.SurfaceModel;
     assertExists(element);
     return element;
   }
@@ -624,7 +625,7 @@ export class EdgelessClipboardController extends PageClipboard {
   private _createFigmaEmbedBlock(figmaEmbed: BlockSnapshot) {
     const { xywh, style, url, caption, title, description } = figmaEmbed.props;
 
-    const embedFigmaId = this.host.service.addBlock(
+    const embedFigmaId = this.crud.addBlock(
       'affine:embed-figma',
       {
         xywh,
@@ -654,7 +655,7 @@ export class EdgelessClipboardController extends PageClipboard {
       });
     }
 
-    const frameId = this.host.service.addBlock(
+    const frameId = this.crud.addBlock(
       'affine:frame',
       {
         xywh,
@@ -687,7 +688,7 @@ export class EdgelessClipboardController extends PageClipboard {
       assignees,
     } = githubEmbed.props;
 
-    const embedGithubId = this.host.service.addBlock(
+    const embedGithubId = this.crud.addBlock(
       'affine:embed-github',
       {
         xywh,
@@ -714,7 +715,7 @@ export class EdgelessClipboardController extends PageClipboard {
   private _createHtmlEmbedBlock(htmlEmbed: BlockSnapshot) {
     const { xywh, style, caption, html, design } = htmlEmbed.props;
 
-    const embedHtmlId = this.host.service.addBlock(
+    const embedHtmlId = this.crud.addBlock(
       'affine:embed-html',
       {
         xywh,
@@ -735,7 +736,7 @@ export class EdgelessClipboardController extends PageClipboard {
     if (!(await this.host.std.collection.blobSync.get(sourceId as string))) {
       return null;
     }
-    return this.host.service.addBlock(
+    return this.crud.addBlock(
       'affine:image',
       {
         caption,
@@ -760,7 +761,7 @@ export class EdgelessClipboardController extends PageClipboard {
       description,
     });
 
-    return this.host.service.addBlock(
+    return this.crud.addBlock(
       'affine:embed-linked-doc',
       {
         xywh,
@@ -776,7 +777,7 @@ export class EdgelessClipboardController extends PageClipboard {
     const { xywh, style, url, caption, videoId, image, title, description } =
       loomEmbed.props;
 
-    const embedLoomId = this.host.service.addBlock(
+    const embedLoomId = this.crud.addBlock(
       'affine:embed-loom',
       {
         xywh,
@@ -820,7 +821,7 @@ export class EdgelessClipboardController extends PageClipboard {
       syncedDocEmbed.props;
     const referenceInfo = ReferenceInfoSchema.parse({ pageId, params });
 
-    return this.host.service.addBlock(
+    return this.crud.addBlock(
       'affine:embed-synced-doc',
       {
         xywh,
@@ -848,7 +849,7 @@ export class EdgelessClipboardController extends PageClipboard {
       creatorImage,
     } = youtubeEmbed.props;
 
-    const embedYoutubeId = this.host.service.addBlock(
+    const embedYoutubeId = this.crud.addBlock(
       'affine:embed-youtube',
       {
         xywh,
@@ -1085,7 +1086,7 @@ export class EdgelessClipboardController extends PageClipboard {
       ).serialize(),
     };
 
-    const noteId = edgeless.service.addBlock(
+    const noteId = this.crud.addBlock(
       'affine:note',
       noteProps,
       this.doc.root!.id
@@ -1101,7 +1102,7 @@ export class EdgelessClipboardController extends PageClipboard {
 
     if (typeof content === 'string') {
       TextUtils.splitIntoLines(content).forEach((line, idx) => {
-        edgeless.service.addBlock(
+        this.crud.addBlock(
           'affine:paragraph',
           { text: new DocCollection.Y.Text(line) },
           noteId,
@@ -1181,7 +1182,7 @@ export class EdgelessClipboardController extends PageClipboard {
     sortedElements.forEach(ele => {
       const newIndex = idxGenerator();
 
-      this.edgeless.service.updateElement(ele.id, {
+      this.crud.updateElement(ele.id, {
         index: newIndex,
       });
     });
@@ -1194,42 +1195,6 @@ export class EdgelessClipboardController extends PageClipboard {
         cancelable: true,
       })
     );
-  }
-
-  async copyAsPng(
-    blocks: BlockSuite.EdgelessBlockModelType[],
-    shapes: BlockSuite.SurfaceModel[]
-  ) {
-    const blocksLen = blocks.length;
-    const shapesLen = shapes.length;
-
-    if (blocksLen + shapesLen === 0) return;
-    const canvas = await this.toCanvas(blocks, shapes);
-    assertExists(canvas);
-    // @ts-expect-error FIXME: ts error
-    if (window.apis?.clipboard?.copyAsImageFromString) {
-      // @ts-expect-error FIXME: ts error
-      await window.apis.clipboard?.copyAsImageFromString(
-        canvas.toDataURL(IMAGE_PNG)
-      );
-    } else {
-      const blob: Blob = await new Promise((resolve, reject) =>
-        canvas.toBlob(
-          blob => (blob ? resolve(blob) : reject('Canvas can not export blob')),
-          IMAGE_PNG
-        )
-      );
-      assertExists(blob);
-
-      this.std.clipboard
-        .writeToClipboard(_items => {
-          return {
-            ..._items,
-            [IMAGE_PNG]: blob,
-          };
-        })
-        .catch(console.error);
-    }
   }
 
   async createElementsFromClipboardData(
@@ -1322,6 +1287,8 @@ export class EdgelessClipboardController extends PageClipboard {
           context,
           getNewXYWH(data.xywh)
         );
+
+        if (!element) continue;
 
         canvasElements.push(element);
         allElements.push(element);

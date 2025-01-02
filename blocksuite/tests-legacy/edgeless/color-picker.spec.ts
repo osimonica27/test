@@ -1,4 +1,4 @@
-import { parseStringToRgba } from '@blocks/root-block/edgeless/components/color-picker/utils.js';
+import { parseStringToRgba } from '@blocksuite/affine-components/color-picker';
 import { expect, type Locator, type Page } from '@playwright/test';
 import { dragBetweenCoords } from 'utils/actions/drag.js';
 import {
@@ -25,12 +25,12 @@ function getColorPickerButtonWithClass(page: Page, classes: string) {
 }
 
 function getCurrentColorUnitButton(locator: Locator) {
-  return locator.locator('edgeless-color-button').locator('.color-unit');
+  return locator.locator('edgeless-color-button').locator('.color-unit').nth(0);
 }
 
 function getCurrentColor(locator: Locator) {
   return locator.evaluate(ele =>
-    getComputedStyle(ele).getPropertyValue('background-color')
+    getComputedStyle(ele.querySelector('svg')!).getPropertyValue('fill')
   );
 }
 
@@ -116,7 +116,7 @@ test.describe('basic functions', () => {
     const currentColorUnit = getCurrentColorUnitButton(fillColorButton);
 
     const value = await getCurrentColor(currentColorUnit);
-    await expect(currentColorUnit).toHaveCSS('background-color', value);
+    await expect(currentColorUnit.locator('svg')).toHaveCSS('fill', value);
 
     const customButton = getCustomButton(fillColorButton);
 

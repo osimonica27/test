@@ -1,9 +1,12 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* oxlint-disable @typescript-eslint/no-non-null-assertion */
 import type { PointerEventState } from '@blocksuite/block-std';
 import { BaseTool, MouseButton } from '@blocksuite/block-std/gfx';
 import { IS_MAC } from '@blocksuite/global/env';
-import { Bound, getCommonBoundWithRotation } from '@blocksuite/global/utils';
-import { Slot } from '@blocksuite/store';
+import {
+  Bound,
+  getCommonBoundWithRotation,
+  Slot,
+} from '@blocksuite/global/utils';
 
 import {
   AFFINE_AI_PANEL_WIDGET,

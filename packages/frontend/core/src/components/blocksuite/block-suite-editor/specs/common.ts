@@ -14,13 +14,8 @@ import {
   DataViewBlockSpec,
   DividerBlockSpec,
   EditPropsStore,
-  EmbedFigmaBlockSpec,
-  EmbedGithubBlockSpec,
-  EmbedHtmlBlockSpec,
-  EmbedLinkedDocBlockSpec,
-  EmbedLoomBlockSpec,
-  EmbedSyncedDocBlockSpec,
-  EmbedYoutubeBlockSpec,
+  EmbedExtensions,
+  FontLoaderService,
   ImageBlockSpec,
   LatexBlockSpec,
   ListBlockSpec,
@@ -30,7 +25,7 @@ import {
 } from '@blocksuite/affine/blocks';
 
 const CommonBlockSpecs: ExtensionType[] = [
-  RefNodeSlotsExtension(),
+  RefNodeSlotsExtension,
   EditPropsStore,
   RichTextExtensions,
   LatexBlockSpec,
@@ -38,17 +33,11 @@ const CommonBlockSpecs: ExtensionType[] = [
   DatabaseBlockSpec,
   DataViewBlockSpec,
   DividerBlockSpec,
+  EmbedExtensions,
   BookmarkBlockSpec,
-  EmbedFigmaBlockSpec,
-  EmbedGithubBlockSpec,
-  EmbedYoutubeBlockSpec,
-  EmbedLoomBlockSpec,
-  EmbedHtmlBlockSpec,
-  EmbedSyncedDocBlockSpec,
-  EmbedLinkedDocBlockSpec,
   AttachmentBlockSpec,
-  // special
   AdapterFactoryExtensions,
+  FontLoaderService,
 ].flat();
 
 export const DefaultBlockSpecs: ExtensionType[] = [

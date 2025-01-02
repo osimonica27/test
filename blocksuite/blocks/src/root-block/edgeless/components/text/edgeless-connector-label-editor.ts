@@ -1,5 +1,7 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { TextUtils } from '@blocksuite/affine-block-surface';
+import {
+  EdgelessCRUDIdentifier,
+  TextUtils,
+} from '@blocksuite/affine-block-surface';
 import type { RichText } from '@blocksuite/affine-components/rich-text';
 import type { ConnectorElementModel } from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
@@ -61,6 +63,10 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
     }
   `;
 
+  get crud() {
+    return this.edgeless.std.get(EdgelessCRUDIdentifier);
+  }
+
   private _isComposition = false;
 
   private _keeping = false;
@@ -70,6 +76,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
   private readonly _updateLabelRect = () => {
     const { connector, edgeless } = this;
     if (!connector || !edgeless) return;
+
+    if (!this.inlineEditorContainer) return;
 
     const newWidth = this.inlineEditorContainer.scrollWidth;
     const newHeight = this.inlineEditorContainer.scrollHeight;
@@ -83,7 +91,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
       !connector.labelXYWH ||
       labelXYWH.some((p, i) => !almostEqual(p, connector.labelXYWH![i]))
     ) {
-      edgeless.service.updateElement(connector.id, {
+      this.crud.updateElement(connector.id, {
         labelXYWH,
       });
     }
@@ -137,7 +145,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
             const isModEnter = onlyCmd && key === 'Enter';
             const isEscape = key === 'Escape';
             if (!isComposing && (isModEnter || isEscape)) {
-              this.inlineEditorContainer.blur();
+              this.inlineEditorContainer?.blur();
 
               edgeless.service.selection.set({
                 elements: [connector.id],
@@ -171,13 +179,13 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
             const len = trimed.length;
             if (len === 0) {
               // reset
-              edgeless.service.updateElement(connector.id, {
+              this.crud.updateElement(connector.id, {
                 text: undefined,
                 labelXYWH: undefined,
                 labelOffset: undefined,
               });
             } else if (len < text.length) {
-              edgeless.service.updateElement(connector.id, {
+              this.crud.updateElement(connector.id, {
                 // @TODO: trim in Y.Text?
                 text: new DocCollection.Y.Text(trimed),
               });
@@ -191,6 +199,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
             editing: false,
           });
         });
+
+        if (!this.inlineEditorContainer) return;
 
         this.disposables.addFromEvent(
           this.inlineEditorContainer,

@@ -5,6 +5,7 @@ import {
   LayoutType,
   NoteDisplayMode,
 } from '@blocksuite/blocks';
+import { assertExists } from '@blocksuite/global/utils';
 import { DocCollection } from '@blocksuite/store';
 import { beforeEach, describe, expect, test } from 'vitest';
 
@@ -26,9 +27,9 @@ describe('group', () => {
     const map = new DocCollection.Y.Map<boolean>();
     const ids = Array.from({ length: 2 })
       .map(() => {
-        const id = service.addElement('shape', {
+        const id = service.crud.addElement('shape', {
           shapeType: 'rect',
-        });
+        })!;
         map.set(id, true);
 
         return id;
@@ -40,7 +41,7 @@ describe('group', () => {
           return id;
         })
       );
-    service.addElement('group', { children: map });
+    service.crud.addElement('group', { children: map });
     doc.captureSync();
     expect(service.elements.length).toBe(3);
 
@@ -64,14 +65,15 @@ describe('group', () => {
     const map = new DocCollection.Y.Map<boolean>();
     const doc = service.doc;
     const noteId = addNote(doc);
-    const shapeId = service.addElement('shape', {
+    const shapeId = service.crud.addElement('shape', {
       shapeType: 'rect',
     });
+    assertExists(shapeId);
 
     map.set(noteId, true);
     map.set(shapeId, true);
-    const groupId = service.addElement('group', { children: map });
-
+    const groupId = service.crud.addElement('group', { children: map });
+    assertExists(groupId);
     expect(service.elements.length).toBe(2);
     expect(doc.getBlock(noteId)).toBeDefined();
     doc.captureSync();
@@ -86,14 +88,16 @@ describe('group', () => {
   });
 
   test("group's xywh should update automatically when children change", async () => {
-    const shape1 = service.addElement('shape', {
+    const shape1 = service.crud.addElement('shape', {
       shapeType: 'rect',
       xywh: '[0,0,100,100]',
     });
-    const shape2 = service.addElement('shape', {
+    assertExists(shape1);
+    const shape2 = service.crud.addElement('shape', {
       shapeType: 'rect',
       xywh: '[100,100,100,100]',
     });
+    assertExists(shape2);
     const note1 = addNote(doc, {
       displayMode: NoteDisplayMode.DocAndEdgeless,
       xywh: '[200,200,800,100]',
@@ -114,8 +118,10 @@ describe('group', () => {
     children.set(shape2, true);
     children.set(note1, true);
 
-    const groupId = service.addElement('group', { children });
-    const group = service.getElementById(groupId) as GroupElementModel;
+    const groupId = service.crud.addElement('group', { children });
+    assertExists(groupId);
+
+    const group = service.crud.getElementById(groupId) as GroupElementModel;
     const assertInitial = () => {
       expect(group.x).toBe(0);
       expect(group.y).toBe(0);
@@ -139,7 +145,7 @@ describe('group', () => {
     await wait();
     assertInitial();
 
-    service.updateElement(note1, {
+    service.crud.updateElement(note1, {
       xywh: '[300,300,800,100]',
     });
     await wait();
@@ -165,7 +171,7 @@ describe('group', () => {
     await wait();
     assertInitial();
 
-    service.updateElement(shape1, {
+    service.crud.updateElement(shape1, {
       xywh: '[100,100,100,100]',
     });
     await wait();
@@ -182,8 +188,9 @@ describe('group', () => {
 
   test('empty group should have all zero xywh', () => {
     const map = new DocCollection.Y.Map<boolean>();
-    const groupId = service.addElement('group', { children: map });
-    const group = service.getElementById(groupId) as GroupElementModel;
+    const groupId = service.crud.addElement('group', { children: map });
+    assertExists(groupId);
+    const group = service.crud.getElementById(groupId) as GroupElementModel;
 
     expect(group.x).toBe(0);
     expect(group.y).toBe(0);
@@ -193,12 +200,12 @@ describe('group', () => {
 
   test('descendant of group should not contain itself', () => {
     const groupIds = [1, 2, 3].map(_ => {
-      return service.addElement('group', {
+      return service.crud.addElement('group', {
         children: new DocCollection.Y.Map<boolean>(),
-      });
+      }) as string;
     });
     const groups = groupIds.map(
-      id => service.getElementById(id) as GroupElementModel
+      id => service.crud.getElementById(id) as GroupElementModel
     );
 
     groups.forEach(group => {
@@ -245,9 +252,10 @@ describe('mindmap', () => {
         },
       ],
     };
-    const mindmapId = service.addElement('mindmap', { children: tree });
+    const mindmapId = service.crud.addElement('mindmap', { children: tree });
+    assertExists(mindmapId);
     const mindmap = () =>
-      service.getElementById(mindmapId) as MindmapElementModel;
+      service.crud.getElementById(mindmapId) as MindmapElementModel;
 
     expect(service.surface.elementModels.length).toBe(6);
     doc.captureSync();
@@ -292,12 +300,13 @@ describe('mindmap', () => {
         },
       ],
     };
-    const mindmapId = service.addElement('mindmap', {
+    const mindmapId = service.crud.addElement('mindmap', {
       type: LayoutType.RIGHT,
       children: tree,
     });
+    assertExists(mindmapId);
     const mindmap = () =>
-      service.getElementById(mindmapId) as MindmapElementModel;
+      service.crud.getElementById(mindmapId) as MindmapElementModel;
 
     doc.captureSync();
     await wait();
@@ -336,12 +345,13 @@ describe('mindmap', () => {
         },
       ],
     };
-    const mindmapId = service.addElement('mindmap', {
+    const mindmapId = service.crud.addElement('mindmap', {
       type: LayoutType.RIGHT,
       children: tree,
     });
+    assertExists(mindmapId);
     const mindmap = () =>
-      service.getElementById(mindmapId) as MindmapElementModel;
+      service.crud.getElementById(mindmapId) as MindmapElementModel;
 
     doc.captureSync();
     await wait();

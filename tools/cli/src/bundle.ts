@@ -55,10 +55,10 @@ export class BundleCommand extends PackageCommand {
     let configOverride: Configuration | undefined;
     const overrideConfigPath = this.workspace
       .getPackage(this.package)
-      .join('webpack.config.js');
+      .join('webpack.config.ts');
 
     if (overrideConfigPath.isFile()) {
-      const override = await import(overrideConfigPath.value);
+      const override = await import(overrideConfigPath.toFileUrl().toString());
       configOverride = override.config ?? override.default;
     }
 

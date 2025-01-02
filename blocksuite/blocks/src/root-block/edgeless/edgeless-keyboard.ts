@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { EdgelessTextBlockComponent } from '@blocksuite/affine-block-edgeless-text';
 import {
   ConnectorElementModel,
   ConnectorMode,
@@ -13,8 +13,10 @@ import {
   EditPropsStore,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
+import { LassoMode } from '@blocksuite/affine-shared/types';
 import { matchFlavours } from '@blocksuite/affine-shared/utils';
 import {
+  GfxBlockElementModel,
   type GfxToolsMap,
   type GfxToolsOption,
   isGfxGroupCompatibleModel,
@@ -27,10 +29,7 @@ import {
   isElementOutsideViewport,
   isSingleMindMapNode,
 } from '../../_common/edgeless/mindmap/index.js';
-import { LassoMode } from '../../_common/types.js';
-import { EdgelessTextBlockComponent } from '../../edgeless-text-block/edgeless-text-block.js';
 import { PageKeyboardManager } from '../keyboard/keyboard-manager.js';
-import { GfxBlockModel } from './block-model.js';
 import type { EdgelessRootBlockComponent } from './edgeless-root-block.js';
 import { CopilotTool } from './gfx-tool/copilot-tool.js';
 import { LassoTool } from './gfx-tool/lasso-tool.js';
@@ -116,8 +115,8 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
 
           if (
             selection.selectedElements.length === 1 &&
-            selection.firstElement instanceof GfxBlockModel &&
-            matchFlavours(selection.firstElement as GfxBlockModel, [
+            selection.firstElement instanceof GfxBlockElementModel &&
+            matchFlavours(selection.firstElement as GfxBlockElementModel, [
               'affine:note',
             ])
           ) {
@@ -163,7 +162,6 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
           const std = this.rootComponent.std;
           if (
             std.selection.getGroup('note').length > 0 ||
-            // eslint-disable-next-line
             std.selection.find('text') ||
             Boolean(std.selection.find('surface')?.editing)
           ) {
@@ -374,7 +372,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
           const node = mindmap.getNode(elements[0].id)!;
           const parent = mindmap.getParentNode(node.id) ?? node;
           const id = mindmap.addNode(parent.id, currentNode.id, 'after');
-          const target = service.getElementById(id) as ShapeElementModel;
+          const target = service.crud.getElementById(id) as ShapeElementModel;
 
           requestAnimationFrame(() => {
             mountShapeTextEditor(target, rootComponent);
@@ -405,7 +403,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
 
           const node = mindmap.getNode(elements[0].id)!;
           const id = mindmap.addNode(node.id);
-          const target = service.getElementById(id) as ShapeElementModel;
+          const target = service.crud.getElementById(id) as ShapeElementModel;
 
           if (node.detail.collapsed) {
             mindmap.toggleCollapse(node, { layout: true });
@@ -430,33 +428,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
       }
     );
 
-    this._bindShiftKey();
     this._bindToggleHand();
-  }
-
-  private _bindShiftKey() {
-    this.rootComponent.handleEvent(
-      'keyDown',
-      ctx => {
-        const event = ctx.get('defaultState').event;
-        if (event instanceof KeyboardEvent) {
-          this._shift(event);
-        }
-      },
-      { global: true }
-    );
-    this.rootComponent.handleEvent(
-      'keyUp',
-      ctx => {
-        const event = ctx.get('defaultState').event;
-        if (event instanceof KeyboardEvent) {
-          this._shift(event);
-        }
-      },
-      {
-        global: true,
-      }
-    );
   }
 
   private _bindToggleHand() {
@@ -464,13 +436,15 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
       'keyDown',
       ctx => {
         const event = ctx.get('keyboardState').raw;
-        const service = this.rootComponent.service;
-        const selection = service.selection;
+        const gfx = this.rootComponent.gfx;
+        const selection = gfx.selection;
+
         if (event.code === 'Space' && !event.repeat) {
           this._space(event);
         } else if (
           !selection.editing &&
-          event.key.length === 1 &&
+          // the key might be `Unidentified` according to mdn
+          event.key?.length === 1 &&
           !event.shiftKey &&
           !event.ctrlKey &&
           !event.altKey &&
@@ -480,7 +454,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
           const doc = this.rootComponent.doc;
 
           if (isSingleMindMapNode(elements)) {
-            const target = service.getElementById(
+            const target = gfx.getElementById(
               elements[0].id
             ) as ShapeElementModel;
             if (target.text) {
@@ -683,21 +657,6 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
         ? options[0]
         : undefined
     );
-  }
-
-  private _shift(event: KeyboardEvent) {
-    const edgeless = this.rootComponent;
-
-    if (event.repeat) return;
-
-    const shiftKeyPressed =
-      event.key.toLowerCase() === 'shift' && event.shiftKey;
-
-    if (shiftKeyPressed) {
-      edgeless.slots.pressShiftKeyUpdated.emit(true);
-    } else {
-      edgeless.slots.pressShiftKeyUpdated.emit(false);
-    }
   }
 
   private _space(event: KeyboardEvent) {

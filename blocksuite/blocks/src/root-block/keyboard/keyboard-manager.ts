@@ -4,13 +4,14 @@ import {
   notifyDocCreated,
   promptDocTitle,
 } from '@blocksuite/affine-block-embed';
+import { ParagraphBlockComponent } from '@blocksuite/affine-block-paragraph';
 import { matchFlavours } from '@blocksuite/affine-shared/utils';
-import type { BlockComponent, BlockSelection } from '@blocksuite/block-std';
+import type { BlockComponent, UIEventHandler } from '@blocksuite/block-std';
 import { IS_MAC, IS_WINDOWS } from '@blocksuite/global/env';
-import { assertExists } from '@blocksuite/global/utils';
 
 export class PageKeyboardManager {
-  private readonly _handleDelete = () => {
+  private readonly _handleDelete: UIEventHandler = ctx => {
+    const event = ctx.get('keyboardState').raw;
     const blockSelections = this._currentSelection.filter(sel =>
       sel.is('block')
     );
@@ -18,25 +19,43 @@ export class PageKeyboardManager {
       return;
     }
 
-    this._doc.transact(() => {
-      const selection = this._replaceBlocksBySelection(
-        blockSelections,
-        'affine:paragraph',
-        {}
-      );
+    event.preventDefault();
 
-      if (selection) {
-        this._selection.setGroup('note', [
-          this._selection.create('text', {
-            from: {
-              index: 0,
-              length: 0,
-              blockId: selection.blockId,
-            },
-            to: null,
-          }),
-        ]);
+    const deletedBlocks: string[] = [];
+    blockSelections.forEach(sel => {
+      const id = sel.blockId;
+      const block = this._doc.getBlock(id);
+      if (!block) return;
+      const model = block.model;
+
+      if (
+        matchFlavours(model, ['affine:paragraph']) &&
+        model.type.startsWith('h') &&
+        model.collapsed
+      ) {
+        const component = this.rootComponent.host.view.getBlock(id);
+        if (!(component instanceof ParagraphBlockComponent)) return;
+        const collapsedSiblings = component.collapsedSiblings;
+
+        deletedBlocks.push(
+          ...[id, ...collapsedSiblings.map(sibling => sibling.id)].filter(
+            id => !deletedBlocks.includes(id)
+          )
+        );
+      } else {
+        deletedBlocks.push(id);
       }
+    });
+
+    this._doc.transact(() => {
+      deletedBlocks.forEach(id => {
+        const block = this._doc.getBlock(id);
+        if (block) {
+          this._doc.deleteBlock(block.model);
+        }
+      });
+
+      this._selection.clear(['block', 'text']);
     });
   };
 
@@ -79,9 +98,9 @@ export class PageKeyboardManager {
         'Mod-Backspace': () => true,
         Backspace: this._handleDelete,
         Delete: this._handleDelete,
-        'Control-d': () => {
+        'Control-d': ctx => {
           if (!IS_MAC) return;
-          this._handleDelete();
+          this._handleDelete(ctx);
         },
         'Mod-Shift-l': () => {
           this._createEmbedBlock();
@@ -128,45 +147,5 @@ export class PageKeyboardManager {
         notifyDocCreated(rootComponent.std, doc);
       })
       .catch(console.error);
-  }
-
-  private _deleteBlocksBySelection(selections: BlockSelection[]) {
-    selections.forEach(selection => {
-      const block = this._doc.getBlockById(selection.blockId);
-      if (block) {
-        this._doc.deleteBlock(block);
-      }
-    });
-  }
-
-  private _replaceBlocksBySelection(
-    selections: BlockSelection[],
-    flavour: string,
-    props: Record<string, unknown>
-  ) {
-    const current = selections[0];
-    const first = this._doc.getBlockById(current.blockId);
-    const firstElement = this.rootComponent.host.view.getBlock(current.blockId);
-
-    assertExists(first, `Cannot find block ${current.blockId}`);
-    assertExists(firstElement, `Cannot find block view ${current.blockId}`);
-
-    const parent = this._doc.getParent(first);
-    const index = parent?.children.indexOf(first);
-
-    this._deleteBlocksBySelection(selections);
-
-    try {
-      this._doc.schema.validate(flavour, parent?.flavour);
-    } catch {
-      return null;
-    }
-
-    const blockId = this._doc.addBlock(flavour as never, props, parent, index);
-
-    return {
-      blockId,
-      path: blockId,
-    };
   }
 }

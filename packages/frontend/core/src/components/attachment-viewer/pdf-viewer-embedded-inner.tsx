@@ -8,7 +8,7 @@ import {
 import type { PDFMeta } from '@affine/core/modules/pdf/renderer';
 import type { PageSize } from '@affine/core/modules/pdf/renderer/types';
 import { LoadingSvg, PDFPageCanvas } from '@affine/core/modules/pdf/views';
-import { PeekViewService } from '@affine/core/modules/peek-view';
+import { PeekViewService } from '@affine/core/modules/peek-view/services/peek-view';
 import { stopPropagation } from '@affine/core/utils';
 import {
   ArrowDownSmallIcon,
@@ -28,9 +28,9 @@ import {
   useState,
 } from 'react';
 
-import type { PDFViewerProps } from './pdf-viewer';
 import * as styles from './styles.css';
 import * as embeddedStyles from './styles.embedded.css';
+import type { PDFViewerProps } from './types';
 
 function defaultMeta() {
   return {
@@ -40,9 +40,7 @@ function defaultMeta() {
   };
 }
 
-type PDFViewerEmbeddedInnerProps = PDFViewerProps;
-
-export function PDFViewerEmbeddedInner({ model }: PDFViewerEmbeddedInnerProps) {
+export function PDFViewerEmbeddedInner({ model }: PDFViewerProps) {
   const scale = window.devicePixelRatio;
   const peekView = useService(PeekViewService).peekView;
   const pdfService = useService(PDFService);
@@ -69,6 +67,7 @@ export function PDFViewerEmbeddedInner({ model }: PDFViewerEmbeddedInnerProps) {
     useMemo(() => (pageEntity ? pageEntity.page.bitmap$ : null), [pageEntity])
   );
 
+  const [name, setName] = useState(model.name);
   const [cursor, setCursor] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [visibility, setVisibility] = useState(false);
@@ -108,6 +107,8 @@ export function PDFViewerEmbeddedInner({ model }: PDFViewerEmbeddedInnerProps) {
       },
     };
   }, [cursor, meta, peek]);
+
+  useEffect(() => model.name$.subscribe(val => setName(val)), [model]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -221,6 +222,7 @@ export function PDFViewerEmbeddedInner({ model }: PDFViewerEmbeddedInnerProps) {
             icon={<ArrowUpSmallIcon />}
             className={embeddedStyles.pdfControlButton}
             onDoubleClick={stopPropagation}
+            aria-label="Prev"
             {...navigator.prev}
           />
           <IconButton
@@ -228,6 +230,7 @@ export function PDFViewerEmbeddedInner({ model }: PDFViewerEmbeddedInnerProps) {
             icon={<ArrowDownSmallIcon />}
             className={embeddedStyles.pdfControlButton}
             onDoubleClick={stopPropagation}
+            aria-label="Next"
             {...navigator.next}
           />
           <IconButton
@@ -244,7 +247,9 @@ export function PDFViewerEmbeddedInner({ model }: PDFViewerEmbeddedInnerProps) {
           className={clsx([embeddedStyles.pdfFooterItem, { truncate: true }])}
         >
           <AttachmentIcon />
-          <span className={embeddedStyles.pdfTitle}>{model.name}</span>
+          <span className={clsx([embeddedStyles.pdfTitle, 'pdf-name'])}>
+            {name}
+          </span>
         </div>
         <div
           className={clsx([
@@ -252,8 +257,13 @@ export function PDFViewerEmbeddedInner({ model }: PDFViewerEmbeddedInnerProps) {
             embeddedStyles.pdfPageCount,
           ])}
         >
-          <span>{meta.pageCount > 0 ? cursor + 1 : '-'}</span>/
-          <span>{meta.pageCount > 0 ? meta.pageCount : '-'}</span>
+          <span className="page-cursor">
+            {meta.pageCount > 0 ? cursor + 1 : '-'}
+          </span>
+          /
+          <span className="page-count">
+            {meta.pageCount > 0 ? meta.pageCount : '-'}
+          </span>
         </div>
       </footer>
     </div>

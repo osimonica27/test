@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
 import {
   AutoConnectLeftIcon,
   AutoConnectRightIcon,
@@ -17,6 +17,7 @@ import {
   stopPropagation,
 } from '@blocksuite/affine-shared/utils';
 import { WidgetComponent } from '@blocksuite/block-std';
+import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { Bound } from '@blocksuite/global/utils';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { state } from 'lit/decorators.js';
@@ -48,7 +49,7 @@ function calculatePosition(gap: number, count: number, iconWidth: number) {
   for (let j = 0; j < count; j++) {
     let left = 10;
     if (isEven) {
-      if (Math.abs(j - middleIndex) < 1 && isEven) {
+      if (Math.abs(j - middleIndex) < 1) {
         left = 10 + middleOffset * getSign(j);
       } else {
         left =
@@ -193,7 +194,7 @@ export class EdgelessAutoConnectWidget extends WidgetComponent<
 
       note.children.forEach(model => {
         if (matchFlavours(model, ['affine:surface-ref'])) {
-          const reference = service.getElementById(model.reference);
+          const reference = service.crud.getElementById(model.reference);
 
           if (!isAutoConnectElement(reference)) return;
 
@@ -427,7 +428,7 @@ export class EdgelessAutoConnectWidget extends WidgetComponent<
           justifyContent: 'center',
           alignItems: 'center',
         });
-        const components = [];
+        const components: TemplateResult[] = [];
         const count = counts[i];
         const initGap = 24 / count - 24;
         const positions = calculatePosition(
@@ -510,17 +511,19 @@ export class EdgelessAutoConnectWidget extends WidgetComponent<
   }
 
   override firstUpdated(): void {
-    const { _disposables, service } = this;
+    const { _disposables, std } = this;
+    const slots = std.get(EdgelessLegacySlotIdentifier);
+    const gfx = std.get(GfxControllerIdentifier);
 
     _disposables.add(
-      service.viewport.viewportUpdated.on(() => {
+      gfx.viewport.viewportUpdated.on(() => {
         this.requestUpdate();
       })
     );
 
     _disposables.add(
-      service.selection.slots.updated.on(() => {
-        const { selectedElements } = service.selection;
+      gfx.selection.slots.updated.on(() => {
+        const { selectedElements } = gfx.selection;
         if (
           !(selectedElements.length === 1 && isNoteBlock(selectedElements[0]))
         ) {
@@ -530,22 +533,22 @@ export class EdgelessAutoConnectWidget extends WidgetComponent<
     );
 
     _disposables.add(
-      service.uiEventDispatcher.add('dragStart', () => {
+      std.event.add('dragStart', () => {
         this._dragging = true;
       })
     );
     _disposables.add(
-      service.uiEventDispatcher.add('dragEnd', () => {
+      std.event.add('dragEnd', () => {
         this._dragging = false;
       })
     );
     _disposables.add(
-      service.slots.elementResizeStart.on(() => {
+      slots.elementResizeStart.on(() => {
         this._dragging = true;
       })
     );
     _disposables.add(
-      service.slots.elementResizeEnd.on(() => {
+      slots.elementResizeEnd.on(() => {
         this._dragging = false;
       })
     );

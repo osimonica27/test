@@ -1,7 +1,8 @@
+import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
 import { MoreIndicatorIcon } from '@blocksuite/affine-components/icons';
 import type { NoteBlockModel } from '@blocksuite/affine-model';
 import {
-  DEFAULT_NOTE_BACKGROUND_COLOR,
+  DefaultTheme,
   NoteDisplayMode,
   StrokeStyle,
 } from '@blocksuite/affine-model';
@@ -13,11 +14,7 @@ import {
   matchFlavours,
   stopPropagation,
 } from '@blocksuite/affine-shared/utils';
-import type {
-  BlockComponent,
-  BlockService,
-  EditorHost,
-} from '@blocksuite/block-std';
+import type { BlockComponent, EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement, toGfxBlockComponent } from '@blocksuite/block-std';
 import {
   almostEqual,
@@ -26,7 +23,8 @@ import {
   Point,
   WithDisposable,
 } from '@blocksuite/global/utils';
-import type { BlockModel, Slot } from '@blocksuite/store';
+import type { BlockModel } from '@blocksuite/store';
+import { computed } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -144,6 +142,16 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     }
   `;
 
+  private readonly _backgroundColor$ = computed(() => {
+    const themeProvider = this.std.get(ThemeProvider);
+    const theme = themeProvider.theme$.value;
+    return themeProvider.generateColorProperty(
+      this.model.background$.value,
+      DefaultTheme.noteBackgrounColor,
+      theme
+    );
+  });
+
   private get _isShowCollapsedContent() {
     return this.model.edgeless.collapse && (this._isResizing || this._isHover);
   }
@@ -153,9 +161,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
   }
 
   get rootService() {
-    return this.std.getService('affine:page') as BlockService & {
-      slots: Record<string, Slot>;
-    };
+    return this.std.getService('affine:page');
   }
 
   private _collapsedContent() {
@@ -330,12 +336,16 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     );
   }
 
+  get edgelessSlots() {
+    return this.std.get(EdgelessLegacySlotIdentifier);
+  }
+
   override firstUpdated() {
     const { _disposables } = this;
     const selection = this.gfx.selection;
 
     _disposables.add(
-      this.rootService.slots.elementResizeStart.on(() => {
+      this.edgelessSlots.elementResizeStart.on(() => {
         if (selection.selectedElements.includes(this.model)) {
           this._isResizing = true;
         }
@@ -343,7 +353,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     );
 
     _disposables.add(
-      this.rootService.slots.elementResizeEnd.on(() => {
+      this.edgelessSlots.elementResizeEnd.on(() => {
         this._isResizing = false;
       })
     );
@@ -407,9 +417,6 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     };
 
     const extra = this._editing ? ACTIVE_NOTE_EXTRA_PADDING : 0;
-    const backgroundColor = this.std
-      .get(ThemeProvider)
-      .generateColorProperty(model.background, DEFAULT_NOTE_BACKGROUND_COLOR);
 
     const backgroundStyle = {
       position: 'absolute',
@@ -421,7 +428,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
       transition: this._editing
         ? 'left 0.3s, top 0.3s, width 0.3s, height 0.3s'
         : 'none',
-      backgroundColor,
+      backgroundColor: this._backgroundColor$.value,
       border: `${borderSize}px ${
         borderStyle === StrokeStyle.Dash ? 'dashed' : borderStyle
       } var(--affine-black-10)`,

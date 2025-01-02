@@ -2,6 +2,7 @@ import type { BlockComponent } from '@blocksuite/block-std';
 import { type Point, Rect } from '@blocksuite/global/utils';
 import type { BlockModel } from '@blocksuite/store';
 
+import { BLOCK_CHILDREN_CONTAINER_PADDING_LEFT } from '../../consts/index.js';
 import {
   getClosestBlockComponentByElement,
   getRectByBlockComponent,
@@ -9,6 +10,24 @@ import {
 import { matchFlavours } from '../model/index.js';
 import { getDropRectByPoint } from './get-drop-rect-by-point.js';
 import { DropFlags, type DroppingType, type DropResult } from './types.js';
+
+function getVisiblePreviousElementSibling(element: Element | null) {
+  if (!element) return null;
+  let prev = element.previousElementSibling;
+  while (prev && !prev.checkVisibility()) {
+    prev = prev.previousElementSibling;
+  }
+  return prev;
+}
+
+function getVisibleNextElementSibling(element: Element | null) {
+  if (!element) return null;
+  let next = element.nextElementSibling;
+  while (next && !next.checkVisibility()) {
+    next = next.nextElementSibling;
+  }
+  return next;
+}
 
 /**
  * Calculates the drop target.
@@ -19,29 +38,23 @@ export function calcDropTarget(
   element: Element,
   draggingElements: BlockComponent[] = [],
   scale: number = 1,
-  flavour: string | null = null // for block-hub
+  /**
+   * Allow the dragging block to be dropped as sublist
+   */
+  allowSublist: boolean = true
 ): DropResult | null {
-  const schema = model.doc.getSchemaByFlavour(
-    'affine:database' as BlockSuite.Flavour
-  );
+  const schema = model.doc.getSchemaByFlavour('affine:database');
   const children = schema?.model.children ?? [];
 
   let shouldAppendToDatabase = true;
 
-  if (children.length) {
-    if (draggingElements.length) {
-      shouldAppendToDatabase = draggingElements
-        .map(el => el.model)
-        .every(m => children.includes(m.flavour));
-    } else if (flavour) {
-      shouldAppendToDatabase = children.includes(flavour);
-    }
+  if (children.length && draggingElements.length) {
+    shouldAppendToDatabase = draggingElements
+      .map(el => el.model)
+      .every(m => children.includes(m.flavour));
   }
 
-  if (
-    !shouldAppendToDatabase &&
-    !matchFlavours(model, ['affine:database' as BlockSuite.Flavour])
-  ) {
+  if (!shouldAppendToDatabase && !matchFlavours(model, ['affine:database'])) {
     const databaseBlockComponent =
       element.closest<BlockComponent>('affine-database');
     if (databaseBlockComponent) {
@@ -107,7 +120,7 @@ export function calcDropTarget(
     let prev;
     let prevRect;
 
-    prev = element.previousElementSibling;
+    prev = getVisiblePreviousElementSibling(element);
     if (prev) {
       if (
         draggingElements.length &&
@@ -118,7 +131,7 @@ export function calcDropTarget(
         prevRect = getRectByBlockComponent(prev);
       }
     } else {
-      prev = element.parentElement?.previousElementSibling;
+      prev = getVisiblePreviousElementSibling(element.parentElement);
       if (prev) {
         prevRect = prev.getBoundingClientRect();
       }
@@ -128,20 +141,37 @@ export function calcDropTarget(
       offsetY = (domRect.top - prevRect.bottom) / 2;
     }
   } else {
+    // Only consider drop as children when target block is list block.
+    // To drop in, the position must after the target first
+    // If drop in target has children, we can use insert before or after of that children
+    // to achieve the same effect.
+    const hasChild = (element as BlockComponent).childBlocks.length;
+    if (
+      allowSublist &&
+      matchFlavours(model, ['affine:list']) &&
+      !hasChild &&
+      point.x > domRect.x + BLOCK_CHILDREN_CONTAINER_PADDING_LEFT
+    ) {
+      type = 'in';
+    }
     // after
     let next;
     let nextRect;
 
-    next = element.nextElementSibling;
+    next = getVisibleNextElementSibling(element);
     if (next) {
-      if (draggingElements.length && next === draggingElements[0]) {
+      if (
+        type === 'after' &&
+        draggingElements.length &&
+        next === draggingElements[0]
+      ) {
         type = 'none';
         next = null;
       }
     } else {
-      next = getClosestBlockComponentByElement(
-        element.parentElement
-      )?.nextElementSibling;
+      next = getVisibleNextElementSibling(
+        getClosestBlockComponentByElement(element.parentElement)
+      );
     }
 
     if (next) {
@@ -157,6 +187,11 @@ export function calcDropTarget(
     top -= offsetY;
   } else {
     top += domRect.height + offsetY;
+  }
+
+  if (type === 'in') {
+    domRect.x += BLOCK_CHILDREN_CONTAINER_PADDING_LEFT;
+    domRect.width -= BLOCK_CHILDREN_CONTAINER_PADDING_LEFT;
   }
 
   return {

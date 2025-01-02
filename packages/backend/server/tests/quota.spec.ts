@@ -13,7 +13,7 @@ import {
 } from '../src/core/quota';
 import { OneGB, OneMB } from '../src/core/quota/constant';
 import { FreePlan, ProPlan } from '../src/core/quota/schema';
-import { StorageModule } from '../src/core/storage';
+import { StorageModule, WorkspaceBlobStorage } from '../src/core/storage';
 import { WorkspaceResolver } from '../src/core/workspaces/resolvers';
 import { createTestingModule } from './utils';
 import { WorkspaceResolverMock } from './utils/feature';
@@ -23,6 +23,7 @@ const test = ava as TestFn<{
   quota: QuotaService;
   quotaManager: QuotaManagementService;
   workspace: WorkspaceResolver;
+  workspaceBlob: WorkspaceBlobStorage;
   module: TestingModule;
 }>;
 
@@ -37,16 +38,12 @@ test.beforeEach(async t => {
     },
   });
 
-  const quota = module.get(QuotaService);
-  const quotaManager = module.get(QuotaManagementService);
-  const workspace = module.get(WorkspaceResolver);
-  const auth = module.get(AuthService);
-
   t.context.module = module;
-  t.context.quota = quota;
-  t.context.quotaManager = quotaManager;
-  t.context.workspace = workspace;
-  t.context.auth = auth;
+  t.context.auth = module.get(AuthService);
+  t.context.quota = module.get(QuotaService);
+  t.context.quotaManager = module.get(QuotaManagementService);
+  t.context.workspace = module.get(WorkspaceResolver);
+  t.context.workspaceBlob = module.get(WorkspaceBlobStorage);
 });
 
 test.afterEach.always(async t => {
@@ -164,4 +161,52 @@ test('should be able to override quota', async t => {
   const wq3 = await quotaManager.getWorkspaceUsage(w1.id);
   t.is(wq3.storageQuota, 140 * OneGB, 'should be override to 120GB');
   t.is(wq3.memberLimit, 2, 'should be override to 1');
+});
+
+test('should be able to check with workspace quota', async t => {
+  const { auth, quotaManager, workspace, workspaceBlob } = t.context;
+
+  const u1 = await auth.signUp('test@affine.pro', '123456');
+  const w1 = await workspace.createWorkspace(u1, null);
+  const w2 = await workspace.createWorkspace(u1, null);
+  const w3 = await workspace.createWorkspace(u1, null);
+  await quotaManager.addTeamWorkspace(w3.id, 'test');
+
+  {
+    const wq1 = await quotaManager.getWorkspaceUsage(w1.id);
+    t.is(wq1.usedSize, 0, 'should be 0');
+    const wq2 = await quotaManager.getWorkspaceUsage(w2.id);
+    t.is(wq2.usedSize, 0, 'should be 0');
+    const wq3 = await quotaManager.getWorkspaceUsage(w3.id);
+    t.is(wq3.usedSize, 0, 'should be 0');
+  }
+
+  {
+    await workspaceBlob.put(w1.id, 'test', Buffer.from([0, 0]));
+    await workspaceBlob.put(w2.id, 'test', Buffer.from([0, 0]));
+
+    // normal workspace
+    const wq1 = await quotaManager.getWorkspaceUsage(w1.id);
+    t.is(wq1.usedSize, 4, 'should share usage with w2');
+    const wq2 = await quotaManager.getWorkspaceUsage(w2.id);
+    t.is(wq2.usedSize, 4, 'should share usage with w1');
+
+    // workspace with quota
+    const wq3 = await quotaManager.getWorkspaceUsage(w3.id);
+    t.is(wq3.usedSize, 0, 'should not share usage with w1 and w2');
+  }
+
+  {
+    await workspaceBlob.put(w3.id, 'test', Buffer.from([0, 0, 0]));
+
+    // normal workspace
+    const wq1 = await quotaManager.getWorkspaceUsage(w1.id);
+    t.is(wq1.usedSize, 4, 'should not share usage with w3');
+    const wq2 = await quotaManager.getWorkspaceUsage(w2.id);
+    t.is(wq2.usedSize, 4, 'should not share usage with w3');
+
+    // workspace with quota
+    const wq3 = await quotaManager.getWorkspaceUsage(w3.id);
+    t.is(wq3.usedSize, 3, 'should not share usage with w1 and w2');
+  }
 });

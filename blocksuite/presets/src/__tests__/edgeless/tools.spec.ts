@@ -26,7 +26,7 @@ describe('default tool', () => {
   });
 
   test('element click selection', async () => {
-    const id = service.addElement('shape', {
+    const id = service.crud.addElement('shape', {
       shapeType: 'rect',
       xywh: '[0,0,100,100]',
       fillColor: 'red',
@@ -47,7 +47,7 @@ describe('default tool', () => {
   });
 
   test('element drag moving', async () => {
-    const id = edgeless.service.addElement('shape', {
+    const id = edgeless.service.crud.addElement('shape', {
       shapeType: 'rect',
       xywh: '[0,0,100,100]',
       fillColor: 'red',
@@ -64,7 +64,7 @@ describe('default tool', () => {
     drag(edgeless.host, { x: 0, y: 50 }, { x: 0, y: 150 });
     await wait();
 
-    const element = service.getElementById(id)!;
+    const element = service.crud.getElementById(id!)!;
     expect(element.xywh).toEqual(`[0,100,100,100]`);
   });
 
@@ -86,7 +86,7 @@ describe('default tool', () => {
     drag(edgeless.host, { x: 50, y: 50 }, { x: 150, y: 150 });
     await wait();
 
-    const element = service.getElementById(noteId)!;
+    const element = service.crud.getElementById(noteId)!;
     const [x, y] = JSON.parse(element.xywh);
 
     expect(x).toEqual(100);

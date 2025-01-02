@@ -1,9 +1,10 @@
+import { DefaultTheme, NoteDisplayMode } from '@blocksuite/affine-model';
 import {
-  DEFAULT_NOTE_BACKGROUND_COLOR,
-  NoteDisplayMode,
-} from '@blocksuite/affine-model';
-import { AdapterFactoryIdentifier } from '@blocksuite/affine-shared/adapters';
+  AdapterFactoryIdentifier,
+  MarkdownAdapter,
+} from '@blocksuite/affine-shared/adapters';
 import type { ExtensionType } from '@blocksuite/block-std';
+import type { ServiceProvider } from '@blocksuite/global/di';
 import type { DeltaInsert } from '@blocksuite/inline';
 import {
   type AssetsManager,
@@ -25,8 +26,6 @@ import {
   type ToDocSnapshotPayload,
 } from '@blocksuite/store';
 
-import { MarkdownAdapter } from './markdown/index.js';
-
 export type MixText = string;
 
 type MixTextToSliceSnapshotPayload = {
@@ -40,9 +39,9 @@ type MixTextToSliceSnapshotPayload = {
 export class MixTextAdapter extends BaseAdapter<MixText> {
   private readonly _markdownAdapter: MarkdownAdapter;
 
-  constructor(job: Job) {
+  constructor(job: Job, provider: ServiceProvider) {
     super(job);
-    this._markdownAdapter = new MarkdownAdapter(job);
+    this._markdownAdapter = new MarkdownAdapter(job, provider);
   }
 
   private _splitDeltas(deltas: DeltaInsert[]): DeltaInsert[][] {
@@ -164,7 +163,7 @@ export class MixTextAdapter extends BaseAdapter<MixText> {
       flavour: 'affine:note',
       props: {
         xywh: '[0,0,800,95]',
-        background: DEFAULT_NOTE_BACKGROUND_COLOR,
+        background: DefaultTheme.noteBackgrounColor,
         index: 'a0',
         hidden: false,
         displayMode: NoteDisplayMode.DocAndEdgeless,
@@ -231,7 +230,7 @@ export class MixTextAdapter extends BaseAdapter<MixText> {
             flavour: 'affine:note',
             props: {
               xywh: '[0,0,800,95]',
-              background: DEFAULT_NOTE_BACKGROUND_COLOR,
+              background: DefaultTheme.noteBackgrounColor,
               index: 'a0',
               hidden: false,
               displayMode: NoteDisplayMode.DocAndEdgeless,
@@ -284,7 +283,7 @@ export class MixTextAdapter extends BaseAdapter<MixText> {
         flavour: 'affine:note',
         props: {
           xywh: '[0,0,800,95]',
-          background: DEFAULT_NOTE_BACKGROUND_COLOR,
+          background: DefaultTheme.noteBackgrounColor,
           index: 'a0',
           hidden: false,
           displayMode: NoteDisplayMode.DocAndEdgeless,
@@ -356,8 +355,8 @@ export const MixTextAdapterFactoryIdentifier =
 
 export const MixTextAdapterFactoryExtension: ExtensionType = {
   setup: di => {
-    di.addImpl(MixTextAdapterFactoryIdentifier, () => ({
-      get: (job: Job) => new MixTextAdapter(job),
+    di.addImpl(MixTextAdapterFactoryIdentifier, provider => ({
+      get: (job: Job) => new MixTextAdapter(job, provider),
     }));
   },
 };

@@ -1,6 +1,7 @@
 import {
   CanvasElementType,
   CommonUtils,
+  EdgelessCRUDIdentifier,
 } from '@blocksuite/affine-block-surface';
 import {
   FontFamilyIcon,
@@ -13,11 +14,8 @@ import type {
   ShapeElementModel,
 } from '@blocksuite/affine-model';
 import {
-  DEFAULT_NOTE_BACKGROUND_COLOR,
   DEFAULT_NOTE_WIDTH,
-  DEFAULT_SHAPE_FILL_COLOR,
-  DEFAULT_SHAPE_STROKE_COLOR,
-  DEFAULT_TEXT_COLOR,
+  DefaultTheme,
   FontFamily,
   FontStyle,
   FontWeight,
@@ -137,6 +135,10 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
     this.connector = connector;
   }
 
+  get crud() {
+    return this.std.get(EdgelessCRUDIdentifier);
+  }
+
   private _addFrame() {
     const bound = this._generateTarget(this.connector)?.nextBound;
     if (!bound) return;
@@ -152,7 +154,7 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
     const { service, surfaceBlockModel } = edgeless;
     const frameMgr = service.frame;
     const frameIndex = service.frames.length + 1;
-    const id = service.addBlock(
+    const id = this.crud.addBlock(
       'affine:frame',
       {
         title: new DocCollection.Y.Text(`Frame ${frameIndex}`),
@@ -162,7 +164,7 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
       surfaceBlockModel
     );
     edgeless.doc.captureSync();
-    const frame = service.getElementById(id);
+    const frame = this.crud.getElementById(id);
     if (!frame) return;
 
     this.connector.target = {
@@ -178,7 +180,6 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
 
   private _addNote() {
     const { doc } = this.edgeless;
-    const service = this.edgeless.service;
     const target = this._getTargetXYWH(
       DEFAULT_NOTE_WIDTH,
       DEFAULT_NOTE_OVERLAY_HEIGHT
@@ -186,7 +187,7 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
     if (!target) return;
 
     const { xywh, position } = target;
-    const id = service.addBlock(
+    const id = this.crud.addBlock(
       'affine:note',
       {
         xywh: serializeXYWH(...xywh),
@@ -205,7 +206,7 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
       id,
       position: position as [number, number],
     };
-    service.updateElement(this.connector.id, {
+    this.crud.updateElement(this.connector.id, {
       target: { id, position },
     });
     this.edgeless.service.selection.set({
@@ -221,19 +222,19 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
 
     const currentSource = this.currentSource;
     const { nextBound, position } = result;
-    const { service } = edgeless;
     const id = createShapeElement(edgeless, currentSource, targetType);
+    if (!id) return;
 
-    service.updateElement(id, { xywh: nextBound.serialize() });
-    service.updateElement(this.connector.id, {
+    this.crud.updateElement(id, { xywh: nextBound.serialize() });
+    this.crud.updateElement(this.connector.id, {
       target: { id, position },
     });
 
     mountShapeTextEditor(
-      service.getElementById(id) as ShapeElementModel,
+      this.crud.getElementById(id) as ShapeElementModel,
       this.edgeless
     );
-    edgeless.service.selection.set({
+    this.gfx.selection.set({
       elements: [id],
       editing: true,
     });
@@ -245,7 +246,6 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
     if (!target) return;
     const { xywh, position } = target;
     const bound = Bound.fromXYWH(xywh);
-    const edgelessService = this.edgeless.service;
 
     const textFlag = this.edgeless.doc.awarenessStore.getFlag(
       'enable_edgeless_text'
@@ -257,43 +257,44 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
       });
       if (!textId) return;
 
-      const textElement = edgelessService.getElementById(textId);
+      const textElement = this.crud.getElementById(textId);
       if (!textElement) return;
 
-      edgelessService.updateElement(this.connector.id, {
+      this.crud.updateElement(this.connector.id, {
         target: { id: textId, position },
       });
       if (this.currentSource.group instanceof GroupElementModel) {
         this.currentSource.group.addChild(textElement);
       }
 
-      this.edgeless.service.selection.set({
+      this.gfx.selection.set({
         elements: [textId],
         editing: false,
       });
       this.edgeless.doc.captureSync();
     } else {
-      const textId = edgelessService.addElement(CanvasElementType.TEXT, {
+      const textId = this.crud.addElement(CanvasElementType.TEXT, {
         xywh: bound.serialize(),
         text: new DocCollection.Y.Text(),
         textAlign: 'left',
         fontSize: 24,
         fontFamily: FontFamily.Inter,
-        color: DEFAULT_TEXT_COLOR,
+        color: DefaultTheme.textColor,
         fontWeight: FontWeight.Regular,
         fontStyle: FontStyle.Normal,
       });
-      const textElement = edgelessService.getElementById(textId);
+      if (!textId) return;
+      const textElement = this.crud.getElementById(textId);
       assertInstanceOf(textElement, TextElementModel);
 
-      edgelessService.updateElement(this.connector.id, {
+      this.crud.updateElement(this.connector.id, {
         target: { id: textId, position },
       });
       if (this.currentSource.group instanceof GroupElementModel) {
         this.currentSource.group.addChild(textElement);
       }
 
-      this.edgeless.service.selection.set({
+      this.gfx.selection.set({
         elements: [textId],
         editing: false,
       });
@@ -325,7 +326,7 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
   }
 
   private _connectorExist() {
-    return !!this.edgeless.service.getElementById(this.connector.id);
+    return !!this.crud.getElementById(this.connector.id);
   }
 
   private _generateTarget(connector: ConnectorElementModel) {
@@ -470,7 +471,7 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
       .getColorValue(
         this.edgeless.std.get(EditPropsStore).lastProps$.value['affine:note']
           .background,
-        DEFAULT_NOTE_BACKGROUND_COLOR,
+        DefaultTheme.noteBackgrounColor,
         true
       );
     this._overlay = new AutoCompleteNoteOverlay(this.gfx, xywh, background);
@@ -511,10 +512,10 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
 
     const stroke = this.edgeless.std
       .get(ThemeProvider)
-      .getColorValue(strokeColor, DEFAULT_SHAPE_STROKE_COLOR, true);
+      .getColorValue(strokeColor, DefaultTheme.shapeStrokeColor, true);
     const fill = this.edgeless.std
       .get(ThemeProvider)
-      .getColorValue(fillColor, DEFAULT_SHAPE_FILL_COLOR, true);
+      .getColorValue(fillColor, DefaultTheme.shapeFillColor, true);
 
     const options = {
       seed: 666,

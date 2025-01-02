@@ -3,21 +3,18 @@ import {
   ConnectorLWithArrowIcon,
   ConnectorXWithArrowIcon,
 } from '@blocksuite/affine-components/icons';
-import {
-  ConnectorMode,
-  DEFAULT_CONNECTOR_COLOR,
-} from '@blocksuite/affine-model';
+import { ConnectorMode, DefaultTheme } from '@blocksuite/affine-model';
 import {
   EditPropsStore,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
+import type { ColorEvent } from '@blocksuite/affine-shared/utils';
 import type { GfxToolsFullOptionValue } from '@blocksuite/block-std/gfx';
 import { SignalWatcher } from '@blocksuite/global/utils';
 import { computed } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import type { ColorEvent } from '../../panel/color-panel.js';
 import type { LineWidthEvent } from '../../panel/line-width-panel.js';
 import { EdgelessToolbarToolMixin } from '../mixins/tool.mixin.js';
 
@@ -103,6 +100,10 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
     return { mode, stroke, strokeWidth };
   });
 
+  private readonly _theme$ = computed(() => {
+    return this.edgeless.std.get(ThemeProvider).theme$.value;
+  });
+
   override type: GfxToolsFullOptionValue['type'] = 'connector';
 
   override render() {
@@ -111,9 +112,6 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
       mode,
       this.onChange
     );
-    const color = this.edgeless.std
-      .get(ThemeProvider)
-      .getColorValue(stroke, DEFAULT_CONNECTOR_COLOR);
 
     return html`
       <edgeless-slide-menu>
@@ -127,13 +125,17 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
           >
           </edgeless-line-width-panel>
           <div class="submenu-divider"></div>
-          <edgeless-one-row-color-panel
-            .value=${color}
+          <edgeless-color-panel
+            class="one-way"
+            .value=${stroke}
+            .theme=${this._theme$.value}
+            .palettes=${DefaultTheme.StrokeColorPalettes}
             .hasTransparent=${!this.edgeless.doc.awarenessStore.getFlag(
               'enable_color_picker'
             )}
-            @select=${(e: ColorEvent) => this.onChange({ stroke: e.detail })}
-          ></edgeless-one-row-color-panel>
+            @select=${(e: ColorEvent) =>
+              this.onChange({ stroke: e.detail.value })}
+          ></edgeless-color-panel>
         </div>
       </edgeless-slide-menu>
     `;

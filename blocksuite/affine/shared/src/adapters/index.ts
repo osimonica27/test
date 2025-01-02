@@ -1,3 +1,4 @@
+export * from './attachment';
 export {
   BlockHtmlAdapterExtension,
   type BlockHtmlAdapterMatcher,
@@ -14,30 +15,41 @@ export {
   type InlineDeltaToHtmlAdapterMatcher,
   InlineDeltaToHtmlAdapterMatcherIdentifier,
 } from './html';
+export * from './image';
 export {
   BlockMarkdownAdapterExtension,
   type BlockMarkdownAdapterMatcher,
   BlockMarkdownAdapterMatcherIdentifier,
+  InlineDeltaToMarkdownAdapterExtension,
   type InlineDeltaToMarkdownAdapterMatcher,
   InlineDeltaToMarkdownAdapterMatcherIdentifier,
   isMarkdownAST,
   type Markdown,
+  MarkdownAdapter,
+  MarkdownAdapterFactoryExtension,
+  MarkdownAdapterFactoryIdentifier,
   type MarkdownAST,
+  MarkdownASTToDeltaExtension,
   type MarkdownASTToDeltaMatcher,
   MarkdownASTToDeltaMatcherIdentifier,
   MarkdownDeltaConverter,
 } from './markdown';
+export * from './middlewares';
 export {
   BlockNotionHtmlAdapterExtension,
   type BlockNotionHtmlAdapterMatcher,
   BlockNotionHtmlAdapterMatcherIdentifier,
   type InlineDeltaToNotionHtmlAdapterMatcher,
   type NotionHtml,
+  NotionHtmlAdapter,
+  NotionHtmlAdapterFactoryExtension,
+  NotionHtmlAdapterFactoryIdentifier,
   NotionHtmlASTToDeltaExtension,
   type NotionHtmlASTToDeltaMatcher,
   NotionHtmlASTToDeltaMatcherIdentifier,
   NotionHtmlDeltaConverter,
 } from './notion-html';
+export * from './notion-text';
 export {
   BlockPlainTextAdapterExtension,
   type BlockPlainTextAdapterMatcher,

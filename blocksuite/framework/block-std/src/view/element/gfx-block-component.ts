@@ -22,6 +22,7 @@ function updateTransform(element: GfxBlockComponent) {
 
 function handleGfxConnection(instance: GfxBlockComponent) {
   instance.style.position = 'absolute';
+  instance.style.willChange = 'transform';
 
   instance.disposables.add(
     instance.gfx.viewport.viewportUpdated.on(() => {
@@ -87,11 +88,11 @@ export abstract class GfxBlockComponent<
   override renderBlock() {
     const { x, y, w, h, zIndex } = this.getRenderingRect();
 
-    this.style.left = `${x}px`;
-    this.style.top = `${y}px`;
-    this.style.width = `${w}px`;
-    this.style.height = `${h}px`;
-    this.style.zIndex = zIndex;
+    if (this.style.left !== `${x}px`) this.style.left = `${x}px`;
+    if (this.style.top !== `${y}px`) this.style.top = `${y}px`;
+    if (this.style.width !== `${w}px`) this.style.width = `${w}px`;
+    if (this.style.height !== `${h}px`) this.style.height = `${h}px`;
+    if (this.style.zIndex !== zIndex) this.style.zIndex = zIndex;
 
     return this.renderGfxBlock();
   }
@@ -133,7 +134,7 @@ export function toGfxBlockComponent<
   WidgetName extends string,
   B extends typeof BlockComponent<Model, Service, WidgetName>,
 >(CustomBlock: B) {
-  // @ts-expect-error FIXME: ts error
+  // @ts-expect-error ignore
   return class extends CustomBlock {
     [GfxElementSymbol] = true;
 

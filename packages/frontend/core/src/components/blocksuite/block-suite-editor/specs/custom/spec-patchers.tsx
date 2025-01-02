@@ -7,9 +7,7 @@ import {
   toReactNode,
   type useConfirmModal,
 } from '@affine/component';
-import { AttachmentPreviewErrorBoundary } from '@affine/core/components/attachment-viewer/error';
-import { PDFViewerEmbedded } from '@affine/core/components/attachment-viewer/pdf-viewer-embedded';
-import { buildAttachmentProps } from '@affine/core/components/attachment-viewer/utils';
+import { AIChatBlockSchema } from '@affine/core/blocksuite/blocks';
 import { WorkspaceServerService } from '@affine/core/modules/cloud';
 import { type DocService, DocsService } from '@affine/core/modules/doc';
 import type { EditorService } from '@affine/core/modules/editor';
@@ -31,7 +29,6 @@ import { isNewTabTrigger } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import { track } from '@affine/track';
 import {
-  type BlockService,
   BlockServiceWatcher,
   BlockViewIdentifier,
   ConfigIdentifier,
@@ -46,7 +43,6 @@ import type {
   PeekViewService as BSPeekViewService,
   QuickSearchResult,
   RootBlockConfig,
-  RootService,
 } from '@blocksuite/affine/blocks';
 import {
   AffineSlashMenuWidget,
@@ -66,16 +62,14 @@ import {
 import { Bound } from '@blocksuite/affine/global/utils';
 import { type BlockSnapshot, Text } from '@blocksuite/affine/store';
 import type { ReferenceParams } from '@blocksuite/affine-model';
-import {
-  AIChatBlockSchema,
-  type DocProps,
-  type FrameworkProvider,
-} from '@toeverything/infra';
+import { type FrameworkProvider } from '@toeverything/infra';
 import { type TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { literal } from 'lit/static-html.js';
 import { pick } from 'lodash-es';
 
+import type { DocProps } from '../../../../../blocksuite/initialization';
+import { AttachmentEmbedPreview } from '../../../../attachment-viewer/pdf-viewer-embedded';
 import { generateUrl } from '../../../../hooks/affine/use-share-url';
 import { createKeyboardToolbarConfig } from './widgets/keyboard-toolbar';
 
@@ -85,21 +79,15 @@ export type ReferenceReactRenderer = (
 
 const logger = new DebugLogger('affine::spec-patchers');
 
-function patchSpecService<Service extends BlockService = BlockService>(
+function patchSpecService(
   flavour: string,
-  onMounted: (service: Service) => (() => void) | void,
   onWidgetConnected?: (component: WidgetComponent) => void
 ) {
   class TempServiceWatcher extends BlockServiceWatcher {
     static override readonly flavour = flavour;
     override mounted() {
       super.mounted();
-      const disposable = onMounted(this.blockService as any);
       const disposableGroup = this.blockService.disposables;
-      if (disposable) {
-        disposableGroup.add(disposable);
-      }
-
       if (onWidgetConnected) {
         disposableGroup.add(
           this.blockService.specSlots.widgetConnected.on(({ component }) => {
@@ -428,9 +416,8 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
     },
   });
 
-  const SlashMenuQuickSearchExtension = patchSpecService<RootService>(
+  const SlashMenuQuickSearchExtension = patchSpecService(
     'affine:page',
-    () => {},
     (component: WidgetComponent) => {
       if (component instanceof AffineSlashMenuWidget) {
         component.config.items.forEach(item => {
@@ -530,7 +517,7 @@ export function patchEdgelessClipboard() {
                 rootDocId,
                 rootWorkspaceId,
               } = block.props;
-              const blockId = component.service.addBlock(
+              const blockId = component.service.crud.addBlock(
                 AIChatBlockFlavour,
                 {
                   xywh,
@@ -604,7 +591,10 @@ export function patchForMobile() {
 }
 
 export function patchForAttachmentEmbedViews(
-  reactToLit: (element: ElementOrFactory) => TemplateResult
+  reactToLit: (
+    element: ElementOrFactory,
+    rerendering?: boolean
+  ) => TemplateResult
 ): ExtensionType {
   return {
     setup: di => {
@@ -623,11 +613,7 @@ export function patchForAttachmentEmbedViews(
           });
         },
         template: (model, _blobUrl) =>
-          reactToLit(
-            <AttachmentPreviewErrorBoundary key={model.id}>
-              <PDFViewerEmbedded {...buildAttachmentProps(model)} />
-            </AttachmentPreviewErrorBoundary>
-          ),
+          reactToLit(<AttachmentEmbedPreview model={model} />, false),
       }));
     },
   };

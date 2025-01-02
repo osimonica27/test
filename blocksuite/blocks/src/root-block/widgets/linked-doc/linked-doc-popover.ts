@@ -1,6 +1,12 @@
+import { LoadingIcon } from '@blocksuite/affine-block-image';
 import type { IconButton } from '@blocksuite/affine-components/icon-button';
 import { MoreHorizontalIcon } from '@blocksuite/affine-components/icons';
 import {
+  cleanSpecifiedTail,
+  getTextContentFromInlineRange,
+} from '@blocksuite/affine-components/rich-text';
+import {
+  createKeydownObserver,
   getCurrentNativeRange,
   getViewportElement,
 } from '@blocksuite/affine-shared/utils';
@@ -14,11 +20,6 @@ import { html, LitElement, nothing } from 'lit';
 import { property, query, queryAll, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import {
-  cleanSpecifiedTail,
-  createKeydownObserver,
-  getQuery,
-} from '../../../_common/components/utils.js';
 import { getPopperPosition } from '../../utils/position.js';
 import type { LinkedDocContext, LinkedMenuGroup } from './config.js';
 import { linkedDocPopoverStyles } from './styles.js';
@@ -85,20 +86,34 @@ export class LinkedDocPopover extends SignalWatcher(
   }
 
   private get _query() {
-    return getQuery(this.context.inlineEditor, this.context.startRange);
+    return getTextContentFromInlineRange(
+      this.context.inlineEditor,
+      this.context.startRange
+    );
   }
 
   private _getActionItems(group: LinkedMenuGroup) {
     const isExpanded = !!this._expanded.get(group.name);
-    const items = resolveSignal(group.items);
-    if (isExpanded) {
-      return items;
-    }
+    let items = resolveSignal(group.items);
+
     const isOverflow = !!group.maxDisplay && items.length > group.maxDisplay;
-    if (isOverflow) {
-      return items.slice(0, group.maxDisplay).concat({
+    const isLoading = resolveSignal(group.loading);
+
+    items = isExpanded ? items : items.slice(0, group.maxDisplay);
+
+    if (isLoading) {
+      items = items.concat({
+        key: 'loading',
+        name: resolveSignal(group.loadingText) || 'loading',
+        icon: LoadingIcon,
+        action: () => {},
+      });
+    }
+
+    if (isOverflow && !isExpanded && group.maxDisplay) {
+      items = items.concat({
         key: `${group.name} More`,
-        name: group.overflowText || 'more',
+        name: resolveSignal(group.overflowText) || 'more',
         icon: MoreHorizontalIcon,
         action: () => {
           this._expanded.set(group.name, true);
@@ -106,6 +121,7 @@ export class LinkedDocPopover extends SignalWatcher(
         },
       });
     }
+
     return items;
   }
 

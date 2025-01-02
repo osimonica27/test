@@ -645,10 +645,11 @@ export async function rotateElementByHandle(
   );
 }
 
-export async function selectBrushColor(page: Page, color: string) {
-  const colorButton = page.locator(
-    `edgeless-brush-menu .color-unit[aria-label="${color.toLowerCase()}"]`
-  );
+export async function selectBrushColor(page: Page, label: string) {
+  const colorButton = page
+    .locator('edgeless-brush-menu')
+    .locator('edgeless-color-panel')
+    .locator(`.color-unit[aria-label="${label}"]`);
   await colorButton.click();
 }
 
@@ -1005,7 +1006,7 @@ export async function deleteAllConnectors(page: Page) {
   return page.evaluate(() => {
     const container = document.querySelector('affine-edgeless-root');
     if (!container) throw new Error('container not found');
-    container.service.getElementsByType('connector').forEach(c => {
+    container.service.crud.getElementsByType('connector').forEach(c => {
       container.service.removeElement(c.id);
     });
   });
@@ -1372,19 +1373,20 @@ export async function triggerComponentToolbarAction(
   }
 }
 
-export async function changeEdgelessNoteBackground(page: Page, color: string) {
+export async function changeEdgelessNoteBackground(page: Page, label: string) {
   const colorButton = page
     .locator('edgeless-change-note-button')
-    .locator(`.color-unit[aria-label="${color}"]`);
+    .locator('edgeless-color-panel')
+    .locator(`.color-unit[aria-label="${label}"]`);
   await colorButton.click();
 }
 
-export async function changeShapeFillColor(page: Page, color: string) {
+export async function changeShapeFillColor(page: Page, label: string) {
   const colorButton = page
     .locator('edgeless-change-shape-button')
     .locator('edgeless-color-picker-button.fill-color')
     .locator('edgeless-color-panel')
-    .locator(`.color-unit[aria-label="${color}"]`);
+    .locator(`.color-unit[aria-label="${label}"]`);
   await colorButton.click({ force: true });
 }
 
@@ -1410,6 +1412,7 @@ export async function changeShapeStrokeColor(page: Page, color: string) {
   const colorButton = page
     .locator('edgeless-change-shape-button')
     .locator('edgeless-color-picker-button.border-style')
+    .locator('edgeless-color-panel')
     .locator(`.color-unit[aria-label="${color}"]`);
   await colorButton.click();
 }
@@ -1535,7 +1538,7 @@ export async function initThreeOverlapFilledShapes(page: Page) {
   await addBasicRectShapeElement(page, rect0.start, rect0.end);
   await page.mouse.click(rect0.start.x + 5, rect0.start.y + 5);
   await triggerComponentToolbarAction(page, 'changeShapeFillColor');
-  await changeShapeFillColor(page, '--affine-palette-shape-teal');
+  await changeShapeFillColor(page, 'LightGreen');
 
   const rect1 = {
     start: { x: 130, y: 130 },
@@ -1544,7 +1547,7 @@ export async function initThreeOverlapFilledShapes(page: Page) {
   await addBasicRectShapeElement(page, rect1.start, rect1.end);
   await page.mouse.click(rect1.start.x + 5, rect1.start.y + 5);
   await triggerComponentToolbarAction(page, 'changeShapeFillColor');
-  await changeShapeFillColor(page, '--affine-palette-shape-black');
+  await changeShapeFillColor(page, 'MediumBlue');
 
   const rect2 = {
     start: { x: 160, y: 160 },
@@ -1553,7 +1556,7 @@ export async function initThreeOverlapFilledShapes(page: Page) {
   await addBasicRectShapeElement(page, rect2.start, rect2.end);
   await page.mouse.click(rect2.start.x + 5, rect2.start.y + 5);
   await triggerComponentToolbarAction(page, 'changeShapeFillColor');
-  await changeShapeFillColor(page, '--affine-palette-shape-white');
+  await changeShapeFillColor(page, 'White');
 }
 
 export async function initThreeOverlapNotes(page: Page, x = 130, y = 140) {
@@ -1604,7 +1607,7 @@ export async function getConnectorSourceConnection(page: Page) {
   return page.evaluate(() => {
     const container = document.querySelector('affine-edgeless-root');
     if (!container) throw new Error('container not found');
-    return container.service.getElementsByType('connector')[0].source;
+    return container.service.crud.getElementsByType('connector')[0].source;
   });
 }
 
@@ -1613,7 +1616,7 @@ export async function getConnectorPath(page: Page, index = 0): Promise<IVec[]> {
     ([index]) => {
       const container = document.querySelector('affine-edgeless-root');
       if (!container) throw new Error('container not found');
-      const connectors = container.service.getElementsByType('connector');
+      const connectors = container.service.crud.getElementsByType('connector');
       return connectors[index].absolutePath;
     },
     [index]
@@ -1628,7 +1631,7 @@ export async function getEdgelessElementBound(
     ([elementId]) => {
       const container = document.querySelector('affine-edgeless-root');
       if (!container) throw new Error('container not found');
-      const element = container.service.getElementById(elementId);
+      const element = container.service.crud.getElementById(elementId);
       if (!element) throw new Error(`element not found: ${elementId}`);
       return JSON.parse(element.xywh);
     },
@@ -1692,7 +1695,7 @@ export async function getContainerChildIds(page: Page, id: string) {
     ([id]) => {
       const container = document.querySelector('affine-edgeless-root');
       if (!container) throw new Error('container not found');
-      const gfxModel = container.service.getElementById(id);
+      const gfxModel = container.service.crud.getElementById(id);
 
       return gfxModel && container.service.surface.isGroup(gfxModel)
         ? gfxModel.childIds
@@ -1731,7 +1734,7 @@ export async function getTypeById(page: Page, id: string) {
     ([id]) => {
       const container = document.querySelector('affine-edgeless-root');
       if (!container) throw new Error('container not found');
-      const element = container.service.getElementById(id)!;
+      const element = container.service.crud.getElementById(id)!;
       return 'flavour' in element ? element.flavour : element.type;
     },
     [id]
@@ -1889,7 +1892,7 @@ export async function createNote(
   content?: string
 ) {
   const start = await toViewCoord(page, coord1);
-  return addNote(page, content || 'note', start[0], start[1]);
+  return addNote(page, content ?? 'note', start[0], start[1]);
 }
 
 export async function hoverOnNote(page: Page, id: string, offset = [0, 0]) {

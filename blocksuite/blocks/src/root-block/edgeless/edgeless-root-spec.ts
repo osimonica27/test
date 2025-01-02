@@ -1,11 +1,17 @@
 import { FileDropExtension } from '@blocksuite/affine-components/drag-indicator';
 import {
   DNDAPIExtension,
-  DocDisplayMetaService,
   DocModeService,
   EmbedOptionService,
+  PageViewportServiceExtension,
   ThemeService,
 } from '@blocksuite/affine-shared/services';
+import { AFFINE_DRAG_HANDLE_WIDGET } from '@blocksuite/affine-widget-drag-handle';
+import { AFFINE_FRAME_TITLE_WIDGET } from '@blocksuite/affine-widget-frame-title';
+import {
+  AFFINE_DOC_REMOTE_SELECTION_WIDGET,
+  AFFINE_EDGELESS_REMOTE_SELECTION_WIDGET,
+} from '@blocksuite/affine-widget-remote-selection';
 import { AFFINE_SCROLL_ANCHORING_WIDGET } from '@blocksuite/affine-widget-scroll-anchoring';
 import {
   BlockServiceWatcher,
@@ -21,19 +27,14 @@ import { literal, unsafeStatic } from 'lit/static-html.js';
 import { ExportManagerExtension } from '../../_common/export-manager/export-manager.js';
 import { RootBlockAdapterExtensions } from '../adapters/extension.js';
 import { commands } from '../commands/index.js';
-import { AFFINE_DOC_REMOTE_SELECTION_WIDGET } from '../widgets/doc-remote-selection/doc-remote-selection.js';
-import { AFFINE_DRAG_HANDLE_WIDGET } from '../widgets/drag-handle/consts.js';
 import { AFFINE_EDGELESS_AUTO_CONNECT_WIDGET } from '../widgets/edgeless-auto-connect/edgeless-auto-connect.js';
-import { AFFINE_EDGELESS_REMOTE_SELECTION_WIDGET } from '../widgets/edgeless-remote-selection/index.js';
 import { AFFINE_EDGELESS_ZOOM_TOOLBAR_WIDGET } from '../widgets/edgeless-zoom-toolbar/index.js';
 import { EDGELESS_ELEMENT_TOOLBAR_WIDGET } from '../widgets/element-toolbar/index.js';
 import { AFFINE_EMBED_CARD_TOOLBAR_WIDGET } from '../widgets/embed-card-toolbar/embed-card-toolbar.js';
 import { AFFINE_FORMAT_BAR_WIDGET } from '../widgets/format-bar/format-bar.js';
-import { AFFINE_FRAME_TITLE_WIDGET } from '../widgets/frame-title/index.js';
 import { AFFINE_INNER_MODAL_WIDGET } from '../widgets/inner-modal/inner-modal.js';
 import { AFFINE_LINKED_DOC_WIDGET } from '../widgets/linked-doc/index.js';
 import { AFFINE_MODAL_WIDGET } from '../widgets/modal/modal.js';
-import { AFFINE_PIE_MENU_WIDGET } from '../widgets/pie-menu/index.js';
 import { AFFINE_SLASH_MENU_WIDGET } from '../widgets/slash-menu/index.js';
 import { AFFINE_VIEWPORT_OVERLAY_WIDGET } from '../widgets/viewport-overlay/viewport-overlay.js';
 import { NOTE_SLICER_WIDGET } from './components/note-slicer/index.js';
@@ -46,7 +47,6 @@ import { EdgelessRootService } from './edgeless-root-service.js';
 export const edgelessRootWidgetViewMap = {
   [AFFINE_MODAL_WIDGET]: literal`${unsafeStatic(AFFINE_MODAL_WIDGET)}`,
   [AFFINE_INNER_MODAL_WIDGET]: literal`${unsafeStatic(AFFINE_INNER_MODAL_WIDGET)}`,
-  [AFFINE_PIE_MENU_WIDGET]: literal`${unsafeStatic(AFFINE_PIE_MENU_WIDGET)}`,
   [AFFINE_SLASH_MENU_WIDGET]: literal`${unsafeStatic(
     AFFINE_SLASH_MENU_WIDGET
   )}`,
@@ -97,7 +97,7 @@ const EdgelessCommonExtension: ExtensionType[] = [
   ExportManagerExtension,
   ToolController,
   DNDAPIExtension,
-  DocDisplayMetaService,
+  PageViewportServiceExtension,
   RootBlockAdapterExtensions,
   FileDropExtension,
 ].flat();

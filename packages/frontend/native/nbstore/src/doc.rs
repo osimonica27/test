@@ -1,4 +1,6 @@
-use chrono::NaiveDateTime;
+use std::ops::Deref;
+
+use chrono::{DateTime, NaiveDateTime};
 use sqlx::{QueryBuilder, Row};
 
 use super::storage::{Result, SqliteDocStorage};
@@ -64,7 +66,40 @@ impl SqliteDocStorage {
     doc_id: String,
     update: Update,
   ) -> Result<NaiveDateTime> {
-    let timestamp = chrono::Utc::now().naive_utc();
+    let mut timestamp = DateTime::from_timestamp_millis(chrono::Utc::now().timestamp_millis())
+      .unwrap()
+      .naive_utc();
+
+    let mut tried = 0;
+
+    // Keep trying with incremented timestamps until success
+    loop {
+      match self
+        .try_insert_update_with_timestamp(&doc_id, update.as_ref(), timestamp)
+        .await
+      {
+        Ok(()) => break,
+        Err(e) => {
+          if tried > 10 {
+            return Err(e);
+          }
+
+          // Increment timestamp by 1ms and retry
+          timestamp = timestamp + chrono::Duration::milliseconds(1);
+          tried += 1;
+        }
+      }
+    }
+
+    Ok(timestamp)
+  }
+
+  async fn try_insert_update_with_timestamp(
+    &self,
+    doc_id: &str,
+    update: &[u8],
+    timestamp: NaiveDateTime,
+  ) -> sqlx::Result<()> {
     let mut tx = self.pool.begin().await?;
 
     sqlx::query(r#"INSERT INTO updates (doc_id, data, created_at) VALUES ($1, $2, $3);"#)
@@ -87,7 +122,7 @@ impl SqliteDocStorage {
 
     tx.commit().await?;
 
-    Ok(timestamp)
+    Ok(())
   }
 
   pub async fn get_doc_snapshot(&self, doc_id: String) -> Result<Option<DocRecord>> {
@@ -110,7 +145,7 @@ impl SqliteDocStorage {
     WHERE updated_at <= $3;"#,
     )
     .bind(snapshot.doc_id)
-    .bind(snapshot.data.as_ref())
+    .bind(snapshot.data.deref())
     .bind(snapshot.timestamp)
     .execute(&self.pool)
     .await?;
@@ -206,7 +241,6 @@ impl SqliteDocStorage {
 #[cfg(test)]
 mod tests {
   use chrono::{DateTime, Utc};
-  use napi::bindgen_prelude::Uint8Array;
 
   use super::*;
 
@@ -252,7 +286,7 @@ mod tests {
     storage
       .set_doc_snapshot(DocRecord {
         doc_id: "test".to_string(),
-        data: Uint8Array::from(vec![0, 0]),
+        data: vec![0, 0].into(),
         timestamp: Utc::now().naive_utc(),
       })
       .await
@@ -331,7 +365,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      data: Uint8Array::from(vec![0, 0]),
+      data: vec![0, 0].into(),
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -349,7 +383,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      data: Uint8Array::from(vec![0, 0]),
+      data: vec![0, 0].into(),
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -362,7 +396,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      data: Uint8Array::from(vec![0, 1]),
+      data: vec![0, 1].into(),
       timestamp: DateTime::from_timestamp_millis(Utc::now().timestamp_millis() - 1000)
         .unwrap()
         .naive_utc(),

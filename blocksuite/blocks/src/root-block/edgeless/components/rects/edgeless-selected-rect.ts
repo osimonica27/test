@@ -1,3 +1,5 @@
+import type { EdgelessTextBlockComponent } from '@blocksuite/affine-block-edgeless-text';
+import { EDGELESS_TEXT_BLOCK_MIN_WIDTH } from '@blocksuite/affine-block-edgeless-text';
 import {
   EMBED_HTML_MIN_HEIGHT,
   EMBED_HTML_MIN_WIDTH,
@@ -29,6 +31,8 @@ import { EMBED_CARD_HEIGHT } from '@blocksuite/affine-shared/consts';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import {
   clamp,
+  getElementsWithoutGroup,
+  getSelectedRect,
   requestThrottledConnectedFrame,
   stopPropagation,
 } from '@blocksuite/affine-shared/utils';
@@ -58,9 +62,6 @@ import { state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { isMindmapNode } from '../../../../_common/edgeless/mindmap/index.js';
-import type { EdgelessTextBlockComponent } from '../../../../edgeless-text-block/edgeless-text-block.js';
-import { EDGELESS_TEXT_BLOCK_MIN_WIDTH } from '../../../../edgeless-text-block/edgeless-text-block.js';
 import type { EdgelessRootBlockComponent } from '../../edgeless-root-block.js';
 import type {
   EdgelessFrameManager,
@@ -72,10 +73,8 @@ import {
   AI_CHAT_BLOCK_MIN_HEIGHT,
   AI_CHAT_BLOCK_MIN_WIDTH,
 } from '../../utils/consts.js';
-import { getElementsWithoutGroup } from '../../utils/group.js';
 import {
   getSelectableBounds,
-  getSelectedRect,
   isAIChatBlock,
   isAttachmentBlock,
   isBookmarkBlock,
@@ -91,6 +90,7 @@ import {
   isEmbedYoutubeBlock,
   isFrameBlock,
   isImageBlock,
+  isMindmapNode,
   isNoteBlock,
 } from '../../utils/query.js';
 import {
@@ -1312,7 +1312,7 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
   }
 
   override firstUpdated() {
-    const { _disposables, edgelessSlots, block, selection, gfx } = this;
+    const { _disposables, block, selection, gfx } = this;
 
     _disposables.add(
       // viewport zooming / scrolling
@@ -1331,15 +1331,6 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
       this.doc.slots.blockUpdated.on(this._updateOnElementChange)
     );
 
-    _disposables.add(
-      edgelessSlots.pressShiftKeyUpdated.on(pressed => {
-        this._shiftKey = pressed;
-        this._resizeManager.onPressShiftKey(pressed);
-        this._updateSelectedRect();
-        this._updateMode();
-      })
-    );
-
     _disposables.add(selection.slots.updated.on(this._updateOnSelectionChange));
 
     _disposables.add(
@@ -1355,6 +1346,39 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
     _disposables.add(() => {
       this._propDisposables.forEach(disposable => disposable.dispose());
     });
+
+    this.block.handleEvent(
+      'keyDown',
+      ctx => {
+        const event = ctx.get('defaultState').event;
+        if (event instanceof KeyboardEvent) {
+          this._shift(event);
+        }
+      },
+      { global: true }
+    );
+
+    this.block.handleEvent(
+      'keyUp',
+      ctx => {
+        const event = ctx.get('defaultState').event;
+        if (event instanceof KeyboardEvent) {
+          this._shift(event);
+        }
+      },
+      { global: true }
+    );
+  }
+
+  private _shift(event: KeyboardEvent) {
+    if (event.repeat) return;
+
+    const pressed = event.key.toLowerCase() === 'shift' && event.shiftKey;
+
+    this._shiftKey = pressed;
+    this._resizeManager.onPressShiftKey(pressed);
+    this._updateSelectedRect();
+    this._updateMode();
   }
 
   override render() {

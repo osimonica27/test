@@ -1,9 +1,13 @@
-import { SHAPE_STROKE_COLORS, StrokeStyle } from '@blocksuite/affine-model';
+import {
+  type ColorScheme,
+  DefaultTheme,
+  type StrokeStyle,
+} from '@blocksuite/affine-model';
+import type { ColorEvent } from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/utils';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import type { ColorEvent } from './color-panel.js';
 import { type LineStyleEvent, LineStylesPanel } from './line-styles-panel.js';
 
 export class StrokeStylePanel extends WithDisposable(LitElement) {
@@ -30,7 +34,6 @@ export class StrokeStylePanel extends WithDisposable(LitElement) {
           selectedLineSize: this.strokeWidth,
           selectedLineStyle: this.strokeStyle,
           onClick: e => this.setStrokeStyle(e),
-          lineStyles: [StrokeStyle.Solid, StrokeStyle.Dash],
         })}
       </div>
       <editor-toolbar-separator
@@ -39,8 +42,9 @@ export class StrokeStylePanel extends WithDisposable(LitElement) {
       <edgeless-color-panel
         role="listbox"
         aria-label="Border colors"
-        .options=${SHAPE_STROKE_COLORS}
         .value=${this.strokeColor}
+        .theme=${this.theme}
+        .palettes=${DefaultTheme.Palettes}
         .hollowCircle=${this.hollowCircle}
         @select=${(e: ColorEvent) => this.setStrokeColor(e)}
       >
@@ -65,6 +69,9 @@ export class StrokeStylePanel extends WithDisposable(LitElement) {
 
   @property({ attribute: false })
   accessor strokeWidth!: number;
+
+  @property({ attribute: false })
+  accessor theme!: ColorScheme;
 }
 
 declare global {

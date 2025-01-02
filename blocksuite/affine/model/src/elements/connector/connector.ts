@@ -26,7 +26,6 @@ import {
 import { DocCollection, type Y } from '@blocksuite/store';
 
 import {
-  type Color,
   CONNECTOR_LABEL_MAX_WIDTH,
   ConnectorLabelOffsetAnchor,
   ConnectorMode,
@@ -38,7 +37,8 @@ import {
   StrokeStyle,
   TextAlign,
   type TextStyleProps,
-} from '../../consts/index.js';
+} from '../../consts/index';
+import { type Color, DefaultTheme } from '../../themes/index';
 
 export type SerializedConnection = {
   id?: string;
@@ -433,7 +433,7 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
    * Defines the style of the label.
    */
   @field({
-    color: '#000000',
+    color: DefaultTheme.black,
     fontFamily: FontFamily.Inter,
     fontSize: 16,
     fontStyle: FontStyle.Normal,
@@ -486,7 +486,7 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
   };
 
   @field()
-  accessor stroke: Color = '#000000';
+  accessor stroke: Color = DefaultTheme.connectorColor;
 
   @field()
   accessor strokeStyle: StrokeStyle = StrokeStyle.Solid;

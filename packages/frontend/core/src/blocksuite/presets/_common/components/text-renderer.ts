@@ -10,10 +10,14 @@ import type {
 } from '@blocksuite/affine/blocks';
 import {
   CodeBlockComponent,
+  defaultBlockMarkdownAdapterMatchers,
   DividerBlockComponent,
+  inlineDeltaToMarkdownAdapterMatchers,
   ListBlockComponent,
+  markdownInlineToDeltaMatchers,
   ParagraphBlockComponent,
 } from '@blocksuite/affine/blocks';
+import { Container, type ServiceProvider } from '@blocksuite/affine/global/di';
 import { WithDisposable } from '@blocksuite/affine/global/utils';
 import {
   BlockViewType,
@@ -192,8 +196,28 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
       const latestAnswer = this._answers.pop();
       this._answers = [];
       const schema = this.schema ?? this.host?.std.doc.collection.schema;
+      let provider: ServiceProvider;
+      if (this.host) {
+        provider = this.host.std.provider;
+      } else {
+        const container = new Container();
+        [
+          ...markdownInlineToDeltaMatchers,
+          ...defaultBlockMarkdownAdapterMatchers,
+          ...inlineDeltaToMarkdownAdapterMatchers,
+        ].forEach(ext => {
+          ext.setup(container);
+        });
+
+        provider = container.provider();
+      }
       if (latestAnswer && schema) {
-        markDownToDoc(schema, latestAnswer, this.options.additionalMiddlewares)
+        markDownToDoc(
+          provider,
+          schema,
+          latestAnswer,
+          this.options.additionalMiddlewares
+        )
           .then(doc => {
             this.disposeDoc();
             this._doc = doc.blockCollection.getDoc({
@@ -202,10 +226,7 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
             this.disposables.add(() => {
               doc.blockCollection.clearQuery(this._query);
             });
-            this._doc.awarenessStore.setReadonly(
-              this._doc.blockCollection,
-              true
-            );
+            this._doc.readonly = true;
             this.requestUpdate();
             if (this.state !== 'generating') {
               this._clearTimer();

@@ -2,8 +2,10 @@ import type {
   SurfaceBlockComponent,
   SurfaceBlockModel,
 } from '@blocksuite/affine-block-surface';
-import { CommonUtils } from '@blocksuite/affine-block-surface';
-import { toast } from '@blocksuite/affine-components/toast';
+import {
+  CommonUtils,
+  EdgelessLegacySlotIdentifier,
+} from '@blocksuite/affine-block-surface';
 import type {
   RootBlockModel,
   ShapeElementModel,
@@ -13,6 +15,7 @@ import {
   FontLoaderService,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
+import type { Viewport } from '@blocksuite/affine-shared/types';
 import {
   isTouchPadPinchEvent,
   requestConnectedFrame,
@@ -36,7 +39,6 @@ import { query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { isSingleMindMapNode } from '../../_common/edgeless/mindmap/index.js';
-import type { Viewport } from '../../_common/utils/index.js';
 import type { EdgelessRootBlockWidgetName } from '../types.js';
 import { EdgelessClipboardController } from './clipboard/clipboard.js';
 import type { EdgelessSelectedRectWidget } from './components/rects/edgeless-selected-rect.js';
@@ -144,7 +146,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
   }
 
   get slots() {
-    return this.service.slots;
+    return this.std.get(EdgelessLegacySlotIdentifier);
   }
 
   get surfaceBlockModel() {
@@ -320,7 +322,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
   }
 
   private _initSlotEffects() {
-    const { disposables, slots } = this;
+    const { disposables } = this;
 
     this.disposables.add(
       this.std.get(ThemeProvider).theme$.subscribe(() => this.surface.refresh())
@@ -329,22 +331,6 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     disposables.add(
       effect(() => {
         this.style.cursor = this.gfx.cursor$.value;
-      })
-    );
-
-    let canCopyAsPng = true;
-    disposables.add(
-      slots.copyAsPng.on(({ blocks, shapes }) => {
-        if (!canCopyAsPng) return;
-        canCopyAsPng = false;
-
-        this.clipboardController
-          .copyAsPng(blocks, shapes)
-          .then(() => toast(this.host, 'Copied to clipboard'))
-          .catch(() => toast(this.host, 'Failed to copy as PNG'))
-          .finally(() => {
-            canCopyAsPng = true;
-          });
       })
     );
   }

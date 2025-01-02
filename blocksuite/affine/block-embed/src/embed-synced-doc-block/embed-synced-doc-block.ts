@@ -1,8 +1,5 @@
 import { Peekable } from '@blocksuite/affine-components/peek';
-import {
-  REFERENCE_NODE,
-  RefNodeSlotsProvider,
-} from '@blocksuite/affine-components/rich-text';
+import { RefNodeSlotsProvider } from '@blocksuite/affine-components/rich-text';
 import {
   type AliasInfo,
   type DocMode,
@@ -10,6 +7,7 @@ import {
   NoteDisplayMode,
   type ReferenceInfo,
 } from '@blocksuite/affine-model';
+import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
 import {
   DocDisplayMetaProvider,
   DocModeProvider,
@@ -510,17 +508,6 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
         this._selectBlock();
       }
     });
-
-    // Forward docLinkClicked event from the synced doc
-    const refNodeProvider =
-      this.syncedDocEditorHost?.std.getOptional(RefNodeSlotsProvider);
-    if (refNodeProvider) {
-      this.disposables.add(
-        refNodeProvider.docLinkClicked.on(args => {
-          this.std.getOptional(RefNodeSlotsProvider)?.docLinkClicked.emit(args);
-        })
-      );
-    }
 
     this._initEdgelessFitEffect();
   }

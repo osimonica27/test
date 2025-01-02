@@ -1,10 +1,13 @@
 import { addSiblingAttachmentBlocks } from '@blocksuite/affine-block-attachment';
+import { toggleEmbedCardCreateModal } from '@blocksuite/affine-block-bookmark';
+import type { DataViewBlockComponent } from '@blocksuite/affine-block-data-view';
 import {
   FigmaIcon,
   GithubIcon,
   LoomIcon,
   YoutubeIcon,
 } from '@blocksuite/affine-block-embed';
+import { getSurfaceBlock } from '@blocksuite/affine-block-surface';
 import {
   ArrowDownBigIcon,
   ArrowUpBigIcon,
@@ -27,7 +30,6 @@ import {
 import {
   getInlineEditorByModel,
   insertContent,
-  REFERENCE_NODE,
   textConversionConfigs,
   textFormatConfigs,
 } from '@blocksuite/affine-components/rich-text';
@@ -36,6 +38,7 @@ import type {
   FrameBlockModel,
   ParagraphBlockModel,
 } from '@blocksuite/affine-model';
+import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
 import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import {
   createDefaultDoc,
@@ -49,9 +52,6 @@ import type { BlockModel } from '@blocksuite/store';
 import { Slice, Text } from '@blocksuite/store';
 import type { TemplateResult } from 'lit';
 
-import { toggleEmbedCardCreateModal } from '../../../_common/components/embed-card/modal/embed-card-create-modal.js';
-import type { DataViewBlockComponent } from '../../../data-view-block/index.js';
-import { getSurfaceBlock } from '../../../surface-ref-block/utils.js';
 import type { RootBlockComponent } from '../../types.js';
 import { formatDate, formatTime } from '../../utils/misc.js';
 import type { AffineLinkedDocWidget } from '../linked-doc/index.js';

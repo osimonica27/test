@@ -28,7 +28,7 @@ import {
   Vec,
 } from '@blocksuite/global/utils';
 
-import type { Color } from '../../consts/index.js';
+import { type Color, DefaultTheme } from '../../themes/index';
 
 export type BrushProps = BaseElementProps & {
   /**
@@ -46,7 +46,7 @@ export class BrushElementModel extends GfxPrimitiveElementModel<BrushProps> {
    */
   get commands() {
     if (!this._local.has('commands')) {
-      const stroke = getSolidStrokePoints(this.points, this.lineWidth);
+      const stroke = getSolidStrokePoints(this.points ?? [], this.lineWidth);
       const commands = getSvgPathFromStroke(stroke);
 
       this._local.set('commands', commands);
@@ -131,7 +131,7 @@ export class BrushElementModel extends GfxPrimitiveElementModel<BrushProps> {
   }
 
   @field()
-  accessor color: Color = '#000000';
+  accessor color: Color = DefaultTheme.black;
 
   @watch((_, instance) => {
     instance['_local'].delete('commands');

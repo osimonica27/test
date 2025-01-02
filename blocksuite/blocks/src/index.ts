@@ -1,12 +1,13 @@
 /* oxlint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./effects.ts" />
+import { matchFlavours } from '@blocksuite/affine-shared/utils';
 import { deserializeXYWH, Point } from '@blocksuite/global/utils';
 
-import { matchFlavours } from './_common/utils/index.js';
 import { splitElements } from './root-block/edgeless/utils/clipboard-utils.js';
 import { isCanvasElement } from './root-block/edgeless/utils/query.js';
 
 export * from './_common/adapters/index.js';
+export * from './_common/adapters/markdown';
 export { type NavigatorMode } from './_common/edgeless/frame/consts.js';
 export {
   ExportManager,
@@ -16,11 +17,6 @@ export * from './_common/test-utils/test-utils.js';
 export * from './_common/transformers/index.js';
 export { type AbstractEditor } from './_common/types.js';
 export * from './_specs/index.js';
-export * from './code-block/index.js';
-export * from './data-view-block/index.js';
-export * from './database-block/index.js';
-export * from './divider-block/index.js';
-export * from './edgeless-text-block/index.js';
 export { EdgelessTemplatePanel } from './root-block/edgeless/components/toolbar/template/template-panel.js';
 export type {
   Template,
@@ -34,7 +30,6 @@ export {
 export { CopilotTool } from './root-block/edgeless/gfx-tool/copilot-tool.js';
 export * from './root-block/edgeless/gfx-tool/index.js';
 export { EditPropsMiddlewareBuilder } from './root-block/edgeless/middlewares/base.js';
-export * from './root-block/edgeless/utils/common.js';
 export { EdgelessSnapManager } from './root-block/edgeless/utils/snap-manager.js';
 export * from './root-block/index.js';
 export * from './schemas.js';
@@ -43,9 +38,13 @@ export {
   MindmapSurfaceBlock,
   MiniMindmapPreview,
 } from './surface-block/mini-mindmap/index.js';
-export * from './surface-ref-block/index.js';
 export * from '@blocksuite/affine-block-attachment';
 export * from '@blocksuite/affine-block-bookmark';
+export * from '@blocksuite/affine-block-code';
+export * from '@blocksuite/affine-block-data-view';
+export * from '@blocksuite/affine-block-database';
+export * from '@blocksuite/affine-block-divider';
+export * from '@blocksuite/affine-block-edgeless-text';
 export * from '@blocksuite/affine-block-embed';
 export * from '@blocksuite/affine-block-frame';
 export * from '@blocksuite/affine-block-image';
@@ -54,6 +53,7 @@ export * from '@blocksuite/affine-block-list';
 export * from '@blocksuite/affine-block-note';
 export * from '@blocksuite/affine-block-paragraph';
 export * from '@blocksuite/affine-block-surface';
+export * from '@blocksuite/affine-block-surface-ref';
 export {
   type AIError,
   type AIItemConfig,
@@ -100,9 +100,21 @@ export {
 } from '@blocksuite/affine-components/toolbar';
 export * from '@blocksuite/affine-model';
 export {
+  AttachmentAdapter,
+  AttachmentAdapterFactoryExtension,
+  AttachmentAdapterFactoryIdentifier,
   HtmlAdapter,
   HtmlAdapterFactoryExtension,
   HtmlAdapterFactoryIdentifier,
+  ImageAdapter,
+  ImageAdapterFactoryExtension,
+  ImageAdapterFactoryIdentifier,
+  MarkdownAdapter,
+  MarkdownAdapterFactoryExtension,
+  MarkdownAdapterFactoryIdentifier,
+  NotionTextAdapter,
+  NotionTextAdapterFactoryExtension,
+  NotionTextAdapterFactoryIdentifier,
   PlainTextAdapter,
   PlainTextAdapterFactoryExtension,
   PlainTextAdapterFactoryIdentifier,

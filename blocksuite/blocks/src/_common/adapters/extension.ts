@@ -1,18 +1,20 @@
 import {
+  AttachmentAdapterFactoryExtension,
   HtmlAdapterFactoryExtension,
+  ImageAdapterFactoryExtension,
+  MarkdownAdapterFactoryExtension,
+  NotionHtmlAdapterFactoryExtension,
+  NotionTextAdapterFactoryExtension,
   PlainTextAdapterFactoryExtension,
 } from '@blocksuite/affine-shared/adapters';
 import type { ExtensionType } from '@blocksuite/block-std';
 
-import { AttachmentAdapterFactoryExtension } from './attachment.js';
 import { htmlInlineToDeltaMatchers } from './html/delta-converter/html-inline.js';
 import { inlineDeltaToHtmlAdapterMatchers } from './html/delta-converter/inline-delta.js';
-import { ImageAdapterFactoryExtension } from './image.js';
-import { MarkdownAdapterFactoryExtension } from './markdown/markdown.js';
+import { inlineDeltaToMarkdownAdapterMatchers } from './markdown/delta-converter/inline-delta.js';
+import { markdownInlineToDeltaMatchers } from './markdown/delta-converter/markdown-inline.js';
 import { MixTextAdapterFactoryExtension } from './mix-text.js';
 import { notionHtmlInlineToDeltaMatchers } from './notion-html/delta-converter/html-inline.js';
-import { NotionHtmlAdapterFactoryExtension } from './notion-html/notion-html.js';
-import { NotionTextAdapterFactoryExtension } from './notion-text.js';
 import { inlineDeltaToPlainTextAdapterMatchers } from './plain-text/delta-converter/inline-delta.js';
 
 export const AdapterFactoryExtensions: ExtensionType[] = [
@@ -20,6 +22,8 @@ export const AdapterFactoryExtensions: ExtensionType[] = [
   ...inlineDeltaToHtmlAdapterMatchers,
   ...notionHtmlInlineToDeltaMatchers,
   ...inlineDeltaToPlainTextAdapterMatchers,
+  ...markdownInlineToDeltaMatchers,
+  ...inlineDeltaToMarkdownAdapterMatchers,
   AttachmentAdapterFactoryExtension,
   ImageAdapterFactoryExtension,
   MarkdownAdapterFactoryExtension,

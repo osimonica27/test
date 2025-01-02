@@ -92,7 +92,7 @@
   "Retry": "Retry",
   "Save": "Save",
   "Select": "Select",
-  "Sign in": "Sign in AFFiNE Cloud",
+  "Sign in": "Sign in",
   "Sign in and Enable": "Sign in and enable",
   "Sign out": "Sign out",
   "Snapshot": "Snapshot",
@@ -848,7 +848,6 @@
   "com.affine.payment.billing-type-form.title": "Tell us your use case",
   "com.affine.payment.blob-limit.description.local": "The maximum file upload size for local workspaces is {{quota}}.",
   "com.affine.payment.blob-limit.description.member": "The maximum file upload size for this joined workspace is {{quota}}. You can contact the owner of this workspace.",
-
   "com.affine.payment.blob-limit.description.owner": "The maximum file upload size for this workspace is {{quota}}. To proceed, you can:",
   "com.affine.payment.blob-limit.description.owner.tips-1": "Upgrade your account for larger file upload limits",
   "com.affine.payment.blob-limit.description.owner.tips-2": "Upgrade the workspace plan to increase storage for all member",
@@ -1278,8 +1277,6 @@
   "com.affine.settings.workspace.experimental-features.prompt-warning-title": "WARNING MESSAGE",
   "com.affine.settings.workspace.experimental-features.enable-ai.name": "Enable AI",
   "com.affine.settings.workspace.experimental-features.enable-ai.description": "Enable or disable ALL AI features.",
-  "com.affine.settings.workspace.experimental-features.enable-new-dnd.name": "Enable New DND",
-  "com.affine.settings.workspace.experimental-features.enable-new-dnd.description": "Enable new drag and drop features.",
   "com.affine.settings.workspace.experimental-features.enable-database-full-width.name": "Database Full Width",
   "com.affine.settings.workspace.experimental-features.enable-database-full-width.description": "The database will be displayed in full-width mode.",
   "com.affine.settings.workspace.experimental-features.enable-database-attachment-note.name": "Database Attachment Note",
@@ -1617,5 +1614,6 @@
   "com.affine.payment.sync-paused.member.both.description": "This workspace has exceeded both storage and member limits, causing synchronization to pause. Please contact your workspace owner to address these limits and resume syncing.",
   "com.affine.payment.sync-paused.member.storage.description": "This workspace has exceeded its storage limit and synchronization has been paused. Please contact your workspace owner to either reduce storage usage or upgrade the plan to resume syncing.",
   "com.affine.payment.sync-paused.member.member.description": "This workspace has reached its maximum member capacity and synchronization has been paused. Please contact your workspace owner to either adjust team membership or upgrade the plan to resume syncing.",
-  "com.affine.payment.sync-paused.member.member.confirm": "Got It"
+  "com.affine.payment.sync-paused.member.member.confirm": "Got It",
+  "com.affine.server.delete": "Delete Server"
 }

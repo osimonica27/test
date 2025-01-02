@@ -3,10 +3,9 @@ import {
   ScribbledStyleIcon,
 } from '@blocksuite/affine-components/icons';
 import {
-  DEFAULT_SHAPE_FILL_COLOR,
-  LineColor,
-  SHAPE_FILL_COLORS,
-  type ShapeFillColor,
+  DefaultTheme,
+  isTransparent,
+  type Palette,
   type ShapeName,
   ShapeStyle,
   ShapeType,
@@ -15,19 +14,14 @@ import {
   EditPropsStore,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
+import type { ColorEvent } from '@blocksuite/affine-shared/utils';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
-import type { Signal } from '@preact/signals-core';
-import { computed, effect, signal } from '@preact/signals-core';
+import { computed, effect, type Signal, signal } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import type { EdgelessRootBlockComponent } from '../../../edgeless-root-block.js';
-import { type ColorEvent, isTransparent } from '../../panel/color-panel.js';
-import {
-  LINE_COLOR_PREFIX,
-  SHAPE_COLOR_PREFIX,
-  ShapeComponentConfig,
-} from './shape-menu-config.js';
+import { ShapeComponentConfig } from './shape-menu-config.js';
 
 export class EdgelessShapeMenu extends SignalWatcher(
   WithDisposable(LitElement)
@@ -79,16 +73,13 @@ export class EdgelessShapeMenu extends SignalWatcher(
     };
   });
 
-  private readonly _setFillColor = (fillColor: ShapeFillColor) => {
-    const filled = !isTransparent(fillColor);
-    let strokeColor = fillColor.replace(
-      SHAPE_COLOR_PREFIX,
-      LINE_COLOR_PREFIX
-    ) as LineColor;
-
-    if (strokeColor.endsWith('transparent')) {
-      strokeColor = LineColor.Grey;
-    }
+  private readonly _setFillColor = ({ key, value }: Palette) => {
+    const filled = !isTransparent(value);
+    const fillColor = value;
+    const strokeColor = filled
+      ? DefaultTheme.StrokeColorPalettes.find(palette => palette.key === key)
+          ?.value
+      : DefaultTheme.StrokeColorMap.Grey;
 
     const { shapeName } = this._props$.value;
     this.edgeless.std
@@ -111,6 +102,10 @@ export class EdgelessShapeMenu extends SignalWatcher(
     this.onChange(shapeName);
   };
 
+  private readonly _theme$ = computed(() => {
+    return this.edgeless.std.get(ThemeProvider).theme$.value;
+  });
+
   override connectedCallback(): void {
     super.connectedCallback();
 
@@ -127,9 +122,6 @@ export class EdgelessShapeMenu extends SignalWatcher(
 
   override render() {
     const { fillColor, shapeStyle, shapeName } = this._props$.value;
-    const color = this.edgeless.std
-      .get(ThemeProvider)
-      .getColorValue(fillColor, DEFAULT_SHAPE_FILL_COLOR);
 
     return html`
       <edgeless-slide-menu>
@@ -176,15 +168,16 @@ export class EdgelessShapeMenu extends SignalWatcher(
             )}
           </div>
           <menu-divider .vertical=${true}></menu-divider>
-          <edgeless-one-row-color-panel
-            .value=${color}
-            .options=${SHAPE_FILL_COLORS}
+          <edgeless-color-panel
+            class="one-way"
+            .value=${fillColor}
+            .theme=${this._theme$.value}
+            .palettes=${DefaultTheme.FillColorPalettes}
             .hasTransparent=${!this.edgeless.doc.awarenessStore.getFlag(
               'enable_color_picker'
             )}
-            @select=${(e: ColorEvent) =>
-              this._setFillColor(e.detail as ShapeFillColor)}
-          ></edgeless-one-row-color-panel>
+            @select=${(e: ColorEvent) => this._setFillColor(e.detail)}
+          ></edgeless-color-panel>
         </div>
       </edgeless-slide-menu>
     `;
