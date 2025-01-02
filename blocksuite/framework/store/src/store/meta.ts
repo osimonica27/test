@@ -3,7 +3,7 @@ import type * as Y from 'yjs';
 
 import { COLLECTION_VERSION, PAGE_VERSION } from '../consts.js';
 import type { BlockSuiteDoc } from '../yjs/index.js';
-import type { DocCollection } from './collection.js';
+import type { Workspace } from './collection.js';
 
 // please use `declare module '@blocksuite/store'` to extend this interface
 export interface DocMeta {
@@ -245,7 +245,7 @@ export class DocCollectionMeta {
   /**
    * @internal Only for doc initialization
    */
-  writeVersion(collection: DocCollection) {
+  writeVersion(collection: Workspace) {
     const { blockVersions, pageVersion, workspaceVersion } = this._proxy;
 
     if (!workspaceVersion) {

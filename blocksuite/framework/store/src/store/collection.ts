@@ -23,8 +23,8 @@ import {
   BlockSuiteDoc,
   type RawAwarenessState,
 } from '../yjs/index.js';
-import { BlockCollection, type GetDocOptions } from './doc/block-collection.js';
-import type { Doc, Query } from './doc/index.js';
+import { Doc, type GetDocOptions } from './doc/block-collection.js';
+import type { Blocks, Query } from './doc/index.js';
 import type { IdGeneratorType } from './id.js';
 import { pickIdGenerator } from './id.js';
 import { DocCollectionMeta, type DocMeta } from './meta.js';
@@ -70,7 +70,7 @@ export interface StackItem {
   meta: Map<'cursor-location' | 'selection-state', unknown>;
 }
 
-export class DocCollection {
+export class Workspace {
   static Y = Y;
 
   protected readonly _schema: Schema;
@@ -81,7 +81,7 @@ export class DocCollection {
 
   readonly blobSync: BlobEngine;
 
-  readonly blockCollections = new Map<string, BlockCollection>();
+  readonly blockCollections = new Map<string, Doc>();
 
   readonly doc: BlockSuiteDoc;
 
@@ -155,7 +155,7 @@ export class DocCollection {
 
   private _bindDocMetaEvents() {
     this.meta.docMetaAdded.on(docId => {
-      const doc = new BlockCollection({
+      const doc = new Doc({
         id: docId,
         collection: this,
         doc: this.doc,
@@ -210,7 +210,7 @@ export class DocCollection {
       tags: [],
     });
     this.slots.docCreated.emit(docId);
-    return this.getDoc(docId, { query }) as Doc;
+    return this.getDoc(docId, { query }) as Blocks;
   }
 
   dispose() {
@@ -227,12 +227,12 @@ export class DocCollection {
     this.awarenessSync.disconnect();
   }
 
-  getBlockCollection(docId: string): BlockCollection | null {
-    const space = this.docs.get(docId) as BlockCollection | undefined;
+  getBlockCollection(docId: string): Doc | null {
+    const space = this.docs.get(docId) as Doc | undefined;
     return space ?? null;
   }
 
-  getDoc(docId: string, options?: GetDocOptions): Doc | null {
+  getDoc(docId: string, options?: GetDocOptions): Blocks | null {
     const collection = this.getBlockCollection(docId);
     return collection?.getDoc(options) ?? null;
   }

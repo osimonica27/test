@@ -16,7 +16,7 @@ import {
   uploadBlobForImage,
 } from '@blocksuite/affine/blocks';
 import { Bound, getCommonBound } from '@blocksuite/affine/global/utils';
-import { type BlockProps, DocCollection, Text } from '@blocksuite/affine/store';
+import { type BlockProps, Text, Workspace } from '@blocksuite/affine/store';
 
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import type { AffineNode, AIContext } from '../utils/context';
@@ -262,7 +262,7 @@ function addSurfaceRefBlock(host: EditorHost, bound: Bound, place: Place) {
   const frame = host.doc.addBlock(
     'affine:frame',
     {
-      title: new Text(new DocCollection.Y.Text('Frame')),
+      title: new Text(new Workspace.Y.Text('Frame')),
       xywh: bound.serialize(),
       index: LayerManager.INITIAL_INDEX,
     },

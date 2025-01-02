@@ -30,7 +30,7 @@ import {
 import { type SerializedXYWH, SignalWatcher } from '@blocksuite/global/utils';
 import type { DeltaInsert } from '@blocksuite/inline';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import { type DocCollection, Text } from '@blocksuite/store';
+import { Text, type Workspace } from '@blocksuite/store';
 import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path.js';
 import { css, html, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
@@ -611,7 +611,7 @@ export class CollabDebugMenu extends SignalWatcher(ShadowlessElement) {
   private accessor _docMode: DocMode = 'page';
 
   @property({ attribute: false })
-  accessor collection!: DocCollection;
+  accessor collection!: Workspace;
 
   @property({ attribute: false })
   accessor docsPanel!: DocsPanel;

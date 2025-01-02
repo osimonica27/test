@@ -8,7 +8,7 @@ import {
   pointInPolygon,
   polygonNearestPoint,
 } from '@blocksuite/global/utils';
-import { DocCollection, type Y } from '@blocksuite/store';
+import { Workspace, type Y } from '@blocksuite/store';
 
 import {
   FontFamily,
@@ -31,8 +31,8 @@ export class TextElementModel extends GfxPrimitiveElementModel<TextElementProps>
   }
 
   static override propsToY(props: Record<string, unknown>) {
-    if (props.text && !(props.text instanceof DocCollection.Y.Text)) {
-      props.text = new DocCollection.Y.Text(props.text as string);
+    if (props.text && !(props.text instanceof Workspace.Y.Text)) {
+      props.text = new Workspace.Y.Text(props.text as string);
     }
 
     return props;
@@ -82,7 +82,7 @@ export class TextElementModel extends GfxPrimitiveElementModel<TextElementProps>
   accessor rotate: number = 0;
 
   @field()
-  accessor text: Y.Text = new DocCollection.Y.Text();
+  accessor text: Y.Text = new Workspace.Y.Text();
 
   @field()
   accessor textAlign: TextAlign = TextAlign.Center;

@@ -1,12 +1,12 @@
 import { AffineSchemas } from '@blocksuite/blocks';
 import type { BlockSuiteFlags } from '@blocksuite/global/types';
 import {
-  DocCollection,
   type DocCollectionOptions,
   IdGeneratorType,
   Job,
   Schema,
   Text,
+  Workspace,
 } from '@blocksuite/store';
 import {
   BroadcastChannelAwarenessSource,
@@ -78,19 +78,19 @@ export async function createDefaultDocCollection() {
       ...flags,
     },
   };
-  const collection = new DocCollection(options);
+  const collection = new Workspace(options);
   collection.start();
 
   // debug info
   window.collection = collection;
   window.blockSchemas = AffineSchemas;
   window.job = new Job({ collection });
-  window.Y = DocCollection.Y;
+  window.Y = Workspace.Y;
 
   return collection;
 }
 
-export async function initDefaultDocCollection(collection: DocCollection) {
+export async function initDefaultDocCollection(collection: Workspace) {
   const params = new URLSearchParams(location.search);
 
   await collection.waitForSynced();

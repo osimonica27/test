@@ -1,5 +1,5 @@
 import type { EditorHost, TextSelection } from '@blocksuite/block-std';
-import { DocCollection, type Y } from '@blocksuite/store';
+import { Workspace, type Y } from '@blocksuite/store';
 
 export interface CommentMeta {
   id: string;
@@ -55,7 +55,7 @@ export class CommentManager {
     };
     this.commentsMap.set(
       id,
-      new DocCollection.Y.Map<unknown>(Object.entries(comment))
+      new Workspace.Y.Map<unknown>(Object.entries(comment))
     );
     return comment;
   }
@@ -66,17 +66,15 @@ export class CommentManager {
       const start = comment.get('start') as Comment['start'];
       const end = comment.get('end') as Comment['end'];
 
-      const startIndex =
-        DocCollection.Y.createAbsolutePositionFromRelativePosition(
-          start.index,
-          this.host.doc.spaceDoc
-        );
+      const startIndex = Workspace.Y.createAbsolutePositionFromRelativePosition(
+        start.index,
+        this.host.doc.spaceDoc
+      );
       const startBlock = this.host.view.getBlock(start.id);
-      const endIndex =
-        DocCollection.Y.createAbsolutePositionFromRelativePosition(
-          end.index,
-          this.host.doc.spaceDoc
-        );
+      const endIndex = Workspace.Y.createAbsolutePositionFromRelativePosition(
+        end.index,
+        this.host.doc.spaceDoc
+      );
       const endBlock = this.host.view.getBlock(end.id);
 
       if (!startIndex || !startBlock || !endIndex || !endBlock) {
@@ -122,11 +120,11 @@ export class CommentManager {
     const toBlockId = toBlock.model.id;
     if (!fromBlockText || !toBlockText) return null;
 
-    const startIndex = DocCollection.Y.createRelativePositionFromTypeIndex(
+    const startIndex = Workspace.Y.createRelativePositionFromTypeIndex(
       fromBlockText.yText,
       from.index
     );
-    const endIndex = DocCollection.Y.createRelativePositionFromTypeIndex(
+    const endIndex = Workspace.Y.createRelativePositionFromTypeIndex(
       toBlockText.yText,
       to ? to.index + to.length : from.index + from.length
     );

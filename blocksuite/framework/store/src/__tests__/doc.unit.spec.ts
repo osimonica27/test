@@ -2,11 +2,7 @@ import { expect, test, vi } from 'vitest';
 import * as Y from 'yjs';
 
 import { Schema } from '../schema/index.js';
-import {
-  BlockViewType,
-  DocCollection,
-  IdGeneratorType,
-} from '../store/index.js';
+import { BlockViewType, IdGeneratorType, Workspace } from '../store/index.js';
 import {
   DividerBlockSchema,
   ListBlockSchema,
@@ -33,7 +29,7 @@ function createTestOptions() {
 
 test('trigger props updated', () => {
   const options = createTestOptions();
-  const collection = new DocCollection(options);
+  const collection = new Workspace(options);
   collection.meta.initialize();
 
   const doc = collection.createDoc({ id: 'home' });
@@ -93,7 +89,7 @@ test('trigger props updated', () => {
 
 test('stash and pop', () => {
   const options = createTestOptions();
-  const collection = new DocCollection(options);
+  const collection = new Workspace(options);
   collection.meta.initialize();
 
   const doc = collection.createDoc({ id: 'home' });
@@ -163,7 +159,7 @@ test('stash and pop', () => {
 
 test('always get latest value in onChange', () => {
   const options = createTestOptions();
-  const collection = new DocCollection(options);
+  const collection = new Workspace(options);
   collection.meta.initialize();
 
   const doc = collection.createDoc({ id: 'home' });
@@ -210,7 +206,7 @@ test('always get latest value in onChange', () => {
 
 test('query', () => {
   const options = createTestOptions();
-  const collection = new DocCollection(options);
+  const collection = new Workspace(options);
   collection.meta.initialize();
   const doc1 = collection.createDoc({ id: 'home' });
   doc1.load();
@@ -247,7 +243,7 @@ test('query', () => {
 
 test('local readonly', () => {
   const options = createTestOptions();
-  const collection = new DocCollection(options);
+  const collection = new Workspace(options);
   collection.meta.initialize();
   const doc1 = collection.createDoc({ id: 'home' });
   doc1.load();

@@ -2,12 +2,12 @@ import { AffineSchemas, TestUtils } from '@blocksuite/blocks';
 import type { BlockSuiteFlags } from '@blocksuite/global/types';
 import { assertExists } from '@blocksuite/global/utils';
 import {
-  type BlockCollection,
-  DocCollection,
+  type Doc,
   type DocCollectionOptions,
   IdGeneratorType,
   Job,
   Schema,
+  Workspace,
 } from '@blocksuite/store';
 import {
   type BlobSource,
@@ -77,24 +77,24 @@ export function createStarterDocCollection() {
     docSources,
     blobSources,
   };
-  const collection = new DocCollection(options);
+  const collection = new Workspace(options);
   collection.start();
 
   // debug info
   window.collection = collection;
   window.blockSchemas = AffineSchemas;
   window.job = new Job({ collection: collection });
-  window.Y = DocCollection.Y;
+  window.Y = Workspace.Y;
   window.testUtils = new TestUtils();
 
   return collection;
 }
 
-export async function initStarterDocCollection(collection: DocCollection) {
+export async function initStarterDocCollection(collection: Workspace) {
   // init from other clients
   if (room && !params.has('init')) {
     const firstCollection = collection.docs.values().next().value as
-      | BlockCollection
+      | Doc
       | undefined;
     let firstDoc = firstCollection?.getDoc();
     if (!firstDoc) {
@@ -102,7 +102,7 @@ export async function initStarterDocCollection(collection: DocCollection) {
         collection.slots.docAdded.once(resolve)
       );
       const firstCollection = collection.docs.values().next().value as
-        | BlockCollection
+        | Doc
         | undefined;
       firstDoc = firstCollection?.getDoc();
     }
@@ -120,7 +120,7 @@ export async function initStarterDocCollection(collection: DocCollection) {
   // use built-in init function
   const functionMap = new Map<
     string,
-    (collection: DocCollection, id: string) => Promise<void> | void
+    (collection: Workspace, id: string) => Promise<void> | void
   >();
   Object.values(
     (await import('../data/index.js')) as Record<string, InitFn>

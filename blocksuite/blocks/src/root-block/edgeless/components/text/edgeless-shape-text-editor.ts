@@ -18,7 +18,7 @@ import {
   Vec,
   WithDisposable,
 } from '@blocksuite/global/utils';
-import { DocCollection } from '@blocksuite/store';
+import { Workspace } from '@blocksuite/store';
 import { html, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -110,7 +110,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
       if (len === 0) {
         this.element.text = undefined;
       } else if (len < text.length) {
-        this.element.text = new DocCollection.Y.Text(trimed);
+        this.element.text = new Workspace.Y.Text(trimed);
       }
     }
 

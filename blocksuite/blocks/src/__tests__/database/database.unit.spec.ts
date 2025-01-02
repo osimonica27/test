@@ -18,7 +18,7 @@ import {
 } from '@blocksuite/affine-model';
 import { propertyModelPresets } from '@blocksuite/data-view/property-pure-presets';
 import type { BlockModel, Doc } from '@blocksuite/store';
-import { DocCollection, IdGeneratorType, Schema } from '@blocksuite/store';
+import { IdGeneratorType, Schema, Workspace } from '@blocksuite/store';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 const AffineSchemas = [
@@ -37,7 +37,7 @@ function createTestOptions() {
 
 function createTestDoc(docId = 'doc0') {
   const options = createTestOptions();
-  const collection = new DocCollection(options);
+  const collection = new Workspace(options);
   collection.meta.initialize();
   const doc = collection.createDoc({ id: docId });
   doc.load();

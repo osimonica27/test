@@ -9,7 +9,7 @@ import {
   type SchemaToModel,
 } from '../schema/index.js';
 import { Block, type YBlock } from '../store/doc/block/index.js';
-import { DocCollection, IdGeneratorType } from '../store/index.js';
+import { IdGeneratorType, Workspace } from '../store/index.js';
 
 const pageSchema = defineBlockSchema({
   flavour: 'page',
@@ -37,7 +37,7 @@ function createTestOptions() {
 const defaultDocId = 'doc:home';
 function createTestDoc(docId = defaultDocId) {
   const options = createTestOptions();
-  const collection = new DocCollection(options);
+  const collection = new Workspace(options);
   collection.meta.initialize();
   const doc = collection.createDoc({ id: docId });
   doc.load();

@@ -13,7 +13,7 @@ import {
 import type { IVec, PointLocation } from '@blocksuite/global/utils';
 import { Bound, keys, linePolygonIntersects } from '@blocksuite/global/utils';
 import type { Y } from '@blocksuite/store';
-import { DocCollection } from '@blocksuite/store';
+import { Workspace } from '@blocksuite/store';
 
 type GroupElementProps = BaseElementProps & {
   children: Y.Map<boolean>;
@@ -37,12 +37,12 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
   }
 
   static override propsToY(props: Record<string, unknown>) {
-    if ('title' in props && !(props.title instanceof DocCollection.Y.Text)) {
-      props.title = new DocCollection.Y.Text(props.title as string);
+    if ('title' in props && !(props.title instanceof Workspace.Y.Text)) {
+      props.title = new Workspace.Y.Text(props.title as string);
     }
 
-    if (props.children && !(props.children instanceof DocCollection.Y.Map)) {
-      const children = new DocCollection.Y.Map() as Y.Map<boolean>;
+    if (props.children && !(props.children instanceof Workspace.Y.Map)) {
+      const children = new Workspace.Y.Map() as Y.Map<boolean>;
 
       keys(props.children).forEach(key => {
         children.set(key as string, true);
@@ -112,13 +112,13 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
     }
   )
   @field()
-  accessor children: Y.Map<boolean> = new DocCollection.Y.Map<boolean>();
+  accessor children: Y.Map<boolean> = new Workspace.Y.Map<boolean>();
 
   @local()
   accessor showTitle: boolean = true;
 
   @field()
-  accessor title: Y.Text = new DocCollection.Y.Text();
+  accessor title: Y.Text = new Workspace.Y.Text();
 }
 
 declare global {

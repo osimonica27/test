@@ -15,11 +15,11 @@ import type { ServiceProvider } from '@blocksuite/global/di';
 import { WithDisposable } from '@blocksuite/global/utils';
 import {
   type Doc,
-  DocCollection,
   type DocCollectionOptions,
   IdGeneratorType,
   Job,
   Schema,
+  Workspace,
 } from '@blocksuite/store';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
@@ -111,7 +111,7 @@ export class MiniMindmapPreview extends WithDisposable(LitElement) {
       awarenessSources: [],
     };
 
-    const collection = new DocCollection(options);
+    const collection = new Workspace(options);
     collection.meta.initialize();
     collection.start();
 

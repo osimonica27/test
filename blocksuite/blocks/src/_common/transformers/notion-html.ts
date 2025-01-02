@@ -1,7 +1,7 @@
 import { NotionHtmlAdapter } from '@blocksuite/affine-shared/adapters';
 import { Container } from '@blocksuite/global/di';
 import { sha } from '@blocksuite/global/utils';
-import { type DocCollection, extMimeMap, Job } from '@blocksuite/store';
+import { extMimeMap, Job, type Workspace } from '@blocksuite/store';
 
 import { defaultBlockNotionHtmlAdapterMatchers } from '../adapters/notion-html/block-matcher.js';
 import { notionHtmlInlineToDeltaMatchers } from '../adapters/notion-html/delta-converter/html-inline.js';
@@ -9,7 +9,7 @@ import { defaultImageProxyMiddleware } from './middlewares.js';
 import { Unzip } from './utils.js';
 
 type ImportNotionZipOptions = {
-  collection: DocCollection;
+  collection: Workspace;
   imported: Blob;
 };
 
@@ -27,7 +27,7 @@ const provider = container.provider();
  * Imports a Notion zip file into the BlockSuite collection.
  *
  * @param {ImportNotionZipOptions} options - The options for importing.
- * @param {DocCollection} options.collection - The BlockSuite document collection.
+ * @param {Workspace} options.collection - The BlockSuite document collection.
  * @param {Blob} options.imported - The imported zip file as a Blob.
  *
  * @returns {Promise<{entryId: string | undefined, pageIds: string[], isWorkspaceFile: boolean, hasMarkdown: boolean}>}

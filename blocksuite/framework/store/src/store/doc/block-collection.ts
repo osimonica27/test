@@ -7,9 +7,9 @@ import { Text } from '../../reactive/text.js';
 import type { BlockModel } from '../../schema/base.js';
 import type { IdGenerator } from '../../utils/id-generator.js';
 import type { AwarenessStore, BlockSuiteDoc } from '../../yjs/index.js';
-import type { DocCollection } from '../collection.js';
+import type { Workspace } from '../collection.js';
 import { DocCRUD } from './crud.js';
-import { Doc } from './doc.js';
+import { Blocks } from './doc.js';
 import type { YBlock } from './index.js';
 import type { Query } from './query.js';
 
@@ -25,7 +25,7 @@ export type BlockProps = BlockSysProps & Record<string, unknown>;
 
 type DocOptions = {
   id: string;
-  collection: DocCollection;
+  collection: Workspace;
   doc: BlockSuiteDoc;
   awarenessStore: AwarenessStore;
   idGenerator?: IdGenerator;
@@ -36,21 +36,21 @@ export type GetDocOptions = {
   readonly?: boolean;
 };
 
-export class BlockCollection {
+export class Doc {
   private _awarenessUpdateDisposable: Disposable | null = null;
 
   private readonly _canRedo$ = signal(false);
 
   private readonly _canUndo$ = signal(false);
 
-  private readonly _collection: DocCollection;
+  private readonly _collection: Workspace;
 
   private readonly _docCRUD: DocCRUD;
 
   private readonly _docMap = {
-    undefined: new Map<string, Doc>(),
-    true: new Map<string, Doc>(),
-    false: new Map<string, Doc>(),
+    undefined: new Map<string, Blocks>(),
+    true: new Map<string, Blocks>(),
+    false: new Map<string, Blocks>(),
   };
 
   // doc/space container.
@@ -342,7 +342,7 @@ export class BlockCollection {
       return this._docMap[readonlyKey].get(key)!;
     }
 
-    const doc = new Doc({
+    const doc = new Blocks({
       blockCollection: this,
       crud: this._docCRUD,
       schema: this.collection.schema,
@@ -435,17 +435,5 @@ export class BlockCollection {
     this._shouldTransact = false;
     callback();
     this._shouldTransact = true;
-  }
-}
-
-declare global {
-  namespace BlockSuite {
-    interface BlockModels {}
-
-    type Flavour = string & keyof BlockModels;
-
-    type ModelProps<Model> = Partial<
-      Model extends BlockModel<infer U> ? U : never
-    >;
   }
 }

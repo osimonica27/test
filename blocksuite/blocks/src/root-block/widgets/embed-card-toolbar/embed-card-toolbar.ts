@@ -53,7 +53,7 @@ import {
 } from '@blocksuite/affine-shared/services';
 import { getHostName, referenceToNode } from '@blocksuite/affine-shared/utils';
 import { type BlockStdScope, WidgetComponent } from '@blocksuite/block-std';
-import { type BlockModel, DocCollection } from '@blocksuite/store';
+import { type BlockModel, Workspace } from '@blocksuite/store';
 import { autoUpdate, computePosition, flip, offset } from '@floating-ui/dom';
 import { html, nothing, type TemplateResult } from 'lit';
 import { query, state } from 'lit/decorators.js';
@@ -614,7 +614,7 @@ export class EmbedCardToolbar extends WidgetComponent<
     const parent = doc.getParent(targetModel);
     const index = parent?.children.indexOf(targetModel);
 
-    const yText = new DocCollection.Y.Text();
+    const yText = new Workspace.Y.Text();
     const insert = title || caption || url;
     yText.insert(0, insert);
     yText.format(0, insert.length, { link: url });

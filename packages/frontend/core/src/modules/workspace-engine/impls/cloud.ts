@@ -5,7 +5,7 @@ import {
   getWorkspaceInfoQuery,
   getWorkspacesQuery,
 } from '@affine/graphql';
-import { DocCollection } from '@blocksuite/affine/store';
+import { Workspace as BSWorkspace } from '@blocksuite/affine/store';
 import {
   type BlobStorage,
   catchErrorInto,
@@ -101,7 +101,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
   async createWorkspace(
     initial: (
-      docCollection: DocCollection,
+      docCollection: BSWorkspace,
       blobStorage: BlobStorage,
       docStorage: DocStorage
     ) => Promise<void>
@@ -117,7 +117,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     const blobStorage = this.storageProvider.getBlobStorage(workspaceId);
     const docStorage = this.storageProvider.getDocStorage(workspaceId);
 
-    const docCollection = new DocCollection({
+    const docCollection = new BSWorkspace({
       id: workspaceId,
       idGenerator: () => nanoid(),
       schema: getAFFiNEWorkspaceSchema(),

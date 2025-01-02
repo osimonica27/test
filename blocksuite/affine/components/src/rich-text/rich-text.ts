@@ -12,7 +12,7 @@ import {
   type VLine,
 } from '@blocksuite/inline';
 import type { Y } from '@blocksuite/store';
-import { DocCollection, Text } from '@blocksuite/store';
+import { Text, Workspace } from '@blocksuite/store';
 import { effect } from '@preact/signals-core';
 import { css, html, type TemplateResult } from 'lit';
 import { property, query } from 'lit/decorators.js';
@@ -289,7 +289,7 @@ export class RichText extends WithDisposable(ShadowlessElement) {
     }
 
     if (!this.undoManager) {
-      this.undoManager = new DocCollection.Y.UndoManager(this._yText, {
+      this.undoManager = new Workspace.Y.UndoManager(this._yText, {
         trackedOrigins: new Set([this._yText.doc.clientID]),
       });
     }

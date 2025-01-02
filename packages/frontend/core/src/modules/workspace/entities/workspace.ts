@@ -1,4 +1,4 @@
-import { DocCollection } from '@blocksuite/affine/store';
+import { Workspace as BSWorkspace } from '@blocksuite/affine/store';
 import { Entity, LiveData } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
@@ -22,11 +22,11 @@ export class Workspace extends Entity {
 
   readonly flavour = this.meta.flavour;
 
-  _docCollection: DocCollection | null = null;
+  _docCollection: BSWorkspace | null = null;
 
   get docCollection() {
     if (!this._docCollection) {
-      this._docCollection = new DocCollection({
+      this._docCollection = new BSWorkspace({
         id: this.openOptions.metadata.id,
         blobSources: {
           main: this.engine.blob,

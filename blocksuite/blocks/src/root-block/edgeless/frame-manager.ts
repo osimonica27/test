@@ -20,7 +20,7 @@ import {
   type SerializedXYWH,
 } from '@blocksuite/global/utils';
 import type { Doc } from '@blocksuite/store';
-import { DocCollection, Text } from '@blocksuite/store';
+import { Text, Workspace } from '@blocksuite/store';
 
 import type { FrameBlockModel, NoteBlockModel } from '../../index.js';
 import { areSetsEqual } from './utils/misc.js';
@@ -197,7 +197,7 @@ export class EdgelessFrameManager extends GfxExtension {
       'affine:frame',
       {
         title: new Text(
-          new DocCollection.Y.Text(`Frame ${this.frames.length + 1}`)
+          new Workspace.Y.Text(`Frame ${this.frames.length + 1}`)
         ),
         xywh: bound.serialize(),
         index: this.gfx.layer.generateIndex(true),

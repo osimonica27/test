@@ -7,24 +7,24 @@ import type { DraftModel } from '../../transformer/index.js';
 import { syncBlockProps } from '../../utils/utils.js';
 import type { BlockOptions } from './block/index.js';
 import { Block } from './block/index.js';
-import type { BlockCollection, BlockProps } from './block-collection.js';
+import type { BlockProps, Doc } from './block-collection.js';
 import type { DocCRUD } from './crud.js';
 import { type Query, runQuery } from './query.js';
 
 type DocOptions = {
   schema: Schema;
-  blockCollection: BlockCollection;
+  blockCollection: Doc;
   crud: DocCRUD;
   readonly?: boolean;
   query?: Query;
 };
 
-export class Doc {
+export class Blocks {
   private readonly _runQuery = (block: Block) => {
     runQuery(this._query, block);
   };
 
-  protected readonly _blockCollection: BlockCollection;
+  protected readonly _blockCollection: Doc;
 
   protected readonly _blocks = signal<Record<string, Block>>({});
 
@@ -41,7 +41,7 @@ export class Doc {
 
   protected readonly _schema: Schema;
 
-  readonly slots: BlockCollection['slots'] & {
+  readonly slots: Doc['slots'] & {
     /** This is always triggered after `doc.load` is called. */
     ready: Slot;
     /**
@@ -668,5 +668,17 @@ export class Doc {
         shouldInsertBeforeSibling
       );
     });
+  }
+}
+
+declare global {
+  namespace BlockSuite {
+    interface BlockModels {}
+
+    type Flavour = string & keyof BlockModels;
+
+    type ModelProps<Model> = Partial<
+      Model extends BlockModel<infer U> ? U : never
+    >;
   }
 }

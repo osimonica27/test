@@ -16,7 +16,7 @@ import {
   Slot,
   type XYWH,
 } from '@blocksuite/global/utils';
-import { DocCollection, type Y } from '@blocksuite/store';
+import { Workspace, type Y } from '@blocksuite/store';
 import { createMutex } from 'lib0/mutex';
 
 import {
@@ -538,7 +538,7 @@ export function syncElementFromY(
       if (type.action === 'update' || type.action === 'add') {
         const value = model.yMap.get(key);
 
-        if (value instanceof DocCollection.Y.Text) {
+        if (value instanceof Workspace.Y.Text) {
           disposables[key]?.();
           disposables[key] = watchText(key, value, callback);
         }
@@ -560,7 +560,7 @@ export function syncElementFromY(
   };
 
   Array.from(model.yMap.entries()).forEach(([key, value]) => {
-    if (value instanceof DocCollection.Y.Text) {
+    if (value instanceof Workspace.Y.Text) {
       disposables[key] = watchText(key, value, callback);
     }
 

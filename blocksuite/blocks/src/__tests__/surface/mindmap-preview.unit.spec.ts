@@ -1,5 +1,5 @@
 import { Container } from '@blocksuite/global/di';
-import { DocCollection, Schema } from '@blocksuite/store';
+import { Schema, Workspace } from '@blocksuite/store';
 import { describe, expect, test } from 'vitest';
 
 import { defaultBlockMarkdownAdapterMatchers } from '../../_common/adapters/index.js';
@@ -26,7 +26,7 @@ describe('markdownToMindmap: convert markdown list to a mind map tree', () => {
   - Text D
     - Text E
 `;
-    const collection = new DocCollection({ schema: new Schema() });
+    const collection = new Workspace({ schema: new Schema() });
     collection.meta.initialize();
     const doc = collection.createDoc();
     const nodes = markdownToMindmap(markdown, doc, provider);
@@ -64,7 +64,7 @@ describe('markdownToMindmap: convert markdown list to a mind map tree', () => {
     - Text D
         - Text E
 `;
-    const collection = new DocCollection({ schema: new Schema() });
+    const collection = new Workspace({ schema: new Schema() });
     collection.meta.initialize();
     const doc = collection.createDoc();
     const nodes = markdownToMindmap(markdown, doc, provider);
@@ -96,7 +96,7 @@ describe('markdownToMindmap: convert markdown list to a mind map tree', () => {
 
   test('empty case', () => {
     const markdown = '';
-    const collection = new DocCollection({ schema: new Schema() });
+    const collection = new Workspace({ schema: new Schema() });
     collection.meta.initialize();
     const doc = collection.createDoc();
     const nodes = markdownToMindmap(markdown, doc, provider);

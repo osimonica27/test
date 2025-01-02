@@ -57,10 +57,10 @@ import {
 import {
   type BlockSnapshot,
   BlockSnapshotSchema,
-  DocCollection,
   fromJSON,
   Job,
   type SliceSnapshot,
+  Workspace,
 } from '@blocksuite/store';
 import DOMPurify from 'dompurify';
 
@@ -514,7 +514,7 @@ export class EdgelessClipboardController extends PageClipboard {
     newXYWH: SerializedXYWH
   ) {
     if (clipboardData.type === GROUP) {
-      const yMap = new DocCollection.Y.Map();
+      const yMap = new Workspace.Y.Map();
       const children = clipboardData.children ?? {};
 
       for (const [key, value] of Object.entries(children)) {
@@ -528,7 +528,7 @@ export class EdgelessClipboardController extends PageClipboard {
       clipboardData.children = yMap;
       clipboardData.xywh = newXYWH;
     } else if (clipboardData.type === MINDMAP) {
-      const yMap = new DocCollection.Y.Map();
+      const yMap = new Workspace.Y.Map();
       const children = clipboardData.children ?? {};
 
       for (const [oldKey, oldValue] of Object.entries(children)) {
@@ -1104,7 +1104,7 @@ export class EdgelessClipboardController extends PageClipboard {
       TextUtils.splitIntoLines(content).forEach((line, idx) => {
         this.crud.addBlock(
           'affine:paragraph',
-          { text: new DocCollection.Y.Text(line) },
+          { text: new Workspace.Y.Text(line) },
           noteId,
           idx
         );

@@ -1,9 +1,4 @@
-import {
-  DocCollection,
-  Job,
-  type JobMiddleware,
-  Schema,
-} from '@blocksuite/store';
+import { Job, type JobMiddleware, Schema, Workspace } from '@blocksuite/store';
 
 import { defaultImageProxyMiddleware } from '../../_common/transformers/middlewares.js';
 import { AffineSchemas } from '../../schemas.js';
@@ -25,7 +20,7 @@ export function createJob(middlewares?: JobMiddleware[]) {
   const testMiddlewares = middlewares ?? [];
   testMiddlewares.push(defaultImageProxyMiddleware);
   const schema = new Schema().register(AffineSchemas);
-  const docCollection = new DocCollection({ schema });
+  const docCollection = new Workspace({ schema });
   docCollection.meta.initialize();
   return new Job({ collection: docCollection, middlewares: testMiddlewares });
 }

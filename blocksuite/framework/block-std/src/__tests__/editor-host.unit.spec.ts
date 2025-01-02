@@ -1,4 +1,4 @@
-import { DocCollection, IdGeneratorType, Schema } from '@blocksuite/store';
+import { IdGeneratorType, Schema, Workspace } from '@blocksuite/store';
 import { describe, expect, test } from 'vitest';
 
 import { effects } from '../effects.js';
@@ -26,7 +26,7 @@ function wait(time: number) {
 
 describe('editor host', () => {
   test('editor host should rerender model when view changes', async () => {
-    const collection = new DocCollection(createTestOptions());
+    const collection = new Workspace(createTestOptions());
 
     collection.meta.initialize();
     const doc = collection.createDoc({ id: 'home' });

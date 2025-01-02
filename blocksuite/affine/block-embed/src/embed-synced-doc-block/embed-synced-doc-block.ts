@@ -27,9 +27,9 @@ import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { assertExists, Bound, getCommonBound } from '@blocksuite/global/utils';
 import {
   BlockViewType,
-  DocCollection,
   type GetDocOptions,
   type Query,
+  Workspace,
 } from '@blocksuite/store';
 import { computed } from '@preact/signals-core';
 import { html, type PropertyValues } from 'lit';
@@ -272,7 +272,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     assertExists(parent);
     const index = parent.children.indexOf(this.model);
 
-    const yText = new DocCollection.Y.Text();
+    const yText = new Workspace.Y.Text();
     yText.insert(0, REFERENCE_NODE);
     yText.format(0, REFERENCE_NODE.length, {
       reference: {

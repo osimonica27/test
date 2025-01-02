@@ -20,7 +20,7 @@ import {
   noop,
   pick,
 } from '@blocksuite/global/utils';
-import { DocCollection, type Y } from '@blocksuite/store';
+import { Workspace, type Y } from '@blocksuite/store';
 import { generateKeyBetween } from 'fractional-indexing';
 import { z } from 'zod';
 
@@ -183,9 +183,9 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
     if (
       props.children &&
       !isNodeType(props.children as Record<string, unknown>) &&
-      !(props.children instanceof DocCollection.Y.Map)
+      !(props.children instanceof Workspace.Y.Map)
     ) {
-      const children: Y.Map<NodeDetail> = new DocCollection.Y.Map();
+      const children: Y.Map<NodeDetail> = new Workspace.Y.Map();
 
       keys(props.children).forEach(key => {
         const detail = pick<Record<string, unknown>, keyof NodeDetail>(
@@ -284,7 +284,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
       throw new Error(`Parent node ${parent} not found`);
     }
 
-    props['text'] = new DocCollection.Y.Text(
+    props['text'] = new Workspace.Y.Text(
       (props['text'] as string) ?? 'New node'
     );
 
@@ -919,12 +919,12 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
   }
 
   @convert((initialValue, instance) => {
-    if (!(initialValue instanceof DocCollection.Y.Map)) {
+    if (!(initialValue instanceof Workspace.Y.Map)) {
       nodeSchema.parse(initialValue);
 
       assertType<NodeType>(initialValue);
 
-      const map: Y.Map<NodeDetail> = new DocCollection.Y.Map();
+      const map: Y.Map<NodeDetail> = new Workspace.Y.Map();
       const surface = instance.surface;
       const doc = surface.doc;
       const recursive = (
@@ -967,7 +967,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
   // since this model package is imported by playwright
   @observe(observeChildren)
   @field()
-  accessor children: Y.Map<NodeDetail> = new DocCollection.Y.Map();
+  accessor children: Y.Map<NodeDetail> = new Workspace.Y.Map();
 
   @watch(watchLayoutType)
   @field()

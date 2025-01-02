@@ -14,10 +14,10 @@ import {
 import { Container } from '@blocksuite/affine/global/di';
 import {
   createYProxy,
-  DocCollection,
   type DraftModel,
   Job,
   type JobMiddleware,
+  Workspace,
   type YBlock,
 } from '@blocksuite/affine/store';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
@@ -118,7 +118,7 @@ const bookmarkFlavours = new Set([
   'affine:embed-loom',
 ]);
 
-const markdownPreviewDocCollection = new DocCollection({
+const markdownPreviewDocCollection = new Workspace({
   id: 'indexer',
   schema: blocksuiteSchema,
 });

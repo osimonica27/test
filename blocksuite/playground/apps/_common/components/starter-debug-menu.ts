@@ -50,7 +50,7 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { SerializedXYWH } from '@blocksuite/global/utils';
 import type { DeltaInsert } from '@blocksuite/inline/types';
 import { AffineEditorContainer, type CommentPanel } from '@blocksuite/presets';
-import { type DocCollection, Job, Text } from '@blocksuite/store';
+import { Job, Text, type Workspace } from '@blocksuite/store';
 import type { SlDropdown } from '@shoelace-style/shoelace';
 import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path.js';
 import { css, html } from 'lit';
@@ -1004,7 +1004,7 @@ export class StarterDebugMenu extends ShadowlessElement {
   accessor blockTypeDropdown!: SlDropdown;
 
   @property({ attribute: false })
-  accessor collection!: DocCollection;
+  accessor collection!: Workspace;
 
   @property({ attribute: false })
   accessor commentPanel!: CommentPanel;

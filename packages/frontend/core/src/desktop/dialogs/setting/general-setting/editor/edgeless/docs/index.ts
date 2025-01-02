@@ -1,16 +1,16 @@
 import { AffineSchemas } from '@blocksuite/affine/blocks';
 import type { Doc, DocSnapshot } from '@blocksuite/affine/store';
-import { DocCollection, Job, Schema } from '@blocksuite/affine/store';
+import { Job, Schema, Workspace } from '@blocksuite/affine/store';
 
 const getCollection = (() => {
-  let collection: DocCollection | null = null;
+  let collection: Workspace | null = null;
   return async function () {
     if (collection) {
       return collection;
     }
     const schema = new Schema();
     schema.register(AffineSchemas);
-    collection = new DocCollection({ schema });
+    collection = new Workspace({ schema });
     collection.meta.initialize();
     return collection;
   };

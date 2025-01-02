@@ -6,7 +6,7 @@ import {
 } from '@blocksuite/blocks';
 import { WithDisposable } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { BlockCollection, DocCollection } from '@blocksuite/store';
+import type { Doc, Workspace } from '@blocksuite/store';
 import { css, html, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -67,7 +67,7 @@ export class DocsPanel extends WithDisposable(ShadowlessElement) {
     createDocBlock(this.editor.doc.collection);
   };
 
-  gotoDoc = (doc: BlockCollection) => {
+  gotoDoc = (doc: Doc) => {
     const url = this.editor.std
       .getOptional(GenerateDocUrlProvider)
       ?.generateDocUrl(doc.id);
@@ -169,7 +169,7 @@ export class DocsPanel extends WithDisposable(ShadowlessElement) {
   accessor onClose!: () => void;
 }
 
-function createDocBlock(collection: DocCollection) {
+function createDocBlock(collection: Workspace) {
   const id = collection.idGenerator();
   createDefaultDoc(collection, { id });
 }

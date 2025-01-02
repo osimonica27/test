@@ -6,20 +6,20 @@ import 'fake-indexeddb/auto';
 import { AffineSchemas } from '@blocksuite/affine/blocks/schemas';
 import { assertExists } from '@blocksuite/affine/global/utils';
 import type { Doc } from '@blocksuite/affine/store';
-import { DocCollection, Schema } from '@blocksuite/affine/store';
+import { Schema, Workspace } from '@blocksuite/affine/store';
 import { renderHook } from '@testing-library/react';
 import { useAtomValue } from 'jotai';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { useBlockSuitePagePreview } from '../use-block-suite-page-preview';
-let docCollection: DocCollection;
+let docCollection: Workspace;
 
 const schema = new Schema();
 schema.register(AffineSchemas);
 
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
-  docCollection = new DocCollection({ id: 'test', schema });
+  docCollection = new Workspace({ id: 'test', schema });
   docCollection.meta.initialize();
   const initPage = async (page: Doc) => {
     page.load();

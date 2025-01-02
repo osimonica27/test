@@ -2,7 +2,7 @@ import type { ConnectorElementModel } from '@blocksuite/affine-model';
 import type { SurfaceBlockProps } from '@blocksuite/block-std/gfx';
 import { SurfaceBlockModel as BaseSurfaceModel } from '@blocksuite/block-std/gfx';
 import { DisposableGroup } from '@blocksuite/global/utils';
-import { defineBlockSchema, DocCollection } from '@blocksuite/store';
+import { defineBlockSchema, Workspace } from '@blocksuite/store';
 
 import { elementsCtorMap } from './element-model/index.js';
 import { SurfaceBlockTransformer } from './surface-transformer.js';
@@ -12,7 +12,7 @@ import { groupRelationWatcher } from './watchers/group.js';
 export const SurfaceBlockSchema = defineBlockSchema({
   flavour: 'affine:surface',
   props: (internalPrimitives): SurfaceBlockProps => ({
-    elements: internalPrimitives.Boxed(new DocCollection.Y.Map()),
+    elements: internalPrimitives.Boxed(new Workspace.Y.Map()),
   }),
   metadata: {
     version: 5,

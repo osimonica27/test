@@ -1,6 +1,6 @@
 import { ShadowlessElement } from '@blocksuite/block-std';
 import { assertEquals } from '@blocksuite/global/utils';
-import { DocCollection, type Text } from '@blocksuite/store';
+import { type Text, Workspace } from '@blocksuite/store';
 import { css, html } from 'lit';
 import { state } from 'lit/decorators.js';
 import { createRef, ref } from 'lit/directives/ref.js';
@@ -98,7 +98,7 @@ export function fillSelectionWithFocusCellData(
           curCellText.clear();
           curCellText.applyDelta(delta);
         } else {
-          const newText = new DocCollection.Y.Text();
+          const newText = new Workspace.Y.Text();
           newText.applyDelta(delta);
           curCell.valueSet(newText);
         }

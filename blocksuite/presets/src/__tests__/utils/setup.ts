@@ -1,5 +1,5 @@
 import { effects as blocksEffects } from '@blocksuite/blocks/effects';
-import type { BlockCollection } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/store';
 
 import { effects } from '../../effects.js';
 
@@ -13,12 +13,7 @@ import {
 } from '@blocksuite/blocks';
 import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { assertExists } from '@blocksuite/global/utils';
-import {
-  DocCollection,
-  IdGeneratorType,
-  Schema,
-  Text,
-} from '@blocksuite/store';
+import { IdGeneratorType, Schema, Text, Workspace } from '@blocksuite/store';
 
 import { AffineEditorContainer } from '../../index.js';
 
@@ -44,7 +39,7 @@ function createCollectionOptions() {
   };
 }
 
-function initCollection(collection: DocCollection) {
+function initCollection(collection: Workspace) {
   const doc = collection.createDoc({ id: 'doc:home' });
 
   doc.load(() => {
@@ -56,10 +51,10 @@ function initCollection(collection: DocCollection) {
   doc.resetHistory();
 }
 
-async function createEditor(collection: DocCollection, mode: DocMode = 'page') {
+async function createEditor(collection: Workspace, mode: DocMode = 'page') {
   const app = document.createElement('div');
   const blockCollection = collection.docs.values().next().value as
-    | BlockCollection
+    | Doc
     | undefined;
   assertExists(blockCollection, 'Need to create a doc first');
   const doc = blockCollection.getDoc();
@@ -86,7 +81,7 @@ async function createEditor(collection: DocCollection, mode: DocMode = 'page') {
 }
 
 export async function setupEditor(mode: DocMode = 'page') {
-  const collection = new DocCollection(createCollectionOptions());
+  const collection = new Workspace(createCollectionOptions());
   collection.meta.initialize();
 
   window.collection = collection;

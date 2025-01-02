@@ -16,7 +16,7 @@ import type {
   PointLocation,
   SerializedXYWH,
 } from '@blocksuite/global/utils';
-import { DocCollection, type Y } from '@blocksuite/store';
+import { Workspace, type Y } from '@blocksuite/store';
 
 import {
   DEFAULT_ROUGHNESS,
@@ -68,8 +68,8 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
   }
 
   static override propsToY(props: ShapeProps) {
-    if (props.text && !(props.text instanceof DocCollection.Y.Text)) {
-      props.text = new DocCollection.Y.Text(props.text);
+    if (props.text && !(props.text instanceof Workspace.Y.Text)) {
+      props.text = new Workspace.Y.Text(props.text);
     }
 
     return props;

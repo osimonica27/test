@@ -18,7 +18,7 @@ import {
   toolbarDefaultConfig,
 } from '@blocksuite/blocks';
 import { AffineEditorContainer, CommentPanel } from '@blocksuite/presets';
-import type { DocCollection } from '@blocksuite/store';
+import type { Workspace } from '@blocksuite/store';
 
 import { AttachmentViewerPanel } from '../../_common/components/attachment-viewer-panel.js';
 import { CustomFramePanel } from '../../_common/components/custom-frame-panel.js';
@@ -45,7 +45,7 @@ function configureFormatBar(formatBar: AffineFormatBarWidget) {
   toolbarDefaultConfig(formatBar);
 }
 
-export async function mountDefaultDocEditor(collection: DocCollection) {
+export async function mountDefaultDocEditor(collection: Workspace) {
   const app = document.getElementById('app');
   if (!app) return;
 

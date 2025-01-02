@@ -2,10 +2,10 @@ import { DEFAULT_ROUGHNESS } from '@blocksuite/affine-model';
 import type { SerializedXYWH } from '@blocksuite/global/utils';
 import {
   Boxed,
-  type DocCollection,
   nanoid,
   native2Y,
   Text,
+  type Workspace,
   type Y,
 } from '@blocksuite/store';
 
@@ -46,10 +46,7 @@ function createShapes(count: number): Record<string, unknown> {
 const SHAPES_COUNT = 100;
 const RANGE = 2000;
 
-export const heavyWhiteboard: InitFn = (
-  collection: DocCollection,
-  id: string
-) => {
+export const heavyWhiteboard: InitFn = (collection: Workspace, id: string) => {
   const count = Number(params.get('count')) || SHAPES_COUNT;
   const enableShapes = !!params.get('shapes');
 

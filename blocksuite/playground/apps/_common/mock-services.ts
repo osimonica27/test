@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type {
   PeekOptions,
   PeekViewService,
@@ -18,7 +17,7 @@ import {
   toast,
 } from '@blocksuite/blocks';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import { type DocCollection, Slot } from '@blocksuite/store';
+import { Slot, type Workspace } from '@blocksuite/store';
 import { signal } from '@preact/signals-core';
 import type { TemplateResult } from 'lit';
 
@@ -107,7 +106,7 @@ export function mockNotificationService(editor: AffineEditorContainer) {
   return notificationService;
 }
 
-export function mockParseDocUrlService(collection: DocCollection) {
+export function mockParseDocUrlService(collection: Workspace) {
   const parseDocUrlService: ParseDocUrlService = {
     parseDocUrl: (url: string) => {
       if (url && URL.canParse(url)) {
@@ -183,7 +182,7 @@ export function mockPeekViewExtension(
   } satisfies PeekViewService);
 }
 
-export function mockGenerateDocUrlService(collection: DocCollection) {
+export function mockGenerateDocUrlService(collection: Workspace) {
   const generateDocUrlService: GenerateDocUrlService = {
     generateDocUrl: (docId: string, params?: ReferenceParams) => {
       const doc = collection.getDoc(docId);
