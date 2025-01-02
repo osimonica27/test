@@ -43,6 +43,9 @@ test('kanban drag and drop is useable', async ({ page }) => {
   await page.locator('[data-testid=page-editor-blank]').click();
   await addKanban(page);
 
+  // NOTE: the following code is the same as the test in
+  // tests/affine-mobile/e2e/kanban.spec.ts apart from the locator names
+
   const database = page.locator('affine-database');
   await expect(database).toBeVisible();
 
