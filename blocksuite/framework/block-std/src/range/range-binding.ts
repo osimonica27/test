@@ -312,7 +312,8 @@ export class RangeBinding {
     );
 
     this.host.disposables.addFromEvent(document, 'selectionchange', () => {
-      serialThrottle(() => this._onNativeSelectionChanged());
+      const throttled = serialThrottle(() => this._onNativeSelectionChanged());
+      throttled().catch(console.error);
     });
 
     this.host.disposables.add(
