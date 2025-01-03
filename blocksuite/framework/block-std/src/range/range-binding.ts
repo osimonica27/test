@@ -1,4 +1,4 @@
-import { serialThrottle } from '@blocksuite/global/utils';
+import { nextTick, serialThrottle } from '@blocksuite/global/utils';
 import type { BlockModel } from '@blocksuite/store';
 
 import type { BaseSelection, TextSelection } from '../selection/index.js';
@@ -151,7 +151,7 @@ export class RangeBinding {
           });
       });
 
-      await this.host.updateComplete;
+      await nextTick();
 
       const selection = this.selectionManager.create('text', {
         from: {
