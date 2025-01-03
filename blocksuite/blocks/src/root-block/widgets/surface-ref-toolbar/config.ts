@@ -43,7 +43,7 @@ export const BUILT_IN_GROUPS: MenuItemGroup<SurfaceRefToolbarContext>[] = [
             surfaceRenderer,
             edgelessElement: referencedModel,
           })
-            .then(blob => writeImageBlobToClipboard(ctx.std, blob))
+            .then(blob => writeImageBlobToClipboard(blob))
             .then(() => toast(ctx.host, 'Copied image to clipboard'))
             .catch(console.error);
 

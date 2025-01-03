@@ -1,8 +1,7 @@
 import type { CanvasRenderer } from '@blocksuite/affine-block-surface';
 import type { SurfaceRefBlockComponent } from '@blocksuite/affine-block-surface-ref';
-import { ClipboardNativeProvider } from '@blocksuite/affine-shared/services';
 import { isTopLevelBlock } from '@blocksuite/affine-shared/utils';
-import type { BlockStdScope, EditorHost } from '@blocksuite/block-std';
+import type { EditorHost } from '@blocksuite/block-std';
 import { assertExists, Bound } from '@blocksuite/global/utils';
 
 import { ExportManager } from '../../../_common/export-manager/export-manager.js';
@@ -40,15 +39,6 @@ export const edgelessToBlob = async (
     });
 };
 
-export const writeImageBlobToClipboard = async (
-  std: BlockStdScope,
-  blob: Blob
-) => {
-  const copyAsImage = std.getOptional(ClipboardNativeProvider)?.copyAsImage;
-  if (copyAsImage) {
-    await copyAsImage(await blob.arrayBuffer());
-    return;
-  }
-
+export const writeImageBlobToClipboard = async (blob: Blob) => {
   await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
 };

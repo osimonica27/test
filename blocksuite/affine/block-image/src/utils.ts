@@ -4,7 +4,6 @@ import type {
   ImageBlockModel,
   ImageBlockProps,
 } from '@blocksuite/affine-model';
-import { ClipboardNativeProvider } from '@blocksuite/affine-shared/services';
 import {
   downloadBlob,
   humanFileSize,
@@ -225,7 +224,7 @@ function convertToPng(blob: Blob): Promise<Blob | null> {
 export async function copyImageBlob(
   block: ImageBlockComponent | ImageEdgelessBlockComponent
 ) {
-  const { host, model, std } = block;
+  const { host, model } = block;
   let blob = await getImageBlob(model);
   if (!blob) {
     console.error('Failed to get image blob');
@@ -233,33 +232,26 @@ export async function copyImageBlob(
   }
 
   try {
-    const copyAsImage = std.getOptional(ClipboardNativeProvider)?.copyAsImage;
-    if (copyAsImage) {
-      await copyAsImage(await blob.arrayBuffer());
-    } else {
-      // DOMException: Type image/jpeg not supported on write.
-      if (blob.type !== 'image/png') {
-        const pngBlob = await convertToPng(blob);
-        if (!pngBlob) {
-          console.error('Failed to convert blob to PNG');
-          return;
-        }
-        blob = pngBlob;
-      }
-
-      if (!globalThis.isSecureContext) {
-        console.error(
-          'Clipboard API is not available in insecure context',
-          blob.type,
-          blob
-        );
+    // DOMException: Type image/jpeg not supported on write.
+    if (blob.type !== 'image/png') {
+      const pngBlob = await convertToPng(blob);
+      if (!pngBlob) {
+        console.error('Failed to convert blob to PNG');
         return;
       }
-
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob }),
-      ]);
+      blob = pngBlob;
     }
+
+    if (!globalThis.isSecureContext) {
+      console.error(
+        'Clipboard API is not available in insecure context',
+        blob.type,
+        blob
+      );
+      return;
+    }
+
+    await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
 
     toast(host, 'Copied image to clipboard');
   } catch (error) {
