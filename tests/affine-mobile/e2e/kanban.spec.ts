@@ -41,7 +41,6 @@ test('kanban drag and drop', async ({ page }) => {
   await page.mouse.down();
   await page.locator(".mobile-group-header").nth(1).hover()
 
-  await page.pause()
   // drag preview of card should be visible
   await expect(page.locator(".with-data-view-css-variable .mobile-card-body")).toBeVisible()
 
