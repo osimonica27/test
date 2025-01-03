@@ -1,4 +1,4 @@
-import { throttle } from '@blocksuite/global/utils';
+import { serialThrottle } from '@blocksuite/global/utils';
 import type { BlockModel } from '@blocksuite/store';
 
 import type { BaseSelection, TextSelection } from '../selection/index.js';
@@ -311,13 +311,9 @@ export class RangeBinding {
       this.selectionManager.slots.changed.on(this._onStdSelectionChanged)
     );
 
-    this.host.disposables.addFromEvent(
-      document,
-      'selectionchange',
-      throttle(() => {
-        this._onNativeSelectionChanged().catch(console.error);
-      }, 10)
-    );
+    this.host.disposables.addFromEvent(document, 'selectionchange', () => {
+      serialThrottle(() => this._onNativeSelectionChanged());
+    });
 
     this.host.disposables.add(
       this.host.event.add('beforeInput', ctx => {

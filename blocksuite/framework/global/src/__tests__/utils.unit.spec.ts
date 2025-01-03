@@ -1,6 +1,6 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
-import { isEqual } from '../utils.js';
+import { isEqual, serialThrottle } from '../utils.js';
 
 describe('isEqual', () => {
   test('number', () => {
@@ -65,5 +65,39 @@ describe('isEqual', () => {
     expect(isEqual(nested, nested)).toBe(true);
     // @ts-expect-error ignore
     expect(isEqual({ foo: [] }, { foo: '' })).toBe(false);
+  });
+});
+
+describe('serialThrottle', () => {
+  test('should execute function immediately if not running', async () => {
+    const mock = vi.fn().mockResolvedValue('result');
+    const throttled = serialThrottle(mock);
+
+    const result = await throttled('test');
+
+    expect(result).toBe('result');
+    expect(mock).toHaveBeenCalledTimes(1);
+    expect(mock).toHaveBeenCalledWith('test');
+  });
+
+  test('should only keep last call while running', async () => {
+    let resolve: (value: string) => void = () => {};
+    const promise = new Promise<string>(r => (resolve = r));
+    const mock = vi.fn().mockReturnValue(promise);
+    const throttled = serialThrottle(mock);
+
+    const firstCall = throttled('first');
+    // Queue multiple calls while running
+    throttled('second');
+    throttled('third');
+    const lastCall = throttled('fourth');
+
+    // Complete first execution
+    resolve('done');
+    await firstCall;
+    await lastCall;
+
+    expect(mock).toHaveBeenCalledTimes(2);
+    expect(mock.mock.calls).toEqual([['first'], ['fourth']]);
   });
 });

@@ -124,3 +124,28 @@ export async function nextTick() {
     return new Promise(resolve => setTimeout(resolve, 0));
   }
 }
+
+export function serialThrottle<T>(fn: (...args: any[]) => Promise<T>) {
+  let running = false;
+  let pending: { args: any[] } | null = null;
+
+  return async (...args: any[]): Promise<T | undefined> => {
+    if (running) {
+      pending = { args };
+      return;
+    }
+
+    running = true;
+    try {
+      const result = await fn(...args);
+      while (pending) {
+        const { args } = pending;
+        pending = null;
+        await fn(...args);
+      }
+      return result;
+    } finally {
+      running = false;
+    }
+  };
+}
