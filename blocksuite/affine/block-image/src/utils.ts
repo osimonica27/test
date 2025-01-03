@@ -4,6 +4,7 @@ import type {
   ImageBlockModel,
   ImageBlockProps,
 } from '@blocksuite/affine-model';
+import { ClipboardNativeProvider } from '@blocksuite/affine-shared/services';
 import {
   downloadBlob,
   humanFileSize,
@@ -12,7 +13,6 @@ import {
 } from '@blocksuite/affine-shared/utils';
 import type { BlockStdScope, EditorHost } from '@blocksuite/block-std';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
-import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { Bound, type IVec, Point, Vec } from '@blocksuite/global/utils';
 import type { BlockModel } from '@blocksuite/store';
 
@@ -200,15 +200,6 @@ export async function resetImageSize(
   });
 }
 
-function convertToString(blob: Blob): Promise<string | null> {
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.addEventListener('load', _ => resolve(reader.result as string));
-    reader.addEventListener('error', () => resolve(null));
-    reader.readAsDataURL(blob);
-  });
-}
-
 function convertToPng(blob: Blob): Promise<Blob | null> {
   return new Promise(resolve => {
     const reader = new FileReader();
@@ -234,7 +225,7 @@ function convertToPng(blob: Blob): Promise<Blob | null> {
 export async function copyImageBlob(
   block: ImageBlockComponent | ImageEdgelessBlockComponent
 ) {
-  const { host, model } = block;
+  const { host, model, std } = block;
   let blob = await getImageBlob(model);
   if (!blob) {
     console.error('Failed to get image blob');
@@ -242,16 +233,9 @@ export async function copyImageBlob(
   }
 
   try {
-    // @ts-expect-error FIXME: BS-2239
-    if (window.apis?.clipboard?.copyAsImageFromString) {
-      const dataURL = await convertToString(blob);
-      if (!dataURL)
-        throw new BlockSuiteError(
-          ErrorCode.DefaultRuntimeError,
-          'Cant convert a blob to data URL.'
-        );
-      // @ts-expect-error FIXME: BS-2239
-      await window.apis.clipboard?.copyAsImageFromString(dataURL);
+    const copyAsImage = std.getOptional(ClipboardNativeProvider)?.copyAsImage;
+    if (copyAsImage) {
+      await copyAsImage(await blob.arrayBuffer());
     } else {
       // DOMException: Type image/jpeg not supported on write.
       if (blob.type !== 'image/png') {

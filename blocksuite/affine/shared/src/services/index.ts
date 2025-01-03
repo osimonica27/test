@@ -1,3 +1,4 @@
+export * from './clipboard-native-service';
 export * from './doc-display-meta-service';
 export * from './doc-mode-service';
 export * from './drag-handle-config';
