@@ -73,11 +73,10 @@ describe('serialThrottle', () => {
     const mock = vi.fn().mockResolvedValue('result');
     const throttled = serialThrottle(mock);
 
-    const result = await throttled('test');
+    const result = await throttled();
 
     expect(result).toBe('result');
     expect(mock).toHaveBeenCalledTimes(1);
-    expect(mock).toHaveBeenCalledWith('test');
   });
 
   test('should only keep last call while running', async () => {
@@ -86,11 +85,11 @@ describe('serialThrottle', () => {
     const mock = vi.fn().mockReturnValue(promise);
     const throttled = serialThrottle(mock);
 
-    const firstCall = throttled('first');
+    const firstCall = throttled();
     // Queue multiple calls while running
-    throttled('second');
-    throttled('third');
-    const lastCall = throttled('fourth');
+    throttled();
+    throttled();
+    const lastCall = throttled();
 
     // Complete first execution
     resolve('done');
@@ -98,6 +97,5 @@ describe('serialThrottle', () => {
     await lastCall;
 
     expect(mock).toHaveBeenCalledTimes(2);
-    expect(mock.mock.calls).toEqual([['first'], ['fourth']]);
   });
 });
