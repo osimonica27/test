@@ -151,7 +151,7 @@ export class RangeBinding {
           });
       });
 
-      await nextTick();
+      await this.host.updateComplete;
 
       const selection = this.selectionManager.create('text', {
         from: {
@@ -170,7 +170,7 @@ export class RangeBinding {
     if (this.isComposing) return;
     if (!this.host) return; // Unstable when switching views, card <-> embed
 
-    await this.host.updateComplete;
+    await nextTick();
 
     const selection = document.getSelection();
     if (!selection) {
