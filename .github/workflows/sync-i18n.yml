@@ -11,20 +11,23 @@ on:
 jobs:
   synchronize-with-crowdin:
     runs-on: ubuntu-latest
-
     permissions:
       contents: write
       pull-requests: write
+
+    outputs:
+      crowdin-pr-url: ${{ steps.crowdin.outputs.pull_request_url }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Crowdin action
+        id: crowdin
         uses: crowdin/github-action@v2
         with:
           upload_sources: true
-          upload_translations: true
+          upload_translations: false
           download_translations: true
           auto_approve_imported: true
           import_eq_suggestions: true
@@ -40,3 +43,32 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CROWDIN_PROJECT_ID: ${{ secrets.CROWDIN_PROJECT_ID }}
           CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+  i18n-codegen:
+    needs: synchronize-with-crowdin
+    if: ${{ needs.synchronize-with-crowdin.outputs.crowdin-pr-url }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: l10n_crowdin_translations
+    
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          full-cache: true
+
+      - name: Run i18n codegen
+        run: yarn affine @affine/i18n build
+
+      - name: Commit changes
+        run: |
+          git add .
+          git commit --amend --no-edit
+          git push origin l10n_crowdin_translations -f
