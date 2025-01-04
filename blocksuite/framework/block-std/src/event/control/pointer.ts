@@ -1,4 +1,4 @@
-import { IS_IPAD } from '@blocksuite/global/env';
+import { IS_IPAD, IS_MOBILE } from '@blocksuite/global/env';
 import { nextTick, Vec } from '@blocksuite/global/utils';
 
 import { UIEventState, UIEventStateContext } from '../base.js';
@@ -176,12 +176,16 @@ class ClickController extends PointerControllerBase {
   }
 }
 
+const MOBILE_DRAG_DELAY_MS = 200;
+
 class DragController extends PointerControllerBase {
+  private _draggingState: 'released' | 'dragging' | 'moved-too-fast' = 'released';
+
   private readonly _down = (event: PointerEvent) => {
     if (this._nativeDragging) return;
 
     if (!event.isPrimary) {
-      if (this._dragging && this._lastPointerState) {
+      if (this._draggingState === 'dragging' && this._lastPointerState) {
         this._up(this._lastPointerState.raw);
       }
       this._reset();
@@ -203,9 +207,18 @@ class DragController extends PointerControllerBase {
       this._move
     );
     this._dispatcher.disposables.addFromEvent(document, 'pointerup', this._up);
+    if (IS_MOBILE) {
+      setTimeout(() => {
+        if (this._draggingState === 'released' && this._startPointerState === pointerState) {
+          this._draggingState = 'dragging';
+          // NOTE: this is a synthetic event. We might end up with a lot of fake dragStart events
+          // followed by context menu events. If this happens, we could make a new event type instead,
+          // and keep draggingState as 'released' until the first dragMove event.
+          this._dispatcher.run('dragStart', createContext(event, pointerState));
+        }
+      }, MOBILE_DRAG_DELAY_MS);
+    }
   };
-
-  private _dragging = false;
 
   private _lastPointerState: PointerEventState | null = null;
 
@@ -230,15 +243,25 @@ class DragController extends PointerControllerBase {
     this._lastPointerState = state;
 
     if (
-      !this._nativeDragging &&
-      !this._dragging &&
+      IS_MOBILE &&
+      this._draggingState === 'released' &&
+      event.timeStamp - this._startPointerState.raw.timeStamp < MOBILE_DRAG_DELAY_MS &&
       isFarEnough(event, this._startPointerState.raw)
     ) {
-      this._dragging = true;
+      this._draggingState = 'moved-too-fast';
+      return;
+    }
+
+    if (
+      !this._nativeDragging &&
+      this._draggingState == 'released' &&
+      isFarEnough(event, this._startPointerState.raw)
+    ) {
+      this._draggingState = 'dragging';
       this._dispatcher.run('dragStart', createContext(event, start));
     }
 
-    if (this._dragging) {
+    if (this._draggingState === 'dragging') {
       this._dispatcher.run('dragMove', createContext(event, state));
     }
   };
@@ -301,7 +324,7 @@ class DragController extends PointerControllerBase {
   };
 
   private readonly _reset = () => {
-    this._dragging = false;
+    this._draggingState = 'released';
     this._startPointerState = null;
     this._lastPointerState = null;
 
@@ -329,7 +352,7 @@ class DragController extends PointerControllerBase {
       last,
     });
 
-    if (this._dragging) {
+    if (this._draggingState === 'dragging') {
       this._dispatcher.run('dragEnd', createContext(event, state));
     }
 
@@ -343,7 +366,7 @@ class DragController extends PointerControllerBase {
     const { host, disposables } = this._dispatcher;
     disposables.addFromEvent(host, 'touchmove', (event: TouchEvent) => {
       if (
-        this._dragging &&
+        this._draggingState === 'dragging' &&
         this._startPointerState &&
         this._startPointerState.raw.pointerType === 'pen'
       ) {

@@ -27,7 +27,7 @@ test('kanban drag and drop', async ({ page }) => {
   }).getByRole('button').nth(1).click();
 
   // NOTE: the following code is the same as the test in
-  // tests/affine-local/e2e/blocksuite/editor.spec.ts apart from the locator names
+  // tests/affine-local/e2e/blocksuite/editor.spec.ts apart from the locator names and waiting for drag preview
 
   const database = page.locator('affine-database');
   await expect(database).toBeVisible();
@@ -39,9 +39,8 @@ test('kanban drag and drop', async ({ page }) => {
   // drag the card across by one group
   await page.locator(`[data-card-id="${cardId}"]`).hover()
   await page.mouse.down();
-  await page.locator(".mobile-group-header").nth(1).hover()
 
-  // drag preview of card should be visible
+  // wait for the drag preview to appear before moving
   await expect(page.locator(".with-data-view-css-variable .mobile-card-body")).toBeVisible()
 
   // wiggle the card a bit and then drop it (not sure how to do this in a non-racey way)
