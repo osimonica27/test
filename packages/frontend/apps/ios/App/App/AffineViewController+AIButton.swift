@@ -81,12 +81,27 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
     presentIntoCurrentContext(withTargetController: targetController)
   }
 
-  func focusApertureRequestAction(actionType: IntelligentsFocusApertureViewActionType) {
+  func focusApertureRequestAction(
+    from view: IntelligentsFocusApertureView,
+    actionType: IntelligentsFocusApertureViewActionType
+  ) {
     switch actionType {
     case .translateTo:
-      fatalError("not implemented")
+      // TODO: IMPL
+      let controller = IntelligentsEphemeralActionController(action: .translate(
+        to: .langSimplifiedChinese,
+        workspaceID: workspaceID ?? "",
+        documentID: documentID ?? ""
+      ))
+      controller.configure(previewImage: view.capturedImage ?? .init())
+      presentIntoCurrentContext(withTargetController: controller)
     case .summary:
-      fatalError("not implemented")
+        let controller = IntelligentsEphemeralActionController(action: .summarize(
+          workspaceID: workspaceID ?? "",
+          documentID: documentID ?? ""
+        ))
+        controller.configure(previewImage: view.capturedImage ?? .init())
+        presentIntoCurrentContext(withTargetController: controller)
     case .chatWithAI:
       let controller = IntelligentsChatController()
       controller.metadata[.documentID] = documentID

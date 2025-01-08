@@ -56,13 +56,16 @@ public class IntelligentsFocusApertureView: UIView {
     bringSubviewToFront(snapshotView)
 
     controlButtonsPanel.translateButton.action = { [weak self] in
-      self?.delegate?.focusApertureRequestAction(actionType: .translateTo)
+      guard let self else { return }
+      delegate?.focusApertureRequestAction(from: self, actionType: .translateTo)
     }
     controlButtonsPanel.summaryButton.action = { [weak self] in
-      self?.delegate?.focusApertureRequestAction(actionType: .summary)
+      guard let self else { return }
+      delegate?.focusApertureRequestAction(from: self, actionType: .summary)
     }
     controlButtonsPanel.chatWithAIButton.action = { [weak self] in
-      self?.delegate?.focusApertureRequestAction(actionType: .chatWithAI)
+      guard let self else { return }
+      delegate?.focusApertureRequestAction(from: self, actionType: .chatWithAI)
     }
     removeEveryAutoResizingMasks()
   }
@@ -124,7 +127,7 @@ public class IntelligentsFocusApertureView: UIView {
     isUserInteractionEnabled = false
     executeAnimationDismiss {
       self.removeFromSuperview()
-      self.delegate?.focusApertureRequestAction(actionType: .dismiss)
+      self.delegate?.focusApertureRequestAction(from: self, actionType: .dismiss)
     }
   }
 }
