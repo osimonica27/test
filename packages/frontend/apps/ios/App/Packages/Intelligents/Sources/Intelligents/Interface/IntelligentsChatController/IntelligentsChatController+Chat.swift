@@ -85,9 +85,9 @@ private extension IntelligentsChatController {
   ) {
     Intelligents.qlClient.perform(
       mutation: CreateCopilotSessionMutation(options: .init(
-        docId: "", // TODO: put the real data
+        docId: metadata[.documentID] ?? "",
         promptName: Prompt.general_Chat_With_AFFiNE_AI.rawValue,
-        workspaceId: "" // TODO: put the real data
+        workspaceId: metadata[.workspaceID] ?? ""
       )),
       queue: .global()
     ) { result in

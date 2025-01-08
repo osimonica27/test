@@ -10,13 +10,9 @@ import SpringInterpolation
 import UIKit
 
 extension ChatTableView: UIScrollViewDelegate, DisplayLinkDelegate {
-  func synchronization() {
-    let now = Date()
-    defer { scrollAnimationDeltaTimeHolder = now }
-    var deltaTime = now.timeIntervalSince(scrollAnimationDeltaTimeHolder)
-    if deltaTime > 0.5 { deltaTime = 0.5 }
+  func synchronization(context: DisplayLinkCallbackContext) {
     guard scrollToBottomEnabled else { return }
-    DispatchQueue.main.async { self.tikVsync(deltaTime: deltaTime * 2) }
+    DispatchQueue.main.async { self.tikVsync(deltaTime: context.duration * 2) }
   }
 
   var bottomLocationY: CGFloat {

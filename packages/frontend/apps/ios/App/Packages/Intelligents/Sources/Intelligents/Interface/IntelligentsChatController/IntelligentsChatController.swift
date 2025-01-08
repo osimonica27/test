@@ -21,6 +21,14 @@ public class IntelligentsChatController: UIViewController {
     didSet { print("[*] new sessionID: \(sessionID)") }
   }
 
+  public enum MetadataKey: String {
+    case documentID
+    case workspaceID
+    case content
+  }
+
+  public var metadata: [MetadataKey: String] = [:]
+
   var chatTask: EventSource?
 
   override public var title: String? {

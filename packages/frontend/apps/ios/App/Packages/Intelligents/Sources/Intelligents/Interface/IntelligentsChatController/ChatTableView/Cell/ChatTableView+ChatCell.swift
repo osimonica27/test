@@ -72,11 +72,11 @@ extension ChatTableView {
       case .assistant:
         avatarView.image = UIImage(named: "spark", in: .module, with: .none)
         titleLabel.text = "AFFiNE AI".localized()
-        backgroundColorType = .lightGray
+        backgroundColorType = .clear
       case .user:
         avatarView.image = UIImage(systemName: "person.fill")
         titleLabel.text = "You".localized()
-        backgroundColorType = .clear
+        backgroundColorType = .lightGray
       }
 
       removableConstraints.forEach { $0.isActive = false }

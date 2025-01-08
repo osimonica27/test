@@ -28,7 +28,6 @@ class ChatTableView: UIView {
 
   var scrollAnimationController: DisplayLink = .init()
   var scrollAnimationContext: SpringInterpolation = .init()
-  var scrollAnimationDeltaTimeHolder: Date = .init()
 
   init() {
     super.init(frame: .zero)

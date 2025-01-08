@@ -13,7 +13,7 @@ extension IntelligentsChatController {
     let keyboardHeight = (info[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?
       .cgRectValue
       .height ?? 0
-    inputBoxKeyboardAdapterHeightConstraint.constant = keyboardHeight
+    inputBoxKeyboardAdapterHeightConstraint.constant = keyboardHeight - abs(view.safeAreaInsets.bottom)
     view.setNeedsUpdateConstraints()
     animateWithKeyboard(userInfo: info)
   }

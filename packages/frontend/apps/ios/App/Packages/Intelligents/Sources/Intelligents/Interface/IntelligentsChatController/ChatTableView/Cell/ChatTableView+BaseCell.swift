@@ -7,15 +7,15 @@
 
 import UIKit
 
-private let initialInsetValue: CGFloat = 24
+private let initialInsetValue: CGFloat = 8
 
 extension ChatTableView {
   class BaseCell: UITableViewCell {
     var inset: UIEdgeInsets { // available for overrides
       .init(
-        top: initialInsetValue / 2,
+        top: initialInsetValue,
         left: initialInsetValue,
-        bottom: initialInsetValue / 2,
+        bottom: initialInsetValue,
         right: initialInsetValue
       )
     }
@@ -52,19 +52,19 @@ extension ChatTableView {
       contentView.addSubview(roundedBackgroundView)
       roundedBackgroundView.translatesAutoresizingMaskIntoConstraints = false
       [ // inset half of the container view
-        roundedBackgroundView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: inset.left / 2),
-        roundedBackgroundView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -inset.right / 2),
-        roundedBackgroundView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: inset.top / 2),
-        roundedBackgroundView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -inset.bottom / 2),
+        roundedBackgroundView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: inset.left),
+        roundedBackgroundView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -inset.right),
+        roundedBackgroundView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: inset.top),
+        roundedBackgroundView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -inset.bottom),
       ].forEach { $0.isActive = true }
 
       contentView.addSubview(containerView)
       containerView.translatesAutoresizingMaskIntoConstraints = false
       [
-        containerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: inset.left),
-        containerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -inset.right),
-        containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: inset.top),
-        containerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -inset.bottom),
+        containerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: inset.left * 2),
+        containerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -inset.right * 2),
+        containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: inset.top * 2),
+        containerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -inset.bottom * 2),
       ].forEach { $0.isActive = true }
     }
 
