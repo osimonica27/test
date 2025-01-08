@@ -17,7 +17,6 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
 
     button.beginProgress()
 
-    
     let group = DispatchGroup()
     
     group.enter()
@@ -60,6 +59,7 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
 
   @discardableResult
   func openIntelligentsSheet() -> IntelligentsFocusApertureView? {
+    view.resignFirstResponder()
     guard let view = webView?.subviews.first else {
       assertionFailure()
       return nil

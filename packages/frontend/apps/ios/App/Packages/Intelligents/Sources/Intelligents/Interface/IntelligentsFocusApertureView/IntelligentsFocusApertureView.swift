@@ -32,10 +32,12 @@ public class IntelligentsFocusApertureView: UIView {
 
     backgroundView.backgroundColor = .black
     backgroundView.isUserInteractionEnabled = true
-    backgroundView.addGestureRecognizer(UITapGestureRecognizer(
+    let tap = UITapGestureRecognizer(
       target: self,
       action: #selector(dismissFocus)
-    ))
+    )
+    tap.cancelsTouchesInView = true
+    backgroundView.addGestureRecognizer(tap)
 
     snapshotView.setContentHuggingPriority(.defaultLow, for: .vertical)
     snapshotView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
