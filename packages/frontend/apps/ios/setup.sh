@@ -32,6 +32,13 @@ rustup target add aarch64-apple-ios
 rustup target add aarch64-apple-ios-sim
 rustup target add aarch64-apple-darwin
 
+cargo build -p affine_mobile_native --lib --release --target aarch64-apple-ios
+cargo run -p affine_mobile_native --bin uniffi-bindgen \
+    generate \
+    --library target/aarch64-apple-ios/release/libaffine_mobile_native.a \
+    --language swift \
+    --out-dir packages/frontend/apps/ios/App/App/uniffi
+
 echo "[*] interacting with graphql..."
 apollo-ios-cli generate --path $SCRIPT_PATH/apollo-codegen-config.json
 
