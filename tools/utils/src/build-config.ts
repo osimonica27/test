@@ -42,6 +42,8 @@ export function getBuildConfig(
         githubUrl: 'https://github.com/toeverything/AFFiNE',
         changelogUrl: 'https://affine.pro/what-is-new',
         downloadUrl: 'https://affine.pro/download',
+        pricingUrl: 'https://affine.pro/pricing',
+        appUrl: 'https://app.affine.pro',
         imageProxyUrl: '/api/worker/image-proxy',
         linkPreviewUrl: '/api/worker/link-preview',
       };

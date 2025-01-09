@@ -22,7 +22,9 @@ declare interface BUILD_CONFIG_TYPE {
   appBuildType: 'stable' | 'beta' | 'internal' | 'canary';
 
   githubUrl: string;
+  appUrl: string;
   changelogUrl: string;
+  pricingUrl: string;
   downloadUrl: string;
   // see: tools/workers
   imageProxyUrl: string;

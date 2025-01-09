@@ -4186,6 +4186,26 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.upgrade-success-page.team.text-1"](): string;
     /**
+      * `Thank you for your purchase!`
+      */
+    ["com.affine.payment.license-success.title"](): string;
+    /**
+      * `Thank you for purchasing the AFFiNE self-hosted license.`
+      */
+    ["com.affine.payment.license-success.text-1"](): string;
+    /**
+      * `You can use this key to upgrade in Settings > Workspace > Billing > Upgrade`
+      */
+    ["com.affine.payment.license-success.hint"](): string;
+    /**
+      * `Open AFFiNE`
+      */
+    ["com.affine.payment.license-success.open-affine"](): string;
+    /**
+      * `Copied key to clipboard`
+      */
+    ["com.affine.payment.license-success.copy"](): string;
+    /**
       * `Close`
       */
     ["com.affine.peek-view-controls.close"](): string;
@@ -5362,6 +5382,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-page-block-header.description"](): string;
     /**
+      * `Editor RTL`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-editor-rtl.name"](): string;
+    /**
+      * `Once enabled, the editor will be displayed in RTL mode.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-editor-rtl.description"](): string;
+    /**
       * `Only an owner can edit the workspace avatar and name. Changes will be shown for everyone.`
       */
     ["com.affine.settings.workspace.not-owner"](): string;
@@ -5370,7 +5398,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.preferences"](): string;
     /**
-      * `Team's Team's Billing`
+      * `Team's Billing`
       */
     ["com.affine.settings.workspace.billing"](): string;
     /**
@@ -5405,6 +5433,111 @@ export function useAFFiNEI18N(): {
       * `Cancel Plan`
       */
     ["com.affine.settings.workspace.billing.team-workspace.cancel-plan"](): string;
+    /**
+      * `License`
+      */
+    ["com.affine.settings.workspace.license"](): string;
+    /**
+      * `Manage license information and invoices for the self host team workspace.`
+      */
+    ["com.affine.settings.workspace.license.description"](): string;
+    /**
+      * `Get teams plan for your self hosted workspace.`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.title"](): string;
+    /**
+      * `Need more seats? Best for scalable teams.`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.subtitle"](): string;
+    /**
+      * `Everything in Self Hosted FOSS`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g1"](): string;
+    /**
+      * `{{initialQuota}} initial storage + {{quotaPerSeat}} per seat`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g2"](options: Readonly<{
+        initialQuota: string;
+        quotaPerSeat: string;
+    }>): string;
+    /**
+      * `{{quota}} of maximum file size`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g3"](options: {
+        readonly quota: string;
+    }): string;
+    /**
+      * `Unlimited team members (10+ seats)`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g4"](): string;
+    /**
+      * `Multiple admin roles`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g5"](): string;
+    /**
+      * `Priority customer support`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g6"](): string;
+    /**
+      * `Lean more`
+      */
+    ["com.affine.settings.workspace.license.lean-more"](): string;
+    /**
+      * `Self-host Team Workspace`
+      */
+    ["com.affine.settings.workspace.license.self-host-team"](): string;
+    /**
+      * `This license will expire on {{expirationDate}}.`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.team.description"](options: {
+        readonly expirationDate: string;
+    }): string;
+    /**
+      * `Basic version: {{memberCount}} seats. For more, purchase or use activation key.`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.free.description"](options: {
+        readonly memberCount: string;
+    }): string;
+    /**
+      * `Seats`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.seats"](): string;
+    /**
+      * `Active key`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.active-key"](): string;
+    /**
+      * `Deactivate`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.deactivate-license"](): string;
+    /**
+      * `Buy more seat`
+      */
+    ["com.affine.settings.workspace.license.buy-more-seat"](): string;
+    /**
+      * `Activate License`
+      */
+    ["com.affine.settings.workspace.license.activate-modal.title"](): string;
+    /**
+      * `Enter license key to activate this self host workspace.`
+      */
+    ["com.affine.settings.workspace.license.activate-modal.description"](): string;
+    /**
+      * `License activated successfully.`
+      */
+    ["com.affine.settings.workspace.license.activate-success"](): string;
+    /**
+      * `Deactivate License`
+      */
+    ["com.affine.settings.workspace.license.deactivate-modal.title"](): string;
+    /**
+      * `Are you sure you want to deactivate this license?`
+      */
+    ["com.affine.settings.workspace.license.deactivate-modal.description"](): string;
+    /**
+      * `License deactivated successfully.`
+      */
+    ["com.affine.settings.workspace.license.deactivate-success"](): string;
     /**
       * `Local`
       */
@@ -5550,7 +5683,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.backup.import.success.action"](): string;
     /**
-      * `Deleted {{date}} at {{time}}`
+      * `Deleted on {{date}} at {{time}}`
       */
     ["com.affine.settings.workspace.backup.delete-at"](options: Readonly<{
         date: string;
@@ -6662,6 +6795,26 @@ export function useAFFiNEI18N(): {
       * `Remove template`
       */
     ["com.affine.settings.workspace.template.remove"](): string;
+    /**
+      * `Unused blobs`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs"](): string;
+    /**
+      * `No unused blobs`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs.empty"](): string;
+    /**
+      * `Selected`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs.selected"](): string;
+    /**
+      * `Delete blob files`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs.delete.title"](): string;
+    /**
+      * `Are you sure you want to delete these blob files? This action cannot be undone. Make sure you no longer need them before proceeding.`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs.delete.warning"](): string;
 } { const { t } = useTranslation(); return useMemo(() => createProxy((key) => t.bind(null, key)), [t]); }
 function createComponent(i18nKey: string) {
     return (props) => createElement(Trans, { i18nKey, shouldUnescape: true, ...props });
@@ -6938,6 +7091,12 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
+      * `If you have any questions, please contact our <1>customer support</1>.`
+      */
+    ["com.affine.payment.license-success.text-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
       * `This action deletes the old Favorites section. <b>Your documents are safe</b>, ensure you've moved your frequently accessed documents to the new personal Favorites section.`
       */
     ["com.affine.rootAppSidebar.migration-data.clean-all.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
@@ -6975,6 +7134,12 @@ export const TypedTrans: {
     ["com.affine.settings.suggestion-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
         ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `If you encounter any issues, please contact our <1>customer support</1>.`
+      */
+    ["com.affine.settings.workspace.license.activate-modal.tips"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `The "<1>{{ name }}</1>" property will be removed. This action cannot be undone.`

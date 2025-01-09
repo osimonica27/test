@@ -18,6 +18,20 @@ fragment CredentialsRequirements on CredentialsRequirementType {
     ...PasswordLimits
   }
 }`
+export const activateLicenseMutation = {
+  id: 'activateLicenseMutation' as const,
+  operationName: 'activateLicense',
+  definitionName: 'activateLicense',
+  containsFile: false,
+  query: `
+mutation activateLicense($workspaceId: String!, $license: String!) {
+  activateLicense(workspaceId: $workspaceId, license: $license) {
+    installedAt
+    validatedAt
+  }
+}`,
+};
+
 export const adminServerConfigQuery = {
   id: 'adminServerConfigQuery' as const,
   operationName: 'adminServerConfig',
@@ -206,17 +220,6 @@ mutation createCopilotSession($options: CreateChatSessionInput!) {
 }`,
 };
 
-export const updateCopilotSessionMutation = {
-  id: 'updateCopilotSessionMutation' as const,
-  operationName: 'updateCopilotSession',
-  definitionName: 'updateCopilotSession',
-  containsFile: false,
-  query: `
-mutation updateCopilotSession($options: UpdateChatSessionInput!) {
-  updateCopilotSession(options: $options)
-}`,
-};
-
 export const createCustomerPortalMutation = {
   id: 'createCustomerPortalMutation' as const,
   operationName: 'createCustomerPortal',
@@ -225,6 +228,17 @@ export const createCustomerPortalMutation = {
   query: `
 mutation createCustomerPortal {
   createCustomerPortal
+}`,
+};
+
+export const createSelfhostCustomerPortalMutation = {
+  id: 'createSelfhostCustomerPortalMutation' as const,
+  operationName: 'createSelfhostCustomerPortal',
+  definitionName: 'createSelfhostWorkspaceCustomerPortal',
+  containsFile: false,
+  query: `
+mutation createSelfhostCustomerPortal($workspaceId: String!) {
+  createSelfhostWorkspaceCustomerPortal(workspaceId: $workspaceId)
 }`,
 };
 
@@ -253,6 +267,17 @@ mutation createWorkspace {
     public
     createdAt
   }
+}`,
+};
+
+export const deactivateLicenseMutation = {
+  id: 'deactivateLicenseMutation' as const,
+  operationName: 'deactivateLicense',
+  definitionName: 'deactivateLicense',
+  containsFile: false,
+  query: `
+mutation deactivateLicense($workspaceId: String!) {
+  deactivateLicense(workspaceId: $workspaceId)
 }`,
 };
 
@@ -1151,6 +1176,17 @@ mutation updateAccount($id: String!, $input: ManageUserInput!) {
     name
     email
   }
+}`,
+};
+
+export const updateCopilotSessionMutation = {
+  id: 'updateCopilotSessionMutation' as const,
+  operationName: 'updateCopilotSession',
+  definitionName: 'updateCopilotSession',
+  containsFile: false,
+  query: `
+mutation updateCopilotSession($options: UpdateChatSessionInput!) {
+  updateCopilotSession(options: $options)
 }`,
 };
 

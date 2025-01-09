@@ -71,13 +71,17 @@ export const useEnableCloud = () => {
       // not logged in, open login modal
       if (loginStatus === 'unauthenticated') {
         openSignIn();
+        closeConfirmModal();
+        return;
       }
+      // FIXME: session status is not updated after login,
+      // the confirm modal can not get the latest status
 
       if (loginStatus === 'authenticated') {
         await enableCloud(...args);
       }
     },
-    [enableCloud, loginStatus, openSignIn]
+    [closeConfirmModal, enableCloud, loginStatus, openSignIn]
   );
 
   const confirmEnableCloud = useCallback(

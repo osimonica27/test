@@ -56,7 +56,7 @@ export class LicenseService {
       throw new WorkspaceLicenseAlreadyExists();
     }
 
-    const data = await this.fetch<License>(
+    const data = await this.fetchAffinePro<License>(
       `/api/team/licenses/${licenseKey}/activate`,
       {
         method: 'POST',
@@ -106,7 +106,7 @@ export class LicenseService {
       throw new LicenseNotFound();
     }
 
-    await this.fetch(`/api/team/licenses/${license.key}/deactivate`, {
+    await this.fetchAffinePro(`/api/team/licenses/${license.key}/deactivate`, {
       method: 'POST',
     });
 
@@ -121,10 +121,11 @@ export class LicenseService {
       plan: SubscriptionPlan.SelfHostedTeam,
       recurring: SubscriptionRecurring.Monthly,
     });
+    return true;
   }
 
   async updateTeamRecurring(key: string, recurring: SubscriptionRecurring) {
-    await this.fetch(`/api/team/licenses/${key}/recurring`, {
+    await this.fetchAffinePro(`/api/team/licenses/${key}/recurring`, {
       method: 'POST',
       body: JSON.stringify({
         recurring,
@@ -143,7 +144,7 @@ export class LicenseService {
       throw new LicenseNotFound();
     }
 
-    return this.fetch<{ url: string }>(
+    return this.fetchAffinePro<{ url: string }>(
       `/api/team/licenses/${license.key}/create-customer-portal`,
       {
         method: 'POST',
@@ -169,7 +170,7 @@ export class LicenseService {
       return;
     }
 
-    await this.fetch(`/api/team/licenses/${license.key}/seats`, {
+    await this.fetchAffinePro(`/api/team/licenses/${license.key}/seats`, {
       method: 'POST',
       body: JSON.stringify({
         quantity: count,
@@ -223,7 +224,7 @@ export class LicenseService {
 
   private async revalidateLicense(license: InstalledLicense) {
     try {
-      const res = await this.fetch<License>(
+      const res = await this.fetchAffinePro<License>(
         `/api/team/licenses/${license.key}/health`
       );
 
@@ -267,7 +268,7 @@ export class LicenseService {
     }
   }
 
-  private async fetch<T = any>(
+  private async fetchAffinePro<T = any>(
     path: string,
     init?: RequestInit
   ): Promise<T & { res: Response }> {

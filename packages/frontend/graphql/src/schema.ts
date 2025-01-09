@@ -188,11 +188,6 @@ export interface CreateChatSessionInput {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface UpdateChatSessionInput {
-  sessionId: Scalars['String']['input'];
-  promptName: Scalars['String']['input'];
-}
-
 export interface CreateCheckoutSessionInput {
   args?: InputMaybe<Scalars['JSONObject']['input']>;
   coupon?: InputMaybe<Scalars['String']['input']>;
@@ -282,6 +277,7 @@ export type ErrorDataUnion =
   | MemberNotFoundInSpaceDataType
   | MissingOauthQueryParameterDataType
   | NotInSpaceDataType
+  | QueryTooLongDataType
   | RuntimeConfigNotFoundDataType
   | SameSubscriptionRecurringDataType
   | SpaceAccessDeniedDataType
@@ -356,6 +352,7 @@ export enum ErrorNames {
   OAUTH_STATE_EXPIRED = 'OAUTH_STATE_EXPIRED',
   PAGE_IS_NOT_PUBLIC = 'PAGE_IS_NOT_PUBLIC',
   PASSWORD_REQUIRED = 'PASSWORD_REQUIRED',
+  QUERY_TOO_LONG = 'QUERY_TOO_LONG',
   RUNTIME_CONFIG_NOT_FOUND = 'RUNTIME_CONFIG_NOT_FOUND',
   SAME_EMAIL_PROVIDED = 'SAME_EMAIL_PROVIDED',
   SAME_SUBSCRIPTION_RECURRING = 'SAME_SUBSCRIPTION_RECURRING',
@@ -533,6 +530,15 @@ export interface InvoiceType {
   updatedAt: Scalars['DateTime']['output'];
 }
 
+export interface License {
+  __typename?: 'License';
+  expiredAt: Maybe<Scalars['DateTime']['output']>;
+  installedAt: Scalars['DateTime']['output'];
+  quantity: Scalars['Int']['output'];
+  recurring: SubscriptionRecurring;
+  validatedAt: Scalars['DateTime']['output'];
+}
+
 export interface LimitedUserType {
   __typename?: 'LimitedUserType';
   /** User email */
@@ -574,6 +580,7 @@ export interface MissingOauthQueryParameterDataType {
 export interface Mutation {
   __typename?: 'Mutation';
   acceptInviteById: Scalars['Boolean']['output'];
+  activateLicense: License;
   addWorkspaceFeature: Scalars['Int']['output'];
   approveMember: Scalars['String']['output'];
   cancelSubscription: SubscriptionType;
@@ -594,10 +601,12 @@ export interface Mutation {
   /** Create a stripe customer portal to manage payment methods */
   createCustomerPortal: Scalars['String']['output'];
   createInviteLink: InviteLink;
+  createSelfhostWorkspaceCustomerPortal: Scalars['String']['output'];
   /** Create a new user */
   createUser: UserType;
   /** Create a new workspace */
   createWorkspace: WorkspaceType;
+  deactivateLicense: Scalars['Boolean']['output'];
   deleteAccount: DeleteAccount;
   deleteBlob: Scalars['Boolean']['output'];
   /** Delete a user account */
@@ -633,6 +642,8 @@ export interface Mutation {
   sharePage: Scalars['Boolean']['output'];
   /** Update a copilot prompt */
   updateCopilotPrompt: CopilotPromptType;
+  /** Update a chat session */
+  updateCopilotSession: Scalars['String']['output'];
   updateProfile: UserType;
   /** update server runtime configurable setting */
   updateRuntimeConfig: ServerRuntimeConfigType;
@@ -653,6 +664,11 @@ export interface Mutation {
 export interface MutationAcceptInviteByIdArgs {
   inviteId: Scalars['String']['input'];
   sendAcceptMail?: InputMaybe<Scalars['Boolean']['input']>;
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationActivateLicenseArgs {
+  license: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
@@ -708,12 +724,12 @@ export interface MutationCreateCopilotSessionArgs {
   options: CreateChatSessionInput;
 }
 
-export interface MutationUpdateCopilotSessionArgs {
-  options: UpdateChatSessionInput;
-}
-
 export interface MutationCreateInviteLinkArgs {
   expireTime: WorkspaceInviteLinkExpireTime;
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationCreateSelfhostWorkspaceCustomerPortalArgs {
   workspaceId: Scalars['String']['input'];
 }
 
@@ -723,6 +739,10 @@ export interface MutationCreateUserArgs {
 
 export interface MutationCreateWorkspaceArgs {
   init?: InputMaybe<Scalars['Upload']['input']>;
+}
+
+export interface MutationDeactivateLicenseArgs {
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationDeleteBlobArgs {
@@ -863,6 +883,10 @@ export interface MutationSharePageArgs {
 export interface MutationUpdateCopilotPromptArgs {
   messages: Array<CopilotPromptMessageInput>;
   name: Scalars['String']['input'];
+}
+
+export interface MutationUpdateCopilotSessionArgs {
+  options: UpdateChatSessionInput;
 }
 
 export interface MutationUpdateProfileArgs {
@@ -1033,6 +1057,11 @@ export interface QueryChatHistoriesInput {
   sessionId?: InputMaybe<Scalars['String']['input']>;
   sessionOrder?: InputMaybe<ChatHistoryOrder>;
   skip?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface QueryTooLongDataType {
+  __typename?: 'QueryTooLongDataType';
+  max: Scalars['Int']['output'];
 }
 
 export interface QuotaQueryType {
@@ -1241,6 +1270,12 @@ export interface UnsupportedSubscriptionPlanDataType {
   plan: Scalars['String']['output'];
 }
 
+export interface UpdateChatSessionInput {
+  /** The prompt name to use for the session */
+  promptName: Scalars['String']['input'];
+  sessionId: Scalars['String']['input'];
+}
+
 export interface UpdateUserInput {
   /** User name */
   name?: InputMaybe<Scalars['String']['input']>;
@@ -1396,6 +1431,8 @@ export interface WorkspaceType {
   /** Get user invoice count */
   invoiceCount: Scalars['Int']['output'];
   invoices: Array<InvoiceType>;
+  /** The selfhost license of the workspace */
+  license: Maybe<License>;
   /** member count of workspace */
   memberCount: Scalars['Int']['output'];
   /** Members of workspace */
@@ -1437,6 +1474,7 @@ export interface WorkspaceTypeInvoicesArgs {
 }
 
 export interface WorkspaceTypeMembersArgs {
+  query?: InputMaybe<Scalars['String']['input']>;
   skip?: InputMaybe<Scalars['Int']['input']>;
   take?: InputMaybe<Scalars['Int']['input']>;
 }
@@ -1460,6 +1498,20 @@ export interface TokenType {
   sessionToken: Maybe<Scalars['String']['output']>;
   token: Scalars['String']['output'];
 }
+
+export type ActivateLicenseMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  license: Scalars['String']['input'];
+}>;
+
+export type ActivateLicenseMutation = {
+  __typename?: 'Mutation';
+  activateLicense: {
+    __typename?: 'License';
+    installedAt: string;
+    validatedAt: string;
+  };
+};
 
 export type AdminServerConfigQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -1630,15 +1682,6 @@ export type CreateCopilotSessionMutation = {
   createCopilotSession: string;
 };
 
-export type UpdateCopilotSessionMutationVariables = Exact<{
-  options: UpdateChatSessionInput;
-}>;
-
-export type UpdateCopilotSessionMutation = {
-  __typename?: 'Mutation';
-  updateCopilotSession: string;
-};
-
 export type CreateCustomerPortalMutationVariables = Exact<{
   [key: string]: never;
 }>;
@@ -1646,6 +1689,15 @@ export type CreateCustomerPortalMutationVariables = Exact<{
 export type CreateCustomerPortalMutation = {
   __typename?: 'Mutation';
   createCustomerPortal: string;
+};
+
+export type CreateSelfhostCustomerPortalMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type CreateSelfhostCustomerPortalMutation = {
+  __typename?: 'Mutation';
+  createSelfhostWorkspaceCustomerPortal: string;
 };
 
 export type CreateUserMutationVariables = Exact<{
@@ -1667,6 +1719,15 @@ export type CreateWorkspaceMutation = {
     public: boolean;
     createdAt: string;
   };
+};
+
+export type DeactivateLicenseMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type DeactivateLicenseMutation = {
+  __typename?: 'Mutation';
+  deactivateLicense: boolean;
 };
 
 export type DeleteAccountMutationVariables = Exact<{ [key: string]: never }>;
@@ -2496,6 +2557,15 @@ export type UpdateAccountMutation = {
   };
 };
 
+export type UpdateCopilotSessionMutationVariables = Exact<{
+  options: UpdateChatSessionInput;
+}>;
+
+export type UpdateCopilotSessionMutation = {
+  __typename?: 'Mutation';
+  updateCopilotSession: string;
+};
+
 export type UpdatePromptMutationVariables = Exact<{
   name: Scalars['String']['input'];
   messages: Array<CopilotPromptMessageInput> | CopilotPromptMessageInput;
@@ -3068,6 +3138,11 @@ export type Queries =
 
 export type Mutations =
   | {
+      name: 'activateLicenseMutation';
+      variables: ActivateLicenseMutationVariables;
+      response: ActivateLicenseMutation;
+    }
+  | {
       name: 'deleteBlobMutation';
       variables: DeleteBlobMutationVariables;
       response: DeleteBlobMutation;
@@ -3123,14 +3198,14 @@ export type Mutations =
       response: CreateCopilotSessionMutation;
     }
   | {
-    name: 'updateCopilotSessionMutation';
-    variables: UpdateCopilotSessionMutationVariables;
-    response: UpdateCopilotSessionMutation;
-  }
-  | {
       name: 'createCustomerPortalMutation';
       variables: CreateCustomerPortalMutationVariables;
       response: CreateCustomerPortalMutation;
+    }
+  | {
+      name: 'createSelfhostCustomerPortalMutation';
+      variables: CreateSelfhostCustomerPortalMutationVariables;
+      response: CreateSelfhostCustomerPortalMutation;
     }
   | {
       name: 'createUserMutation';
@@ -3141,6 +3216,11 @@ export type Mutations =
       name: 'createWorkspaceMutation';
       variables: CreateWorkspaceMutationVariables;
       response: CreateWorkspaceMutation;
+    }
+  | {
+      name: 'deactivateLicenseMutation';
+      variables: DeactivateLicenseMutationVariables;
+      response: DeactivateLicenseMutation;
     }
   | {
       name: 'deleteAccountMutation';
@@ -3241,6 +3321,11 @@ export type Mutations =
       name: 'updateAccountMutation';
       variables: UpdateAccountMutationVariables;
       response: UpdateAccountMutation;
+    }
+  | {
+      name: 'updateCopilotSessionMutation';
+      variables: UpdateCopilotSessionMutationVariables;
+      response: UpdateCopilotSessionMutation;
     }
   | {
       name: 'updatePromptMutation';
