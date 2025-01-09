@@ -161,6 +161,12 @@ export class StoreSelectionExtension extends StoreExtension {
   }
 
   set(selections: BaseSelection[]) {
+    const json = selections.map(s => s.toJSON());
+    const current = this.value.map(s => s.toJSON());
+    if (JSON.stringify(json) === JSON.stringify(current)) {
+      return;
+    }
+
     this.store.awarenessStore.setLocalSelection(
       this._id,
       selections.map(s => s.toJSON())

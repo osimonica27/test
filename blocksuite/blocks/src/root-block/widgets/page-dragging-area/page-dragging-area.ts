@@ -203,6 +203,9 @@ export class AffinePageDraggingAreaWidget extends WidgetComponent<
     this.handleEvent(
       'pointerDown',
       ctx => {
+        if (!this.host.contains(document.activeElement)) {
+          return;
+        }
         const container = this.block.rootElementContainer;
         if (!container) return;
 
