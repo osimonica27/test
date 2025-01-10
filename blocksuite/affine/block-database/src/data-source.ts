@@ -180,13 +180,25 @@ export class DatabaseBlockDataSource extends DataSourceBase {
 
   propertyAdd(insertToPosition: InsertToPosition, type?: string): string {
     this.doc.captureSync();
+
+    const metaConfig = this.propertyMetaGet(
+      type ?? propertyPresets.multiSelectPropertyConfig.type
+    );
+
     const result = addProperty(
       this._model,
       insertToPosition,
-      databaseBlockAllPropertyMap[
-        type ?? propertyPresets.multiSelectPropertyConfig.type
-      ].create(this.newPropertyName())
+      metaConfig.create(this.newPropertyName())
     );
+
+    updateCells(
+      this._model,
+      result,
+      Object.fromEntries(
+        this.rows$.value.map(r => [r, metaConfig.config.defaultValue])
+      )
+    );
+
     applyPropertyUpdate(this._model);
     return result;
   }
@@ -306,8 +318,13 @@ export class DatabaseBlockDataSource extends DataSourceBase {
       type: toType,
       data: result.property,
     }));
+    const metaConfig = this.propertyMetaGet(toType);
     const cells: Record<string, unknown> = {};
     currentCells.forEach((value, i) => {
+      if (value == null && result.cells[i] == null) {
+        cells[rows[i]] = metaConfig.config.defaultValue;
+      }
+
       if (value != null || result.cells[i] != null) {
         cells[rows[i]] = result.cells[i];
       }

@@ -321,6 +321,14 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
   ): string {
     const id = super.rowAdd(insertPosition);
 
+    this.properties$.value.forEach(column =>
+      this.cellValueSet(
+        id,
+        column.id,
+        this.propertyMetaGet(column.type$.value).config.defaultValue
+      )
+    );
+
     const filter = this.filter$.value;
     if (filter.conditions.length > 0) {
       const defaultValues = generateDefaultValues(filter, this.vars$.value);

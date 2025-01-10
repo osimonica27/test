@@ -21,4 +21,5 @@ export const progressPropertyModelConfig =
       return value;
     },
     isEmpty: () => false,
+    defaultValue: 0,
   });
