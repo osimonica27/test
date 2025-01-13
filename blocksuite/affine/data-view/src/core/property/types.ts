@@ -85,6 +85,7 @@ export type PropertyConfig<
       newValue: Value;
     }>
   ) => Value;
+  defaultValue?: Value;
 };
 
 export type DVJSON =
