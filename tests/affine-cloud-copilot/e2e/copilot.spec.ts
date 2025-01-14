@@ -68,15 +68,23 @@ test('can open chat side panel', async ({ page }) => {
   await expect(page.getByTestId('sidebar-tab-content-chat')).toBeVisible();
 });
 
-const makeChat = async (page: Page, content: string) => {
+const openChat = async (page: Page) => {
   if (await page.getByTestId('sidebar-tab-chat').isHidden()) {
     await page.getByTestId('right-sidebar-toggle').click({
       delay: 200,
     });
   }
   await page.getByTestId('sidebar-tab-chat').click();
+};
+
+const typeChat = async (page: Page, content: string) => {
   await page.getByTestId('chat-panel-input').focus();
   await page.keyboard.type(content);
+};
+
+const makeChat = async (page: Page, content: string) => {
+  await openChat(page);
+  await typeChat(page, content);
   await page.keyboard.press('Enter');
 };
 
@@ -183,6 +191,30 @@ test.describe('chat panel', () => {
     await createLocalWorkspace({ name: 'test' }, page);
     await clickNewPageButton(page);
     await makeChat(page, 'hello');
+    const history = await collectChat(page);
+    expect(history[0]).toEqual({ name: 'You', content: 'hello' });
+    expect(history[1].name).toBe('AFFiNE AI');
+    await clearChat(page);
+    expect((await collectChat(page)).length).toBe(0);
+  });
+
+  test('chat send button', async ({ page }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await clickNewPageButton(page);
+    const sendButton = await page.getByTestId('chat-panel-send');
+    // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
+    expect(await sendButton.getAttribute('data-enabled')).toBe('true');
+    await openChat(page);
+    await typeChat(page, 'hello');
+    // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
+    expect(await sendButton.getAttribute('data-disabled')).toBe('false');
+    await sendButton.click();
+    // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
+    expect(await sendButton.getAttribute('data-disabled')).toBe('true');
+
     const history = await collectChat(page);
     expect(history[0]).toEqual({ name: 'You', content: 'hello' });
     expect(history[1].name).toBe('AFFiNE AI');
