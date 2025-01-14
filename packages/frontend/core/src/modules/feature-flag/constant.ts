@@ -16,6 +16,15 @@ export const AFFINE_FLAGS = {
     configurable: true,
     defaultState: true,
   },
+  enable_ai_network_search: {
+    category: 'affine',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-ai-network-search.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-ai-network-search.description',
+    configurable: true,
+    defaultState: false,
+  },
   enable_database_full_width: {
     category: 'blocksuite',
     bsFlag: 'enable_database_full_width',
@@ -102,18 +111,6 @@ export const AFFINE_FLAGS = {
       'com.affine.settings.workspace.experimental-features.enable-mind-map-import.description',
     configurable: false,
     defaultState: true,
-  },
-  enable_multi_view: {
-    category: 'affine',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-multi-view.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-multi-view.description',
-    feedbackType: 'discord',
-    feedbackLink:
-      'https://discord.com/channels/959027316334407691/1280009690004324405',
-    configurable: isDesktopEnvironment,
-    defaultState: isCanaryBuild,
   },
   enable_emoji_folder_icon: {
     category: 'affine',
@@ -232,6 +229,15 @@ export const AFFINE_FLAGS = {
       'com.affine.settings.workspace.experimental-features.enable-pdf-embed-preview.description',
     configurable: !isMobile,
     defaultState: false,
+  },
+  // TODO(@CatsJuice): remove this flag when ready
+  enable_template_doc: {
+    category: 'affine',
+    displayName: 'Enable template doc',
+    description:
+      'Allow users to mark a doc as a template, and create new docs from it',
+    configurable: !isMobile,
+    defaultState: isCanaryBuild,
   },
 } satisfies { [key in string]: FlagInfo };
 

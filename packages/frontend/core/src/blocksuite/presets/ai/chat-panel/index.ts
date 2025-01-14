@@ -5,18 +5,20 @@ import type { EditorHost } from '@blocksuite/affine/block-std';
 import { ShadowlessElement } from '@blocksuite/affine/block-std';
 import { NotificationProvider } from '@blocksuite/affine/blocks';
 import { debounce, WithDisposable } from '@blocksuite/affine/global/utils';
-import type { Blocks } from '@blocksuite/affine/store';
+import type { Store } from '@blocksuite/affine/store';
 import { css, html, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 
 import { AIHelpIcon, SmallHintIcon } from '../_common/icons';
 import { AIProvider } from '../provider';
+import { extractSelectedContent } from '../utils/extract';
 import {
   getSelectedImagesAsBlobs,
   getSelectedTextContent,
 } from '../utils/selection-utils';
 import type { ChatAction, ChatContextValue, ChatItem } from './chat-context';
+import type { AINetworkSearchConfig } from './chat-panel-input';
 import type { ChatPanelMessages } from './chat-panel-messages';
 
 export class ChatPanel extends WithDisposable(ShadowlessElement) {
@@ -141,7 +143,10 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
   accessor host!: EditorHost;
 
   @property({ attribute: false })
-  accessor doc!: Blocks;
+  accessor doc!: Store;
+
+  @property({ attribute: false })
+  accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @state()
   accessor isLoading = false;
@@ -218,30 +223,34 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
     super.connectedCallback();
     if (!this.doc) throw new Error('doc is required');
 
-    AIProvider.slots.actions.on(({ action, event }) => {
-      const { status } = this.chatContextValue;
-
-      if (
-        action !== 'chat' &&
-        event === 'finished' &&
-        (status === 'idle' || status === 'success')
-      ) {
-        this._resetItems();
-      }
-
-      if (action === 'chat' && event === 'finished') {
-        AIProvider.slots.toggleChatCards.emit({
-          visible: true,
-          ok: status === 'success',
-        });
-      }
-    });
-
-    AIProvider.slots.userInfo.on(userInfo => {
-      if (userInfo) {
-        this._resetItems();
-      }
-    });
+    this._disposables.add(
+      AIProvider.slots.actions.on(({ action, event }) => {
+        const { status } = this.chatContextValue;
+        if (
+          action !== 'chat' &&
+          event === 'finished' &&
+          (status === 'idle' || status === 'success')
+        ) {
+          this._resetItems();
+        }
+      })
+    );
+    this._disposables.add(
+      AIProvider.slots.userInfo.on(userInfo => {
+        if (userInfo) {
+          this._resetItems();
+        }
+      })
+    );
+    this._disposables.add(
+      AIProvider.slots.requestOpenWithChat.on(async ({ host }) => {
+        if (this.host === host) {
+          const context = await extractSelectedContent(host);
+          if (!context) return;
+          this.updateContext(context);
+        }
+      })
+    );
   }
 
   updateContext = (context: Partial<ChatContextValue>) => {
@@ -280,6 +289,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
       ></chat-panel-messages>
       <chat-panel-input
         .chatContextValue=${this.chatContextValue}
+        .networkSearchConfig=${this.networkSearchConfig}
         .updateContext=${this.updateContext}
         .host=${this.host}
         .cleanupHistories=${this._cleanupHistories}

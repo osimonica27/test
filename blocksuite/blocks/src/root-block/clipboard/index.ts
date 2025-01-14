@@ -9,7 +9,7 @@ import {
 } from '@blocksuite/affine-shared/adapters';
 import type { BlockComponent, UIEventHandler } from '@blocksuite/block-std';
 import { DisposableGroup } from '@blocksuite/global/utils';
-import type { Blocks, BlockSnapshot } from '@blocksuite/store';
+import type { BlockSnapshot, Store } from '@blocksuite/store';
 
 import {
   defaultImageProxyMiddleware,
@@ -60,10 +60,10 @@ export class PageClipboard {
     this._std.clipboard.use(copy);
     this._std.clipboard.use(paste);
     this._std.clipboard.use(
-      replaceIdMiddleware(this._std.doc.workspace.idGenerator)
+      replaceIdMiddleware(this._std.store.workspace.idGenerator)
     );
     this._std.clipboard.use(
-      titleMiddleware(this._std.doc.workspace.meta.docMetas)
+      titleMiddleware(this._std.store.workspace.meta.docMetas)
     );
     this._std.clipboard.use(defaultImageProxyMiddleware);
 
@@ -85,10 +85,10 @@ export class PageClipboard {
         this._std.clipboard.unuse(copy);
         this._std.clipboard.unuse(paste);
         this._std.clipboard.unuse(
-          replaceIdMiddleware(this._std.doc.workspace.idGenerator)
+          replaceIdMiddleware(this._std.store.workspace.idGenerator)
         );
         this._std.clipboard.unuse(
-          titleMiddleware(this._std.doc.workspace.meta.docMetas)
+          titleMiddleware(this._std.store.workspace.meta.docMetas)
         );
         this._std.clipboard.unuse(defaultImageProxyMiddleware);
       },
@@ -99,7 +99,7 @@ export class PageClipboard {
 
   onBlockSnapshotPaste = async (
     snapshot: BlockSnapshot,
-    doc: Blocks,
+    doc: Store,
     parent?: string,
     index?: number
   ) => {
@@ -138,7 +138,7 @@ export class PageClipboard {
     const e = ctx.get('clipboardState').raw;
     e.preventDefault();
 
-    this._std.doc.captureSync();
+    this._std.store.captureSync();
     this._std.command
       .chain()
       .try(cmd => [
@@ -188,7 +188,7 @@ export class PageClipboard {
         this._std.clipboard
           .paste(
             e,
-            this._std.doc,
+            this._std.store,
             ctx.parentBlock.model.id,
             ctx.blockIndex ? ctx.blockIndex + 1 : 1
           )

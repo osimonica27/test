@@ -1,22 +1,22 @@
+import { InlineDeltaToPlainTextAdapterExtensions } from '@blocksuite/affine-components/rich-text';
 import { DefaultTheme, NoteDisplayMode } from '@blocksuite/affine-model';
 import { PlainTextAdapter } from '@blocksuite/affine-shared/adapters';
 import { Container } from '@blocksuite/global/di';
 import type {
   BlockSnapshot,
   DocSnapshot,
-  JobMiddleware,
+  TransformerMiddleware,
 } from '@blocksuite/store';
 import { describe, expect, test } from 'vitest';
 
 import { defaultBlockPlainTextAdapterMatchers } from '../../_common/adapters/plain-text/block-matcher.js';
-import { inlineDeltaToPlainTextAdapterMatchers } from '../../_common/adapters/plain-text/delta-converter/inline-delta.js';
 import { embedSyncedDocMiddleware } from '../../_common/transformers/middlewares.js';
 import { createJob } from '../utils/create-job.js';
 
 const container = new Container();
 [
   ...defaultBlockPlainTextAdapterMatchers,
-  ...inlineDeltaToPlainTextAdapterMatchers,
+  ...InlineDeltaToPlainTextAdapterExtensions,
 ].forEach(ext => {
   ext.setup(container);
 });
@@ -573,7 +573,7 @@ describe('snapshot to plain text', () => {
         },
       ],
     };
-    const middleware: JobMiddleware = ({ adapterConfigs }) => {
+    const middleware: TransformerMiddleware = ({ adapterConfigs }) => {
       adapterConfigs.set('title:deadbeef', 'test');
       adapterConfigs.set('docLinkBaseUrl', 'https://example.com');
     };
@@ -756,7 +756,7 @@ describe('snapshot to plain text', () => {
         ],
       };
 
-      const middleware: JobMiddleware = ({ adapterConfigs }) => {
+      const middleware: TransformerMiddleware = ({ adapterConfigs }) => {
         adapterConfigs.set('title:4T5ObMgEIMII-4Bexyta1', 'test');
         adapterConfigs.set('docLinkBaseUrl', 'https://example.com');
       };

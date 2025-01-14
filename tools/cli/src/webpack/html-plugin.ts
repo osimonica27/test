@@ -1,7 +1,6 @@
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-import type { BUILD_CONFIG_TYPE } from '@affine/env/global';
 import { Path, ProjectRoot } from '@affine-tools/utils/path';
 import { Repository } from '@napi-rs/simple-git';
 import HTMLPlugin from 'html-webpack-plugin';
@@ -46,7 +45,7 @@ const gitShortHash = once(() => {
   if (GITHUB_SHA) {
     return GITHUB_SHA.substring(0, 9);
   }
-  const repo = new Repository(ProjectRoot.path);
+  const repo = new Repository(ProjectRoot.value);
   const shortSha = repo.head().target()?.substring(0, 9);
   if (shortSha) {
     return shortSha;

@@ -1,7 +1,6 @@
-import { AffineSchemas, TestUtils } from '@blocksuite/blocks';
+import { AffineSchemas, SpecProvider, TestUtils } from '@blocksuite/blocks';
 import type { BlockSuiteFlags } from '@blocksuite/global/types';
-import { assertExists } from '@blocksuite/global/utils';
-import { type BlockCollection, Job, nanoid, Schema } from '@blocksuite/store';
+import { nanoid, Schema, Transformer } from '@blocksuite/store';
 import {
   createAutoIncrementIdGenerator,
   type DocCollectionOptions,
@@ -50,7 +49,7 @@ export function createStarterDocCollection() {
   }
 
   const flags: Partial<BlockSuiteFlags> = Object.fromEntries(
-    [...params.entries()]
+    Array.from(params.entries())
       .filter(([key]) => key.startsWith('enable_'))
       .map(([k, v]) => [k, v === 'true'])
   );
@@ -75,12 +74,14 @@ export function createStarterDocCollection() {
     blobSources,
   };
   const collection = new TestWorkspace(options);
+  collection.storeExtensions =
+    SpecProvider.getInstance().getSpec('store').value;
   collection.start();
 
   // debug info
   window.collection = collection;
   window.blockSchemas = AffineSchemas;
-  window.job = new Job({
+  window.job = new Transformer({
     schema: collection.schema,
     blobCRUD: collection.blobSync,
     docCRUD: {
@@ -96,32 +97,6 @@ export function createStarterDocCollection() {
 }
 
 export async function initStarterDocCollection(collection: TestWorkspace) {
-  // init from other clients
-  if (room && !params.has('init')) {
-    const firstCollection = collection.docs.values().next().value as
-      | BlockCollection
-      | undefined;
-    let firstDoc = firstCollection?.getDoc();
-    if (!firstDoc) {
-      await new Promise<string>(resolve =>
-        collection.slots.docCreated.once(resolve)
-      );
-      const firstCollection = collection.docs.values().next().value as
-        | BlockCollection
-        | undefined;
-      firstDoc = firstCollection?.getDoc();
-    }
-    assertExists(firstDoc);
-    const doc = firstDoc;
-
-    doc.load();
-    if (!doc.root) {
-      await new Promise(resolve => doc.slots.rootAdded.once(resolve));
-    }
-    doc.resetHistory();
-    return;
-  }
-
   // use built-in init function
   const functionMap = new Map<
     string,

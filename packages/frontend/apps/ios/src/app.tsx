@@ -32,13 +32,13 @@ import { I18n } from '@affine/i18n';
 import {
   defaultBlockMarkdownAdapterMatchers,
   docLinkBaseURLMiddleware,
-  inlineDeltaToMarkdownAdapterMatchers,
+  InlineDeltaToMarkdownAdapterExtensions,
   MarkdownAdapter,
-  markdownInlineToDeltaMatchers,
+  MarkdownInlineToDeltaAdapterExtensions,
   titleMiddleware,
 } from '@blocksuite/affine/blocks';
 import { Container } from '@blocksuite/affine/global/di';
-import { Job } from '@blocksuite/affine/store';
+import { Transformer } from '@blocksuite/affine/store';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Haptics } from '@capacitor/haptics';
@@ -181,7 +181,7 @@ const frameworkProvider = framework.provider();
   try {
     const blockSuiteDoc = doc.blockSuiteDoc;
 
-    const job = new Job({
+    const transformer = new Transformer({
       schema: blockSuiteDoc.workspace.schema,
       blobCRUD: blockSuiteDoc.workspace.blobSync,
       docCRUD: {
@@ -194,26 +194,26 @@ const frameworkProvider = framework.provider();
         titleMiddleware(blockSuiteDoc.workspace.meta.docMetas),
       ],
     });
-    const snapshot = job.docToSnapshot(blockSuiteDoc);
+    const snapshot = transformer.docToSnapshot(blockSuiteDoc);
 
     const container = new Container();
     [
-      ...markdownInlineToDeltaMatchers,
+      ...MarkdownInlineToDeltaAdapterExtensions,
       ...defaultBlockMarkdownAdapterMatchers,
-      ...inlineDeltaToMarkdownAdapterMatchers,
+      ...InlineDeltaToMarkdownAdapterExtensions,
     ].forEach(ext => {
       ext.setup(container);
     });
     const provider = container.provider();
 
-    const adapter = new MarkdownAdapter(job, provider);
+    const adapter = new MarkdownAdapter(transformer, provider);
     if (!snapshot) {
       return;
     }
 
     const markdownResult = await adapter.fromDocSnapshot({
       snapshot,
-      assets: job.assetsManager,
+      assets: transformer.assetsManager,
     });
     return markdownResult.file;
   } finally {

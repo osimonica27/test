@@ -1,12 +1,13 @@
-import { type Disposable, Slot } from '@blocksuite/global/utils';
+import { Slot } from '@blocksuite/global/utils';
 import { signal } from '@preact/signals-core';
 import * as Y from 'yjs';
 
 import type { YBlock } from '../model/block/types.js';
-import { Blocks } from '../model/blocks/blocks.js';
-import type { Query } from '../model/blocks/query.js';
 import type { Doc, GetBlocksOptions, Workspace } from '../model/index.js';
+import type { Query } from '../model/store/query.js';
+import { Store } from '../model/store/store.js';
 import type { AwarenessStore } from '../yjs/index.js';
+import type { TestWorkspace } from './test-workspace.js';
 
 type DocOptions = {
   id: string;
@@ -16,8 +17,6 @@ type DocOptions = {
 };
 
 export class TestDoc implements Doc {
-  private _awarenessUpdateDisposable: Disposable | null = null;
-
   private readonly _canRedo$ = signal(false);
 
   private readonly _canUndo$ = signal(false);
@@ -25,9 +24,9 @@ export class TestDoc implements Doc {
   private readonly _collection: Workspace;
 
   private readonly _docMap = {
-    undefined: new Map<string, Blocks>(),
-    true: new Map<string, Blocks>(),
-    false: new Map<string, Blocks>(),
+    undefined: new Map<string, Store>(),
+    true: new Map<string, Store>(),
+    false: new Map<string, Store>(),
   };
 
   // doc/space container.
@@ -85,8 +84,8 @@ export class TestDoc implements Doc {
   private _shouldTransact = true;
 
   private readonly _updateCanUndoRedoSignals = () => {
-    const canRedo = this.readonly ? false : this._history.canRedo();
-    const canUndo = this.readonly ? false : this._history.canUndo();
+    const canRedo = this._history.canRedo();
+    const canUndo = this._history.canUndo();
     if (this._canRedo$.peek() !== canRedo) {
       this._canRedo$.value = canRedo;
     }
@@ -161,10 +160,6 @@ export class TestDoc implements Doc {
 
   get meta() {
     return this.workspace.meta.getDocMeta(this.id);
-  }
-
-  get readonly(): boolean {
-    return this.awarenessStore.isReadonly(this);
   }
 
   get ready() {
@@ -271,7 +266,6 @@ export class TestDoc implements Doc {
 
   dispose() {
     this.slots.historyUpdated.dispose();
-    this._awarenessUpdateDisposable?.dispose();
 
     if (this.ready) {
       this._yBlocks.unobserveDeep(this._handleYEvents);
@@ -279,7 +273,7 @@ export class TestDoc implements Doc {
     }
   }
 
-  getBlocks({ readonly, query }: GetBlocksOptions = {}) {
+  getStore({ readonly, query, provider, extensions }: GetBlocksOptions = {}) {
     const readonlyKey = this._getReadonlyKey(readonly);
 
     const key = JSON.stringify(query);
@@ -288,11 +282,15 @@ export class TestDoc implements Doc {
       return this._docMap[readonlyKey].get(key)!;
     }
 
-    const doc = new Blocks({
-      blockCollection: this,
+    const doc = new Store({
+      doc: this,
       schema: this.workspace.schema,
       readonly,
       query,
+      provider,
+      extensions: (this.workspace as TestWorkspace).storeExtensions.concat(
+        extensions ?? []
+      ),
     });
 
     this._docMap[readonlyKey].set(key, doc);
@@ -317,13 +315,6 @@ export class TestDoc implements Doc {
       this._handleYBlockAdd(id);
     });
 
-    this._awarenessUpdateDisposable = this.awarenessStore.slots.update.on(
-      () => {
-        // change readonly state will affect the undo/redo state
-        this._updateCanUndoRedoSignals();
-      }
-    );
-
     initFn?.();
 
     this._ready = true;
@@ -332,18 +323,10 @@ export class TestDoc implements Doc {
   }
 
   redo() {
-    if (this.readonly) {
-      console.error('cannot modify data in readonly mode');
-      return;
-    }
     this._history.redo();
   }
 
   undo() {
-    if (this.readonly) {
-      console.error('cannot modify data in readonly mode');
-      return;
-    }
     this._history.undo();
   }
 

@@ -1,26 +1,28 @@
+import {
+  HtmlInlineToDeltaAdapterExtensions,
+  InlineDeltaToHtmlAdapterExtensions,
+} from '@blocksuite/affine-components/rich-text';
 import { DefaultTheme, NoteDisplayMode } from '@blocksuite/affine-model';
 import { HtmlAdapter } from '@blocksuite/affine-shared/adapters';
 import { Container } from '@blocksuite/global/di';
 import type {
   BlockSnapshot,
   DocSnapshot,
-  JobMiddleware,
+  TransformerMiddleware,
 } from '@blocksuite/store';
 import { AssetsManager, MemoryBlobCRUD } from '@blocksuite/store';
 import { describe, expect, test } from 'vitest';
 
 import { defaultBlockHtmlAdapterMatchers } from '../../_common/adapters/html/block-matcher.js';
-import { htmlInlineToDeltaMatchers } from '../../_common/adapters/html/delta-converter/html-inline.js';
-import { inlineDeltaToHtmlAdapterMatchers } from '../../_common/adapters/html/delta-converter/inline-delta.js';
 import { nanoidReplacement } from '../../_common/test-utils/test-utils.js';
 import { embedSyncedDocMiddleware } from '../../_common/transformers/middlewares.js';
 import { createJob } from '../utils/create-job.js';
 
 const container = new Container();
 [
-  ...htmlInlineToDeltaMatchers,
+  ...HtmlInlineToDeltaAdapterExtensions,
   ...defaultBlockHtmlAdapterMatchers,
-  ...inlineDeltaToHtmlAdapterMatchers,
+  ...InlineDeltaToHtmlAdapterExtensions,
 ].forEach(ext => {
   ext.setup(container);
 });
@@ -1514,7 +1516,7 @@ describe('snapshot to html', () => {
       ],
     };
 
-    const middleware: JobMiddleware = ({ adapterConfigs }) => {
+    const middleware: TransformerMiddleware = ({ adapterConfigs }) => {
       adapterConfigs.set('title:4T5ObMgEIMII-4Bexyta1', 'Test Doc');
       adapterConfigs.set('docLinkBaseUrl', 'https://example.com');
     };

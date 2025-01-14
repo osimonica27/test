@@ -114,13 +114,13 @@ export class SurfaceRefNotePortal extends WithDisposable(ShadowlessElement) {
       console.error('Query is not set before rendering note preview');
       return nothing;
     }
-    const doc = this.model.doc.doc.getBlocks({
+    const doc = this.model.doc.doc.getStore({
       query: this.query,
       readonly: true,
     });
     const previewSpec = SpecProvider.getInstance().getSpec('page:preview');
     return new BlockStdScope({
-      doc,
+      store: doc,
       extensions: previewSpec.value.slice(),
     }).render();
   }

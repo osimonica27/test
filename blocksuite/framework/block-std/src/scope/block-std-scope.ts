@@ -1,11 +1,11 @@
-import type { ServiceProvider } from '@blocksuite/global/di';
-import { Container } from '@blocksuite/global/di';
+import { Container, type ServiceProvider } from '@blocksuite/global/di';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import {
-  type Blocks,
   type ExtensionType,
-  Job,
-  type JobMiddleware,
+  type Store,
+  StoreSelectionExtension,
+  Transformer,
+  type TransformerMiddleware,
 } from '@blocksuite/store';
 
 import { Clipboard } from '../clipboard/index.js';
@@ -24,19 +24,12 @@ import {
   StdIdentifier,
 } from '../identifier.js';
 import { RangeManager } from '../range/index.js';
-import {
-  BlockSelectionExtension,
-  CursorSelectionExtension,
-  SelectionManager,
-  SurfaceSelectionExtension,
-  TextSelectionExtension,
-} from '../selection/index.js';
 import { ServiceManager } from '../service/index.js';
 import { EditorHost } from '../view/element/index.js';
 import { ViewStore } from '../view/view-store.js';
 
 export interface BlockStdOptions {
-  doc: Blocks;
+  store: Store;
   extensions: ExtensionType[];
 }
 
@@ -44,15 +37,10 @@ const internalExtensions = [
   ServiceManager,
   CommandManager,
   UIEventDispatcher,
-  SelectionManager,
   RangeManager,
   ViewStore,
   Clipboard,
   GfxController,
-  BlockSelectionExtension,
-  TextSelectionExtension,
-  SurfaceSelectionExtension,
-  CursorSelectionExtension,
   GfxSelectionManager,
   SurfaceMiddlewareExtension,
   ViewManager,
@@ -65,7 +53,7 @@ export class BlockStdScope {
 
   readonly container: Container;
 
-  readonly doc: Blocks;
+  readonly store: Store;
 
   readonly provider: ServiceProvider;
 
@@ -80,7 +68,7 @@ export class BlockStdScope {
   }
 
   get workspace() {
-    return this.doc.workspace;
+    return this.store.workspace;
   }
 
   get command() {
@@ -108,7 +96,7 @@ export class BlockStdScope {
   }
 
   get selection() {
-    return this.get(SelectionManager);
+    return this.get(StoreSelectionExtension);
   }
 
   get view() {
@@ -122,7 +110,7 @@ export class BlockStdScope {
         'Host is not ready to use, the `render` method should be called first'
       );
     };
-    this.doc = options.doc;
+    this.store = options.store;
     this.userExtensions = options.extensions;
     this.container = new Container();
     this.container.addImpl(StdIdentifier, () => this);
@@ -137,7 +125,7 @@ export class BlockStdScope {
       ext.setup(container);
     });
 
-    this.provider = this.container.provider();
+    this.provider = this.container.provider(undefined, this.store.provider);
 
     this._lifeCycleWatchers.forEach(watcher => {
       watcher.created.call(watcher);
@@ -173,8 +161,8 @@ export class BlockStdScope {
     return this.getOptional(BlockViewIdentifier(flavour));
   }
 
-  getJob(middlewares: JobMiddleware[] = []) {
-    return new Job({
+  getTransformer(middlewares: TransformerMiddleware[] = []) {
+    return new Transformer({
       schema: this.workspace.schema,
       blobCRUD: this.workspace.blobSync,
       docCRUD: {
@@ -195,7 +183,7 @@ export class BlockStdScope {
   render() {
     const element = new EditorHost();
     element.std = this;
-    element.doc = this.doc;
+    element.doc = this.store;
     this._getHost = () => element;
     this._lifeCycleWatchers.forEach(watcher => {
       watcher.rendered.call(watcher);

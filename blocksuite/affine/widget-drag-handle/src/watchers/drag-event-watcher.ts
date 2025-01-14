@@ -16,7 +16,7 @@ import {
 import {
   calcDropTarget,
   captureEventTarget,
-  type DropResult,
+  type DropTarget,
   getBlockComponentsExcludeSubtrees,
   getClosestBlockComponentByPoint,
   matchFlavours,
@@ -285,16 +285,16 @@ export class DragEventWatcher {
       return;
     }
     const model = element.model;
-    const parent = this._std.doc.getParent(model.id);
+    const parent = this._std.store.getParent(model.id);
     if (!parent) return;
     if (matchFlavours(parent, ['affine:surface'])) {
       return;
     }
-    const result: DropResult | null = calcDropTarget(point, model, element);
-    if (!result) return;
+    const target: DropTarget | null = calcDropTarget(point, model, element);
+    if (!target) return;
 
     const index =
-      parent.children.indexOf(model) + (result.type === 'before' ? 0 : 1);
+      parent.children.indexOf(model) + (target.placement === 'before' ? 0 : 1);
 
     if (matchFlavours(parent, ['affine:note'])) {
       const snapshot = this._deserializeSnapshot(state);
@@ -327,11 +327,11 @@ export class DragEventWatcher {
       content: first.children,
     };
     job
-      .snapshotToSlice(snapshotWithoutNote, std.doc, parent, index)
+      .snapshotToSlice(snapshotWithoutNote, std.store, parent, index)
       .then(() => {
-        const block = std.doc.getBlock(id)?.model;
+        const block = std.store.getBlock(id)?.model;
         if (block) {
-          std.doc.deleteBlock(block);
+          std.store.deleteBlock(block);
         }
       })
       .catch(console.error);
@@ -363,7 +363,7 @@ export class DragEventWatcher {
         const std = this._std;
         const job = this._getJob();
         job
-          .snapshotToSlice(snapshot, std.doc, surfaceBlockModel.id)
+          .snapshotToSlice(snapshot, std.store, surfaceBlockModel.id)
           .catch(console.error);
       };
 
@@ -456,7 +456,7 @@ export class DragEventWatcher {
     );
 
     const slice = Slice.fromModels(
-      this._std.doc,
+      this._std.store,
       blocks.map(block => block.model)
     );
 
@@ -467,7 +467,7 @@ export class DragEventWatcher {
   };
 
   private readonly _trackLinkedDocCreated = (id: string) => {
-    const isNewBlock = !this._std.doc.hasBlock(id);
+    const isNewBlock = !this._std.store.hasBlock(id);
     if (!isNewBlock) {
       return;
     }
@@ -517,7 +517,7 @@ export class DragEventWatcher {
         // use snapshot
         const slice = await job.snapshotToSlice(
           snapshot,
-          std.doc,
+          std.store,
           parent,
           index
         );
@@ -545,7 +545,7 @@ export class DragEventWatcher {
 
   private _getJob() {
     const std = this._std;
-    return std.getJob([
+    return std.getTransformer([
       newIdCrossDoc(std),
       reorderList(std),
       surfaceRefToEmbed(std),

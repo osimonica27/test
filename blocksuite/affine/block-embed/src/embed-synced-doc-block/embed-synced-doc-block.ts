@@ -1,5 +1,8 @@
 import { Peekable } from '@blocksuite/affine-components/peek';
-import { RefNodeSlotsProvider } from '@blocksuite/affine-components/rich-text';
+import {
+  type DocLinkClickedEvent,
+  RefNodeSlotsProvider,
+} from '@blocksuite/affine-components/rich-text';
 import {
   type AliasInfo,
   type DocMode,
@@ -28,7 +31,7 @@ import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { assertExists, Bound, getCommonBound } from '@blocksuite/global/utils';
 import { type GetBlocksOptions, type Query, Text } from '@blocksuite/store';
 import { computed } from '@preact/signals-core';
-import { html, type PropertyValues } from 'lit';
+import { html, nothing, type PropertyValues } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -146,7 +149,10 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     const editorMode = this.editorMode;
     const isPageMode = this.isPageMode;
 
-    assertExists(syncedDoc);
+    if (!syncedDoc) {
+      console.error('Synced doc is not found');
+      return html`${nothing}`;
+    }
 
     if (isPageMode) {
       this.dataset.pageMode = '';
@@ -176,7 +182,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
           () => html`
             <div class="affine-page-viewport" data-theme=${appTheme}>
               ${new BlockStdScope({
-                doc: syncedDoc,
+                store: syncedDoc,
                 extensions: this._buildPreviewSpec('page:preview'),
               }).render()}
             </div>
@@ -187,7 +193,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
           () => html`
             <div class="affine-edgeless-viewport" data-theme=${edgelessTheme}>
               ${new BlockStdScope({
-                doc: syncedDoc,
+                store: syncedDoc,
                 extensions: this._buildPreviewSpec('edgeless:preview'),
               }).render()}
             </div>
@@ -302,11 +308,13 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
       .icon(pageId, { params, referenced: true }).value;
   });
 
-  open = () => {
+  open = (event?: Partial<DocLinkClickedEvent>) => {
     const pageId = this.model.pageId;
     if (pageId === this.doc.id) return;
 
-    this.std.getOptional(RefNodeSlotsProvider)?.docLinkClicked.emit({ pageId });
+    this.std
+      .getOptional(RefNodeSlotsProvider)
+      ?.docLinkClicked.emit({ ...event, pageId });
   };
 
   refreshData = () => {

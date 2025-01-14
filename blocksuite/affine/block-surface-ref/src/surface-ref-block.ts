@@ -26,7 +26,6 @@ import {
   SpecProvider,
 } from '@blocksuite/affine-shared/utils';
 import {
-  type BaseSelection,
   BlockComponent,
   BlockSelection,
   BlockServiceWatcher,
@@ -47,7 +46,7 @@ import {
   DisposableGroup,
   type SerializedXYWH,
 } from '@blocksuite/global/utils';
-import type { Blocks } from '@blocksuite/store';
+import type { BaseSelection, Store } from '@blocksuite/store';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -240,7 +239,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     }
   `;
 
-  private _previewDoc: Blocks | null = null;
+  private _previewDoc: Store | null = null;
 
   private readonly _previewSpec =
     SpecProvider.getInstance().getSpec('edgeless:preview');
@@ -339,7 +338,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       }
 
       const doc = [...this.std.workspace.docs.values()]
-        .map(doc => doc.getBlocks())
+        .map(doc => doc.getStore())
         .find(
           doc =>
             doc.getBlock(this.model.reference) ||
@@ -460,7 +459,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       override mounted() {
         const crud = this.std.get(EdgelessCRUDExtension);
         const { _disposable } = this;
-        const surfaceModel = getSurfaceBlock(this.std.doc);
+        const surfaceModel = getSurfaceBlock(this.std.store);
         if (!surfaceModel) return;
 
         const referenceElement = crud.getElementById(referenceId);
@@ -545,10 +544,14 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     const _previewSpec = this._previewSpec.value;
 
     if (!this._viewportEditor) {
-      this._viewportEditor = new BlockStdScope({
-        doc: this._previewDoc!,
-        extensions: _previewSpec,
-      }).render();
+      if (this._previewDoc) {
+        this._viewportEditor = new BlockStdScope({
+          store: this._previewDoc,
+          extensions: _previewSpec,
+        }).render();
+      } else {
+        console.error('Preview doc is not found');
+      }
     }
 
     return html`<div class="ref-content">

@@ -3,19 +3,15 @@ import type { ParagraphBlockModel } from '@blocksuite/affine-model';
 import { DocModeProvider } from '@blocksuite/affine-shared/services';
 import {
   calcDropTarget,
-  type DropResult,
+  type DropTarget,
   findClosestBlockComponent,
   getBlockProps,
   getClosestBlockComponentByPoint,
   matchFlavours,
 } from '@blocksuite/affine-shared/utils';
-import type {
-  BaseSelection,
-  BlockComponent,
-  EditorHost,
-} from '@blocksuite/block-std';
+import type { BlockComponent, EditorHost } from '@blocksuite/block-std';
 import { Point, Rect } from '@blocksuite/global/utils';
-import type { BlockModel } from '@blocksuite/store';
+import type { BaseSelection, BlockModel } from '@blocksuite/store';
 
 import {
   DRAG_HANDLE_CONTAINER_HEIGHT,
@@ -178,7 +174,7 @@ export const getClosestBlockByPoint = (
 export const getDropResult = (
   event: MouseEvent,
   scale: number = 1
-): DropResult | null => {
+): DropTarget | null => {
   let dropIndicator = null;
   const point = new Point(event.x, event.y);
   const closestBlock = getClosestBlockComponentByPoint(point) as BlockComponent;

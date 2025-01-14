@@ -2,17 +2,16 @@ import {
   BlockSuiteError,
   ErrorCode,
 } from '@blocksuite/affine/global/exceptions';
-import type { BlockSuiteFlags } from '@blocksuite/affine/global/types';
 import { NoopLogger, Slot } from '@blocksuite/affine/global/utils';
 import {
   AwarenessStore,
-  type Blocks,
   type CreateBlocksOptions,
   type Doc,
   type GetBlocksOptions,
   type IdGenerator,
   nanoid,
   type Schema,
+  type Store,
   type Workspace,
   type WorkspaceMeta,
 } from '@blocksuite/affine/store';
@@ -32,26 +31,6 @@ type WorkspaceOptions = {
   schema: Schema;
   blobSource?: BlobSource;
 };
-
-const FLAGS_PRESET = {
-  enable_synced_doc_block: false,
-  enable_pie_menu: false,
-  enable_database_number_formatting: false,
-  enable_database_attachment_note: false,
-  enable_database_full_width: false,
-  enable_block_query: false,
-  enable_lasso_tool: false,
-  enable_edgeless_text: true,
-  enable_ai_onboarding: false,
-  enable_ai_chat_block: false,
-  enable_color_picker: false,
-  enable_mind_map_import: false,
-  enable_advanced_block_visibility: false,
-  enable_shape_shadow_blur: false,
-  enable_mobile_keyboard_toolbar: false,
-  enable_mobile_linked_doc_menu: false,
-  readonly: {},
-} satisfies BlockSuiteFlags;
 
 export class WorkspaceImpl implements Workspace {
   protected readonly _schema: Schema;
@@ -89,10 +68,7 @@ export class WorkspaceImpl implements Workspace {
 
     this.id = id || '';
     this.doc = new Y.Doc({ guid: id });
-    this.awarenessStore = new AwarenessStore(new Awareness(this.doc), {
-      ...FLAGS_PRESET,
-      readonly: {},
-    });
+    this.awarenessStore = new AwarenessStore(new Awareness(this.doc));
 
     blobSource = blobSource ?? new MemoryBlobSource();
     const logger = new NoopLogger();
@@ -152,7 +128,7 @@ export class WorkspaceImpl implements Workspace {
       tags: [],
     });
     this.slots.docCreated.emit(docId);
-    return this.getDoc(docId, { query, readonly }) as Blocks;
+    return this.getDoc(docId, { query, readonly }) as Store;
   }
 
   dispose() {
@@ -164,9 +140,9 @@ export class WorkspaceImpl implements Workspace {
     return space ?? null;
   }
 
-  getDoc(docId: string, options?: GetBlocksOptions): Blocks | null {
+  getDoc(docId: string, options?: GetBlocksOptions): Store | null {
     const collection = this._getDoc(docId);
-    return collection?.getBlocks(options) ?? null;
+    return collection?.getStore(options) ?? null;
   }
 
   removeDoc(docId: string) {

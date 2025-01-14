@@ -34,6 +34,7 @@ export const PackageList = [
     name: '@blocksuite/affine-block-bookmark',
     workspaceDependencies: [
       'blocksuite/affine/block-embed',
+      'blocksuite/affine/block-surface',
       'blocksuite/affine/components',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
@@ -300,6 +301,7 @@ export const PackageList = [
     location: 'blocksuite/affine/widget-frame-title',
     name: '@blocksuite/affine-widget-frame-title',
     workspaceDependencies: [
+      'blocksuite/affine/components',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/framework/block-std',
@@ -310,6 +312,8 @@ export const PackageList = [
     location: 'blocksuite/affine/widget-remote-selection',
     name: '@blocksuite/affine-widget-remote-selection',
     workspaceDependencies: [
+      'blocksuite/affine/block-surface',
+      'blocksuite/affine/components',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/framework/block-std',
@@ -399,6 +403,7 @@ export const PackageList = [
     workspaceDependencies: [
       'blocksuite/affine/components',
       'blocksuite/affine/model',
+      'blocksuite/affine/shared',
       'blocksuite/framework/block-std',
       'blocksuite/blocks',
       'blocksuite/affine/data-view',
@@ -429,6 +434,7 @@ export const PackageList = [
     workspaceDependencies: [
       'blocksuite/affine/components',
       'blocksuite/affine/model',
+      'blocksuite/affine/shared',
       'blocksuite/framework/block-std',
       'blocksuite/framework/global',
       'blocksuite/presets',
@@ -450,6 +456,7 @@ export const PackageList = [
     workspaceDependencies: [
       'tests/kit',
       'tools/cli',
+      'tools/utils',
       'packages/backend/native',
     ],
   },
@@ -498,6 +505,7 @@ export const PackageList = [
       'packages/frontend/core',
       'packages/frontend/i18n',
       'blocksuite/affine/all',
+      'packages/common/infra',
     ],
   },
   {
@@ -519,6 +527,7 @@ export const PackageList = [
       'packages/frontend/core',
       'packages/frontend/electron-api',
       'packages/frontend/i18n',
+      'packages/common/infra',
       'tools/utils',
     ],
   },
@@ -529,7 +538,9 @@ export const PackageList = [
       'packages/frontend/component',
       'packages/frontend/core',
       'packages/frontend/i18n',
+      'packages/common/nbstore',
       'blocksuite/affine/all',
+      'blocksuite/affine/components',
       'packages/common/infra',
       'packages/frontend/native',
     ],
@@ -542,6 +553,7 @@ export const PackageList = [
       'packages/frontend/core',
       'packages/frontend/i18n',
       'blocksuite/affine/all',
+      'packages/common/infra',
     ],
   },
   {
@@ -551,6 +563,7 @@ export const PackageList = [
       'packages/frontend/component',
       'packages/frontend/core',
       'packages/frontend/i18n',
+      'packages/common/infra',
     ],
   },
   {
@@ -577,12 +590,18 @@ export const PackageList = [
       'packages/frontend/templates',
       'packages/frontend/track',
       'blocksuite/affine/all',
+      'blocksuite/affine/components',
+      'blocksuite/affine/shared',
+      'blocksuite/framework/block-std',
+      'blocksuite/framework/global',
+      'blocksuite/framework/store',
+      'packages/common/infra',
     ],
   },
   {
     location: 'packages/frontend/electron-api',
     name: '@affine/electron-api',
-    workspaceDependencies: [],
+    workspaceDependencies: ['packages/frontend/apps/electron'],
   },
   {
     location: 'packages/frontend/graphql',
@@ -642,6 +661,11 @@ export const PackageList = [
   {
     location: 'tests/kit',
     name: '@affine-test/kit',
+    workspaceDependencies: ['tools/utils'],
+  },
+  {
+    location: 'tools/@types/build-config',
+    name: '@types/build-config',
     workspaceDependencies: [],
   },
   {
@@ -750,6 +774,7 @@ export type PackageName =
   | '@affine-test/affine-local'
   | '@affine-test/affine-mobile'
   | '@affine-test/kit'
+  | '@types/build-config'
   | '@types/affine__env'
   | '@affine/changelog'
   | '@affine-tools/cli'

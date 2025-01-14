@@ -11,19 +11,19 @@ import {
   CodeBlockComponent,
   defaultBlockMarkdownAdapterMatchers,
   DividerBlockComponent,
-  inlineDeltaToMarkdownAdapterMatchers,
+  InlineDeltaToMarkdownAdapterExtensions,
   ListBlockComponent,
-  markdownInlineToDeltaMatchers,
+  MarkdownInlineToDeltaAdapterExtensions,
   ParagraphBlockComponent,
 } from '@blocksuite/affine/blocks';
 import { Container, type ServiceProvider } from '@blocksuite/affine/global/di';
 import { WithDisposable } from '@blocksuite/affine/global/utils';
-import {
-  type Blocks,
-  type ExtensionType,
-  type JobMiddleware,
-  type Query,
-  type Schema,
+import type {
+  ExtensionType,
+  Query,
+  Schema,
+  Store,
+  TransformerMiddleware,
 } from '@blocksuite/affine/store';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query } from 'lit/decorators.js';
@@ -85,7 +85,7 @@ export type TextRendererOptions = {
   maxHeight?: number;
   customHeading?: boolean;
   extensions?: ExtensionType[];
-  additionalMiddlewares?: JobMiddleware[];
+  additionalMiddlewares?: TransformerMiddleware[];
 };
 
 // todo: refactor it for more general purpose usage instead of AI only?
@@ -173,7 +173,7 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
     }
   };
 
-  private _doc: Blocks | null = null;
+  private _doc: Store | null = null;
 
   private readonly _query: Query = {
     mode: 'strict',
@@ -194,16 +194,16 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
     if (this._answers.length > 0) {
       const latestAnswer = this._answers.pop();
       this._answers = [];
-      const schema = this.schema ?? this.host?.std.doc.workspace.schema;
+      const schema = this.schema ?? this.host?.std.store.workspace.schema;
       let provider: ServiceProvider;
       if (this.host) {
         provider = this.host.std.provider;
       } else {
         const container = new Container();
         [
-          ...markdownInlineToDeltaMatchers,
+          ...MarkdownInlineToDeltaAdapterExtensions,
           ...defaultBlockMarkdownAdapterMatchers,
-          ...inlineDeltaToMarkdownAdapterMatchers,
+          ...InlineDeltaToMarkdownAdapterExtensions,
         ].forEach(ext => {
           ext.setup(container);
         });
@@ -219,7 +219,7 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
         )
           .then(doc => {
             this.disposeDoc();
-            this._doc = doc.doc.getBlocks({
+            this._doc = doc.doc.getStore({
               query: this._query,
             });
             this.disposables.add(() => {
@@ -286,7 +286,7 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
           this._doc,
           html`<div class="ai-answer-text-editor affine-page-viewport">
             ${new BlockStdScope({
-              doc: this._doc,
+              store: this._doc,
               extensions: this.options.extensions ?? CustomPageEditorBlockSpecs,
             }).render()}
           </div>`
