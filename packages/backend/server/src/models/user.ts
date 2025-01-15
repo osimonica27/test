@@ -13,7 +13,7 @@ import {
   WrongSignInMethod,
 } from '../base';
 import type { Payload } from '../base/event/def';
-import { Permission } from '../core/permission';
+import { Permission } from '../core/permission/types';
 import { Quota_FreePlanV1_1 } from '../core/quota/schema';
 
 const publicUserSelect = {

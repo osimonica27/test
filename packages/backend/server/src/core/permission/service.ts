@@ -1,45 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
-import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
-import { groupBy } from 'lodash-es';
+import { WorkspaceMemberStatus } from '@prisma/client';
 
 import {
   DocAccessDenied,
-  EventEmitter,
   SpaceAccessDenied,
   SpaceOwnerNotFound,
 } from '../../base';
+import { Models } from '../../models';
 import { Permission, PublicPageMode } from './types';
 
 @Injectable()
 export class PermissionService {
-  constructor(
-    private readonly prisma: PrismaClient,
-    private readonly event: EventEmitter
-  ) {}
-
-  private get acceptedCondition() {
-    return [
-      {
-        accepted: true,
-      },
-      {
-        status: WorkspaceMemberStatus.Accepted,
-      },
-    ];
-  }
+  constructor(private readonly models: Models) {}
 
   /// Start regin: workspace permission
   async get(ws: string, user: string) {
-    const data = await this.prisma.workspaceUserPermission.findFirst({
-      where: {
-        workspaceId: ws,
-        userId: user,
-        OR: this.acceptedCondition,
-      },
-    });
-
-    return data?.type as Permission;
+    const member = await this.models.workspace.getMember(ws, user);
+    return member?.type;
   }
 
   /**
@@ -48,41 +25,16 @@ export class PermissionService {
    * @returns
    */
   async hasWorkspace(workspaceId: string) {
-    return await this.prisma.workspaceUserPermission
-      .count({
-        where: {
-          workspaceId,
-          OR: this.acceptedCondition,
-        },
-      })
-      .then(count => count > 0);
+    const count = await this.models.workspace.getMemberUsedCount(workspaceId);
+    return count > 0;
   }
 
   async getOwnedWorkspaces(userId: string) {
-    return this.prisma.workspaceUserPermission
-      .findMany({
-        where: {
-          userId,
-          type: Permission.Owner,
-          OR: this.acceptedCondition,
-        },
-        select: {
-          workspaceId: true,
-        },
-      })
-      .then(data => data.map(({ workspaceId }) => workspaceId));
+    return await this.models.workspace.findOwnedIds(userId);
   }
 
   async getWorkspaceOwner(workspaceId: string) {
-    const owner = await this.prisma.workspaceUserPermission.findFirst({
-      where: {
-        workspaceId,
-        type: Permission.Owner,
-      },
-      include: {
-        user: true,
-      },
-    });
+    const owner = await this.models.workspace.getOwner(workspaceId);
 
     if (!owner) {
       throw new SpaceOwnerNotFound({ spaceId: workspaceId });
@@ -92,37 +44,16 @@ export class PermissionService {
   }
 
   async getWorkspaceAdmin(workspaceId: string) {
-    const admin = await this.prisma.workspaceUserPermission.findMany({
-      where: {
-        workspaceId,
-        type: Permission.Admin,
-      },
-      include: {
-        user: true,
-      },
-    });
-
-    return admin.map(({ user }) => user);
+    const admins = await this.models.workspace.findAdmins(workspaceId);
+    return admins.map(({ user }) => user);
   }
 
   async getWorkspaceMemberCount(workspaceId: string) {
-    return this.prisma.workspaceUserPermission.count({
-      where: {
-        workspaceId,
-      },
-    });
+    return await this.models.workspace.getMemberTotalCount(workspaceId);
   }
 
   async tryGetWorkspaceOwner(workspaceId: string) {
-    return this.prisma.workspaceUserPermission.findFirst({
-      where: {
-        workspaceId,
-        type: Permission.Owner,
-      },
-      include: {
-        user: true,
-      },
-    });
+    return await this.models.workspace.getOwner(workspaceId);
   }
 
   /**
@@ -137,12 +68,7 @@ export class PermissionService {
       // if workspace is public or have any public page, then allow to access
       const [isPublicWorkspace, publicPages] = await Promise.all([
         this.tryCheckWorkspace(ws, user, Permission.Read),
-        this.prisma.workspacePage.count({
-          where: {
-            workspaceId: ws,
-            public: true,
-          },
-        }),
+        this.models.workspacePage.getPublicsCount(ws),
       ]);
       return isPublicWorkspace || publicPages > 0;
     }
@@ -151,15 +77,8 @@ export class PermissionService {
   }
 
   async getWorkspaceMemberStatus(ws: string, user: string) {
-    return this.prisma.workspaceUserPermission
-      .findFirst({
-        where: {
-          workspaceId: ws,
-          userId: user,
-        },
-        select: { status: true },
-      })
-      .then(r => r?.status);
+    const member = await this.models.workspace.getMemberInAnyStatus(ws, user);
+    return member?.status;
   }
 
   /**
@@ -170,18 +89,7 @@ export class PermissionService {
     user: string,
     permission: Permission = Permission.Read
   ): Promise<boolean> {
-    const count = await this.prisma.workspaceUserPermission.count({
-      where: {
-        workspaceId: ws,
-        userId: user,
-        OR: this.acceptedCondition,
-        type: {
-          gte: permission,
-        },
-      },
-    });
-
-    return count !== 0;
+    return await this.models.workspace.isMember(ws, user, permission);
   }
 
   /**
@@ -218,31 +126,17 @@ export class PermissionService {
   ) {
     // If the permission is read, we should check if the workspace is public
     if (permission === Permission.Read) {
-      const count = await this.prisma.workspace.count({
-        where: { id: ws, public: true },
-      });
-
+      const workspace = await this.models.workspace.get(ws);
       // workspace is public
       // accessible
-      if (count > 0) {
+      if (workspace?.public) {
         return true;
       }
     }
 
     if (user) {
       // normally check if the user has the permission
-      const count = await this.prisma.workspaceUserPermission.count({
-        where: {
-          workspaceId: ws,
-          userId: user,
-          OR: this.acceptedCondition,
-          type: {
-            gte: permission,
-          },
-        },
-      });
-
-      return count > 0;
+      return await this.models.workspace.isMember(ws, user, permission);
     }
 
     // unsigned in, workspace is not public
@@ -265,43 +159,13 @@ export class PermissionService {
     user: string,
     permission: Permission = Permission.Read
   ) {
-    const count = await this.prisma.workspaceUserPermission.count({
-      where: {
-        workspaceId: ws,
-        userId: user,
-        OR: this.acceptedCondition,
-        type: permission,
-      },
-    });
-
-    return count > 0;
+    const member = await this.models.workspace.getMember(ws, user);
+    return member?.type === permission;
   }
 
   async allowUrlPreview(ws: string) {
-    const count = await this.prisma.workspace.count({
-      where: {
-        id: ws,
-        enableUrlPreview: true,
-      },
-    });
-
-    return count > 0;
-  }
-
-  private getAllowedStatusSource(
-    to: WorkspaceMemberStatus
-  ): WorkspaceMemberStatus[] {
-    switch (to) {
-      case WorkspaceMemberStatus.NeedMoreSeat:
-        return [WorkspaceMemberStatus.Pending];
-      case WorkspaceMemberStatus.NeedMoreSeatAndReview:
-        return [WorkspaceMemberStatus.UnderReview];
-      case WorkspaceMemberStatus.Pending:
-      case WorkspaceMemberStatus.UnderReview:
-        return [WorkspaceMemberStatus.Accepted];
-      default:
-        return [];
-    }
+    const workspace = await this.models.workspace.get(ws);
+    return workspace?.enableUrlPreview ?? false;
   }
 
   async grant(
@@ -310,59 +174,13 @@ export class PermissionService {
     permission: Permission = Permission.Read,
     status: WorkspaceMemberStatus = WorkspaceMemberStatus.Pending
   ): Promise<string> {
-    const data = await this.prisma.workspaceUserPermission.findFirst({
-      where: { workspaceId: ws, userId: user },
-    });
-
-    if (data) {
-      const toBeOwner = permission === Permission.Owner;
-      if (data.accepted && data.status === WorkspaceMemberStatus.Accepted) {
-        const [p] = await this.prisma.$transaction(
-          [
-            this.prisma.workspaceUserPermission.update({
-              where: {
-                workspaceId_userId: { workspaceId: ws, userId: user },
-              },
-              data: { type: permission },
-            }),
-
-            // If the new permission is owner, we need to revoke old owner
-            toBeOwner
-              ? this.prisma.workspaceUserPermission.updateMany({
-                  where: {
-                    workspaceId: ws,
-                    type: Permission.Owner,
-                    userId: { not: user },
-                  },
-                  data: { type: Permission.Admin },
-                })
-              : null,
-          ].filter(Boolean) as Prisma.PrismaPromise<any>[]
-        );
-
-        return p.id;
-      }
-      const allowedStatus = this.getAllowedStatusSource(data.status);
-      if (allowedStatus.includes(status)) {
-        const ret = await this.prisma.workspaceUserPermission.update({
-          where: { workspaceId_userId: { workspaceId: ws, userId: user } },
-          data: { status },
-        });
-        return ret.id;
-      }
-      return data.id;
-    }
-
-    return this.prisma.workspaceUserPermission
-      .create({
-        data: {
-          workspaceId: ws,
-          userId: user,
-          type: permission,
-          status,
-        },
-      })
-      .then(p => p.id);
+    const member = await this.models.workspace.grantMember(
+      ws,
+      user,
+      permission,
+      status
+    );
+    return member.id;
   }
 
   async acceptWorkspaceInvitation(
@@ -370,110 +188,24 @@ export class PermissionService {
     workspaceId: string,
     status: WorkspaceMemberStatus = WorkspaceMemberStatus.Accepted
   ) {
-    const result = await this.prisma.workspaceUserPermission.updateMany({
-      where: {
-        id: invitationId,
-        workspaceId: workspaceId,
-        AND: [{ accepted: false }, { status: WorkspaceMemberStatus.Pending }],
-      },
-      data: { accepted: true, status },
-    });
-
-    return result.count > 0;
+    return await this.models.workspace.acceptMemberInvitation(
+      invitationId,
+      workspaceId,
+      status
+    );
   }
 
   async refreshSeatStatus(workspaceId: string, memberLimit: number) {
-    const usedCount = await this.prisma.workspaceUserPermission.count({
-      where: { workspaceId, status: WorkspaceMemberStatus.Accepted },
-    });
-
-    const availableCount = memberLimit - usedCount;
-
-    if (availableCount <= 0) {
-      return;
-    }
-
-    await this.prisma.$transaction(async tx => {
-      const members = await tx.workspaceUserPermission.findMany({
-        select: { id: true, status: true },
-        where: {
-          workspaceId,
-          status: {
-            in: [
-              WorkspaceMemberStatus.NeedMoreSeat,
-              WorkspaceMemberStatus.NeedMoreSeatAndReview,
-            ],
-          },
-        },
-        orderBy: { createdAt: 'asc' },
-      });
-
-      const needChange = members.slice(0, availableCount);
-      const { NeedMoreSeat, NeedMoreSeatAndReview } = groupBy(
-        needChange,
-        m => m.status
-      );
-
-      const toPendings = NeedMoreSeat ?? [];
-      if (toPendings.length > 0) {
-        await tx.workspaceUserPermission.updateMany({
-          where: { id: { in: toPendings.map(m => m.id) } },
-          data: { status: WorkspaceMemberStatus.Pending },
-        });
-      }
-
-      const toUnderReviewUserIds = NeedMoreSeatAndReview ?? [];
-      if (toUnderReviewUserIds.length > 0) {
-        await tx.workspaceUserPermission.updateMany({
-          where: { id: { in: toUnderReviewUserIds.map(m => m.id) } },
-          data: { status: WorkspaceMemberStatus.UnderReview },
-        });
-      }
-
-      return [toPendings, toUnderReviewUserIds] as const;
-    });
+    await this.models.workspace.refreshMemberSeatStatus(
+      workspaceId,
+      memberLimit
+    );
   }
 
   async revokeWorkspace(workspaceId: string, user: string) {
-    const permission = await this.prisma.workspaceUserPermission.findUnique({
-      where: { workspaceId_userId: { workspaceId, userId: user } },
-    });
-
-    // We shouldn't revoke owner permission
-    // should auto deleted by workspace/user delete cascading
-    if (!permission || permission.type === Permission.Owner) {
-      return false;
-    }
-
-    await this.prisma.workspaceUserPermission.deleteMany({
-      where: {
-        workspaceId,
-        userId: user,
-      },
-    });
-
-    const count = await this.prisma.workspaceUserPermission.count({
-      where: { workspaceId },
-    });
-
-    this.event.emit('workspace.members.updated', {
-      workspaceId,
-      count,
-    });
-
-    if (
-      permission.status === 'UnderReview' ||
-      permission.status === 'NeedMoreSeatAndReview'
-    ) {
-      this.event.emit('workspace.members.requestDeclined', {
-        userId: user,
-        workspaceId,
-      });
-    }
-
-    return true;
+    return await this.models.workspace.deleteMember(workspaceId, user);
   }
-  /// End regin: workspace permission
+  /// End region: workspace permission
 
   /// Start regin: page permission
   /**
@@ -514,37 +246,25 @@ export class PermissionService {
   ) {
     // check whether page is public
     if (permission === Permission.Read) {
-      const count = await this.prisma.workspacePage.count({
-        where: {
-          workspaceId: ws,
-          pageId: page,
-          public: true,
-        },
-      });
-
+      const isPublic = await this.isPublicPage(ws, page);
       // page is public
       // accessible
-      if (count > 0) {
+      if (isPublic) {
         return true;
       }
     }
 
     if (user) {
-      const count = await this.prisma.workspacePageUserPermission.count({
-        where: {
-          workspaceId: ws,
-          pageId: page,
-          userId: user,
-          accepted: true,
-          type: {
-            gte: permission,
-          },
-        },
-      });
+      const isMember = await this.models.workspacePage.isMember(
+        ws,
+        page,
+        user,
+        permission
+      );
 
       // page shared to user
       // accessible
-      if (count > 0) {
+      if (isMember) {
         return true;
       }
     }
@@ -554,54 +274,20 @@ export class PermissionService {
   }
 
   async isPublicPage(ws: string, page: string) {
-    return this.prisma.workspacePage
-      .count({
-        where: {
-          workspaceId: ws,
-          pageId: page,
-          public: true,
-        },
-      })
-      .then(count => count > 0);
+    const data = await this.models.workspacePage.get(ws, page, true);
+    return !!data;
   }
 
   async publishPage(ws: string, page: string, mode = PublicPageMode.Page) {
-    return this.prisma.workspacePage.upsert({
-      where: {
-        workspaceId_pageId: {
-          workspaceId: ws,
-          pageId: page,
-        },
-      },
-      update: {
-        public: true,
-        mode,
-      },
-      create: {
-        workspaceId: ws,
-        pageId: page,
-        mode,
-        public: true,
-      },
+    return await this.models.workspacePage.createOrUpdate(ws, page, {
+      mode,
+      public: true,
     });
   }
 
   async revokePublicPage(ws: string, page: string) {
-    return this.prisma.workspacePage.upsert({
-      where: {
-        workspaceId_pageId: {
-          workspaceId: ws,
-          pageId: page,
-        },
-      },
-      update: {
-        public: false,
-      },
-      create: {
-        workspaceId: ws,
-        pageId: page,
-        public: false,
-      },
+    return await this.models.workspacePage.createOrUpdate(ws, page, {
+      public: false,
     });
   }
 
@@ -611,75 +297,17 @@ export class PermissionService {
     user: string,
     permission: Permission = Permission.Read
   ) {
-    const data = await this.prisma.workspacePageUserPermission.findFirst({
-      where: {
-        workspaceId: ws,
-        pageId: page,
-        userId: user,
-        accepted: true,
-      },
-    });
-
-    if (data) {
-      const [p] = await this.prisma.$transaction(
-        [
-          this.prisma.workspacePageUserPermission.update({
-            where: {
-              id: data.id,
-            },
-            data: {
-              type: permission,
-            },
-          }),
-
-          // If the new permission is owner, we need to revoke old owner
-          permission === Permission.Owner
-            ? this.prisma.workspacePageUserPermission.updateMany({
-                where: {
-                  workspaceId: ws,
-                  pageId: page,
-                  type: Permission.Owner,
-                  userId: {
-                    not: user,
-                  },
-                },
-                data: {
-                  type: Permission.Admin,
-                },
-              })
-            : null,
-        ].filter(Boolean) as Prisma.PrismaPromise<any>[]
-      );
-
-      return p.id;
-    }
-
-    return this.prisma.workspacePageUserPermission
-      .create({
-        data: {
-          workspaceId: ws,
-          pageId: page,
-          userId: user,
-          type: permission,
-        },
-      })
-      .then(p => p.id);
+    const member = await this.models.workspacePage.grantMember(
+      ws,
+      page,
+      user,
+      permission
+    );
+    return member.id;
   }
 
   async revokePage(ws: string, page: string, user: string) {
-    const result = await this.prisma.workspacePageUserPermission.deleteMany({
-      where: {
-        workspaceId: ws,
-        pageId: page,
-        userId: user,
-        type: {
-          // We shouldn't revoke owner permission, should auto deleted by workspace/user delete cascading
-          not: Permission.Owner,
-        },
-      },
-    });
-
-    return result.count > 0;
+    return await this.models.workspacePage.deleteMember(ws, page, user);
   }
   /// End regin: page permission
 }
