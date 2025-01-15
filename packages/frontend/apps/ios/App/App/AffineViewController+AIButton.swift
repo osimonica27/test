@@ -88,20 +88,23 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
     switch actionType {
     case .translateTo:
       // TODO: IMPL
-      let controller = IntelligentsEphemeralActionController(action: .translate(
-        to: .langSimplifiedChinese,
-        workspaceID: workspaceID ?? "",
-        documentID: documentID ?? ""
-      ))
+      let controller = IntelligentsEphemeralActionController(
+        action: .translate(to: .langSimplifiedChinese)
+      )
+      controller.workspaceID = workspaceID ?? ""
+      controller.documentID = documentID ?? ""
+      controller.documentContent = documentContent ?? ""
       controller.configure(previewImage: view.capturedImage ?? .init())
       presentIntoCurrentContext(withTargetController: controller)
     case .summary:
-        let controller = IntelligentsEphemeralActionController(action: .summarize(
-          workspaceID: workspaceID ?? "",
-          documentID: documentID ?? ""
-        ))
-        controller.configure(previewImage: view.capturedImage ?? .init())
-        presentIntoCurrentContext(withTargetController: controller)
+      let controller = IntelligentsEphemeralActionController(
+        action: .summarize
+      )
+      controller.configure(previewImage: view.capturedImage ?? .init())
+      controller.workspaceID = workspaceID ?? ""
+      controller.documentID = documentID ?? ""
+      controller.documentContent = documentContent ?? ""
+      presentIntoCurrentContext(withTargetController: controller)
     case .chatWithAI:
       let controller = IntelligentsChatController()
       controller.metadata[.documentID] = documentID

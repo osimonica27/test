@@ -22,15 +22,15 @@ public extension IntelligentsEphemeralActionController {
       case langKorean = "Korean"
     }
 
-    case translate(to: Language, workspaceID: String, documentID: String)
-    case summarize(workspaceID: String, documentID: String)
+    case translate(to: Language)
+    case summarize
   }
 }
 
 extension IntelligentsEphemeralActionController.EphemeralAction {
   var title: String {
     switch self {
-    case let .translate(to, _, _):
+    case let .translate(to):
       String(format: NSLocalizedString("Translate to %@", comment: ""), to.rawValue)
     case .summarize:
       NSLocalizedString("Summarize", comment: "")

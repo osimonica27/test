@@ -30,7 +30,14 @@ extension WKWebView {
         arguments: [:],
         in: nil,
         in: .page
-      ) { callback($0) }
+      ) { result in
+        switch result {
+        case .success(let input):
+          callback(input)
+        case .failure:
+          callback(nil)
+        }
+      }
     } else {
       evaluateJavaScript(script.rawValue) { output, _ in callback(output) }
     }

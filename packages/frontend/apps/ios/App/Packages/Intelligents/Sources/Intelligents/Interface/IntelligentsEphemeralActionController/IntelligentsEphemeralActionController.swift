@@ -5,6 +5,8 @@
 //  Created by 秋星桥 on 2025/1/8.
 //
 
+import LDSwiftEventSource
+import MarkdownUI
 import UIKit
 
 public class IntelligentsEphemeralActionController: UIViewController {
@@ -14,8 +16,23 @@ public class IntelligentsEphemeralActionController: UIViewController {
 
   let header = Header()
   let preview = RotatedImagePreview()
-  
-  var documentContainer: UIView = .init()
+
+  var responseContainer: UIView = .init()
+  var removableConstraints: [NSLayoutConstraint] = []
+
+  public var documentID: String = ""
+  public var workspaceID: String = ""
+  public var documentContent: String = ""
+  var sessionID: String = ""
+
+  var chatTask: EventSource?
+  var copilotDocumentStorage: String = "" {
+    didSet {
+      guard copilotDocumentStorage != oldValue else { return }
+      updateDocumentPresentationView()
+      scrollToBottom()
+    }
+  }
 
   public init(action: EphemeralAction) {
     ation = action
@@ -127,8 +144,19 @@ public class IntelligentsEphemeralActionController: UIViewController {
       headerLabel.topAnchor.constraint(equalTo: headerGroup.topAnchor),
       headerLabel.bottomAnchor.constraint(equalTo: headerGroup.bottomAnchor),
     ].forEach { $0.isActive = true }
-    
-    stackView.addArrangedSubview(documentContainer)
+
+    responseContainer.translatesAutoresizingMaskIntoConstraints = false
+    responseContainer.setContentHuggingPriority(.required, for: .vertical)
+    responseContainer.setContentCompressionResistancePriority(.required, for: .vertical)
+    responseContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 350).isActive = true
+    stackView.addArrangedSubview(responseContainer)
+
+    let footerSpacer = UIView()
+    footerSpacer.translatesAutoresizingMaskIntoConstraints = false
+    footerSpacer.heightAnchor.constraint(equalToConstant: 350).isActive = true
+    stackView.addArrangedSubview(footerSpacer)
+
+    updateDocumentPresentationView()
   }
 
   public func configure(previewImage: UIImage) {
@@ -145,5 +173,76 @@ public class IntelligentsEphemeralActionController: UIViewController {
 
   func onFirstAppear() {
     beginAction()
+  }
+
+  func close() {
+    if let navigationController {
+      navigationController.popViewController(animated: true)
+    } else {
+      dismiss(animated: true)
+    }
+  }
+
+  func updateDocumentPresentationView() {
+    assert(Thread.isMainThread)
+
+    defer {
+      stackView.setNeedsUpdateConstraints()
+      stackView.setNeedsLayout()
+    }
+
+    for subview in responseContainer.subviews {
+      subview.removeFromSuperview()
+    }
+
+    removableConstraints.forEach { $0.isActive = false }
+    removableConstraints.removeAll()
+
+    if copilotDocumentStorage.isEmpty {
+      // up on creation before first token alive, put a loading indicator
+      let indicator = UIActivityIndicatorView(style: .large)
+      indicator.startAnimating()
+      indicator.translatesAutoresizingMaskIntoConstraints = false
+      responseContainer.addSubview(indicator)
+      [
+        indicator.centerXAnchor.constraint(equalTo: responseContainer.centerXAnchor),
+        indicator.centerYAnchor.constraint(equalTo: responseContainer.centerYAnchor),
+        indicator.heightAnchor.constraint(equalToConstant: 200),
+      ].forEach {
+        $0.isActive = true
+        removableConstraints.append($0)
+      }
+      return
+    }
+
+    // for otherwise, create the view we need
+    let hostingView: UIView = UIHostingView(
+      rootView: Markdown(.init(copilotDocumentStorage))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxHeight: .infinity, alignment: .top)
+    )
+    responseContainer.addSubview(hostingView)
+
+    hostingView.translatesAutoresizingMaskIntoConstraints = false
+    [
+      hostingView.topAnchor.constraint(equalTo: responseContainer.topAnchor),
+      hostingView.leadingAnchor.constraint(equalTo: responseContainer.leadingAnchor),
+      hostingView.trailingAnchor.constraint(equalTo: responseContainer.trailingAnchor),
+      hostingView.bottomAnchor.constraint(equalTo: responseContainer.bottomAnchor),
+    ].forEach {
+      $0.isActive = true
+      removableConstraints.append($0)
+    }
+  }
+
+  func scrollToBottom() {
+    guard !copilotDocumentStorage.isEmpty else { return }
+    let bottomOffset = CGPoint(
+      x: 0,
+      y: max(0, scrollView.contentSize.height - scrollView.bounds.size.height)
+    )
+    UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 1.0, initialSpringVelocity: 0.8) {
+      self.scrollView.setContentOffset(bottomOffset, animated: true)
+    }
   }
 }
