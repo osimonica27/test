@@ -20,6 +20,8 @@ public class IntelligentsEphemeralActionController: UIViewController {
   var responseContainer: UIView = .init()
   var removableConstraints: [NSLayoutConstraint] = []
 
+  let actionBar = ActionBar()
+
   public var documentID: String = ""
   public var workspaceID: String = ""
   public var documentContent: String = ""
@@ -48,12 +50,13 @@ public class IntelligentsEphemeralActionController: UIViewController {
   override public func viewDidLoad() {
     super.viewDidLoad()
 
+    overrideUserInterfaceStyle = .dark
+    hideKeyboardWhenTappedAround()
+    view.backgroundColor = .systemBackground
+
     header.titleLabel.text = title
     header.dropMenu.isHidden = true
     header.moreMenu.isHidden = true
-    overrideUserInterfaceStyle = .dark
-    hideKeyboardWhenTappedAround()
-
     view.addSubview(header)
     header.translatesAutoresizingMaskIntoConstraints = false
     [
@@ -63,7 +66,13 @@ public class IntelligentsEphemeralActionController: UIViewController {
       header.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 44),
     ].forEach { $0.isActive = true }
 
-    view.backgroundColor = .systemBackground
+    view.addSubview(actionBar)
+    actionBar.translatesAutoresizingMaskIntoConstraints = false
+    [
+      actionBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
+      actionBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
+      actionBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+    ].forEach { $0.isActive = true }
 
     scrollView.clipsToBounds = true
     scrollView.alwaysBounceVertical = true
@@ -74,7 +83,7 @@ public class IntelligentsEphemeralActionController: UIViewController {
       scrollView.topAnchor.constraint(equalTo: header.bottomAnchor),
       scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
       scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+      scrollView.bottomAnchor.constraint(equalTo: actionBar.topAnchor),
     ].forEach { $0.isActive = true }
 
     let contentView = UIView()
@@ -150,11 +159,6 @@ public class IntelligentsEphemeralActionController: UIViewController {
     responseContainer.setContentCompressionResistancePriority(.required, for: .vertical)
     responseContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 350).isActive = true
     stackView.addArrangedSubview(responseContainer)
-
-    let footerSpacer = UIView()
-    footerSpacer.translatesAutoresizingMaskIntoConstraints = false
-    footerSpacer.heightAnchor.constraint(equalToConstant: 350).isActive = true
-    stackView.addArrangedSubview(footerSpacer)
 
     updateDocumentPresentationView()
   }
@@ -241,8 +245,11 @@ public class IntelligentsEphemeralActionController: UIViewController {
       x: 0,
       y: max(0, scrollView.contentSize.height - scrollView.bounds.size.height)
     )
-    UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 1.0, initialSpringVelocity: 0.8) {
-      self.scrollView.setContentOffset(bottomOffset, animated: true)
-    }
+    UIView.animate(
+      withDuration: 0.5,
+      delay: 0,
+      usingSpringWithDamping: 1.0,
+      initialSpringVelocity: 0.8
+    ) { self.scrollView.setContentOffset(bottomOffset, animated: false) }
   }
 }
