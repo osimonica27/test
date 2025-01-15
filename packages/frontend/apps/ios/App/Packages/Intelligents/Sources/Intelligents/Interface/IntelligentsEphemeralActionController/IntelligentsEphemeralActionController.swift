@@ -115,6 +115,10 @@ public class IntelligentsEphemeralActionController: UIViewController {
     ].forEach { $0.isActive = true }
 
     setupContentViews()
+
+    actionBar.retryButton.action = { [weak self] in
+      self?.beginAction()
+    }
   }
 
   func setupContentViews() {

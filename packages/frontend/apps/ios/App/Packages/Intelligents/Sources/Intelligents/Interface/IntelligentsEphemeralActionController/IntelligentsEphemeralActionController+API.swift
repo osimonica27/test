@@ -12,6 +12,8 @@ import LDSwiftEventSource
 extension IntelligentsEphemeralActionController {
   func beginAction() {
     print("[*] begin ephemeral action for did \(documentID) wid \(workspaceID)")
+    chatTask?.stop()
+    chatTask = nil
     copilotDocumentStorage = ""
     chat_createSession(
       documentIdentifier: documentID,
