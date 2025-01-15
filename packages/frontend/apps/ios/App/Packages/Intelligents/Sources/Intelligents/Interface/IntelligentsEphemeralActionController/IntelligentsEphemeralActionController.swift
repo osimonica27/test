@@ -14,6 +14,8 @@ public class IntelligentsEphemeralActionController: UIViewController {
 
   let header = Header()
   let preview = RotatedImagePreview()
+  
+  var documentContainer: UIView = .init()
 
   public init(action: EphemeralAction) {
     ation = action
@@ -125,9 +127,23 @@ public class IntelligentsEphemeralActionController: UIViewController {
       headerLabel.topAnchor.constraint(equalTo: headerGroup.topAnchor),
       headerLabel.bottomAnchor.constraint(equalTo: headerGroup.bottomAnchor),
     ].forEach { $0.isActive = true }
+    
+    stackView.addArrangedSubview(documentContainer)
   }
 
   public func configure(previewImage: UIImage) {
     preview.configure(previewImage: previewImage)
+  }
+
+  private var isFirstAppear: Bool = true
+  override public func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    guard isFirstAppear else { return }
+    isFirstAppear = false
+    onFirstAppear()
+  }
+
+  func onFirstAppear() {
+    beginAction()
   }
 }

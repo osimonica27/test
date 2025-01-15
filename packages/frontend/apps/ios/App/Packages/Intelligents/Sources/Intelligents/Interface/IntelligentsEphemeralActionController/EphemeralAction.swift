@@ -36,4 +36,13 @@ extension IntelligentsEphemeralActionController.EphemeralAction {
       NSLocalizedString("Summarize", comment: "")
     }
   }
+
+  var prompt: Prompt {
+    switch self {
+    case .translate:
+      .general_Translate_to
+    case .summarize:
+      .general_Summary
+    }
+  }
 }

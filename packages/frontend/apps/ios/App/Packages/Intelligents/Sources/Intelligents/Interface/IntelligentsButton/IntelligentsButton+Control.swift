@@ -60,9 +60,15 @@ public extension UIViewController {
     }
   }
 
-  func dismissIntelligentsButton() {
+  func dismissIntelligentsButton(animated: Bool = true) {
     guard let button = findIntelligentsButton() else { return }
     print("[*] \(button) is calling \(#function)")
+
+    if !animated {
+      button.stopProgress()
+      button.isHidden = true
+      return
+    }
 
     button.stopProgress()
     button.setNeedsLayout()

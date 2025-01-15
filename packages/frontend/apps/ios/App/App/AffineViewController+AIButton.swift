@@ -60,14 +60,14 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
   @discardableResult
   func openIntelligentsSheet() -> IntelligentsFocusApertureView? {
     view.resignFirstResponder()
-    guard let view = webView?.subviews.first else {
-      assertionFailure()
-      return nil
+    // stop scroll on webview
+    if let contentOffset = webView?.scrollView.contentOffset {
+      webView?.scrollView.contentOffset = contentOffset
     }
-    assert(view is UIScrollView)
+    dismissIntelligentsButton()
     let focus = IntelligentsFocusApertureView()
     focus.prepareAnimationWith(
-      capturingTargetContentView: view,
+      capturingTargetContentView: webView ?? .init(),
       coveringRootViewController: self
     )
     focus.delegate = self

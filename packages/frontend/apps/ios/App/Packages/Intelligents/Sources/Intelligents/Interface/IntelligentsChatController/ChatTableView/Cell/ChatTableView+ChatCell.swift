@@ -85,6 +85,7 @@ extension ChatTableView {
 
       let hostingView: UIView = UIHostingView(
         rootView: Markdown(.init(viewModel.markdownDocument))
+          .frame(maxWidth: .infinity, alignment: .leading)
       )
       defer { markdownView = hostingView }
       markdownContainer.addSubview(hostingView)
@@ -93,7 +94,7 @@ extension ChatTableView {
       [
         hostingView.topAnchor.constraint(equalTo: markdownContainer.topAnchor),
         hostingView.leadingAnchor.constraint(equalTo: markdownContainer.leadingAnchor),
-        hostingView.trailingAnchor.constraint(lessThanOrEqualTo: markdownContainer.trailingAnchor),
+        hostingView.trailingAnchor.constraint(equalTo: markdownContainer.trailingAnchor),
         hostingView.bottomAnchor.constraint(equalTo: markdownContainer.bottomAnchor),
       ].forEach {
         $0.isActive = true
