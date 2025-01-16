@@ -17,7 +17,9 @@ function initWorker(width: number, height: number) {
 }
 
 function getWorkerData(editorHost: EditorHost) {
-  const paragraphBlocks = editorHost.querySelectorAll('affine-paragraph');
+  const paragraphBlocks = editorHost.querySelectorAll(
+    '.affine-paragraph-rich-text-wrapper [data-v-text="true"]'
+  );
   const paragraphs: ParagraphData[] = Array.from(paragraphBlocks).map(p => {
     const rect = p.getBoundingClientRect();
     const computedStyle = window.getComputedStyle(p);
