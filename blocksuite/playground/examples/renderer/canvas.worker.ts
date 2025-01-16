@@ -18,7 +18,7 @@ class CanvasWorkerManager {
 
     ctx.fillStyle = 'yellow';
     paragraphs.forEach(({ rect, style }) => {
-      console.log(rect, style.fontSize);
+      console.log(JSON.stringify(rect), style.fontSize);
       const x = rect.left - editorRect.left;
       const y = rect.top - editorRect.top;
       ctx.fillRect(x, y, rect.width, rect.height);
