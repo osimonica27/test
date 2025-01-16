@@ -31,5 +31,8 @@ addParagraph('Hello World!');
 addParagraph(
   'Hello World! Lorem ipsum dolor sit amet. Consectetur adipiscing elit. Sed do eiusmod tempor incididunt.'
 );
+addParagraph(
+  '你好这是测试，这是一个为了换行而写的中文段落。这个段落会自动换行。'
+);
 
 initToCanvasSync();

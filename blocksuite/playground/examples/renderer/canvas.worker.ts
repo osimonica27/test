@@ -2,7 +2,7 @@ import { type ParagraphData } from './types.js';
 
 function segmentWords(text: string): string[] {
   const segmenter = new Intl.Segmenter(void 0, {
-    granularity: 'word',
+    granularity: 'sentence',
   });
   return Array.from(segmenter.segment(text)).map(({ segment }) => segment);
 }
