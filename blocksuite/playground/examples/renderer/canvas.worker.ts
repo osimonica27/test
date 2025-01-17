@@ -45,19 +45,21 @@ class CanvasWorkerManager {
     if (!canvas || !ctx) return;
 
     ctx.font = '15px Inter';
-    ctx.fillStyle = 'black';
     const baselineY = getBaseline();
 
     paragraphs.forEach(paragraph => {
       paragraph.sentences.forEach(sentence => {
+        ctx.strokeStyle = 'yellow';
         sentence.rects.forEach(textRect => {
           const x = textRect.rect.left - editorRect.left;
           const y = textRect.rect.top - editorRect.top;
-
-          ctx.strokeStyle = 'yellow';
           ctx.strokeRect(x, y, textRect.rect.width, textRect.rect.height);
+        });
 
-          ctx.fillStyle = 'black';
+        ctx.fillStyle = 'black';
+        sentence.rects.forEach(textRect => {
+          const x = textRect.rect.left - editorRect.left;
+          const y = textRect.rect.top - editorRect.top;
           ctx.fillText(textRect.text, x, y + baselineY);
         });
       });

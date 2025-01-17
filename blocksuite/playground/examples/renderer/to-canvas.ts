@@ -21,42 +21,76 @@ function segmentSentences(text: string): string[] {
   return Array.from(segmenter.segment(text)).map(({ segment }) => segment);
 }
 
+interface WordSegment {
+  text: string;
+  start: number;
+  end: number;
+}
+
+function getWordSegments(text: string): WordSegment[] {
+  const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
+  return Array.from(segmenter.segment(text)).map(({ segment, index }) => ({
+    text: segment,
+    start: index,
+    end: index + segment.length,
+  }));
+}
+
 function getRangeRects(range: Range, fullText: string): TextRect[] {
-  const rects = range.getClientRects();
+  const rects = Array.from(range.getClientRects());
   const textRects: TextRect[] = [];
 
-  let lastRight = -1;
-  let currentText = '';
-  let charIndex = 0;
+  if (rects.length === 0) return textRects;
 
-  Array.from(rects).forEach((rect, i) => {
-    // if this rect and the previous one are not contiguous in the horizontal direction,
-    // it means a line break
-    if (rect.left <= lastRight && currentText) {
+  // If there's only one rect, use the full text
+  if (rects.length === 1) {
+    textRects.push({
+      rect: rects[0],
+      text: fullText,
+    });
+    return textRects;
+  }
+
+  const segments = getWordSegments(fullText);
+
+  // Calculate the total width and average width per character
+  const totalWidth = rects.reduce((sum, rect) => sum + rect.width, 0);
+  const charWidthEstimate = totalWidth / fullText.length;
+
+  let currentRect = 0;
+  let currentSegments: WordSegment[] = [];
+  let currentWidth = 0;
+
+  segments.forEach(segment => {
+    const segmentWidth = segment.text.length * charWidthEstimate;
+
+    // If adding this segment would exceed current rect width,
+    // save current segments and move to next rect
+    if (
+      currentWidth + segmentWidth > rects[currentRect]?.width &&
+      currentSegments.length > 0
+    ) {
       textRects.push({
-        rect: rects[i - 1],
-        text: currentText,
+        rect: rects[currentRect],
+        text: currentSegments.map(seg => seg.text).join(''),
       });
-      currentText = '';
+
+      currentRect++;
+      currentSegments = [segment];
+      currentWidth = segmentWidth;
+    } else {
+      currentSegments.push(segment);
+      currentWidth += segmentWidth;
     }
-
-    // estimate the character count of this rect based on width ratio
-    const rectWidth = rect.width;
-    const avgCharWidth = rect.width / fullText.length;
-    const charsInRect = Math.round(rectWidth / avgCharWidth);
-
-    currentText = fullText.substr(charIndex, charsInRect);
-    charIndex += charsInRect;
-
-    if (i === rects.length - 1 && currentText) {
-      textRects.push({
-        rect,
-        text: currentText,
-      });
-    }
-
-    lastRight = rect.right;
   });
+
+  // Handle remaining segments if any
+  if (currentSegments.length > 0 && currentRect < rects.length) {
+    textRects.push({
+      rect: rects[currentRect],
+      text: currentSegments.map(seg => seg.text).join(''),
+    });
+  }
 
   return textRects;
 }
