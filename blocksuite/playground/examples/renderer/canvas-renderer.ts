@@ -71,8 +71,8 @@ export class CanvasRenderer {
         }
 
         const canvas = document.createElement('canvas');
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
+        canvas.style.width = hostRect.width + 'px';
+        canvas.style.height = hostRect.height + 'px';
         canvas.width = hostRect.width * window.devicePixelRatio;
         canvas.height = hostRect.height * window.devicePixelRatio;
         this.targetContainer.append(canvas);

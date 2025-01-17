@@ -5,13 +5,15 @@ import { doc, editor } from './editor.js';
 
 function initUI() {
   const toCanvasButton = document.querySelector('#to-canvas-button')!;
-  const targetContainer = <HTMLDivElement>(
-    document.querySelector('#right-column')
-  );
   toCanvasButton.addEventListener('click', () => {
     const host = document.querySelector('editor-host')!;
-    const renderer = new CanvasRenderer(host, targetContainer);
+    const container = document.querySelector('#right-column') as HTMLElement;
+    const renderer = new CanvasRenderer(host, container);
     renderer.render();
+  });
+  const switchModeButton = document.querySelector('#switch-mode-button')!;
+  switchModeButton.addEventListener('click', () => {
+    editor.mode = editor.mode === 'page' ? 'edgeless' : 'page';
   });
   document.querySelector('#left-column')?.append(editor);
 }
