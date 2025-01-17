@@ -1,4 +1,4 @@
-import { type ParagraphData } from './types.js';
+import { type ParagraphLayout } from './types.js';
 
 const meta = {
   emSize: 2048,
@@ -40,7 +40,7 @@ class CanvasWorkerManager {
     this.ctx.fillRect(0, 0, width, height);
   }
 
-  draw(paragraphs: ParagraphData[], editorRect: DOMRect) {
+  draw(paragraphs: ParagraphLayout[], editorRect: DOMRect) {
     const { canvas, ctx } = this;
     if (!canvas || !ctx) return;
 

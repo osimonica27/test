@@ -1,4 +1,4 @@
-export interface ParagraphData {
+export interface ParagraphLayout {
   sentences: {
     text: string;
     rects: TextRect[];
