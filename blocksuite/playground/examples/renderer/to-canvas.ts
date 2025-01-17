@@ -63,12 +63,23 @@ function getRangeRects(range: Range, fullText: string): TextRect[] {
 
   segments.forEach(segment => {
     const segmentWidth = segment.text.length * charWidthEstimate;
+    const isPunctuation = /^[.,!?;:]$/.test(segment.text.trim());
 
-    // If adding this segment would exceed current rect width,
-    // save current segments and move to next rect
+    // Handle punctuation: if the punctuation doesn't exceed the rect width, merge it with the previous segment
+    if (isPunctuation && currentSegments.length > 0) {
+      const withPunctuationWidth = currentWidth + segmentWidth;
+      // Allow slight overflow (120%) since punctuation is usually very narrow
+      if (withPunctuationWidth <= rects[currentRect]?.width * 1.2) {
+        currentSegments.push(segment);
+        currentWidth = withPunctuationWidth;
+        return;
+      }
+    }
+
     if (
       currentWidth + segmentWidth > rects[currentRect]?.width &&
-      currentSegments.length > 0
+      currentSegments.length > 0 &&
+      !isPunctuation // If it's punctuation, try merging with the previous word first
     ) {
       textRects.push({
         rect: rects[currentRect],
