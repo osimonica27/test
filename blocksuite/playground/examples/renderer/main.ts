@@ -1,38 +1,42 @@
-import '../../style.css';
-
-import { effects as blocksEffects } from '@blocksuite/blocks/effects';
-import { PageEditor } from '@blocksuite/presets';
-import { effects as presetsEffects } from '@blocksuite/presets/effects';
 import { Text } from '@blocksuite/store';
 
-import { createEmptyDoc } from '../../apps/_common/helper';
-import { initToCanvasSync } from './to-canvas.js';
+import { CanvasRenderer } from './canvas-renderer.js';
+import { doc, editor } from './editor.js';
 
-blocksEffects();
-presetsEffects();
+function initUI() {
+  const toCanvasButton = document.querySelector('#to-canvas-button')!;
+  const targetContainer = <HTMLDivElement>(
+    document.querySelector('#right-column')
+  );
+  toCanvasButton.addEventListener('click', () => {
+    const host = document.querySelector('editor-host')!;
+    const renderer = new CanvasRenderer(host, targetContainer);
+    renderer.render();
+  });
+  document.querySelector('#left-column')?.append(editor);
+}
 
-const doc = createEmptyDoc().init();
-const editor = new PageEditor();
-editor.doc = doc;
-document.querySelector('#left-column')?.append(editor);
-
-const addParagraph = (content: string) => {
+function addParagraph(content: string) {
   const note = doc.getBlockByFlavour('affine:note')[0];
   const props = {
     text: new Text(content),
   };
   doc.addBlock('affine:paragraph', props, note.id);
-};
+}
 
-const firstParagraph = doc.getBlockByFlavour('affine:paragraph')[0];
-doc.updateBlock(firstParagraph, { text: new Text('Renderer') });
+function main() {
+  initUI();
 
-addParagraph('Hello World!');
-addParagraph(
-  'Hello World! Lorem ipsum dolor sit amet. Consectetur adipiscing elit. Sed do eiusmod tempor incididunt.'
-);
-addParagraph(
-  '你好这是测试，这是一个为了换行而写的中文段落。这个段落会自动换行。'
-);
+  const firstParagraph = doc.getBlockByFlavour('affine:paragraph')[0];
+  doc.updateBlock(firstParagraph, { text: new Text('Renderer') });
 
-initToCanvasSync();
+  addParagraph('Hello World!');
+  addParagraph(
+    'Hello World! Lorem ipsum dolor sit amet. Consectetur adipiscing elit. Sed do eiusmod tempor incididunt.'
+  );
+  addParagraph(
+    '你好这是测试，这是一个为了换行而写的中文段落。这个段落会自动换行。'
+  );
+}
+
+main();

@@ -40,7 +40,7 @@ class CanvasWorkerManager {
     this.ctx.fillRect(0, 0, width, height);
   }
 
-  draw(paragraphs: ParagraphLayout[], editorRect: DOMRect) {
+  draw(paragraphs: ParagraphLayout[], hostRect: DOMRect) {
     const { canvas, ctx } = this;
     if (!canvas || !ctx) return;
 
@@ -51,15 +51,15 @@ class CanvasWorkerManager {
       paragraph.sentences.forEach(sentence => {
         ctx.strokeStyle = 'yellow';
         sentence.rects.forEach(textRect => {
-          const x = textRect.rect.left - editorRect.left;
-          const y = textRect.rect.top - editorRect.top;
+          const x = textRect.rect.left - hostRect.left;
+          const y = textRect.rect.top - hostRect.top;
           ctx.strokeRect(x, y, textRect.rect.width, textRect.rect.height);
         });
 
         ctx.fillStyle = 'black';
         sentence.rects.forEach(textRect => {
-          const x = textRect.rect.left - editorRect.left;
-          const y = textRect.rect.top - editorRect.top;
+          const x = textRect.rect.left - hostRect.left;
+          const y = textRect.rect.top - hostRect.top;
           ctx.fillText(textRect.text, x, y + baselineY);
         });
       });
@@ -82,8 +82,8 @@ self.onmessage = async (e: MessageEvent) => {
     }
     case 'draw': {
       await loadFont();
-      const { paragraphs, editorRect } = data;
-      manager.draw(paragraphs, editorRect);
+      const { paragraphs, hostRect } = data;
+      manager.draw(paragraphs, hostRect);
       break;
     }
   }
