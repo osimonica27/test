@@ -6,68 +6,10 @@ const meta = {
   hHeadDescent: -494,
 };
 
-class Bound {
-  constructor(
-    readonly left: number,
-    readonly top: number,
-    readonly width: number,
-    readonly height: number
-  ) {}
-
-  add(x: number, y: number, w: number, h: number): Bound {
-    return new Bound(
-      this.left + x,
-      this.top + y,
-      this.width + w,
-      this.height + h
-    );
-  }
-
-  static fromClientRect(windowBound: Bound, clientRect: ClientRect): Bound {
-    return new Bound(
-      clientRect.left + windowBound.left,
-      clientRect.top + windowBound.top,
-      clientRect.width,
-      clientRect.height
-    );
-  }
-
-  static fromDOMRectList(windowBound: Bound, domRectList: DOMRectList): Bound {
-    const domRect = Array.from(domRectList).find(rect => rect.width !== 0);
-    return domRect
-      ? new Bound(
-          domRect.left + windowBound.left,
-          domRect.top + windowBound.top,
-          domRect.width,
-          domRect.height
-        )
-      : Bound.EMPTY;
-  }
-  static EMPTY = new Bound(0, 0, 0, 0);
-}
-
-class TextBound {
-  readonly text: string;
-  readonly bound: Bound;
-
-  constructor(text: string, bound: Bound) {
-    this.text = text;
-    this.bound = bound;
-  }
-}
-
-function segmentWords(text: string): string[] {
-  const segmenter = new Intl.Segmenter(void 0, {
-    granularity: 'sentence',
-  });
-  return Array.from(segmenter.segment(text)).map(({ segment }) => segment);
-}
-
 async function loadFont() {
   const font = new FontFace(
-    'IBM Plex Mono',
-    `url(
-  http://localhost:5173/node_modules/@toeverything/theme/fonts/inter/Inter-VariableFont_slnt,wght.ttf)`
+    'Inter',
+    `url(http://localhost:5173/node_modules/@toeverything/theme/fonts/inter/Inter-VariableFont_slnt,wght.ttf)`
   );
   // @ts-expect-error worker env
   self.fonts && self.fonts.add(font);
@@ -86,18 +28,6 @@ function getBaseline() {
   return y;
 }
 
-function drawBound(
-  ctx: OffscreenCanvasRenderingContext2D,
-  textBound: TextBound,
-  baselineY: number,
-  baseY: number
-) {
-  const x = textBound.bound.left;
-  const y = baselineY + baseY;
-
-  ctx.fillText(textBound.text, x, y);
-}
-
 class CanvasWorkerManager {
   private canvas: OffscreenCanvas | null = null;
   private ctx: OffscreenCanvasRenderingContext2D | null = null;
@@ -114,24 +44,23 @@ class CanvasWorkerManager {
     const { canvas, ctx } = this;
     if (!canvas || !ctx) return;
 
-    paragraphs.forEach(({ rect, text }) => {
-      const words = segmentWords(text);
-      console.log(words);
-      const x = rect.left - editorRect.left;
-      const y = rect.top - editorRect.top;
+    ctx.font = '14px Inter';
+    ctx.fillStyle = 'black';
+    const baselineY = getBaseline();
 
-      ctx.fillStyle = 'yellow';
-      ctx.fillRect(x, y, rect.width, rect.height);
+    paragraphs.forEach(paragraph => {
+      paragraph.sentences.forEach(sentence => {
+        sentence.rects.forEach(textRect => {
+          const x = textRect.rect.left - editorRect.left;
+          const y = textRect.rect.top - editorRect.top;
 
-      ctx.fillStyle = 'black';
-      ctx.font = '15px "Inter", sans-serif';
-      const baselineY = getBaseline();
+          ctx.strokeStyle = 'yellow';
+          ctx.strokeRect(x, y, textRect.rect.width, textRect.rect.height);
 
-      const textBound = new TextBound(
-        text,
-        new Bound(x, y, rect.width, rect.height)
-      );
-      drawBound(ctx, textBound, baselineY, y);
+          ctx.fillStyle = 'black';
+          ctx.fillText(textRect.text, x, y + baselineY);
+        });
+      });
     });
 
     const bitmap = canvas.transferToImageBitmap();
@@ -149,7 +78,6 @@ self.onmessage = async (e: MessageEvent) => {
       manager.init(width, height, dpr);
       break;
     }
-
     case 'draw': {
       await loadFont();
       const { paragraphs, editorRect } = data;
