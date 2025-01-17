@@ -9,7 +9,7 @@ const meta = {
 async function loadFont() {
   const font = new FontFace(
     'Inter',
-    `url(http://localhost:5173/node_modules/@toeverything/theme/fonts/inter/Inter-VariableFont_slnt,wght.ttf)`
+    `url(https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcviYwYZ8UA3.woff2)`
   );
   // @ts-expect-error worker env
   self.fonts && self.fonts.add(font);
@@ -44,7 +44,7 @@ class CanvasWorkerManager {
     const { canvas, ctx } = this;
     if (!canvas || !ctx) return;
 
-    ctx.font = '14px Inter';
+    ctx.font = '15px Inter';
     ctx.fillStyle = 'black';
     const baselineY = getBaseline();
 
