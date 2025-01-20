@@ -1,8 +1,10 @@
+export interface SentenceLayout {
+  text: string;
+  rects: TextRect[];
+}
+
 export interface ParagraphLayout {
-  sentences: {
-    text: string;
-    rects: TextRect[];
-  }[];
+  sentences: SentenceLayout[];
 }
 
 export interface TextRect {

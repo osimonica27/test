@@ -4,11 +4,12 @@ import { animator } from './animator.js';
 import { CanvasRenderer } from './canvas-renderer.js';
 import { doc, editor } from './editor.js';
 
+const container = document.querySelector('#right-column') as HTMLElement;
+const renderer = new CanvasRenderer(editor, container);
+
 function initUI() {
   const toCanvasButton = document.querySelector('#to-canvas-button')!;
   toCanvasButton.addEventListener('click', async () => {
-    const container = document.querySelector('#right-column') as HTMLElement;
-    const renderer = new CanvasRenderer(editor, container);
     await renderer.render();
   });
   const switchModeButton = document.querySelector('#switch-mode-button')!;

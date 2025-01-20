@@ -1,13 +1,11 @@
-import type { EditorHost } from '@blocksuite/block-std';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 
 import { getSentenceRects, segmentSentences } from './text-utils.js';
 import { type ParagraphLayout } from './types.js';
 
 export class CanvasRenderer {
-  private worker: Worker | null = null;
+  private readonly worker: Worker;
   private readonly editorContainer: AffineEditorContainer;
-  private readonly host: EditorHost;
   private readonly targetContainer: HTMLElement;
   private readonly canvas: HTMLCanvasElement = document.createElement('canvas');
 
@@ -16,25 +14,25 @@ export class CanvasRenderer {
     targetContainer: HTMLElement
   ) {
     this.editorContainer = editorContainer;
-    this.host = editorContainer.host!;
     this.targetContainer = targetContainer;
-  }
-
-  private initWorker(width: number, height: number) {
-    if (this.worker) {
-      this.worker.terminate();
-    }
 
     this.worker = new Worker(new URL('./canvas.worker.ts', import.meta.url), {
       type: 'module',
     });
+  }
 
+  private initWorkerSize(width: number, height: number) {
     const dpr = window.devicePixelRatio;
     this.worker.postMessage({ type: 'init', data: { width, height, dpr } });
   }
 
-  private getHostLayout() {
-    const paragraphBlocks = this.host.querySelectorAll(
+  getHostRect() {
+    const hostRect = this.editorContainer.host!.getBoundingClientRect();
+    return hostRect;
+  }
+
+  getHostLayout() {
+    const paragraphBlocks = this.editorContainer.host!.querySelectorAll(
       '.affine-paragraph-rich-text-wrapper [data-v-text="true"]'
     );
 
@@ -52,14 +50,14 @@ export class CanvasRenderer {
       };
     });
 
-    const hostRect = this.host.getBoundingClientRect();
+    const hostRect = this.getHostRect();
     const editorContainerRect = this.editorContainer.getBoundingClientRect();
     return { paragraphs, hostRect, editorContainerRect };
   }
 
   public async render(): Promise<void> {
     const { paragraphs, hostRect, editorContainerRect } = this.getHostLayout();
-    this.initWorker(hostRect.width, hostRect.height);
+    this.initWorkerSize(hostRect.width, hostRect.height);
 
     return new Promise(resolve => {
       if (!this.worker) return;
@@ -109,9 +107,6 @@ export class CanvasRenderer {
   }
 
   public destroy() {
-    if (this.worker) {
-      this.worker.terminate();
-      this.worker = null;
-    }
+    this.worker.terminate();
   }
 }

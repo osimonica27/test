@@ -6,15 +6,13 @@ const meta = {
   hHeadDescent: -494,
 };
 
-async function loadFont() {
-  const font = new FontFace(
-    'Inter',
-    `url(https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcviYwYZ8UA3.woff2)`
-  );
-  // @ts-expect-error worker env
-  self.fonts && self.fonts.add(font);
-  await font.load();
-}
+const font = new FontFace(
+  'Inter',
+  `url(https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcviYwYZ8UA3.woff2)`
+);
+// @ts-expect-error worker env
+self.fonts && self.fonts.add(font);
+font.load().catch(console.error);
 
 function getBaseline() {
   const fontSize = 15;
@@ -81,7 +79,7 @@ self.onmessage = async (e: MessageEvent) => {
       break;
     }
     case 'draw': {
-      await loadFont();
+      await font.load();
       const { paragraphs, hostRect } = data;
       manager.draw(paragraphs, hostRect);
       break;

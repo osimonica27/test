@@ -3,8 +3,16 @@ import { type AffineEditorContainer } from '@blocksuite/presets';
 import { CanvasRenderer } from './canvas-renderer.js';
 import { editor } from './editor.js';
 
+async function wait(time: number = 100) {
+  return new Promise(resolve => setTimeout(resolve, time));
+}
+
 export class SwitchModeAnimator {
-  constructor(private readonly editor: AffineEditorContainer) {}
+  constructor(private readonly editor: AffineEditorContainer) {
+    this.renderer = new CanvasRenderer(this.editor, this.overlay);
+  }
+
+  renderer: CanvasRenderer;
 
   private readonly overlay = document.createElement('div');
 
@@ -14,11 +22,18 @@ export class SwitchModeAnimator {
 
   async switchMode() {
     this.initOverlay();
+    const beginLayout = this.renderer.getHostLayout();
 
-    const renderer = new CanvasRenderer(this.editor, this.overlay);
-    await renderer.render();
+    await this.renderer.render();
     document.body.append(this.overlay);
     this.editor.mode = this.editor.mode === 'page' ? 'edgeless' : 'page';
+    await wait();
+
+    const endLayout = this.renderer.getHostLayout();
+    console.log(
+      beginLayout.paragraphs.map(p => p.sentences),
+      endLayout.paragraphs.map(p => p.sentences)
+    );
   }
 
   initOverlay() {
