@@ -15,8 +15,7 @@ export class SwitchModeAnimator {
   async switchMode() {
     this.initOverlay();
 
-    const host = document.querySelector('editor-host')!;
-    const renderer = new CanvasRenderer(host, this.overlay);
+    const renderer = new CanvasRenderer(this.editor, this.overlay);
     await renderer.render();
     document.body.append(this.overlay);
     this.editor.mode = this.editor.mode === 'page' ? 'edgeless' : 'page';

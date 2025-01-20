@@ -1,19 +1,26 @@
 import type { EditorHost } from '@blocksuite/block-std';
+import type { AffineEditorContainer } from '@blocksuite/presets';
 
 import { getSentenceRects, segmentSentences } from './text-utils.js';
 import { type ParagraphLayout } from './types.js';
 
 export class CanvasRenderer {
   private worker: Worker | null = null;
+  private readonly editorContainer: AffineEditorContainer;
   private readonly host: EditorHost;
   private readonly targetContainer: HTMLElement;
+  private readonly canvas: HTMLCanvasElement = document.createElement('canvas');
 
-  constructor(host: EditorHost, targetContainer: HTMLElement) {
-    this.host = host;
+  constructor(
+    editorContainer: AffineEditorContainer,
+    targetContainer: HTMLElement
+  ) {
+    this.editorContainer = editorContainer;
+    this.host = editorContainer.host!;
     this.targetContainer = targetContainer;
   }
 
-  private initWorker(width: number, height: number): Worker {
+  private initWorker(width: number, height: number) {
     if (this.worker) {
       this.worker.terminate();
     }
@@ -24,7 +31,6 @@ export class CanvasRenderer {
 
     const dpr = window.devicePixelRatio;
     this.worker.postMessage({ type: 'init', data: { width, height, dpr } });
-    return this.worker;
   }
 
   private getHostLayout() {
@@ -47,15 +53,18 @@ export class CanvasRenderer {
     });
 
     const hostRect = this.host.getBoundingClientRect();
-    return { paragraphs, hostRect };
+    const editorContainerRect = this.editorContainer.getBoundingClientRect();
+    return { paragraphs, hostRect, editorContainerRect };
   }
 
   public async render(): Promise<void> {
-    const { paragraphs, hostRect } = this.getHostLayout();
-    const worker = this.initWorker(hostRect.width, hostRect.height);
+    const { paragraphs, hostRect, editorContainerRect } = this.getHostLayout();
+    this.initWorker(hostRect.width, hostRect.height);
 
     return new Promise(resolve => {
-      worker.postMessage({
+      if (!this.worker) return;
+
+      this.worker.postMessage({
         type: 'draw',
         data: {
           paragraphs,
@@ -63,23 +72,36 @@ export class CanvasRenderer {
         },
       });
 
-      worker.onmessage = (e: MessageEvent) => {
+      this.worker.onmessage = (e: MessageEvent) => {
         const { type, bitmap } = e.data;
         if (type === 'render') {
-          const existingCanvas = this.targetContainer.querySelector('canvas');
-          if (existingCanvas) {
-            existingCanvas.remove();
+          this.canvas.style.width = editorContainerRect.width + 'px';
+          this.canvas.style.height = editorContainerRect.height + 'px';
+          this.canvas.width =
+            editorContainerRect.width * window.devicePixelRatio;
+          this.canvas.height =
+            editorContainerRect.height * window.devicePixelRatio;
+
+          if (!this.targetContainer.querySelector('canvas')) {
+            this.targetContainer.append(this.canvas);
           }
 
-          const canvas = document.createElement('canvas');
-          canvas.style.width = hostRect.width + 'px';
-          canvas.style.height = hostRect.height + 'px';
-          canvas.width = hostRect.width * window.devicePixelRatio;
-          canvas.height = hostRect.height * window.devicePixelRatio;
-          this.targetContainer.append(canvas);
+          const ctx = this.canvas.getContext('2d');
+          const bitmapCanvas = new OffscreenCanvas(
+            hostRect.width * window.devicePixelRatio,
+            hostRect.height * window.devicePixelRatio
+          );
+          const bitmapCtx = bitmapCanvas.getContext('bitmaprenderer');
+          bitmapCtx?.transferFromImageBitmap(bitmap);
 
-          const ctx = canvas.getContext('bitmaprenderer');
-          ctx?.transferFromImageBitmap(bitmap);
+          ctx?.drawImage(
+            bitmapCanvas,
+            (hostRect.x - editorContainerRect.x) * window.devicePixelRatio,
+            (hostRect.y - editorContainerRect.y) * window.devicePixelRatio,
+            hostRect.width * window.devicePixelRatio,
+            hostRect.height * window.devicePixelRatio
+          );
+
           resolve();
         }
       };

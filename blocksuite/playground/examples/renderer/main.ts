@@ -7,9 +7,8 @@ import { doc, editor } from './editor.js';
 function initUI() {
   const toCanvasButton = document.querySelector('#to-canvas-button')!;
   toCanvasButton.addEventListener('click', async () => {
-    const host = document.querySelector('editor-host')!;
     const container = document.querySelector('#right-column') as HTMLElement;
-    const renderer = new CanvasRenderer(host, container);
+    const renderer = new CanvasRenderer(editor, container);
     await renderer.render();
   });
   const switchModeButton = document.querySelector('#switch-mode-button')!;
