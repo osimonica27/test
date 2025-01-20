@@ -2,6 +2,7 @@ import { type AffineEditorContainer } from '@blocksuite/presets';
 
 import { CanvasRenderer } from './canvas-renderer.js';
 import { editor } from './editor.js';
+import type { ParagraphLayout } from './types.js';
 
 async function wait(time: number = 100) {
   return new Promise(resolve => setTimeout(resolve, time));
@@ -24,16 +25,55 @@ export class SwitchModeAnimator {
     this.initOverlay();
     const beginLayout = this.renderer.getHostLayout();
 
-    await this.renderer.render();
+    await this.renderer.render(false);
     document.body.append(this.overlay);
     this.editor.mode = this.editor.mode === 'page' ? 'edgeless' : 'page';
     await wait();
 
     const endLayout = this.renderer.getHostLayout();
-    console.log(
-      beginLayout.paragraphs.map(p => p.sentences),
-      endLayout.paragraphs.map(p => p.sentences)
+
+    this.overlay.style.display = 'inherit';
+    await this.animate(
+      beginLayout.paragraphs,
+      endLayout.paragraphs,
+      beginLayout.hostRect,
+      endLayout.hostRect
     );
+    this.overlay.style.display = 'none';
+  }
+
+  async animate(
+    beginParagraphs: ParagraphLayout[],
+    endParagraphs: ParagraphLayout[],
+    beginHostRect: DOMRect,
+    endHostRect: DOMRect
+  ): Promise<void> {
+    return new Promise(resolve => {
+      const duration = 600;
+      const startTime = performance.now();
+
+      const animate = () => {
+        const currentTime = performance.now();
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        this.renderer.renderTransitionFrame(
+          beginParagraphs,
+          endParagraphs,
+          beginHostRect,
+          endHostRect,
+          progress
+        );
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          resolve();
+        }
+      };
+
+      requestAnimationFrame(animate);
+    });
   }
 
   initOverlay() {
