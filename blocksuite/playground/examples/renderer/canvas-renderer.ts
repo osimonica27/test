@@ -50,37 +50,40 @@ export class CanvasRenderer {
     return { paragraphs, hostRect };
   }
 
-  public render() {
+  public async render(): Promise<void> {
     const { paragraphs, hostRect } = this.getHostLayout();
     const worker = this.initWorker(hostRect.width, hostRect.height);
 
-    worker.postMessage({
-      type: 'draw',
-      data: {
-        paragraphs,
-        hostRect,
-      },
-    });
+    return new Promise(resolve => {
+      worker.postMessage({
+        type: 'draw',
+        data: {
+          paragraphs,
+          hostRect,
+        },
+      });
 
-    worker.onmessage = (e: MessageEvent) => {
-      const { type, bitmap } = e.data;
-      if (type === 'render') {
-        const existingCanvas = this.targetContainer.querySelector('canvas');
-        if (existingCanvas) {
-          existingCanvas.remove();
+      worker.onmessage = (e: MessageEvent) => {
+        const { type, bitmap } = e.data;
+        if (type === 'render') {
+          const existingCanvas = this.targetContainer.querySelector('canvas');
+          if (existingCanvas) {
+            existingCanvas.remove();
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.style.width = hostRect.width + 'px';
+          canvas.style.height = hostRect.height + 'px';
+          canvas.width = hostRect.width * window.devicePixelRatio;
+          canvas.height = hostRect.height * window.devicePixelRatio;
+          this.targetContainer.append(canvas);
+
+          const ctx = canvas.getContext('bitmaprenderer');
+          ctx?.transferFromImageBitmap(bitmap);
+          resolve();
         }
-
-        const canvas = document.createElement('canvas');
-        canvas.style.width = hostRect.width + 'px';
-        canvas.style.height = hostRect.height + 'px';
-        canvas.width = hostRect.width * window.devicePixelRatio;
-        canvas.height = hostRect.height * window.devicePixelRatio;
-        this.targetContainer.append(canvas);
-
-        const ctx = canvas.getContext('bitmaprenderer');
-        ctx?.transferFromImageBitmap(bitmap);
-      }
-    };
+      };
+    });
   }
 
   public destroy() {

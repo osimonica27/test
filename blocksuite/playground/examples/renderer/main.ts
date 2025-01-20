@@ -1,19 +1,20 @@
 import { Text } from '@blocksuite/store';
 
+import { animator } from './animator.js';
 import { CanvasRenderer } from './canvas-renderer.js';
 import { doc, editor } from './editor.js';
 
 function initUI() {
   const toCanvasButton = document.querySelector('#to-canvas-button')!;
-  toCanvasButton.addEventListener('click', () => {
+  toCanvasButton.addEventListener('click', async () => {
     const host = document.querySelector('editor-host')!;
     const container = document.querySelector('#right-column') as HTMLElement;
     const renderer = new CanvasRenderer(host, container);
-    renderer.render();
+    await renderer.render();
   });
   const switchModeButton = document.querySelector('#switch-mode-button')!;
-  switchModeButton.addEventListener('click', () => {
-    editor.mode = editor.mode === 'page' ? 'edgeless' : 'page';
+  switchModeButton.addEventListener('click', async () => {
+    await animator.switchMode();
   });
   document.querySelector('#left-column')?.append(editor);
 }
