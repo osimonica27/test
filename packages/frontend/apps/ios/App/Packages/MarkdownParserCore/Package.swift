@@ -17,26 +17,26 @@ import PackageDescription
  */
 
 let cSettings: [CSetting] = [
-  .define("CMARK_THREADING"),
+    .define("CMARK_THREADING"),
 ]
 
 let package = Package(
-  name: "MarkdownParserCore",
-  products: [
-    .library(name: "MarkdownParserCore", targets: ["cmark-gfm"]),
-    .library(name: "MarkdownParserCoreExtension", targets: ["cmark-gfm-extensions"]),
-  ],
-  targets: [
-    .target(
-      name: "cmark-gfm",
-      path: "src",
-      cSettings: cSettings
-    ),
-    .target(
-      name: "cmark-gfm-extensions",
-      dependencies: ["cmark-gfm"],
-      path: "extensions",
-      cSettings: cSettings
-    ),
-  ]
+    name: "MarkdownParserCore",
+    products: [
+        .library(name: "MarkdownParserCore", targets: ["cmark-gfm"]),
+        .library(name: "MarkdownParserCoreExtension", targets: ["cmark-gfm-extensions"]),
+    ],
+    targets: [
+        .target(
+            name: "cmark-gfm",
+            path: "src",
+            cSettings: cSettings
+        ),
+        .target(
+            name: "cmark-gfm-extensions",
+            dependencies: ["cmark-gfm"],
+            path: "extensions",
+            cSettings: cSettings
+        ),
+    ]
 )
