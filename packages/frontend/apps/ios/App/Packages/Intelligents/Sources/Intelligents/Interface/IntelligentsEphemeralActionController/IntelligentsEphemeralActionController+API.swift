@@ -75,7 +75,7 @@ extension IntelligentsEphemeralActionController {
   func beginThisRound() {
     Intelligents.qlClient.perform(
       mutation: CreateCopilotMessageMutation(options: .init(
-        content: .init(stringLiteral: "[Document Content]\n\(documentContent)"),
+        content: .init(stringLiteral: "\(documentContent)"),
         sessionId: sessionID
       )),
       queue: .global()

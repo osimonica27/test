@@ -93,7 +93,7 @@ public class ChidoriMenu: UIViewController {
     shadowView.layer.cornerRadius = ChidoriMenu.cornerRadius
     view.addSubview(shadowView)
 
-    backgroundView.backgroundColor = .systemBackground
+    backgroundView.backgroundColor = .init(red: 0.2, green: 0.2, blue: 0.2, alpha: 1)
     backgroundView.layer.masksToBounds = true
     backgroundView.layer.cornerRadius = ChidoriMenu.cornerRadius
     backgroundView.layer.cornerCurve = .continuous
