@@ -33,6 +33,7 @@ extension MessageListView {
       avatarView.contentMode = .scaleAspectFit
       avatarView.image = UIImage(systemName: "person.fill")
       usernameView.text = "You"
+      usernameView.font = .preferredFont(forTextStyle: .body).bold
       usernameView.textColor = .label
 
       bubbleView.layer.cornerRadius = 8
@@ -85,14 +86,14 @@ extension MessageListView {
       let avatarRect = CGRect(
         x: bubbleInset.left,
         y: bubbleInset.top,
-        width: 32,
-        height: 32
+        width: 24,
+        height: 24
       )
       let usernameFrame = CGRect(
         x: avatarRect.maxX + inset,
         y: bubbleInset.top,
         width: containerWidth - avatarRect.maxX - bubbleInset.right,
-        height: 32
+        height: 24
       )
 
       let textWidth = min(

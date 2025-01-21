@@ -22,6 +22,7 @@ extension MessageListView {
       avatarView.contentMode = .scaleAspectFit
       avatarView.image = UIImage(named: "spark", in: .module, with: nil)
       usernameView.text = "AFFiNE AI"
+      usernameView.font = .preferredFont(forTextStyle: .body).bold
       usernameView.textColor = .label
 
       containerView.addSubview(avatarView)
@@ -74,12 +75,12 @@ extension MessageListView {
       let inset: CGFloat = 8
       let bubbleInset = UIEdgeInsets(top: inset, left: inset, bottom: inset, right: inset)
 
-      let avatarRect = CGRect(x: bubbleInset.left, y: bubbleInset.top, width: 32, height: 32)
+      let avatarRect = CGRect(x: bubbleInset.left, y: bubbleInset.top, width: 24, height: 24)
       let usernameRect = CGRect(
         x: avatarRect.maxX + bubbleInset.right,
         y: bubbleInset.top,
         width: containerWidth - avatarRect.maxX - bubbleInset.right,
-        height: 32
+        height: 24
       )
 
       let textWidth = containerWidth - bubbleInset.left - bubbleInset.right
