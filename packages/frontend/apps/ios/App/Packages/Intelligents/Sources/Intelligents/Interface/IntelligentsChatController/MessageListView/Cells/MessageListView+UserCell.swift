@@ -10,6 +10,8 @@ import UIKit
 
 extension MessageListView {
   class UserCell: BaseCell {
+    let avatarView = UIImageView()
+    let usernameView = UILabel()
     let bubbleView = UIView()
     let textView = UITextView()
 
@@ -23,10 +25,17 @@ extension MessageListView {
       textView.contentInset = .zero
       textView.backgroundColor = .clear
 
+      avatarView.contentMode = .scaleAspectFit
+      avatarView.image = UIImage(systemName: "person.fill")
+      usernameView.text = "You"
+      usernameView.textColor = .label
+
       bubbleView.layer.cornerRadius = 8
-      bubbleView.backgroundColor = .accent.withAlphaComponent(0.1)
+      bubbleView.backgroundColor = .gray.withAlphaComponent(0.1)
 
       containerView.addSubview(bubbleView)
+      containerView.addSubview(avatarView)
+      containerView.addSubview(usernameView)
       containerView.addSubview(textView)
     }
 
@@ -49,6 +58,8 @@ extension MessageListView {
         return
       }
       bubbleView.frame = cache.bubbleFrame
+      avatarView.frame = cache.avatarFrame
+      usernameView.frame = cache.usernameFrame
       textView.frame = cache.labelFrame
     }
 
@@ -63,28 +74,42 @@ extension MessageListView {
       let cache = LayoutCache()
       cache.width = containerWidth
 
-      let inset: CGFloat = 16
+      let inset: CGFloat = 8
       let bubbleInset = UIEdgeInsets(top: inset, left: inset, bottom: inset, right: inset)
 
-      let textAllowedLayoutFraction = 0.75
+      let avatarRect = CGRect(
+        x: bubbleInset.left,
+        y: bubbleInset.top,
+        width: 32,
+        height: 32
+      )
+      let usernameFrame = CGRect(
+        x: avatarRect.maxX + inset,
+        y: bubbleInset.top,
+        width: containerWidth - avatarRect.maxX - bubbleInset.right,
+        height: 32
+      )
+
       let textWidth = min(
         object.text.measureWidth(),
-        containerWidth * CGFloat(textAllowedLayoutFraction)
+        containerWidth - inset * 2
       )
       let textHeight = object.text.measureHeight(usingWidth: textWidth)
       let textRect = CGRect(
-        x: containerWidth - textWidth - bubbleInset.right,
-        y: bubbleInset.top,
+        x: bubbleInset.left,
+        y: avatarRect.maxY + bubbleInset.top,
         width: textWidth,
         height: textHeight
       )
       let bubbleRect = CGRect(
-        x: textRect.minX - bubbleInset.left,
-        y: textRect.minY - bubbleInset.top,
-        width: textRect.width + bubbleInset.left + bubbleInset.right,
-        height: textRect.height + bubbleInset.top + bubbleInset.bottom
+        x: 0,
+        y: 0,
+        width: containerWidth,
+        height: textRect.maxY + bubbleInset.bottom
       )
       cache.bubbleFrame = bubbleRect
+      cache.avatarFrame = avatarRect
+      cache.usernameFrame = usernameFrame
       cache.labelFrame = textRect
       cache.height = bubbleRect.maxY
       return cache
@@ -129,5 +154,7 @@ extension MessageListView.UserCell {
 
     var bubbleFrame: CGRect = .zero
     var labelFrame: CGRect = .zero
+    var avatarFrame: CGRect = .zero
+    var usernameFrame: CGRect = .zero
   }
 }
