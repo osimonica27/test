@@ -30,6 +30,7 @@ extension IntelligentsChatController {
   @objc func chat_onSend() {
     beginProgress()
     let viewModel = inputBox.editor.viewModel.duplicate()
+    viewModel.text = viewModel.text.trimmingCharacters(in: .whitespacesAndNewlines)
     inputBox.editor.viewModel.reset()
     inputBox.editor.updateValues()
     DispatchQueue.global().async {
@@ -125,6 +126,7 @@ private extension IntelligentsChatController {
       let content = ChatContent.user(document: text)
       let key = UUID()
       self.simpleChatContents.updateValue(content, forKey: key)
+      self.tableView.scrollLastCellToTop()
     }
 
     let sem = DispatchSemaphore(value: 0)
@@ -202,8 +204,8 @@ private extension IntelligentsChatController {
 
     var document = ""
     eventHandler.onMessageBlock = { _, message in
-      document += message.data
       self.dispatchToMain {
+        document += message.data
         let content = ChatContent.assistant(document: document)
         self.simpleChatContents.updateValue(content, forKey: contentIdentifier)
       }
@@ -218,7 +220,9 @@ private extension IntelligentsChatController {
 
 extension IntelligentsChatController {
   func updateContentToPublisher() {
-    let input: [MessageListView.Element] = simpleChatContents.map { key, value in
+    assert(Thread.isMainThread)
+    let copy = simpleChatContents
+    let input: [MessageListView.Element] = copy.map { key, value in
       switch value {
       case let .assistant(document):
         let nodes = MarkdownParser().feed(document)

@@ -21,9 +21,14 @@ extension MessageListView {
       textView.isSelectable = true
       textView.isScrollEnabled = true
       textView.isEditable = false
-      textView.textContainerInset = .zero
-      textView.contentInset = .zero
+      textView.showsVerticalScrollIndicator = false
+      textView.showsHorizontalScrollIndicator = false
+      textView.textColor = .label
+      textView.textContainer.lineFragmentPadding = .zero
+      textView.textAlignment = .natural
       textView.backgroundColor = .clear
+      textView.textContainerInset = .zero
+      textView.textContainer.lineBreakMode = .byTruncatingTail
 
       avatarView.contentMode = .scaleAspectFit
       avatarView.image = UIImage(systemName: "person.fill")
@@ -138,6 +143,7 @@ extension MessageListView.UserCell {
       while text.contains("\n\n\n") {
         text = text.replacingOccurrences(of: "\n\n\n", with: "\n\n")
       }
+      print(text)
       self.init(text: NSMutableAttributedString(string: text, attributes: attributes))
     }
 
