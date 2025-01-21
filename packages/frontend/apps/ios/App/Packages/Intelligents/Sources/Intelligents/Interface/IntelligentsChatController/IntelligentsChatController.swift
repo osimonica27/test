@@ -10,7 +10,6 @@ import UIKit
 
 public class IntelligentsChatController: UIViewController {
   let header = Header()
-  let inputBoxKeyboardAdapter = UIView()
   let inputBox = InputBox()
   let progressView = UIActivityIndicatorView()
   let tableView = ChatTableView()
@@ -46,19 +45,6 @@ public class IntelligentsChatController: UIViewController {
     title = "Chat with AI".localized()
 
     overrideUserInterfaceStyle = .dark
-
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(keyboardWillDisappear),
-      name: UIResponder.keyboardWillHideNotification,
-      object: nil
-    )
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(keyboardWillAppear),
-      name: UIResponder.keyboardWillShowNotification,
-      object: nil
-    )
   }
 
   @available(*, unavailable)
@@ -67,7 +53,6 @@ public class IntelligentsChatController: UIViewController {
   }
 
   deinit {
-    NotificationCenter.default.removeObserver(self)
     chatTask?.stop()
     chatTask = nil
   }
@@ -81,7 +66,6 @@ public class IntelligentsChatController: UIViewController {
 
     view.addSubview(header)
     view.addSubview(tableView)
-    view.addSubview(inputBoxKeyboardAdapter)
     view.addSubview(inputBox)
     view.addSubview(progressView)
     setupLayout()
@@ -104,21 +88,11 @@ public class IntelligentsChatController: UIViewController {
       header.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 44),
     ].forEach { $0.isActive = true }
 
-    inputBoxKeyboardAdapter.translatesAutoresizingMaskIntoConstraints = false
-    [
-      inputBoxKeyboardAdapter.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-      inputBoxKeyboardAdapter.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      inputBoxKeyboardAdapter.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-    ].forEach { $0.isActive = true }
-    inputBoxKeyboardAdapterHeightConstraint = inputBoxKeyboardAdapter.heightAnchor.constraint(equalToConstant: 0)
-    inputBoxKeyboardAdapterHeightConstraint.isActive = true
-    inputBoxKeyboardAdapter.backgroundColor = inputBox.backgroundView.backgroundColor
-
     inputBox.translatesAutoresizingMaskIntoConstraints = false
     [
       inputBox.leadingAnchor.constraint(equalTo: view.leadingAnchor),
       inputBox.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      inputBox.bottomAnchor.constraint(equalTo: inputBoxKeyboardAdapter.topAnchor),
+      inputBox.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
     ].forEach { $0.isActive = true }
 
     tableView.translatesAutoresizingMaskIntoConstraints = false

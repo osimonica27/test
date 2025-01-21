@@ -9,7 +9,7 @@ import Foundation
 
 public extension IntelligentsEphemeralActionController {
   enum EphemeralAction {
-    public enum Language: String {
+    public enum Language: String, CaseIterable {
       case langEnglish = "English"
       case langSpanish = "Spanish"
       case langGerman = "German"

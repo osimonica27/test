@@ -7,6 +7,7 @@
 
 import UIKit
 import Intelligents
+import ChidoriMenu
 
 extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApertureViewDelegate {
   func onIntelligentsButtonTapped(_ button: IntelligentsButton) {
@@ -87,15 +88,23 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
   ) {
     switch actionType {
     case .translateTo:
-      // TODO: IMPL
-      let controller = IntelligentsEphemeralActionController(
-        action: .translate(to: .langSimplifiedChinese)
-      )
-      controller.workspaceID = workspaceID ?? ""
-      controller.documentID = documentID ?? ""
-      controller.documentContent = documentContent ?? ""
-      controller.configure(previewImage: view.capturedImage ?? .init())
-      presentIntoCurrentContext(withTargetController: controller)
+      var actions: [UIAction] = []
+      for lang in IntelligentsEphemeralActionController.EphemeralAction.Language.allCases {
+        actions.append(.init(title: lang.rawValue) { [weak self] _ in
+          guard let self else { return }
+          let controller = IntelligentsEphemeralActionController(
+            action: .translate(to: lang)
+          )
+          controller.workspaceID = workspaceID ?? ""
+          controller.documentID = documentID ?? ""
+          controller.documentContent = documentContent ?? ""
+          controller.configure(previewImage: view.capturedImage ?? .init())
+          presentIntoCurrentContext(withTargetController: controller)
+        })
+      }
+      view.present(menu: .init(children: actions)) { menu in
+        menu.overrideUserInterfaceStyle = .dark
+      }
     case .summary:
       let controller = IntelligentsEphemeralActionController(
         action: .summarize

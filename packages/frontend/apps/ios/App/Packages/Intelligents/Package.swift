@@ -15,17 +15,15 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.4.1"),
-    .package(url: "https://github.com/Lakr233/SpringInterpolation", from: "1.3.0"),
-    .package(url: "https://github.com/Lakr233/MSDisplayLink", from: "2.0.3"),
     .package(path: "../AffineGraphQL"),
     .package(url: "https://github.com/apollographql/apollo-ios.git", from: "1.15.3"),
     .package(url: "https://github.com/LaunchDarkly/swift-eventsource.git", from: "3.3.0"),
+    .package(path: "../ChidoriMenu"),
   ],
   targets: [
     .target(name: "Intelligents", dependencies: [
       "AffineGraphQL",
-      "SpringInterpolation",
-      "MSDisplayLink",
+      "ChidoriMenu",
       .product(name: "MarkdownUI", package: "swift-markdown-ui"),
       .product(name: "Apollo", package: "apollo-ios"),
       .product(name: "LDSwiftEventSource", package: "swift-eventsource"),
