@@ -48,7 +48,7 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
       group.leave()
     }
     
-    DispatchQueue.global().async {
+    DispatchQueue.global().asyncAfter(deadline: .now()) {
       group.wait()
       DispatchQueue.main.async {
         button.stopProgress()
@@ -60,12 +60,12 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
 
   @discardableResult
   func openIntelligentsSheet() -> IntelligentsFocusApertureView? {
+    dismissIntelligentsButton()
     view.resignFirstResponder()
     // stop scroll on webview
     if let contentOffset = webView?.scrollView.contentOffset {
       webView?.scrollView.contentOffset = contentOffset
     }
-    dismissIntelligentsButton()
     let focus = IntelligentsFocusApertureView()
     focus.prepareAnimationWith(
       capturingTargetContentView: webView ?? .init(),
