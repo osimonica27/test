@@ -6,6 +6,8 @@
 //
 
 import LDSwiftEventSource
+import MarkdownParser
+import MarkdownView
 import UIKit
 
 public class IntelligentsEphemeralActionController: UIViewController {
@@ -16,8 +18,10 @@ public class IntelligentsEphemeralActionController: UIViewController {
   let header = Header()
   let preview = RotatedImagePreview()
 
+  let markdownView = MarkdownView()
+  let indicator = UIActivityIndicatorView(style: .large)
   var responseContainer: UIView = .init()
-  var removableConstraints: [NSLayoutConstraint] = []
+  var responseHeightAnchor: NSLayoutConstraint?
 
   let actionBar = ActionBar()
 
@@ -163,6 +167,29 @@ public class IntelligentsEphemeralActionController: UIViewController {
     responseContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 350).isActive = true
     stackView.addArrangedSubview(responseContainer)
 
+    responseContainer.addSubview(markdownView)
+
+    markdownView.translatesAutoresizingMaskIntoConstraints = false
+    [
+      markdownView.topAnchor.constraint(equalTo: responseContainer.topAnchor),
+      markdownView.leadingAnchor.constraint(equalTo: responseContainer.leadingAnchor),
+      markdownView.trailingAnchor.constraint(equalTo: responseContainer.trailingAnchor),
+      markdownView.bottomAnchor.constraint(equalTo: responseContainer.bottomAnchor),
+    ].forEach {
+      $0.isActive = true
+    }
+
+    indicator.startAnimating()
+    indicator.translatesAutoresizingMaskIntoConstraints = false
+    responseContainer.addSubview(indicator)
+    [
+      indicator.centerXAnchor.constraint(equalTo: responseContainer.centerXAnchor),
+      indicator.centerYAnchor.constraint(equalTo: responseContainer.centerYAnchor),
+      indicator.heightAnchor.constraint(equalToConstant: 200),
+    ].forEach {
+      $0.isActive = true
+    }
+
     updateDocumentPresentationView()
   }
 
@@ -190,56 +217,48 @@ public class IntelligentsEphemeralActionController: UIViewController {
     }
   }
 
+  private var previousLayoutWidth: CGFloat = 0
+
+  override public func viewWillLayoutSubviews() {
+    super.viewWillLayoutSubviews()
+
+    if previousLayoutWidth != view.bounds.width {
+      previousLayoutWidth = view.bounds.width
+      updateDocumentPresentationView()
+    }
+  }
+
   func updateDocumentPresentationView() {
     assert(Thread.isMainThread)
 
-    defer {
-      stackView.setNeedsUpdateConstraints()
-      stackView.setNeedsLayout()
-    }
-
-    for subview in responseContainer.subviews {
-      subview.removeFromSuperview()
-    }
-
-    removableConstraints.forEach { $0.isActive = false }
-    removableConstraints.removeAll()
+    responseHeightAnchor?.isActive = false
+    responseHeightAnchor = nil
 
     if copilotDocumentStorage.isEmpty {
-      // up on creation before first token alive, put a loading indicator
-      let indicator = UIActivityIndicatorView(style: .large)
+      indicator.isHidden = false
       indicator.startAnimating()
-      indicator.translatesAutoresizingMaskIntoConstraints = false
-      responseContainer.addSubview(indicator)
-      [
-        indicator.centerXAnchor.constraint(equalTo: responseContainer.centerXAnchor),
-        indicator.centerYAnchor.constraint(equalTo: responseContainer.centerYAnchor),
-        indicator.heightAnchor.constraint(equalToConstant: 200),
-      ].forEach {
-        $0.isActive = true
-        removableConstraints.append($0)
-      }
+      responseHeightAnchor = responseContainer.heightAnchor.constraint(equalToConstant: 200)
+      responseHeightAnchor?.isActive = true
       return
     }
 
-    // TODO: IMPL
-//    let hostingView: UIView = UIHostingView(
-//      rootView: Markdown(.init(copilotDocumentStorage))
-//        .frame(maxWidth: .infinity, alignment: .leading)
-//        .frame(maxHeight: .infinity, alignment: .top)
-//    )
-//    responseContainer.addSubview(hostingView)
+    indicator.isHidden = true
+    indicator.stopAnimating()
 
-//    hostingView.translatesAutoresizingMaskIntoConstraints = false
-//    [
-//      hostingView.topAnchor.constraint(equalTo: responseContainer.topAnchor),
-//      hostingView.leadingAnchor.constraint(equalTo: responseContainer.leadingAnchor),
-//      hostingView.trailingAnchor.constraint(equalTo: responseContainer.trailingAnchor),
-//      hostingView.bottomAnchor.constraint(equalTo: responseContainer.bottomAnchor),
-//    ].forEach {
-//      $0.isActive = true
-//      removableConstraints.append($0)
-//    }
+    let document = MarkdownParser().feed(copilotDocumentStorage)
+    var height: CGFloat = 0
+    let manifests = document.map {
+      let ret = $0.manifest(theme: .default)
+      ret.setLayoutWidth(responseContainer.bounds.width)
+      ret.layoutIfNeeded()
+      height += ret.size.height
+      height += Theme.default.spacings.final
+      return ret
+    }
+    markdownView.updateContentViews(manifests)
+    if height > 0 { height -= Theme.default.spacings.final }
+    responseHeightAnchor = responseContainer.heightAnchor.constraint(equalToConstant: height)
+    responseHeightAnchor?.isActive = true
   }
 
   func scrollToBottom() {
