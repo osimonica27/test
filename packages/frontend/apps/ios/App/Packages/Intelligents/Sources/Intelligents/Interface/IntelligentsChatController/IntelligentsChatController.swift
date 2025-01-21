@@ -5,16 +5,30 @@
 //  Created by 秋星桥 on 2024/11/18.
 //
 
+import Combine
 import LDSwiftEventSource
+import OrderedCollections
 import UIKit
 
 public class IntelligentsChatController: UIViewController {
   let header = Header()
   let inputBox = InputBox()
   let progressView = UIActivityIndicatorView()
-  let tableView = ChatTableView()
+
+  let publisher = PassthroughSubject<MessageListView.ElementPublisher.Output, Never>()
+  lazy var tableView = MessageListView(dataPublisher: publisher.eraseToAnyPublisher())
 
   var inputBoxKeyboardAdapterHeightConstraint = NSLayoutConstraint()
+
+  enum ChatContent {
+    case user(document: String)
+    case assistant(document: String)
+    case error(text: String)
+  }
+
+  var simpleChatContents: OrderedDictionary<UUID, ChatContent> = [:] {
+    didSet { updateContentToPublisher() }
+  }
 
   var sessionID: String = "" {
     didSet { print("[*] new sessionID: \(sessionID)") }
@@ -70,6 +84,10 @@ public class IntelligentsChatController: UIViewController {
     view.addSubview(progressView)
     setupLayout()
 
+    // TODO: IMPL
+    inputBox.editor.controlBanner.cameraButton.isHidden = true
+    inputBox.editor.controlBanner.photoButton.isHidden = true
+
     chat_onLoad()
   }
 
@@ -100,7 +118,7 @@ public class IntelligentsChatController: UIViewController {
       tableView.topAnchor.constraint(equalTo: header.bottomAnchor),
       tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
       tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      tableView.bottomAnchor.constraint(equalTo: inputBox.topAnchor, constant: 16),
+      tableView.bottomAnchor.constraint(equalTo: inputBox.topAnchor),
     ].forEach { $0.isActive = true }
 
     inputBox.editor.controlBanner.sendButton.addTarget(
@@ -117,11 +135,5 @@ public class IntelligentsChatController: UIViewController {
       progressView.centerYAnchor.constraint(equalTo: inputBox.centerYAnchor),
     ].forEach { $0.isActive = true }
     progressView.style = .large
-  }
-
-  override public func viewDidAppear(_ animated: Bool) {
-    super.viewDidAppear(animated)
-    tableView.scrollToBottomEnabled = true
-    tableView.scrollToBottomAllowed = true
   }
 }

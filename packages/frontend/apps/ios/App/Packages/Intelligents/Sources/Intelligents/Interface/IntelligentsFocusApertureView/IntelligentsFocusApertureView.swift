@@ -8,8 +8,8 @@
 import UIKit
 
 public class IntelligentsFocusApertureView: UIView {
-  let backgroundView = UIView()
-  let snapshotView = UIImageView()
+  public let backgroundView = UIView()
+  public let snapshotImageView = UIImageView()
   let controlButtonsPanel = ControlButtonsPanel()
 
   public var animationDuration: TimeInterval = 0.75
@@ -17,8 +17,8 @@ public class IntelligentsFocusApertureView: UIView {
   public internal(set) weak var targetView: UIView?
   public internal(set) weak var targetViewController: UIViewController?
   public internal(set) weak var capturedImage: UIImage? {
-    get { snapshotView.image }
-    set { snapshotView.image = newValue }
+    get { snapshotImageView.image }
+    set { snapshotImageView.image = newValue }
   }
 
   var frameConstraints: [NSLayoutConstraint] = []
@@ -39,21 +39,21 @@ public class IntelligentsFocusApertureView: UIView {
     tap.cancelsTouchesInView = true
     backgroundView.addGestureRecognizer(tap)
 
-    snapshotView.setContentHuggingPriority(.defaultLow, for: .vertical)
-    snapshotView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
-    snapshotView.layer.contentsGravity = .top
-    snapshotView.layer.masksToBounds = true
-    snapshotView.contentMode = .scaleAspectFill
-    snapshotView.isUserInteractionEnabled = true
-    snapshotView.addGestureRecognizer(UITapGestureRecognizer(
+    snapshotImageView.setContentHuggingPriority(.defaultLow, for: .vertical)
+    snapshotImageView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+    snapshotImageView.layer.contentsGravity = .top
+    snapshotImageView.layer.masksToBounds = true
+    snapshotImageView.contentMode = .scaleAspectFill
+    snapshotImageView.isUserInteractionEnabled = true
+    snapshotImageView.addGestureRecognizer(UITapGestureRecognizer(
       target: self,
       action: #selector(dismissFocus)
     ))
 
     addSubview(backgroundView)
     addSubview(controlButtonsPanel)
-    addSubview(snapshotView)
-    bringSubviewToFront(snapshotView)
+    addSubview(snapshotImageView)
+    bringSubviewToFront(snapshotImageView)
 
     controlButtonsPanel.translateButton.action = { [weak self] in
       guard let self else { return }

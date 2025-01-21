@@ -14,19 +14,21 @@ let package = Package(
     .library(name: "Intelligents", targets: ["Intelligents"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.4.1"),
     .package(path: "../AffineGraphQL"),
+    .package(path: "../ChidoriMenu"),
+    .package(path: "../MarkdownView"),
     .package(url: "https://github.com/apollographql/apollo-ios.git", from: "1.15.3"),
     .package(url: "https://github.com/LaunchDarkly/swift-eventsource.git", from: "3.3.0"),
-    .package(path: "../ChidoriMenu"),
+    .package(url: "https://github.com/apple/swift-collections", from: "1.1.4"),
   ],
   targets: [
     .target(name: "Intelligents", dependencies: [
       "AffineGraphQL",
       "ChidoriMenu",
-      .product(name: "MarkdownUI", package: "swift-markdown-ui"),
+      "MarkdownView",
       .product(name: "Apollo", package: "apollo-ios"),
       .product(name: "LDSwiftEventSource", package: "swift-eventsource"),
+      .product(name: "OrderedCollections", package: "swift-collections"),
     ]),
   ]
 )

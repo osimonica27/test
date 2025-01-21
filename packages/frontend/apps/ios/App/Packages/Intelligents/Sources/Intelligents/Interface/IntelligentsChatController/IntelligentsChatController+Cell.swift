@@ -8,23 +8,12 @@
 import Foundation
 
 extension IntelligentsChatController {
-  func insertIntoTableView(viewModel: ChatTableView.DataElement) {
+  func insertIntoTableView(viewModel _: MessageListView.Element) {
     assert(Thread.isMainThread)
-    tableView.dataSource.append(viewModel)
-    tableView.reloadData()
+    // TODO: IMPL
   }
 
-  func insertIntoTableView(withChatModel chatModel: ChatTableView.ChatCell.ViewModel) {
-    insertIntoTableView(viewModel: .init(
-      type: .chat,
-      object: chatModel
-    ))
-  }
-
-  func insertIntoTableView(withError error: Error) {
-    insertIntoTableView(withChatModel: .init(
-      participant: .system,
-      markdownDocument: error.localizedDescription
-    ))
+  func insertIntoTableView(withError _: Error) {
+    // TODO: IMPL
   }
 }

@@ -6,7 +6,6 @@
 //
 
 import LDSwiftEventSource
-import MarkdownUI
 import UIKit
 
 public class IntelligentsEphemeralActionController: UIViewController {
@@ -223,24 +222,24 @@ public class IntelligentsEphemeralActionController: UIViewController {
       return
     }
 
-    // for otherwise, create the view we need
-    let hostingView: UIView = UIHostingView(
-      rootView: Markdown(.init(copilotDocumentStorage))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(maxHeight: .infinity, alignment: .top)
-    )
-    responseContainer.addSubview(hostingView)
+    // TODO: IMPL
+//    let hostingView: UIView = UIHostingView(
+//      rootView: Markdown(.init(copilotDocumentStorage))
+//        .frame(maxWidth: .infinity, alignment: .leading)
+//        .frame(maxHeight: .infinity, alignment: .top)
+//    )
+//    responseContainer.addSubview(hostingView)
 
-    hostingView.translatesAutoresizingMaskIntoConstraints = false
-    [
-      hostingView.topAnchor.constraint(equalTo: responseContainer.topAnchor),
-      hostingView.leadingAnchor.constraint(equalTo: responseContainer.leadingAnchor),
-      hostingView.trailingAnchor.constraint(equalTo: responseContainer.trailingAnchor),
-      hostingView.bottomAnchor.constraint(equalTo: responseContainer.bottomAnchor),
-    ].forEach {
-      $0.isActive = true
-      removableConstraints.append($0)
-    }
+//    hostingView.translatesAutoresizingMaskIntoConstraints = false
+//    [
+//      hostingView.topAnchor.constraint(equalTo: responseContainer.topAnchor),
+//      hostingView.leadingAnchor.constraint(equalTo: responseContainer.leadingAnchor),
+//      hostingView.trailingAnchor.constraint(equalTo: responseContainer.trailingAnchor),
+//      hostingView.bottomAnchor.constraint(equalTo: responseContainer.bottomAnchor),
+//    ].forEach {
+//      $0.isActive = true
+//      removableConstraints.append($0)
+//    }
   }
 
   func scrollToBottom() {
