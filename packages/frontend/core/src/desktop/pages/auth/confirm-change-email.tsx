@@ -41,6 +41,7 @@ export const ConfirmChangeEmail: FC<{
           }
           throw err;
         });
+      setIsLoading(false);
     })().catch(err => {
       // TODO(@eyhn): Add error handling
       console.error(err);
