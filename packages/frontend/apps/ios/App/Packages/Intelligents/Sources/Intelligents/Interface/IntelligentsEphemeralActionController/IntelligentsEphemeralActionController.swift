@@ -239,6 +239,7 @@ public class IntelligentsEphemeralActionController: UIViewController {
       indicator.startAnimating()
       responseHeightAnchor = responseContainer.heightAnchor.constraint(equalToConstant: 200)
       responseHeightAnchor?.isActive = true
+      markdownView.updateContentViews([])
       return
     }
 
