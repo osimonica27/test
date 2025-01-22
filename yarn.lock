@@ -811,7 +811,6 @@ __metadata:
     "@types/cookie-parser": "npm:^1.4.8"
     "@types/express": "npm:^4.17.21"
     "@types/graphql-upload": "npm:^17.0.0"
-    "@types/keyv": "npm:^4.2.0"
     "@types/lodash-es": "npm:^4.17.12"
     "@types/mixpanel": "npm:^2.14.9"
     "@types/mustache": "npm:^4.2.5"
@@ -844,8 +843,7 @@ __metadata:
     nanoid: "npm:^5.0.9"
     nest-commander: "npm:^3.15.0"
     nest-winston: "npm:^1.9.7"
-    nestjs-cls: "npm:^4.5.0"
-    nestjs-throttler-storage-redis: "npm:^0.5.1"
+    nestjs-cls: "npm:^5.0.0"
     nodemailer: "npm:^6.9.16"
     nodemon: "npm:^3.1.7"
     on-headers: "npm:^1.0.2"
@@ -8921,27 +8919,27 @@ __metadata:
   linkType: hard
 
 "@nestjs-cls/transactional-adapter-prisma@npm:^1.2.7":
-  version: 1.2.7
-  resolution: "@nestjs-cls/transactional-adapter-prisma@npm:1.2.7"
+  version: 1.2.8
+  resolution: "@nestjs-cls/transactional-adapter-prisma@npm:1.2.8"
   peerDependencies:
-    "@nestjs-cls/transactional": ^2.4.4
+    "@nestjs-cls/transactional": ^2.4.5
     "@prisma/client": "> 4 < 7"
-    nestjs-cls: ^4.5.0
+    nestjs-cls: ^5.0.0
     prisma: "> 4 < 7"
-  checksum: 10/43472579bd872252c0de919106a931ed563d4359d5d775c989016cab948fcff42fcf62f1260d4459047ebb3d41e3677dddf566376dbaec3e93282be1fa33d2c1
+  checksum: 10/b7d91f0ada321f4070a9822e360ab25b57d36cfd20b817cdd8d9352b2a7e3f53a9e93968a6970818a186e857bc69cbf6e15e176f92ee33e4bed5227fa8aeb5bb
   languageName: node
   linkType: hard
 
 "@nestjs-cls/transactional@npm:^2.4.4":
-  version: 2.4.4
-  resolution: "@nestjs-cls/transactional@npm:2.4.4"
+  version: 2.4.5
+  resolution: "@nestjs-cls/transactional@npm:2.4.5"
   peerDependencies:
-    "@nestjs/common": "> 7.0.0 < 11"
-    "@nestjs/core": "> 7.0.0 < 11"
-    nestjs-cls: ^4.5.0
+    "@nestjs/common": ">= 11 < 12"
+    "@nestjs/core": ">= 11 < 12"
+    nestjs-cls: ^5.0.0
     reflect-metadata: "*"
     rxjs: ">= 7"
-  checksum: 10/1ec34e5b0ed8d9f1b781ebab56d616d775f038c5df21138836c61a524b6fec73ff0994d165edf5a54539ca87d5013b64fd4187b1a95bb75ba26252541c7164d0
+  checksum: 10/57c31150499e17d7a20c4b2b42d5225b35a225e26b0e9f7e4564b2461d55722d335c23e199e7d42eec77d97330d8f06c2d8762dbc6eeef6829c6532d7b07d563
   languageName: node
   linkType: hard
 
@@ -15132,15 +15130,6 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10/e009a2bfb50e90ca9b7c6e8f648f8464067271fd99116f881073fa6fa76dc8d0133181dd65e6614d5fb1220d671d67b0124aef7d97dc02d7e342ab143a47779d
-  languageName: node
-  linkType: hard
-
-"@types/keyv@npm:^4.2.0":
-  version: 4.2.0
-  resolution: "@types/keyv@npm:4.2.0"
-  dependencies:
-    keyv: "npm:*"
-  checksum: 10/8713da9382b9346d664866a6cab2f91b0fd479f61379af891303a618e9a2abad6f347adc38a0850540e3f2dad278427de24e7555339264fddb04d1d17d3b50e0
   languageName: node
   linkType: hard
 
@@ -25576,21 +25565,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"keyv@npm:*, keyv@npm:^5.2.2":
-  version: 5.2.3
-  resolution: "keyv@npm:5.2.3"
-  dependencies:
-    "@keyv/serialize": "npm:^1.0.2"
-  checksum: 10/47b4e9deb33e6a80e5ea79f3022ed3a14bc9fe553b7527ffff0a70b10c7a6c1a5d7e49b9bcfdbd8e8b9fb4632d68baa19d09e82628bcf853103e750e56d49a9e
-  languageName: node
-  linkType: hard
-
 "keyv@npm:^4.0.0, keyv@npm:^4.5.4":
   version: 4.5.4
   resolution: "keyv@npm:4.5.4"
   dependencies:
     json-buffer: "npm:3.0.1"
   checksum: 10/167eb6ef64cc84b6fa0780ee50c9de456b422a1e18802209234f7c2cf7eae648c7741f32e50d7e24ccb22b24c13154070b01563d642755b156c357431a191e75
+  languageName: node
+  linkType: hard
+
+"keyv@npm:^5.2.2":
+  version: 5.2.3
+  resolution: "keyv@npm:5.2.3"
+  dependencies:
+    "@keyv/serialize": "npm:^1.0.2"
+  checksum: 10/47b4e9deb33e6a80e5ea79f3022ed3a14bc9fe553b7527ffff0a70b10c7a6c1a5d7e49b9bcfdbd8e8b9fb4632d68baa19d09e82628bcf853103e750e56d49a9e
   languageName: node
   linkType: hard
 
@@ -27923,28 +27912,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nestjs-cls@npm:^4.5.0":
-  version: 4.5.0
-  resolution: "nestjs-cls@npm:4.5.0"
+"nestjs-cls@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "nestjs-cls@npm:5.0.0"
   peerDependencies:
-    "@nestjs/common": "> 7.0.0 < 11"
-    "@nestjs/core": "> 7.0.0 < 11"
+    "@nestjs/common": ">= 11 < 12"
+    "@nestjs/core": ">= 11 < 12"
     reflect-metadata: "*"
     rxjs: ">= 7"
-  checksum: 10/cbd807244aaf0e89480e5fa7d08415e27953d4f6264246318cd3aa5ec4817564988d5cbed4f700c79090f0ded6f72752887bc842543f7f0af49c515df41e937e
-  languageName: node
-  linkType: hard
-
-"nestjs-throttler-storage-redis@npm:^0.5.1":
-  version: 0.5.1
-  resolution: "nestjs-throttler-storage-redis@npm:0.5.1"
-  peerDependencies:
-    "@nestjs/common": ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
-    "@nestjs/core": ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
-    "@nestjs/throttler": ">=6.0.0"
-    ioredis: ">=5.0.0"
-    reflect-metadata: ^0.2.1
-  checksum: 10/02a2705931830794e511ec6974b5f5aa6e3b3814426423d39f9fda4697e6a7498e92f4f0fd587efff3b315169900206d08ae4535fed1d1ec8a337410ceb44580
+  checksum: 10/0da5b20c00ea2b1bb3fde17a9eb67f7d2cd7195911c9a6d3162175301f0cf752a29ee5f53fd1f3d5332cfae8eea0a45d96d25ce53a481baad74931f109d2eb6c
   languageName: node
   linkType: hard
 
