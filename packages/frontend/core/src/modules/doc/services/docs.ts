@@ -1,9 +1,12 @@
 import { DebugLogger } from '@affine/debug';
 import { Unreachable } from '@affine/env/constant';
-import type { DocMode } from '@blocksuite/affine/blocks';
+import {
+  type AffineTextAttributes,
+  type DocMode,
+  replaceIdMiddleware,
+} from '@blocksuite/affine/blocks';
 import type { DeltaInsert } from '@blocksuite/affine/inline';
-import { Text } from '@blocksuite/affine/store';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import { Slice, Text, Transformer } from '@blocksuite/affine/store';
 import { LiveData, ObjectPool, Service } from '@toeverything/infra';
 import { omitBy } from 'lodash-es';
 import { combineLatest, map } from 'rxjs';
@@ -102,11 +105,11 @@ export class DocsService extends Service {
     options: {
       primaryMode?: DocMode;
       docProps?: DocProps;
+      isTemplate?: boolean;
     } = {}
   ) {
     const doc = this.store.createBlockSuiteDoc();
     initDocFromProps(doc, options.docProps);
-    this.store.markDocSyncStateAsReady(doc.id);
     const docRecord = this.list.doc$(doc.id).value;
     if (!docRecord) {
       throw new Unreachable();
@@ -114,14 +117,18 @@ export class DocsService extends Service {
     if (options.primaryMode) {
       docRecord.setPrimaryMode(options.primaryMode);
     }
+    if (options.isTemplate) {
+      docRecord.setProperty('isTemplate', true);
+    }
     this.eventBus.emit(DocCreated, docRecord);
     return docRecord;
   }
 
   async addLinkedDoc(targetDocId: string, linkedDocId: string) {
     const { doc, release } = this.open(targetDocId);
-    doc.setPriorityLoad(10);
+    const disposePriorityLoad = doc.addPriorityLoad(10);
     await doc.waitForSyncReady();
+    disposePriorityLoad();
     const text = new Text([
       {
         insert: ' ',
@@ -145,9 +152,89 @@ export class DocsService extends Service {
 
   async changeDocTitle(docId: string, newTitle: string) {
     const { doc, release } = this.open(docId);
-    doc.setPriorityLoad(10);
+    const disposePriorityLoad = doc.addPriorityLoad(10);
     await doc.waitForSyncReady();
+    disposePriorityLoad();
     doc.changeDocTitle(newTitle);
     release();
+  }
+
+  /**
+   * Duplicate a doc from template
+   * @param sourceDocId - the id of the source doc to be duplicated
+   * @param _targetDocId - the id of the target doc to be duplicated, if not provided, a new doc will be created
+   * @returns the id of the new doc
+   */
+  async duplicateFromTemplate(sourceDocId: string, _targetDocId?: string) {
+    const targetDocId = _targetDocId ?? this.createDoc().id;
+
+    // check if source doc is removed
+    if (this.list.doc$(sourceDocId).value?.trash$.value) {
+      console.warn(
+        `Template doc(id: ${sourceDocId}) is removed, skip duplicate`
+      );
+      return targetDocId;
+    }
+
+    const { release: sourceRelease, doc: sourceDoc } = this.open(sourceDocId);
+    const { release: targetRelease, doc: targetDoc } = this.open(targetDocId);
+    await sourceDoc.waitForSyncReady();
+
+    // duplicate doc content
+    try {
+      const sourceBsDoc = this.store.getBlockSuiteDoc(sourceDocId);
+      const targetBsDoc = this.store.getBlockSuiteDoc(targetDocId);
+      if (!sourceBsDoc) throw new Error('Source doc not found');
+      if (!targetBsDoc) throw new Error('Target doc not found');
+
+      // clear the target doc (both surface and note)
+      targetBsDoc.root?.children.forEach(child =>
+        targetBsDoc.deleteBlock(child)
+      );
+
+      const collection = this.store.getBlocksuiteCollection();
+      const transformer = new Transformer({
+        schema: collection.schema,
+        blobCRUD: collection.blobSync,
+        docCRUD: {
+          create: (id: string) => collection.createDoc({ id }),
+          get: (id: string) => collection.getDoc(id),
+          delete: (id: string) => collection.removeDoc(id),
+        },
+        middlewares: [replaceIdMiddleware(collection.idGenerator)],
+      });
+      const slice = Slice.fromModels(sourceBsDoc, [
+        ...(sourceBsDoc.root?.children ?? []),
+      ]);
+      const snapshot = transformer.sliceToSnapshot(slice);
+      if (!snapshot) {
+        throw new Error('Failed to create snapshot');
+      }
+      await transformer.snapshotToSlice(
+        snapshot,
+        targetBsDoc,
+        targetBsDoc.root?.id
+      );
+    } catch (e) {
+      logger.error('Failed to duplicate doc', {
+        sourceDocId,
+        targetDocId,
+        originalTargetDocId: _targetDocId,
+        error: e,
+      });
+    } finally {
+      sourceRelease();
+      targetRelease();
+    }
+
+    // duplicate doc properties
+    const properties = sourceDoc.getProperties();
+    const removedProperties = ['id', 'isTemplate', 'journal'];
+    removedProperties.forEach(key => {
+      delete properties[key];
+    });
+    targetDoc.updateProperties(properties);
+
+    return targetDocId;
   }
 }

@@ -3,7 +3,7 @@ import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
 import { HoverController } from '@blocksuite/affine-components/hover';
 import {
   AttachmentIcon16,
-  getAttachmentFileIcons,
+  getAttachmentFileIcon,
 } from '@blocksuite/affine-components/icons';
 import { Peekable } from '@blocksuite/affine-components/peek';
 import { toast } from '@blocksuite/affine-components/toast';
@@ -226,7 +226,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<
     const infoText = this.error ? 'File loading failed.' : humanFileSize(size);
 
     const fileType = name.split('.').pop() ?? '';
-    const FileTypeIcon = getAttachmentFileIcons(fileType);
+    const FileTypeIcon = getAttachmentFileIcon(fileType);
 
     const embedView = this.embedView;
 
@@ -234,7 +234,6 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<
       <div
         ${this._whenHover ? ref(this._whenHover.setReference) : nothing}
         class="affine-attachment-container"
-        draggable="${this.blockDraggable ? 'true' : 'false'}"
         style=${this.containerStyleMap}
       >
         ${embedView

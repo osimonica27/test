@@ -1,4 +1,5 @@
 import { type EditorHost, TextSelection } from '@blocksuite/affine/block-std';
+import type { GfxModel } from '@blocksuite/affine/block-std/gfx';
 import {
   BlocksUtils,
   type CopilotTool,
@@ -14,7 +15,6 @@ import {
   Slice,
   toDraftModel,
 } from '@blocksuite/affine/store';
-import type { GfxModel } from '@blocksuite/block-std/gfx';
 
 import { getContentFromSlice } from '../../_common';
 import { getEdgelessCopilotWidget, getService } from './edgeless';
@@ -105,7 +105,7 @@ export function getSelectedModels(editorHost: EditorHost) {
   return selectedModels;
 }
 
-function traverse(model: DraftModel, drafts: DraftModel[]) {
+export function traverse(model: DraftModel, drafts: DraftModel[]) {
   const isDatabase = model.flavour === 'affine:database';
   const children = isDatabase
     ? model.children

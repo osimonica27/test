@@ -1,3 +1,4 @@
+export { EDGELESS_TOOLBAR_WIDGET } from '../edgeless/components/toolbar/edgeless-toolbar.js';
 export {
   AFFINE_AI_PANEL_WIDGET,
   AffineAIPanelWidget,
@@ -29,6 +30,7 @@ export { AffineImageToolbarWidget } from './image-toolbar/index.js';
 export { AffineInnerModalWidget } from './inner-modal/inner-modal.js';
 export * from './keyboard-toolbar/index.js';
 export {
+  type LinkedMenuAction,
   type LinkedMenuGroup,
   type LinkedMenuItem,
   type LinkedWidgetConfig,

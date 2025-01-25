@@ -15,6 +15,7 @@ import type {
   DatabaseRow,
   DatabaseValueCell,
 } from '@affine/core/modules/doc-info/types';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { ViewService, WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
@@ -28,7 +29,7 @@ import {
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
-import { forwardRef, useCallback, useState } from 'react';
+import { forwardRef, useCallback, useMemo, useState } from 'react';
 
 import { DocPropertyIcon } from './icons/doc-property-icon';
 import { CreatePropertyMenuItems } from './menu/create-doc-property';
@@ -126,8 +127,12 @@ export const DocPropertyRow = ({
   const t = useI18n();
   const docService = useService(DocService);
   const docsService = useService(DocsService);
+  const featureFlagService = useService(FeatureFlagService);
   const customPropertyValue = useLiveData(
     docService.doc.customProperty$(propertyInfo.id)
+  );
+  const enableTemplateDoc = useLiveData(
+    featureFlagService.flags.enable_template_doc.$
   );
   const typeInfo = isSupportedDocPropertyType(propertyInfo.type)
     ? DocPropertyTypes[propertyInfo.type]
@@ -203,6 +208,9 @@ export const DocPropertyRow = ({
   );
 
   if (!ValueRenderer || typeof ValueRenderer !== 'function') return null;
+  if (propertyInfo.id === 'template' && !enableTemplateDoc) {
+    return null;
+  }
 
   return (
     <PropertyRoot
@@ -393,6 +401,17 @@ const DocPropertiesTableInner = ({
   className,
 }: DocPropertiesTableProps) => {
   const [expanded, setExpanded] = useState(!!defaultOpenProperty);
+  const defaultOpen = useMemo(() => {
+    return defaultOpenProperty?.type === 'database'
+      ? [
+          {
+            databaseBlockId: defaultOpenProperty.databaseId,
+            rowId: defaultOpenProperty.databaseRowId,
+            docId: defaultOpenProperty.docId,
+          },
+        ]
+      : [];
+  }, [defaultOpenProperty]);
   return (
     <div className={clsx(styles.root, className)}>
       <Collapsible.Root open={expanded} onOpenChange={setExpanded}>
@@ -413,17 +432,7 @@ const DocPropertiesTableInner = ({
           <div className={styles.tableHeaderDivider} />
           <DocDatabaseBacklinkInfo
             onChange={onDatabasePropertyChange}
-            defaultOpen={
-              defaultOpenProperty?.type === 'database'
-                ? [
-                    {
-                      databaseBlockId: defaultOpenProperty.databaseId,
-                      rowId: defaultOpenProperty.databaseRowId,
-                      docId: defaultOpenProperty.docId,
-                    },
-                  ]
-                : []
-            }
+            defaultOpen={defaultOpen}
           />
         </Collapsible.Content>
       </Collapsible.Root>

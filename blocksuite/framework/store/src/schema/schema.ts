@@ -7,6 +7,23 @@ import { SchemaValidateError } from './error.js';
 export class Schema {
   readonly flavourSchemaMap = new Map<string, BlockSchemaType>();
 
+  safeValidate = (
+    flavour: string,
+    parentFlavour?: string,
+    childFlavours?: string[]
+  ): boolean => {
+    try {
+      this.validate(flavour, parentFlavour, childFlavours);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  get(flavour: string) {
+    return this.flavourSchemaMap.get(flavour);
+  }
+
   validate = (
     flavour: string,
     parentFlavour?: string,

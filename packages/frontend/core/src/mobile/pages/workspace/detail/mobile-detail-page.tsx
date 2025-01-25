@@ -1,7 +1,6 @@
 import { useThemeColorV2 } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
-import { useRegisterBlocksuiteEditorCommands } from '@affine/core/components/hooks/affine/use-register-blocksuite-editor-commands';
 import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
 import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import { usePageDocumentTitle } from '@affine/core/components/hooks/use-global-state';
@@ -11,6 +10,7 @@ import { DetailPageWrapper } from '@affine/core/desktop/pages/workspace/detail-p
 import { PageHeader } from '@affine/core/mobile/components';
 import { useGlobalEvent } from '@affine/core/mobile/hooks/use-global-events';
 import { AIButtonService } from '@affine/core/modules/ai-button';
+import { ServerService } from '@affine/core/modules/cloud';
 import { DocService } from '@affine/core/modules/doc';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { EditorService } from '@affine/core/modules/editor';
@@ -22,12 +22,9 @@ import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { i18nTime } from '@affine/i18n';
 import {
-  BookmarkBlockService,
   customImageProxyMiddleware,
-  EmbedGithubBlockService,
-  EmbedLoomBlockService,
-  EmbedYoutubeBlockService,
   ImageBlockService,
+  LinkPreviewerService,
   RefNodeSlotsProvider,
 } from '@blocksuite/affine/blocks';
 import { DisposableGroup } from '@blocksuite/affine/global/utils';
@@ -143,9 +140,10 @@ const DetailPageImpl = () => {
     };
   }, [globalContext, isInTrash]);
 
-  useRegisterBlocksuiteEditorCommands(editor);
   const title = useLiveData(doc.title$);
   usePageDocumentTitle(title);
+
+  const server = useService(ServerService).server;
 
   const onLoad = useCallback(
     (editorContainer: AffineEditorContainer) => {
@@ -153,20 +151,21 @@ const DetailPageImpl = () => {
       const editorHost = editorContainer.host;
 
       // provide image proxy endpoint to blocksuite
-      editorHost?.std.clipboard.use(
-        customImageProxyMiddleware(BUILD_CONFIG.imageProxyUrl)
-      );
-      ImageBlockService.setImageProxyURL(BUILD_CONFIG.imageProxyUrl);
+      const imageProxyUrl = new URL(
+        BUILD_CONFIG.imageProxyUrl,
+        server.baseUrl
+      ).toString();
+
+      const linkPreviewUrl = new URL(
+        BUILD_CONFIG.linkPreviewUrl,
+        server.baseUrl
+      ).toString();
+
+      editorHost?.std.clipboard.use(customImageProxyMiddleware(imageProxyUrl));
+      ImageBlockService.setImageProxyURL(imageProxyUrl);
 
       // provide link preview endpoint to blocksuite
-      BookmarkBlockService.setLinkPreviewEndpoint(BUILD_CONFIG.linkPreviewUrl);
-      EmbedGithubBlockService.setLinkPreviewEndpoint(
-        BUILD_CONFIG.linkPreviewUrl
-      );
-      EmbedYoutubeBlockService.setLinkPreviewEndpoint(
-        BUILD_CONFIG.linkPreviewUrl
-      );
-      EmbedLoomBlockService.setLinkPreviewEndpoint(BUILD_CONFIG.linkPreviewUrl);
+      editorHost?.doc.get(LinkPreviewerService).setEndpoint(linkPreviewUrl);
 
       // provide page mode and updated date to blocksuite
       const refNodeService = editorHost?.std.getOptional(RefNodeSlotsProvider);
@@ -200,7 +199,7 @@ const DetailPageImpl = () => {
         disposable.dispose();
       };
     },
-    [docCollection.id, editor, jumpToPageBlock, openPage]
+    [docCollection.id, editor, jumpToPageBlock, openPage, server]
   );
 
   return (

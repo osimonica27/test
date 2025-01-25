@@ -2,7 +2,10 @@ import { AttachmentBlockSpec } from '@blocksuite/affine-block-attachment';
 import { BookmarkBlockSpec } from '@blocksuite/affine-block-bookmark';
 import { CodeBlockSpec } from '@blocksuite/affine-block-code';
 import { DataViewBlockSpec } from '@blocksuite/affine-block-data-view';
-import { DatabaseBlockSpec } from '@blocksuite/affine-block-database';
+import {
+  DatabaseBlockSpec,
+  DatabaseSelectionExtension,
+} from '@blocksuite/affine-block-database';
 import { DividerBlockSpec } from '@blocksuite/affine-block-divider';
 import { EdgelessTextBlockSpec } from '@blocksuite/affine-block-edgeless-text';
 import { EmbedExtensions } from '@blocksuite/affine-block-embed';
@@ -24,6 +27,10 @@ import {
   PageSurfaceRefBlockSpec,
 } from '@blocksuite/affine-block-surface-ref';
 import {
+  TableBlockSpec,
+  TableSelectionExtension,
+} from '@blocksuite/affine-block-table';
+import {
   RefNodeSlotsExtension,
   RichTextExtensions,
 } from '@blocksuite/affine-components/rich-text';
@@ -37,6 +44,7 @@ import {
   EditPropsStore,
   FeatureFlagService,
   FontLoaderService,
+  LinkPreviewerService,
 } from '@blocksuite/affine-shared/services';
 import {
   BlockSelectionExtension,
@@ -44,7 +52,6 @@ import {
   SurfaceSelectionExtension,
   TextSelectionExtension,
 } from '@blocksuite/block-std';
-import { DatabaseSelectionExtension } from '@blocksuite/data-view';
 import type { ExtensionType } from '@blocksuite/store';
 
 import { AdapterFactoryExtensions } from '../_common/adapters/extension.js';
@@ -57,6 +64,7 @@ export const CommonBlockSpecs: ExtensionType[] = [
   LatexBlockSpec,
   ListBlockSpec,
   DatabaseBlockSpec,
+  TableBlockSpec,
   DataViewBlockSpec,
   DividerBlockSpec,
   BookmarkBlockSpec,
@@ -97,4 +105,6 @@ export const StoreExtensions: ExtensionType[] = [
   HighlightSelectionExtension,
   ImageSelectionExtension,
   DatabaseSelectionExtension,
+  TableSelectionExtension,
+  LinkPreviewerService,
 ];

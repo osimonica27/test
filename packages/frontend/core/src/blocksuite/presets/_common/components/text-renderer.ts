@@ -11,19 +11,19 @@ import {
   CodeBlockComponent,
   defaultBlockMarkdownAdapterMatchers,
   DividerBlockComponent,
-  inlineDeltaToMarkdownAdapterMatchers,
+  InlineDeltaToMarkdownAdapterExtensions,
   ListBlockComponent,
-  markdownInlineToDeltaMatchers,
+  MarkdownInlineToDeltaAdapterExtensions,
   ParagraphBlockComponent,
 } from '@blocksuite/affine/blocks';
 import { Container, type ServiceProvider } from '@blocksuite/affine/global/di';
 import { WithDisposable } from '@blocksuite/affine/global/utils';
 import type {
   ExtensionType,
-  JobMiddleware,
   Query,
   Schema,
   Store,
+  TransformerMiddleware,
 } from '@blocksuite/affine/store';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query } from 'lit/decorators.js';
@@ -85,7 +85,7 @@ export type TextRendererOptions = {
   maxHeight?: number;
   customHeading?: boolean;
   extensions?: ExtensionType[];
-  additionalMiddlewares?: JobMiddleware[];
+  additionalMiddlewares?: TransformerMiddleware[];
 };
 
 // todo: refactor it for more general purpose usage instead of AI only?
@@ -201,9 +201,9 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
       } else {
         const container = new Container();
         [
-          ...markdownInlineToDeltaMatchers,
+          ...MarkdownInlineToDeltaAdapterExtensions,
           ...defaultBlockMarkdownAdapterMatchers,
-          ...inlineDeltaToMarkdownAdapterMatchers,
+          ...InlineDeltaToMarkdownAdapterExtensions,
         ].forEach(ext => {
           ext.setup(container);
         });

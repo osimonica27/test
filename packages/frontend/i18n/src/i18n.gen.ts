@@ -1061,9 +1061,27 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.send.verify.email.hint"](): string;
     /**
-      * `Sent`
+      * `Verification code`
       */
-    ["com.affine.auth.sent"](): string;
+    ["com.affine.auth.sign.auth.code"](): string;
+    /**
+      * `Invalid verification code`
+      */
+    ["com.affine.auth.sign.auth.code.invalid"](): string;
+    /**
+      * `Continue with code`
+      */
+    ["com.affine.auth.sign.auth.code.continue"](): string;
+    /**
+      * `Resend code`
+      */
+    ["com.affine.auth.sign.auth.code.resend"](): string;
+    /**
+      * `Resend in {{second}}s`
+      */
+    ["com.affine.auth.sign.auth.code.resend.hint"](options: {
+        readonly second: string;
+    }): string;
     /**
       * `The verification link failed to be sent, please try again later.`
       */
@@ -1162,10 +1180,6 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.sign.auth.code.message"](): string;
     /**
-      * `Resend link`
-      */
-    ["com.affine.auth.sign.auth.code.resend.hint"](): string;
-    /**
       * `Sign in with magic link`
       */
     ["com.affine.auth.sign.auth.code.send-email.sign-in"](): string;
@@ -1213,18 +1227,6 @@ export function useAFFiNEI18N(): {
       * `Privacy policy`
       */
     ["com.affine.auth.sign.policy"](): string;
-    /**
-      * ` You can click the link to create an account automatically.`
-      */
-    ["com.affine.auth.sign.sent.email.message.end"](): string;
-    /**
-      * `You can click the link to sign in automatically.`
-      */
-    ["com.affine.auth.sign.sent.email.message.sent-tips.sign-in"](): string;
-    /**
-      * `You can click the link to create an account automatically.`
-      */
-    ["com.affine.auth.sign.sent.email.message.sent-tips.sign-up"](): string;
     /**
       * `Sign up`
       */
@@ -2060,6 +2062,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.filterList.button.add"](): string;
     /**
+      * `View in Page mode`
+      */
+    ["com.affine.header.mode-switch.page"](): string;
+    /**
+      * `View in Edgeless Canvas`
+      */
+    ["com.affine.header.mode-switch.edgeless"](): string;
+    /**
       * `Add tag`
       */
     ["com.affine.header.option.add-tag"](): string;
@@ -2886,6 +2896,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.page-properties.property.pageWidth"](): string;
     /**
+      * `Template`
+      */
+    ["com.affine.page-properties.property.template"](): string;
+    /**
       * `Add relevant identifiers or categories to the doc. Useful for organizing content, improving searchability, and grouping related docs together.`
       */
     ["com.affine.page-properties.property.tags.tooltips"](): string;
@@ -2957,6 +2971,10 @@ export function useAFFiNEI18N(): {
       * `Control the width of this page to fit content display needs.`
       */
     ["com.affine.page-properties.property.pageWidth.tooltips"](): string;
+    /**
+      * `Mark this doc as a template, which can be used to create new docs.`
+      */
+    ["com.affine.page-properties.property.template.tooltips"](): string;
     /**
       * `Properties`
       */
@@ -4200,6 +4218,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.peek-view-controls.open-attachment-in-split-view"](): string;
     /**
+      * `Open in center peek`
+      */
+    ["com.affine.peek-view-controls.open-doc-in-center-peek"](): string;
+    /**
       * `New`
       */
     ["com.affine.quicksearch.group.creation"](): string;
@@ -5000,6 +5022,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.editorSettings.title"](): string;
     /**
+      * `Ask me every time`
+      */
+    ["com.affine.settings.editorSettings.ask-me-every-time"](): string;
+    /**
       * `Email`
       */
     ["com.affine.settings.email"](): string;
@@ -5135,6 +5161,14 @@ export function useAFFiNEI18N(): {
       * `Enable or disable ALL AI features.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-ai.description"](): string;
+    /**
+      * `Enable AI Network Search`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-network-search.name"](): string;
+    /**
+      * `Enable or disable AI Network Search feature.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-network-search.description"](): string;
     /**
       * `Database Full Width`
       */
@@ -5320,6 +5354,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-pdf-embed-preview.description"](): string;
     /**
+      * `Page Block Header`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-page-block-header.name"](): string;
+    /**
+      * `Once enabled, the header of page block will be displayed.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-page-block-header.description"](): string;
+    /**
       * `Only an owner can edit the workspace avatar and name. Changes will be shown for everyone.`
       */
     ["com.affine.settings.workspace.not-owner"](): string;
@@ -5328,7 +5370,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.preferences"](): string;
     /**
-      * `Billing`
+      * `Team's Team's Billing`
       */
     ["com.affine.settings.workspace.billing"](): string;
     /**
@@ -5440,6 +5482,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.properties.unused"](): string;
     /**
+      * `You can view current workspace's storage and files here.`
+      */
+    ["com.affine.settings.workspace.storage.subtitle"](): string;
+    /**
       * `Enable AFFiNE Cloud to publish this workspace`
       */
     ["com.affine.settings.workspace.publish-tooltip"](): string;
@@ -5467,6 +5513,49 @@ export function useAFFiNEI18N(): {
       * `Allow workspace members to use AFFiNE AI features. This setting doesn't affect billing. Workspace members use AFFiNE AI through their personal accounts.`
       */
     ["com.affine.settings.workspace.affine-ai.description"](): string;
+    /**
+      * `Backup`
+      */
+    ["com.affine.settings.workspace.backup"](): string;
+    /**
+      * `Management in local workspace backup files`
+      */
+    ["com.affine.settings.workspace.backup.subtitle"](): string;
+    /**
+      * `No backup files found`
+      */
+    ["com.affine.settings.workspace.backup.empty"](): string;
+    /**
+      * `Delete backup workspace`
+      */
+    ["com.affine.settings.workspace.backup.delete"](): string;
+    /**
+      * `Are you sure you want to delete this workspace. This action cannot be undone. Make sure you no longer need them before proceeding.`
+      */
+    ["com.affine.settings.workspace.backup.delete.warning"](): string;
+    /**
+      * `Workspace backup deleted successfully`
+      */
+    ["com.affine.settings.workspace.backup.delete.success"](): string;
+    /**
+      * `Workspace enabled successfully`
+      */
+    ["com.affine.settings.workspace.backup.import.success"](): string;
+    /**
+      * `Enable local workspace`
+      */
+    ["com.affine.settings.workspace.backup.import"](): string;
+    /**
+      * `Open`
+      */
+    ["com.affine.settings.workspace.backup.import.success.action"](): string;
+    /**
+      * `Deleted {{date}} at {{time}}`
+      */
+    ["com.affine.settings.workspace.backup.delete-at"](options: Readonly<{
+        date: string;
+        time: string;
+    }>): string;
     /**
       * `Sharing doc requires AFFiNE Cloud.`
       */
@@ -6362,6 +6451,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.editor.bi-directional-link-panel.hide"](): string;
     /**
+      * `Fold page block`
+      */
+    ["com.affine.editor.edgeless-note-header.fold-page-block"](): string;
+    /**
+      * `View in page`
+      */
+    ["com.affine.editor.edgeless-note-header.view-in-page"](): string;
+    /**
       * `Empower Your Team with Seamless Collaboration`
       */
     ["com.affine.upgrade-to-team-page.title"](): string;
@@ -6497,6 +6594,74 @@ export function useAFFiNEI18N(): {
       * `Delete Server`
       */
     ["com.affine.server.delete"](): string;
+    /**
+      * `Start`
+      */
+    ["com.affine.page-starter-bar.start"](): string;
+    /**
+      * `Template`
+      */
+    ["com.affine.page-starter-bar.template"](): string;
+    /**
+      * `With AI`
+      */
+    ["com.affine.page-starter-bar.ai"](): string;
+    /**
+      * `Edgeless`
+      */
+    ["com.affine.page-starter-bar.edgeless"](): string;
+    /**
+      * `Template`
+      */
+    Template(): string;
+    /**
+      * `No template`
+      */
+    ["com.affine.template-list.empty"](): string;
+    /**
+      * `Create new template`
+      */
+    ["com.affine.template-list.create-new"](): string;
+    /**
+      * `Set a Template for the Journal`
+      */
+    ["com.affine.template-journal-onboarding.title"](): string;
+    /**
+      * `Select`
+      */
+    ["com.affine.template-journal-onboarding.select"](): string;
+    /**
+      * `My Templates`
+      */
+    ["com.affine.settings.workspace.template.title"](): string;
+    /**
+      * `Template for journal`
+      */
+    ["com.affine.settings.workspace.template.journal"](): string;
+    /**
+      * `Select a template for your journal`
+      */
+    ["com.affine.settings.workspace.template.journal-desc"](): string;
+    /**
+      * `Keep empty`
+      */
+    ["com.affine.settings.workspace.template.keep-empty"](): string;
+    /**
+      * `New doc with template`
+      */
+    ["com.affine.settings.workspace.template.page"](): string;
+    /**
+      * `New docs will use the specified template, ignoring default settings.`
+      */
+    ["com.affine.settings.workspace.template.page-desc"](): string;
+    /**
+      * `Template for new doc`
+      */
+    ["com.affine.settings.workspace.template.page-select"](): string;
+    /**
+      * `Remove template`
+      */
+    ["com.affine.settings.workspace.template.remove"](): string;
 } { const { t } = useTranslation(); return useMemo(() => createProxy((key) => t.bind(null, key)), [t]); }
 function createComponent(i18nKey: string) {
     return (props) => createElement(Trans, { i18nKey, shouldUnescape: true, ...props });
@@ -6529,6 +6694,14 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
+      * `To continue signing in, please enter the code that was sent to <a>{{email}}</a>.`
+      */
+    ["com.affine.auth.sign.auth.code.hint"]: ComponentType<TypedTransProps<{
+        readonly email: string;
+    }, {
+        a: JSX.Element;
+    }>>;
+    /**
       * `Or <1>sign in with password</1> instead.`
       */
     ["com.affine.auth.sign.auth.code.message.password"]: ComponentType<TypedTransProps<Readonly<{}>, {
@@ -6546,14 +6719,6 @@ export const TypedTrans: {
     ["com.affine.auth.sign.message"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
         ["3"]: JSX.Element;
-    }>>;
-    /**
-      * `An email with a magic link has been sent to <a>{{email}}</a>.`
-      */
-    ["com.affine.auth.sign.sent.email.message.sent-tips"]: ComponentType<TypedTransProps<{
-        readonly email: string;
-    }, {
-        a: JSX.Element;
     }>>;
     /**
       * `This demo is limited. <1>Download the AFFiNE Client</1> for the latest features and Performance.`

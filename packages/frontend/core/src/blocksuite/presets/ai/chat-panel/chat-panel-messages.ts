@@ -243,7 +243,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
               }
             )}
       </div>
-      ${this.showDownIndicator
+      ${this.showDownIndicator && filteredItems.length > 1
         ? html`<div class="down-indicator" @click=${this.scrollToEnd}>
             ${DownArrowIcon}
           </div>`

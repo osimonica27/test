@@ -1,5 +1,8 @@
+import '@toeverything/theme/style.css';
+import '@toeverything/theme/fonts.css';
+
 import { effects as blocksEffects } from '@blocksuite/blocks/effects';
-import type { Job, Store } from '@blocksuite/store';
+import type { Store, Transformer } from '@blocksuite/store';
 
 import { effects } from '../../effects.js';
 
@@ -77,6 +80,7 @@ async function createEditor(collection: TestWorkspace, mode: DocMode = 'page') {
 
   app.style.width = '100%';
   app.style.height = '1280px';
+  app.style.overflowY = 'auto';
 
   document.body.append(app);
   await editor.updateComplete;
@@ -113,11 +117,11 @@ declare global {
   const editor: AffineEditorContainer;
   const doc: Store;
   const collection: TestWorkspace;
-  const job: Job;
+  const job: Transformer;
   interface Window {
     editor: AffineEditorContainer;
     doc: Store;
-    job: Job;
+    job: Transformer;
     collection: TestWorkspace;
   }
 }

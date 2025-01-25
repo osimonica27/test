@@ -62,8 +62,8 @@ export function copyCellsByProperty(
 ) {
   model.doc.transact(() => {
     Object.keys(model.cells).forEach(rowId => {
-      const cell = model.cells[rowId][fromId];
-      if (cell) {
+      const cell = model.cells[rowId]?.[fromId];
+      if (cell && model.cells[rowId]) {
         model.cells[rowId][toId] = {
           ...cell,
           columnId: toId,
@@ -77,7 +77,7 @@ export function deleteColumn(
   model: DatabaseBlockModel,
   columnId: Column['id']
 ) {
-  const index = findPropertyIndex(model, columnId);
+  const index = model.columns.findIndex(v => v.id === columnId);
   if (index < 0) return;
 
   model.doc.transact(() => {
@@ -114,10 +114,6 @@ export function duplicateView(model: DatabaseBlockModel, id: string): string {
     }
   });
   return newId;
-}
-
-export function findPropertyIndex(model: DatabaseBlockModel, id: Column['id']) {
-  return model.columns.findIndex(v => v.id === id);
 }
 
 export function getCell(
@@ -186,14 +182,15 @@ export function updateCell(
       console.error('Invalid columnId');
       return;
     }
-    const hasRow = rowId in model.cells;
-    if (!hasRow) {
+    if (!model.cells[rowId]) {
       model.cells[rowId] = Object.create(null);
     }
-    model.cells[rowId][columnId] = {
-      columnId: columnId,
-      value: cell.value,
-    };
+    if (model.cells[rowId]) {
+      model.cells[rowId][columnId] = {
+        columnId: columnId,
+        value: cell.value,
+      };
+    }
   });
 }
 
@@ -214,10 +211,12 @@ export function updateCells(
       if (!model.cells[rowId]) {
         model.cells[rowId] = Object.create(null);
       }
-      model.cells[rowId][columnId] = {
-        columnId,
-        value,
-      };
+      if (model.cells[rowId]) {
+        model.cells[rowId][columnId] = {
+          columnId,
+          value,
+        };
+      }
     });
   });
 }
@@ -225,7 +224,8 @@ export function updateCells(
 export function updateProperty(
   model: DatabaseBlockModel,
   id: string,
-  updater: ColumnUpdater
+  updater: ColumnUpdater,
+  defaultValue?: Record<string, unknown>
 ) {
   const index = model.columns.findIndex(v => v.id === id);
   if (index == null) {
@@ -233,8 +233,11 @@ export function updateProperty(
   }
   model.doc.transact(() => {
     const column = model.columns[index];
+    if (!column) {
+      return;
+    }
     const result = updater(column);
-    model.columns[index] = { ...column, ...result };
+    model.columns[index] = { ...defaultValue, ...column, ...result };
   });
   return id;
 }

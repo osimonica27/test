@@ -8,12 +8,11 @@ import { MailService } from '../../base';
 import { AuthModule, CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
 import { FeatureModule } from '../../core/features';
-import { UserModule, UserService } from '../../core/user';
+import { UserModule } from '../../core/user';
 import { createTestingApp, getSession, sessionCookie } from '../utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
-  user: UserService;
   u1: CurrentUser;
   db: PrismaClient;
   mailer: Sinon.SinonStubbedInstance<MailService>;
@@ -25,13 +24,15 @@ test.before(async t => {
     imports: [FeatureModule, UserModule, AuthModule],
     tapModule: m => {
       m.overrideProvider(MailService).useValue(
-        Sinon.createStubInstance(MailService)
+        Sinon.stub(
+          // @ts-expect-error safe
+          new MailService()
+        )
       );
     },
   });
 
   t.context.auth = app.get(AuthService);
-  t.context.user = app.get(UserService);
   t.context.db = app.get(PrismaClient);
   t.context.mailer = app.get(MailService);
   t.context.app = app;
@@ -73,7 +74,7 @@ test('should be able to sign in with email', async t => {
   t.is(res.body.email, u1.email);
   t.true(mailer.sendSignInMail.calledOnce);
 
-  const [signInLink] = mailer.sendSignInMail.firstCall.args;
+  const [, { url: signInLink }] = mailer.sendSignInMail.firstCall.args;
   const url = new URL(signInLink);
   const email = url.searchParams.get('email');
   const token = url.searchParams.get('token');
@@ -101,7 +102,7 @@ test('should be able to sign up with email', async t => {
   t.is(res.body.email, 'u2@affine.pro');
   t.true(mailer.sendSignUpMail.calledOnce);
 
-  const [signUpLink] = mailer.sendSignUpMail.firstCall.args;
+  const [, { url: signUpLink }] = mailer.sendSignUpMail.firstCall.args;
   const url = new URL(signUpLink);
   const email = url.searchParams.get('email');
   const token = url.searchParams.get('token');

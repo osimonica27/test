@@ -20,10 +20,10 @@ import {
   URLHelper,
   UserFriendlyError,
 } from '../../../base';
+import { Models } from '../../../models';
 import { CurrentUser } from '../../auth';
 import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService } from '../../quota';
-import { UserService } from '../../user';
 import {
   InviteLink,
   InviteResult,
@@ -47,7 +47,7 @@ export class TeamWorkspaceResolver {
     private readonly url: URLHelper,
     private readonly prisma: PrismaClient,
     private readonly permissions: PermissionService,
-    private readonly users: UserService,
+    private readonly models: Models,
     private readonly quota: QuotaManagementService,
     private readonly mutex: RequestMutex,
     private readonly workspaceService: WorkspaceService
@@ -92,7 +92,7 @@ export class TeamWorkspaceResolver {
     for (const [idx, email] of emails.entries()) {
       const ret: InviteResult = { email, sentSuccess: false, inviteId: null };
       try {
-        let target = await this.users.findUserByEmail(email);
+        let target = await this.models.user.getUserByEmail(email);
         if (target) {
           const originRecord =
             await this.prisma.workspaceUserPermission.findFirst({
@@ -104,7 +104,7 @@ export class TeamWorkspaceResolver {
           // only invite if the user is not already in the workspace
           if (originRecord) continue;
         } else {
-          target = await this.users.createUser({
+          target = await this.models.user.create({
             email,
             registered: false,
           });
@@ -124,7 +124,7 @@ export class TeamWorkspaceResolver {
         // after user click the invite link, we can check again and reject if charge failed
         if (sendInviteMail) {
           try {
-            await this.workspaceService.sendInviteMail(ret.inviteId);
+            await this.workspaceService.sendInviteEmail(ret.inviteId);
             ret.sentSuccess = true;
           } catch (e) {
             this.logger.warn(
@@ -312,15 +312,17 @@ export class TeamWorkspaceResolver {
         );
 
         if (result) {
-          this.event.emit('workspace.members.roleChanged', {
-            userId,
-            workspaceId,
-            permission,
-          });
           if (permission === Permission.Owner) {
-            this.event.emit('workspace.members.ownerTransferred', {
-              email: user.email,
+            this.event.emit('workspace.members.ownershipTransferred', {
               workspaceId,
+              from: user.id,
+              to: userId,
+            });
+          } else {
+            this.event.emit('workspace.members.roleChanged', {
+              userId,
+              workspaceId,
+              permission,
             });
           }
         }
@@ -344,21 +346,7 @@ export class TeamWorkspaceResolver {
     inviteId,
   }: EventPayload<'workspace.members.reviewRequested'>) {
     // send review request mail to owner and admin
-    await this.workspaceService.sendReviewRequestedMail(inviteId);
-  }
-
-  @OnEvent('workspace.members.requestDeclined')
-  async onDeclineRequest({
-    userId,
-    workspaceId,
-  }: EventPayload<'workspace.members.requestDeclined'>) {
-    const user = await this.users.findUserById(userId);
-    const workspace = await this.workspaceService.getWorkspaceInfo(workspaceId);
-    // send decline mail
-    await this.workspaceService.sendReviewDeclinedEmail(
-      user?.email,
-      workspace.name
-    );
+    await this.workspaceService.sendReviewRequestedEmail(inviteId);
   }
 
   @OnEvent('workspace.members.requestApproved')
@@ -367,6 +355,19 @@ export class TeamWorkspaceResolver {
   }: EventPayload<'workspace.members.requestApproved'>) {
     // send approve mail
     await this.workspaceService.sendReviewApproveEmail(inviteId);
+  }
+
+  @OnEvent('workspace.members.requestDeclined')
+  async onDeclineRequest({
+    userId,
+    workspaceId,
+  }: EventPayload<'workspace.members.requestDeclined'>) {
+    const user = await this.models.user.getPublicUser(userId);
+    // send decline mail
+    await this.workspaceService.sendReviewDeclinedEmail(
+      user?.email,
+      workspaceId
+    );
   }
 
   @OnEvent('workspace.members.roleChanged')
@@ -382,14 +383,29 @@ export class TeamWorkspaceResolver {
     });
   }
 
-  @OnEvent('workspace.members.ownerTransferred')
+  @OnEvent('workspace.members.ownershipTransferred')
   async onOwnerTransferred({
-    email,
     workspaceId,
-  }: EventPayload<'workspace.members.ownerTransferred'>) {
-    // send role changed mail
-    await this.workspaceService.sendOwnerTransferred(email, {
-      id: workspaceId,
-    });
+    from,
+    to,
+  }: EventPayload<'workspace.members.ownershipTransferred'>) {
+    // send ownership transferred mail
+    const fromUser = await this.models.user.getPublicUser(from);
+    const toUser = await this.models.user.getPublicUser(to);
+
+    if (fromUser) {
+      await this.workspaceService.sendOwnershipTransferredEmail(
+        fromUser.email,
+        {
+          id: workspaceId,
+        }
+      );
+    }
+
+    if (toUser) {
+      await this.workspaceService.sendOwnershipReceivedEmail(toUser.email, {
+        id: workspaceId,
+      });
+    }
   }
 }

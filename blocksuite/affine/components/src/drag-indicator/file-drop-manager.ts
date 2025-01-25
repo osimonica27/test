@@ -54,20 +54,25 @@ export class FileDropExtension extends LifeCycleWatcher {
     return indicator;
   }
 
-  point$ = signal<Point>(new Point(0, 0));
+  dragging$ = signal(false);
+
+  point$ = signal<Point | null>(null);
+
+  private _disableIndicator = false;
 
   closestElement$ = signal<BlockComponent | null>(null);
 
   dropTarget$ = computed<DropTarget | null>(() => {
     let target = null;
     const element = this.closestElement$.value;
-    if (!element) return null;
+    if (!element) return target;
 
     const model = element.model;
     const parent = this.std.store.getParent(model);
+
     if (!matchFlavours(parent, ['affine:surface' as BlockSuite.Flavour])) {
       const point = this.point$.value;
-      target = calcDropTarget(point, model, element);
+      target = point && calcDropTarget(point, model, element);
     }
 
     return target;
@@ -124,6 +129,7 @@ export class FileDropExtension extends LifeCycleWatcher {
     const oldPoint = this.point$.peek();
 
     if (
+      oldPoint &&
       Math.round(oldPoint.x) === Math.round(clientX) &&
       Math.round(oldPoint.y) === Math.round(clientY)
     )
@@ -133,7 +139,7 @@ export class FileDropExtension extends LifeCycleWatcher {
   };
 
   onDragLeave = () => {
-    this.closestElement$.value = null;
+    this.point$.value = null;
   };
 
   onDragOver = (event: DragEvent) => {
@@ -168,11 +174,23 @@ export class FileDropExtension extends LifeCycleWatcher {
       this.point$.subscribe(
         throttle(
           value => {
-            if (value.x * value.y === 0) return;
+            if (!value) {
+              this.closestElement$.value = null;
+              return;
+            }
 
-            this.closestElement$.value = getClosestBlockComponentByPoint(value);
+            const element = getClosestBlockComponentByPoint(value);
+            if (!element) {
+              return;
+            }
+
+            if (element === this.closestElement$.value) {
+              return;
+            }
+
+            this.closestElement$.value = element;
           },
-          233,
+          144,
           { leading: true, trailing: true }
         )
       )
@@ -180,14 +198,44 @@ export class FileDropExtension extends LifeCycleWatcher {
 
     std.event.disposables.add(
       this.dropTarget$.subscribe(target => {
-        FileDropExtension.indicator.rect = target?.rect ?? null;
+        FileDropExtension.indicator.rect = this._disableIndicator
+          ? null
+          : (target?.rect ?? null);
+      })
+    );
+
+    std.event.disposables.add(
+      std.event.add('nativeDragStart', () => {
+        this.dragging$.value = true;
+      })
+    );
+    std.event.disposables.add(
+      std.event.add('nativeDragEnd', () => {
+        this.dragging$.value = false;
+      })
+    );
+    std.event.disposables.add(
+      std.dnd.monitor({
+        onDragStart: () => {
+          this._disableIndicator = true;
+        },
+        onDrop: () => {
+          this._disableIndicator = false;
+        },
       })
     );
 
     std.event.disposables.add(
       std.event.add('nativeDragOver', context => {
-        const event = context.get('dndState');
-        this.onDragOver(event.raw);
+        const event = context.get('dndState').raw;
+
+        if (this.dragging$.peek()) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+
+        this.onDragOver(event);
       })
     );
     std.event.disposables.add(

@@ -5,14 +5,15 @@ import { router } from '@affine/core/mobile/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
-import { configureLocalStorageStateStorageImpls } from '@affine/core/modules/storage';
-import { configureIndexedDBUserspaceStorageProvider } from '@affine/core/modules/userspace';
-import { configureBrowserWorkbenchModule } from '@affine/core/modules/workbench';
 import {
-  configureBrowserWorkspaceFlavours,
-  configureIndexedDBWorkspaceEngineStorageProvider,
-} from '@affine/core/modules/workspace-engine';
+  configureLocalStorageStateStorageImpls,
+  NbstoreProvider,
+} from '@affine/core/modules/storage';
+import { configureBrowserWorkbenchModule } from '@affine/core/modules/workbench';
+import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
+import { WorkerClient } from '@affine/nbstore/worker/client';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
+import { OpClient } from '@toeverything/infra/op';
 import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
@@ -25,9 +26,21 @@ configureCommonModules(framework);
 configureBrowserWorkbenchModule(framework);
 configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
-configureIndexedDBWorkspaceEngineStorageProvider(framework);
-configureIndexedDBUserspaceStorageProvider(framework);
 configureMobileModules(framework);
+framework.impl(NbstoreProvider, {
+  openStore(_key, options) {
+    const worker = new Worker(
+      new URL(/* webpackChunkName: "nbstore" */ './nbstore.ts', import.meta.url)
+    );
+    const client = new WorkerClient(new OpClient(worker), options);
+    return {
+      store: client,
+      dispose: () => {
+        worker.terminate();
+      },
+    };
+  },
+});
 const frameworkProvider = framework.provider();
 
 // setup application lifecycle events, and emit application start event

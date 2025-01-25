@@ -1,20 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Prisma, PrismaClient, type User, Workspace } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
+import { Prisma, type User } from '@prisma/client';
 import { pick } from 'lodash-es';
 
 import {
-  Config,
   CryptoHelper,
   EmailAlreadyUsed,
   EventEmitter,
-  type EventPayload,
-  OnEvent,
   WrongSignInCredentials,
   WrongSignInMethod,
 } from '../base';
 import type { Payload } from '../base/event/def';
-import { Permission } from '../core/permission';
-import { Quota_FreePlanV1_1 } from '../core/quota';
+import { Quota_FreePlanV1_1 } from '../core/quota/schema';
+import { BaseModel } from './base';
+import type { Workspace } from './workspace';
 
 const publicUserSelect = {
   id: true,
@@ -64,14 +62,13 @@ export type PublicUser = Pick<User, keyof typeof publicUserSelect>;
 export type { User };
 
 @Injectable()
-export class UserModel {
-  private readonly logger = new Logger(UserModel.name);
+export class UserModel extends BaseModel {
   constructor(
-    private readonly db: PrismaClient,
     private readonly crypto: CryptoHelper,
-    private readonly event: EventEmitter,
-    private readonly config: Config
-  ) {}
+    private readonly event: EventEmitter
+  ) {
+    super();
+  }
 
   async get(id: string) {
     return this.db.user.findUnique({
@@ -220,18 +217,12 @@ export class UserModel {
   }
 
   async delete(id: string) {
-    const ownedWorkspaces = await this.db.workspaceUserPermission.findMany({
-      where: {
-        userId: id,
-        type: Permission.Owner,
-      },
-    });
-
+    const ownedWorkspaceIds = await this.models.workspace.findOwnedIds(id);
     const user = await this.db.user.delete({ where: { id } });
 
     this.event.emit('user.deleted', {
       ...user,
-      ownedWorkspaces: ownedWorkspaces.map(w => w.workspaceId),
+      ownedWorkspaces: ownedWorkspaceIds,
     });
 
     return user;
@@ -254,56 +245,5 @@ export class UserModel {
 
   async count() {
     return this.db.user.count();
-  }
-
-  @OnEvent('user.updated')
-  async onUserUpdated(user: EventPayload<'user.updated'>) {
-    const { enabled, customerIo } = this.config.metrics;
-    if (enabled && customerIo?.token) {
-      const payload = {
-        name: user.name,
-        email: user.email,
-        created_at: Number(user.createdAt) / 1000,
-      };
-      try {
-        await fetch(`https://track.customer.io/api/v1/customers/${user.id}`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Basic ${customerIo.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-      } catch (e) {
-        this.logger.error('Failed to publish user update event:', e);
-      }
-    }
-  }
-
-  @OnEvent('user.deleted')
-  async onUserDeleted(user: EventPayload<'user.deleted'>) {
-    const { enabled, customerIo } = this.config.metrics;
-    if (enabled && customerIo?.token) {
-      try {
-        if (user.emailVerifiedAt) {
-          // suppress email if email is verified
-          await fetch(
-            `https://track.customer.io/api/v1/customers/${user.email}/suppress`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Basic ${customerIo.token}`,
-              },
-            }
-          );
-        }
-        await fetch(`https://track.customer.io/api/v1/customers/${user.id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Basic ${customerIo.token}` },
-        });
-      } catch (e) {
-        this.logger.error('Failed to publish user delete event:', e);
-      }
-    }
   }
 }

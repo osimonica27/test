@@ -1,6 +1,7 @@
 import type { DocMode, RootBlockModel } from '@blocksuite/affine/blocks';
 import { Entity } from '@toeverything/infra';
 
+import type { DocProperties } from '../../db';
 import type { WorkspaceService } from '../../workspace';
 import type { DocScope } from '../scopes/doc';
 import type { DocsStore } from '../stores/docs';
@@ -38,6 +39,18 @@ export class Doc extends Entity {
     return this.record.customProperty$(propertyId);
   }
 
+  setProperty(propertyId: string, value: string) {
+    return this.record.setProperty(propertyId, value);
+  }
+
+  updateProperties(properties: Partial<DocProperties>) {
+    return this.record.updateProperties(properties);
+  }
+
+  getProperties() {
+    return this.record.getProperties();
+  }
+
   setCustomProperty(propertyId: string, value: string) {
     return this.record.setCustomProperty(propertyId, value);
   }
@@ -68,8 +81,8 @@ export class Doc extends Entity {
     return this.store.waitForDocLoadReady(this.id);
   }
 
-  setPriorityLoad(priority: number) {
-    return this.store.setPriorityLoad(this.id, priority);
+  addPriorityLoad(priority: number) {
+    return this.store.addPriorityLoad(this.id, priority);
   }
 
   changeDocTitle(newTitle: string) {

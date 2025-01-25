@@ -5,18 +5,19 @@ import { useI18n } from '@affine/i18n';
 import {
   AppearanceIcon,
   ExperimentIcon,
+  FolderIcon,
   InformationIcon,
   KeyboardIcon,
   PenIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
-import type { ReactElement, SVGProps } from 'react';
 import { useEffect } from 'react';
 
 import { AuthService, ServerService } from '../../../../modules/cloud';
-import type { SettingState } from '../types';
+import type { SettingSidebarItem, SettingState } from '../types';
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
+import { BackupSettingPanel } from './backup';
 import { BillingSettings } from './billing';
 import { EditorSettings } from './editor';
 import { ExperimentalFeatures } from './experimental-features';
@@ -24,14 +25,7 @@ import { PaymentIcon, UpgradeIcon } from './icons';
 import { AFFiNEPricingPlans } from './plans';
 import { Shortcuts } from './shortcuts';
 
-interface GeneralSettingListItem {
-  key: SettingTab;
-  title: string;
-  icon: (props: SVGProps<SVGSVGElement>) => ReactElement;
-  testId: string;
-}
-
-export type GeneralSettingList = GeneralSettingListItem[];
+export type GeneralSettingList = SettingSidebarItem[];
 
 export const useGeneralSettingList = (): GeneralSettingList => {
   const t = useI18n();
@@ -54,23 +48,23 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     userFeatureService.userFeature.revalidate();
   }, [userFeatureService]);
 
-  const settings: GeneralSettingListItem[] = [
+  const settings: GeneralSettingList = [
     {
       key: 'appearance',
       title: t['com.affine.settings.appearance'](),
-      icon: AppearanceIcon,
+      icon: <AppearanceIcon />,
       testId: 'appearance-panel-trigger',
     },
     {
       key: 'shortcuts',
       title: t['com.affine.keyboardShortcuts.title'](),
-      icon: KeyboardIcon,
+      icon: <KeyboardIcon />,
       testId: 'shortcuts-panel-trigger',
     },
     {
       key: 'about',
       title: t['com.affine.aboutAFFiNE.title'](),
-      icon: InformationIcon,
+      icon: <InformationIcon />,
       testId: 'about-panel-trigger',
     },
   ];
@@ -79,7 +73,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     settings.splice(1, 0, {
       key: 'editor',
       title: t['com.affine.settings.editorSettings'](),
-      icon: PenIcon,
+      icon: <PenIcon />,
       testId: 'editor-panel-trigger',
     });
   }
@@ -88,23 +82,32 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     settings.splice(3, 0, {
       key: 'plans',
       title: t['com.affine.payment.title'](),
-      icon: UpgradeIcon,
+      icon: <UpgradeIcon />,
       testId: 'plans-panel-trigger',
     });
     if (status === 'authenticated') {
       settings.splice(3, 0, {
         key: 'billing',
         title: t['com.affine.payment.billing-setting.title'](),
-        icon: PaymentIcon,
+        icon: <PaymentIcon />,
         testId: 'billing-panel-trigger',
       });
     }
   }
 
+  if (BUILD_CONFIG.isElectron) {
+    settings.push({
+      key: 'backup',
+      title: t['com.affine.settings.workspace.backup'](),
+      icon: <FolderIcon />,
+      testId: 'backup-panel-trigger',
+    });
+  }
+
   settings.push({
     key: 'experimental-features',
     title: t['com.affine.settings.workspace.experimental-features'](),
-    icon: ExperimentIcon,
+    icon: <ExperimentIcon />,
     testId: 'experimental-features-trigger',
   });
 
@@ -137,6 +140,8 @@ export const GeneralSetting = ({
       return <BillingSettings onChangeSettingState={onChangeSettingState} />;
     case 'experimental-features':
       return <ExperimentalFeatures />;
+    case 'backup':
+      return <BackupSettingPanel />;
     default:
       return null;
   }

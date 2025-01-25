@@ -14,7 +14,11 @@ import webpack from 'webpack';
 import type { Configuration as DevServerConfiguration } from 'webpack-dev-server';
 
 import { productionCacheGroups } from './cache-group.js';
-import { createHTMLPlugins, createShellHTMLPlugin } from './html-plugin.js';
+import {
+  createBackgroundWorkerHTMLPlugin,
+  createHTMLPlugins,
+  createShellHTMLPlugin,
+} from './html-plugin.js';
 import { WebpackS3Plugin } from './s3-plugin.js';
 import type { BuildFlags } from './types';
 
@@ -38,8 +42,9 @@ const OptimizeOptionOptions: (
         compress: {
           unused: true,
         },
-        mangle: true,
-        keep_classnames: true,
+        mangle: {
+          keep_classnames: true,
+        },
       },
     }),
   ],
@@ -113,9 +118,7 @@ export function createWebpackConfig(
     mode: flags.mode,
 
     devtool:
-      flags.mode === 'production'
-        ? 'source-map'
-        : 'eval-cheap-module-source-map',
+      flags.mode === 'production' ? 'source-map' : 'cheap-module-source-map',
 
     resolve: {
       symlinks: true,
@@ -265,7 +268,7 @@ export function createWebpackConfig(
                         pkg.join('tailwind.config.js').exists()
                           ? [
                               require('tailwindcss')(
-                                require(pkg.join('tailwind.config.js').path)
+                                require(pkg.join('tailwind.config.js').value)
                               ),
                               'autoprefixer',
                             ]
@@ -428,6 +431,7 @@ export function createWebpackConfig(
 
   if (buildConfig.isElectron) {
     config.plugins.push(createShellHTMLPlugin(flags, buildConfig));
+    config.plugins.push(createBackgroundWorkerHTMLPlugin(flags, buildConfig));
   }
 
   return config;

@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   DynamicModule,
   ForwardReference,
@@ -5,7 +7,12 @@ import {
   Module,
 } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ClsPluginTransactional } from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
+import { PrismaClient } from '@prisma/client';
+import { Response } from 'express';
 import { get } from 'lodash-es';
+import { ClsModule } from 'nestjs-cls';
 
 import { AppController } from './app.controller';
 import { getOptionalModuleMetadata } from './base';
@@ -37,11 +44,45 @@ import { StorageModule } from './core/storage';
 import { SyncModule } from './core/sync';
 import { UserModule } from './core/user';
 import { WorkspaceModule } from './core/workspaces';
-import { ModelModules } from './models';
+import { ModelsModule } from './models';
 import { REGISTERED_PLUGINS } from './plugins';
+import { LicenseModule } from './plugins/license';
 import { ENABLED_PLUGINS } from './plugins/registry';
 
 export const FunctionalityModules = [
+  ClsModule.forRoot({
+    global: true,
+    // for http / graphql request
+    middleware: {
+      mount: true,
+      generateId: true,
+      idGenerator() {
+        // make every request has a unique id to tracing
+        return `req-${randomUUID()}`;
+      },
+      setup(cls, _req, res: Response) {
+        res.setHeader('X-Request-Id', cls.getId());
+      },
+    },
+    // for websocket connection
+    // https://papooch.github.io/nestjs-cls/considerations/compatibility#websockets
+    interceptor: {
+      mount: true,
+      generateId: true,
+      idGenerator() {
+        // make every request has a unique id to tracing
+        return `ws-${randomUUID()}`;
+      },
+    },
+    plugins: [
+      // https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional/prisma-adapter
+      new ClsPluginTransactional({
+        adapter: new TransactionalAdapterPrisma({
+          prismaInjectionToken: PrismaClient,
+        }),
+      }),
+    ],
+  }),
   ConfigModule.forRoot(),
   RuntimeModule,
   EventModule,
@@ -155,7 +196,7 @@ export function buildAppModule() {
   factor
     // basic
     .use(...FunctionalityModules)
-    .use(ModelModules)
+    .use(ModelsModule)
     .useIf(config => config.flavor.sync, WebSocketModule)
 
     // auth
@@ -174,7 +215,8 @@ export function buildAppModule() {
       GqlModule,
       StorageModule,
       ServerConfigModule,
-      WorkspaceModule
+      WorkspaceModule,
+      LicenseModule
     )
 
     // self hosted server only
@@ -185,7 +227,8 @@ export function buildAppModule() {
   ENABLED_PLUGINS.forEach(name => {
     const plugin = REGISTERED_PLUGINS.get(name);
     if (!plugin) {
-      throw new Error(`Unknown plugin ${name}`);
+      new Logger('AppBuilder').warn(`Unknown plugin ${name}`);
+      return;
     }
 
     factor.use(plugin);

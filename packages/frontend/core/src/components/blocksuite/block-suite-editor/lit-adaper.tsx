@@ -55,8 +55,8 @@ import {
   patchEdgelessClipboard,
   patchForAttachmentEmbedViews,
   patchForClipboardInElectron,
+  patchForEdgelessNoteConfig,
   patchForMobile,
-  patchForSharedPage,
   patchGenerateDocUrlExtension,
   patchNotificationService,
   patchOpenDocExtension,
@@ -64,10 +64,12 @@ import {
   patchPeekViewService,
   patchQuickSearchService,
   patchReferenceRenderer,
+  patchSideBarService,
   type ReferenceReactRenderer,
 } from './specs/custom/spec-patchers';
 import { createEdgelessModeSpecs } from './specs/edgeless';
 import { createPageModeSpecs } from './specs/page';
+import { StarterBar } from './starter-bar';
 import * as styles from './styles.css';
 
 const adapted = {
@@ -91,7 +93,7 @@ interface BlocksuiteEditorProps {
   defaultOpenProperty?: DefaultOpenProperty;
 }
 
-const usePatchSpecs = (shared: boolean, mode: DocMode) => {
+const usePatchSpecs = (mode: DocMode) => {
   const [reactToLit, portals] = useLitPortalFactory();
   const {
     peekViewService,
@@ -158,6 +160,7 @@ const usePatchSpecs = (shared: boolean, mode: DocMode) => {
       patched = patched.concat(patchForAttachmentEmbedViews(reactToLit));
     }
 
+    patched = patched.concat(patchForEdgelessNoteConfig(reactToLit));
     patched = patched.concat(patchNotificationService(confirmModal));
     patched = patched.concat(patchPeekViewService(peekViewService));
     patched = patched.concat(patchOpenDocExtension());
@@ -165,9 +168,7 @@ const usePatchSpecs = (shared: boolean, mode: DocMode) => {
     patched = patched.concat(patchParseDocUrlExtension(framework));
     patched = patched.concat(patchGenerateDocUrlExtension(framework));
     patched = patched.concat(patchQuickSearchService(framework));
-    if (shared) {
-      patched = patched.concat(patchForSharedPage());
-    }
+    patched = patched.concat(patchSideBarService(framework));
     if (BUILD_CONFIG.isMobileEdition) {
       patched = patched.concat(patchForMobile());
     }
@@ -187,7 +188,6 @@ const usePatchSpecs = (shared: boolean, mode: DocMode) => {
     peekViewService,
     reactToLit,
     referenceRenderer,
-    shared,
     specs,
     featureFlagService,
   ]);
@@ -258,7 +258,7 @@ export const BlocksuiteDocEditor = forwardRef<
     [externalTitleRef]
   );
 
-  const [specs, portals] = usePatchSpecs(!!shared, 'page');
+  const [specs, portals] = usePatchSpecs('page');
 
   const displayBiDirectionalLink = useLiveData(
     editorSettingService.editorSetting.settings$.selector(
@@ -334,6 +334,7 @@ export const BlocksuiteDocEditor = forwardRef<
           data-testid="page-editor-blank"
           onClick={onClickBlank}
         ></div>
+        <StarterBar doc={page} />
         {!shared && displayBiDirectionalLink ? (
           <BiDirectionalLinkPanel />
         ) : null}
@@ -345,8 +346,8 @@ export const BlocksuiteDocEditor = forwardRef<
 export const BlocksuiteEdgelessEditor = forwardRef<
   EdgelessEditor,
   BlocksuiteEditorProps
->(function BlocksuiteEdgelessEditor({ page, shared }, ref) {
-  const [specs, portals] = usePatchSpecs(!!shared, 'edgeless');
+>(function BlocksuiteEdgelessEditor({ page }, ref) {
+  const [specs, portals] = usePatchSpecs('edgeless');
   const editorRef = useRef<EdgelessEditor | null>(null);
 
   const onDocRef = useCallback(

@@ -2,6 +2,7 @@ import type { BlockComponent } from '@blocksuite/block-std';
 import type { BlockModel } from '@blocksuite/store';
 
 import type { updateBlockType } from './commands/block-type';
+import type { changeNoteDisplayMode } from './commands/change-note-display-mode';
 import type { dedentBlock } from './commands/dedent-block';
 import type { dedentBlockToRoot } from './commands/dedent-block-to-root';
 import type { dedentBlocks } from './commands/dedent-blocks';
@@ -12,6 +13,7 @@ import type { indentBlock } from './commands/indent-block';
 import type { indentBlocks } from './commands/indent-blocks';
 import type { selectBlock } from './commands/select-block';
 import type { selectBlocksBetween } from './commands/select-blocks-between';
+import type { NoteConfig } from './config';
 import { NoteBlockComponent } from './note-block';
 import {
   EdgelessNoteBlockComponent,
@@ -39,6 +41,7 @@ declare global {
       indentBlock: typeof indentBlock;
       updateBlockType: typeof updateBlockType;
       dedentBlockToRoot: typeof dedentBlockToRoot;
+      changeNoteDisplayMode: typeof changeNoteDisplayMode;
     }
     interface CommandContext {
       focusBlock?: BlockComponent | null;
@@ -47,6 +50,9 @@ declare global {
     }
     interface BlockServices {
       'affine:note': NoteBlockService;
+    }
+    interface BlockConfigs {
+      'affine:note': NoteConfig;
     }
   }
 }

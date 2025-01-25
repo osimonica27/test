@@ -1,8 +1,5 @@
-import {
-  type DocMode,
-  type NoteBlockModel,
-  NoteDisplayMode,
-} from '@blocksuite/affine/blocks';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { type DocMode, getLastNoteBlock } from '@blocksuite/affine/blocks';
 import { Slot } from '@blocksuite/affine/global/utils';
 import type {
   AffineEditorContainer,
@@ -10,7 +7,8 @@ import type {
   EdgelessEditor,
   PageEditor,
 } from '@blocksuite/affine/presets';
-import { type BlockModel, type Store } from '@blocksuite/affine/store';
+import { type Store } from '@blocksuite/affine/store';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
 import {
@@ -53,6 +51,8 @@ export const BlocksuiteEditorContainer = forwardRef<
   const docRef = useRef<PageEditor>(null);
   const docTitleRef = useRef<DocTitle>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
+  const featureFlags = useService(FeatureFlagService).flags;
+  const enableEditorRTL = useLiveData(featureFlags.enable_editor_rtl.$);
 
   const slots: BlocksuiteEditorContainerRef['slots'] = useMemo(() => {
     return {
@@ -161,6 +161,7 @@ export const BlocksuiteEditorContainer = forwardRef<
   return (
     <div
       data-testid={`editor-${page.id}`}
+      dir={enableEditorRTL ? 'rtl' : 'ltr'}
       className={clsx(
         `editor-wrapper ${mode}-mode`,
         styles.docEditorRoot,
@@ -189,32 +190,3 @@ export const BlocksuiteEditorContainer = forwardRef<
     </div>
   );
 });
-
-// copy from '@blocksuite/affine-shared/utils'
-export function getLastNoteBlock(doc: Store) {
-  let note: NoteBlockModel | null = null;
-  if (!doc.root) return null;
-  const { children } = doc.root;
-  for (let i = children.length - 1; i >= 0; i--) {
-    const child = children[i];
-    if (
-      matchFlavours(child, ['affine:note']) &&
-      child.displayMode !== NoteDisplayMode.EdgelessOnly
-    ) {
-      note = child as NoteBlockModel;
-      break;
-    }
-  }
-  return note;
-}
-export function matchFlavours<Key extends (keyof BlockSuite.BlockModels)[]>(
-  model: BlockModel | null,
-  expected: Key
-): model is BlockSuite.BlockModels[Key[number]] {
-  return (
-    !!model &&
-    expected.some(
-      key => (model.flavour as keyof BlockSuite.BlockModels) === key
-    )
-  );
-}

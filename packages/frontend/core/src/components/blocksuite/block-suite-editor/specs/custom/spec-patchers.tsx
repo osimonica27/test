@@ -24,6 +24,7 @@ import {
 } from '@affine/core/modules/quicksearch';
 import { ExternalLinksQuickSearchSession } from '@affine/core/modules/quicksearch/impls/external-links';
 import { JournalsQuickSearchSession } from '@affine/core/modules/quicksearch/impls/journals';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { DebugLogger } from '@affine/debug';
 import { I18n } from '@affine/i18n';
@@ -54,12 +55,14 @@ import {
   GenerateDocUrlExtension,
   MobileSpecsPatches,
   NativeClipboardExtension,
+  NoteConfigExtension,
   NotificationExtension,
   OpenDocExtension,
   ParseDocUrlExtension,
   PeekViewExtension,
   QuickSearchExtension,
   ReferenceNodeConfigExtension,
+  SidebarExtension,
 } from '@blocksuite/affine/blocks';
 import { Bound } from '@blocksuite/affine/global/utils';
 import {
@@ -83,6 +86,7 @@ import { pick } from 'lodash-es';
 import type { DocProps } from '../../../../../blocksuite/initialization';
 import { AttachmentEmbedPreview } from '../../../../attachment-viewer/pdf-viewer-embedded';
 import { generateUrl } from '../../../../hooks/affine/use-share-url';
+import { EdgelessNoteHeader } from './widgets/edgeless-note-header';
 import { createKeyboardToolbarConfig } from './widgets/keyboard-toolbar';
 
 export type ReferenceReactRenderer = (
@@ -221,6 +225,7 @@ export function patchNotificationService({
         {
           title: toReactNode(notification.title),
           message: toReactNode(notification.message),
+          footer: toReactNode(notification.footer),
           action: notification.action?.onClick
             ? {
                 label: toReactNode(notification.action?.label),
@@ -652,5 +657,31 @@ export function patchForClipboardInElectron(framework: FrameworkProvider) {
   const desktopApi = framework.get(DesktopApiService);
   return NativeClipboardExtension({
     copyAsPNG: desktopApi.handler.clipboard.copyAsPNG,
+  });
+}
+
+export function patchForEdgelessNoteConfig(
+  reactToLit: (element: ElementOrFactory) => TemplateResult
+) {
+  return NoteConfigExtension({
+    edgelessNoteHeader: ({ note }) =>
+      reactToLit(<EdgelessNoteHeader note={note} />),
+  });
+}
+
+export function patchSideBarService(framework: FrameworkProvider) {
+  const { workbench } = framework.get(WorkbenchService);
+
+  return SidebarExtension({
+    open: (tabId?: string) => {
+      workbench.openSidebar();
+      workbench.activeView$.value.activeSidebarTab(tabId ?? null);
+    },
+    close: () => {
+      workbench.closeSidebar();
+    },
+    getTabIds: () => {
+      return workbench.activeView$.value.sidebarTabs$.value.map(tab => tab.id);
+    },
   });
 }

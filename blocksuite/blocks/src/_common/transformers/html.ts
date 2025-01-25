@@ -1,12 +1,14 @@
+import {
+  HtmlInlineToDeltaAdapterExtensions,
+  InlineDeltaToHtmlAdapterExtensions,
+} from '@blocksuite/affine-components/rich-text';
 import { HtmlAdapter } from '@blocksuite/affine-shared/adapters';
 import { Container } from '@blocksuite/global/di';
 import { sha } from '@blocksuite/global/utils';
 import type { Store, Workspace } from '@blocksuite/store';
-import { extMimeMap, Job } from '@blocksuite/store';
+import { extMimeMap, Transformer } from '@blocksuite/store';
 
 import { defaultBlockHtmlAdapterMatchers } from '../adapters/html/block-matcher.js';
-import { htmlInlineToDeltaMatchers } from '../adapters/html/delta-converter/html-inline.js';
-import { inlineDeltaToHtmlAdapterMatchers } from '../adapters/html/delta-converter/inline-delta.js';
 import {
   defaultImageProxyMiddleware,
   docLinkBaseURLMiddleware,
@@ -28,9 +30,9 @@ type ImportHTMLZipOptions = {
 
 const container = new Container();
 [
-  ...htmlInlineToDeltaMatchers,
+  ...HtmlInlineToDeltaAdapterExtensions,
   ...defaultBlockHtmlAdapterMatchers,
-  ...inlineDeltaToHtmlAdapterMatchers,
+  ...InlineDeltaToHtmlAdapterExtensions,
 ].forEach(ext => {
   ext.setup(container);
 });
@@ -44,7 +46,7 @@ const provider = container.provider();
  * @returns A Promise that resolves when the export is complete.
  */
 async function exportDoc(doc: Store) {
-  const job = new Job({
+  const job = new Transformer({
     schema: doc.schema,
     blobCRUD: doc.blobSync,
     docCRUD: {
@@ -99,7 +101,7 @@ async function importHTMLToDoc({
   html,
   fileName,
 }: ImportHTMLToDocOptions) {
-  const job = new Job({
+  const job = new Transformer({
     schema: collection.schema,
     blobCRUD: collection.blobSync,
     docCRUD: {
@@ -161,7 +163,7 @@ async function importHTMLZip({ collection, imported }: ImportHTMLZipOptions) {
   await Promise.all(
     htmlBlobs.map(async ([fileName, blob]) => {
       const fileNameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
-      const job = new Job({
+      const job = new Transformer({
         schema: collection.schema,
         blobCRUD: collection.blobSync,
         docCRUD: {

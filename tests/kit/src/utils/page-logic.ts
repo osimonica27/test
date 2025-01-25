@@ -76,6 +76,21 @@ export const createLinkedPage = async (page: Page, pageName?: string) => {
     .click();
 };
 
+export const createTodayPage = async (page: Page) => {
+  // fixme: workaround for @ popover not showing up when editor is not ready
+  await page.waitForTimeout(500);
+  await page.keyboard.type('@', { delay: 50 });
+  const linkedPagePopover = page.locator('.linked-doc-popover');
+  await expect(linkedPagePopover).toBeVisible();
+  await type(page, 'Today');
+
+  await linkedPagePopover
+    .locator(`icon-button`)
+    .filter({ hasText: 'Today' })
+    .nth(0)
+    .click();
+};
+
 export async function clickPageMoreActions(page: Page) {
   return page
     .getByTestId('header')
@@ -184,6 +199,7 @@ export const dragTo = async (
 };
 
 // sometimes editor loses focus, this function is to focus the editor
+// FIXME: this function is not usable since the placeholder is not unstable
 export const focusInlineEditor = async (page: Page) => {
   await page
     .locator(

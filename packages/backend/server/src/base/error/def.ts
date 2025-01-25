@@ -2,6 +2,7 @@ import { STATUS_CODES } from 'node:http';
 
 import { HttpStatus, Logger } from '@nestjs/common';
 import { capitalize } from 'lodash-es';
+import { ClsServiceManager } from 'nestjs-cls';
 
 export type UserFriendlyErrorBaseType =
   | 'bad_request'
@@ -72,6 +73,11 @@ export class UserFriendlyError extends Error {
    */
   data: any;
 
+  /**
+   * Request id for tracing
+   */
+  requestId?: string;
+
   constructor(
     type: UserFriendlyErrorBaseType,
     name: keyof typeof USER_FRIENDLY_ERRORS,
@@ -93,6 +99,7 @@ export class UserFriendlyError extends Error {
     this.type = type;
     this.name = name;
     this.data = args;
+    this.requestId = ClsServiceManager.getClsService()?.getId();
   }
 
   toJSON() {
@@ -103,6 +110,8 @@ export class UserFriendlyError extends Error {
       name: this.name.toUpperCase(),
       message: this.message,
       data: this.data,
+      // only include requestId for server error
+      requestId: this.status >= 500 ? this.requestId : undefined,
     };
   }
 
@@ -114,6 +123,7 @@ export class UserFriendlyError extends Error {
       `Name: ${json.name}`,
       `Message: ${json.message}`,
       `Data: ${JSON.stringify(json.data)}`,
+      `RequestId: ${json.requestId}`,
     ].join('\n');
   }
 
@@ -126,8 +136,12 @@ export class UserFriendlyError extends Error {
       return;
     }
 
-    new Logger(context).error(
-      'Internal server error',
+    const logger = new Logger(context);
+    const fn = this.status >= 500 ? logger.error : logger.log;
+
+    fn.call(
+      logger,
+      this.name,
       this.cause ? ((this.cause as any).stack ?? this.cause) : this.stack
     );
   }
@@ -234,6 +248,13 @@ export const USER_FRIENDLY_ERRORS = {
   not_found: {
     type: 'resource_not_found',
     message: 'Resource not found.',
+  },
+
+  // Input errors
+  query_too_long: {
+    type: 'invalid_input',
+    args: { max: 'number' },
+    message: ({ max }) => `Query is too long, max length is ${max}.`,
   },
 
   // User Errors
@@ -592,5 +613,39 @@ export const USER_FRIENDLY_ERRORS = {
   captcha_verification_failed: {
     type: 'bad_request',
     message: 'Captcha verification failed.',
+  },
+
+  // license errors
+  invalid_license_session_id: {
+    type: 'invalid_input',
+    message: 'Invalid session id to generate license key.',
+  },
+  license_revealed: {
+    type: 'action_forbidden',
+    message:
+      'License key has been revealed. Please check your mail box of the one provided during checkout.',
+  },
+  workspace_license_already_exists: {
+    type: 'action_forbidden',
+    message: 'Workspace already has a license applied.',
+  },
+  license_not_found: {
+    type: 'resource_not_found',
+    message: 'License not found.',
+  },
+  invalid_license_to_activate: {
+    type: 'bad_request',
+    message: 'Invalid license to activate.',
+  },
+  invalid_license_update_params: {
+    type: 'invalid_input',
+    args: { reason: 'string' },
+    message: ({ reason }) => `Invalid license update params. ${reason}`,
+  },
+  workspace_members_exceed_limit_to_downgrade: {
+    type: 'bad_request',
+    args: { limit: 'number' },
+    message: ({ limit }) =>
+      `You cannot downgrade the workspace from team workspace because there are more than ${limit} members that are currently active.`,
   },
 } satisfies Record<string, UserFriendlyErrorOptions>;

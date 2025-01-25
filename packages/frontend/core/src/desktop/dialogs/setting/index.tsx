@@ -7,13 +7,12 @@ import {
   DefaultServerService,
   ServersService,
 } from '@affine/core/modules/cloud';
+import type { DialogComponentProps } from '@affine/core/modules/dialogs';
 import type {
-  DialogComponentProps,
-  GLOBAL_DIALOG_SCHEMA,
-} from '@affine/core/modules/dialogs';
-import type { SettingTab } from '@affine/core/modules/dialogs/constant';
+  SettingTab,
+  WORKSPACE_DIALOG_SCHEMA,
+} from '@affine/core/modules/dialogs/constant';
 import { GlobalContextService } from '@affine/core/modules/global-context';
-import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
 import { Trans } from '@affine/i18n';
 import { ContactWithUsIcon } from '@blocksuite/icons/rc';
 import { FrameworkScope, useLiveData, useService } from '@toeverything/infra';
@@ -37,7 +36,6 @@ import { WorkspaceSetting } from './workspace-setting';
 
 interface SettingProps extends ModalProps {
   activeTab?: SettingTab;
-  workspaceMetadata?: WorkspaceMetadata | null;
   onCloseSetting: () => void;
 }
 
@@ -54,12 +52,10 @@ const CenteredLoading = () => {
 
 const SettingModalInner = ({
   activeTab: initialActiveTab = 'appearance',
-  workspaceMetadata: initialWorkspaceMetadata = null,
   onCloseSetting,
 }: SettingProps) => {
   const [settingState, setSettingState] = useState<SettingState>({
     activeTab: initialActiveTab,
-    activeWorkspaceMetadata: initialWorkspaceMetadata,
     scrollAnchor: undefined,
   });
   const globalContextService = useService(GlobalContextService);
@@ -67,7 +63,6 @@ const SettingModalInner = ({
   const currentServerId = useLiveData(
     globalContextService.globalContext.serverId.$
   );
-  console.log(currentServerId);
   const serversService = useService(ServersService);
   const defaultServerService = useService(DefaultServerService);
   const currentServer =
@@ -122,8 +117,8 @@ const SettingModalInner = ({
   }, []);
 
   const onTabChange = useCallback(
-    (key: SettingTab, meta: WorkspaceMetadata | null) => {
-      setSettingState({ activeTab: key, activeWorkspaceMetadata: meta });
+    (key: SettingTab) => {
+      setSettingState({ activeTab: key });
     },
     [setSettingState]
   );
@@ -143,7 +138,6 @@ const SettingModalInner = ({
       <SettingSidebar
         activeTab={settingState.activeTab}
         onTabChange={onTabChange}
-        selectedWorkspaceId={settingState.activeWorkspaceMetadata?.id ?? null}
       />
       <Scrollable.Root>
         <Scrollable.Viewport
@@ -158,11 +152,9 @@ const SettingModalInner = ({
                 {settingState.activeTab === 'account' &&
                 loginStatus === 'authenticated' ? (
                   <AccountSetting onChangeSettingState={setSettingState} />
-                ) : isWorkspaceSetting(settingState.activeTab) &&
-                  settingState.activeWorkspaceMetadata ? (
+                ) : isWorkspaceSetting(settingState.activeTab) ? (
                   <WorkspaceSetting
                     activeTab={settingState.activeTab}
-                    workspaceMetadata={settingState.activeWorkspaceMetadata}
                     onCloseSetting={onCloseSetting}
                     onChangeSettingState={setSettingState}
                   />
@@ -214,8 +206,7 @@ const SettingModalInner = ({
 export const SettingDialog = ({
   close,
   activeTab,
-  workspaceMetadata,
-}: DialogComponentProps<GLOBAL_DIALOG_SCHEMA['setting']>) => {
+}: DialogComponentProps<WORKSPACE_DIALOG_SCHEMA['setting']>) => {
   return (
     <Modal
       width={1280}
@@ -234,11 +225,7 @@ export const SettingDialog = ({
       onOpenChange={() => close()}
     >
       <Suspense fallback={<CenteredLoading />}>
-        <SettingModalInner
-          activeTab={activeTab}
-          workspaceMetadata={workspaceMetadata}
-          onCloseSetting={close}
-        />
+        <SettingModalInner activeTab={activeTab} onCloseSetting={close} />
       </Suspense>
     </Modal>
   );

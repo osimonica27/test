@@ -9,7 +9,7 @@ import { type RichTextCellType, toYText } from '../utils.js';
 
 export const richTextColumnType = propertyType('rich-text');
 
-export const richTextColumnModelConfig =
+export const richTextPropertyModelConfig =
   richTextColumnType.modelConfig<RichTextCellType>({
     name: 'Text',
     type: () => t.richText.instance(),
@@ -21,6 +21,7 @@ export const richTextColumnModelConfig =
       };
     },
     cellToJson: ({ value, dataSource }) => {
+      if (!value) return null;
       const host = dataSource.contextGet(HostContextKey);
       if (host) {
         const collection = host.std.workspace;

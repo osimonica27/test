@@ -1,17 +1,16 @@
 import { useRefEffect } from '@affine/component';
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
+import { ServerService } from '@affine/core/modules/cloud';
 import {
-  BookmarkBlockService,
   customImageProxyMiddleware,
   type DocMode,
-  EmbedGithubBlockService,
-  EmbedLoomBlockService,
-  EmbedYoutubeBlockService,
   ImageBlockService,
+  LinkPreviewerService,
 } from '@blocksuite/affine/blocks';
 import { DisposableGroup } from '@blocksuite/affine/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/affine/presets';
 import type { Store } from '@blocksuite/affine/store';
+import { useService } from '@toeverything/infra';
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 
@@ -50,6 +49,8 @@ const BlockSuiteEditorImpl = ({
     };
   }, [page]);
 
+  const server = useService(ServerService).server;
+
   const editorRef = useRefEffect(
     (editor: AffineEditorContainer) => {
       globalThis.currentEditor = editor;
@@ -66,24 +67,22 @@ const BlockSuiteEditorImpl = ({
             // host should be ready
 
             // provide image proxy endpoint to blocksuite
+            const imageProxyUrl = new URL(
+              BUILD_CONFIG.imageProxyUrl,
+              server.baseUrl
+            ).toString();
+            const linkPreviewUrl = new URL(
+              BUILD_CONFIG.linkPreviewUrl,
+              server.baseUrl
+            ).toString();
             editor.host?.std.clipboard.use(
-              customImageProxyMiddleware(BUILD_CONFIG.imageProxyUrl)
+              customImageProxyMiddleware(imageProxyUrl)
             );
-            ImageBlockService.setImageProxyURL(BUILD_CONFIG.imageProxyUrl);
+            ImageBlockService.setImageProxyURL(imageProxyUrl);
 
-            // provide link preview endpoint to blocksuite
-            BookmarkBlockService.setLinkPreviewEndpoint(
-              BUILD_CONFIG.linkPreviewUrl
-            );
-            EmbedGithubBlockService.setLinkPreviewEndpoint(
-              BUILD_CONFIG.linkPreviewUrl
-            );
-            EmbedYoutubeBlockService.setLinkPreviewEndpoint(
-              BUILD_CONFIG.linkPreviewUrl
-            );
-            EmbedLoomBlockService.setLinkPreviewEndpoint(
-              BUILD_CONFIG.linkPreviewUrl
-            );
+            editor.host?.doc
+              .get(LinkPreviewerService)
+              .setEndpoint(linkPreviewUrl);
 
             return editor.host?.updateComplete;
           })
@@ -104,7 +103,7 @@ const BlockSuiteEditorImpl = ({
         disposableGroup.dispose();
       };
     },
-    [onEditorReady, page]
+    [onEditorReady, page, server]
   );
 
   return (

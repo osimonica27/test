@@ -18,7 +18,7 @@ import { query, state } from 'lit/decorators.js';
 import { html } from 'lit/static-html.js';
 
 import { HostContextKey } from '../../context/host-context.js';
-import { linkColumnModelConfig } from './define.js';
+import { linkPropertyModelConfig } from './define.js';
 
 export class LinkCell extends BaseCellRenderer<string> {
   static override styles = css`
@@ -119,9 +119,10 @@ export class LinkCell extends BaseCellRenderer<string> {
       return;
     }
 
-    std
-      .getOptional(RefNodeSlotsProvider)
-      ?.docLinkClicked.emit({ pageId: this.docId });
+    std.getOptional(RefNodeSlotsProvider)?.docLinkClicked.emit({
+      pageId: this.docId,
+      host: std.host,
+    });
   };
 
   get std() {
@@ -247,7 +248,7 @@ export class LinkCellEditing extends BaseCellRenderer<string> {
   private accessor _container!: HTMLInputElement;
 }
 
-export const linkColumnConfig = linkColumnModelConfig.createPropertyMeta({
+export const linkColumnConfig = linkPropertyModelConfig.createPropertyMeta({
   icon: createIcon('LinkIcon'),
   cellRenderer: {
     view: createFromBaseCellRenderer(LinkCell),

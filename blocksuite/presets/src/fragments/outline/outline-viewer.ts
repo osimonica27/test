@@ -1,14 +1,20 @@
-import { PropTypes, requiredProperties } from '@blocksuite/block-std';
+import {
+  PropTypes,
+  requiredProperties,
+  ShadowlessElement,
+} from '@blocksuite/block-std';
 import { NoteDisplayMode, scrollbarStyle } from '@blocksuite/blocks';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { TocIcon } from '@blocksuite/icons/lit';
+import { provide } from '@lit/context';
 import { signal } from '@preact/signals-core';
-import { css, html, LitElement, nothing } from 'lit';
+import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import type { AffineEditorContainer } from '../../editors/editor-container.js';
-import { TocIcon } from '../_common/icons.js';
+import { type TocContext, tocContext } from './config.js';
 import { getHeadingBlocksFromDoc } from './utils/query.js';
 import {
   observeActiveHeadingDuringScroll,
@@ -20,9 +26,11 @@ export const AFFINE_OUTLINE_VIEWER = 'affine-outline-viewer';
 @requiredProperties({
   editor: PropTypes.object,
 })
-export class OutlineViewer extends SignalWatcher(WithDisposable(LitElement)) {
+export class OutlineViewer extends SignalWatcher(
+  WithDisposable(ShadowlessElement)
+) {
   static override styles = css`
-    :host {
+    affine-outline-viewer {
       display: flex;
     }
     .outline-viewer-root {
@@ -117,9 +125,7 @@ export class OutlineViewer extends SignalWatcher(WithDisposable(LitElement)) {
     }
 
     .outline-viewer-item {
-      display: flex;
-      align-items: center;
-      align-self: stretch;
+      width: 100%;
     }
 
     .outline-viewer-root:hover {
@@ -170,6 +176,15 @@ export class OutlineViewer extends SignalWatcher(WithDisposable(LitElement)) {
     }
   }
 
+  private _setContext() {
+    this._context = {
+      editor$: signal(this.editor),
+      showIcons$: signal<boolean>(false),
+      enableSorting$: signal<boolean>(false),
+      fitPadding$: signal<number[]>([]),
+    };
+  }
+
   override connectedCallback() {
     super.connectedCallback();
 
@@ -182,6 +197,20 @@ export class OutlineViewer extends SignalWatcher(WithDisposable(LitElement)) {
         }
       )
     );
+
+    this.disposables.add(
+      this.editor.doc.workspace.meta.docMetaUpdated.on(() => {
+        this.requestUpdate();
+      })
+    );
+
+    this._setContext();
+  }
+
+  override willUpdate(changedProperties: PropertyValues<this>): void {
+    if (changedProperties.has('editor')) {
+      this._context.editor$.value = this.editor;
+    }
   }
 
   override disconnectedCallback() {
@@ -215,7 +244,7 @@ export class OutlineViewer extends SignalWatcher(WithDisposable(LitElement)) {
             @click=${this._toggleOutlinePanel}
             data-testid="toggle-outline-panel-button"
           >
-            ${TocIcon}
+            ${TocIcon({ width: '1em', height: '1em' })}
           </edgeless-tool-icon-button>`
         : nothing;
 
@@ -268,6 +297,9 @@ export class OutlineViewer extends SignalWatcher(WithDisposable(LitElement)) {
       </div>
     `;
   }
+
+  @provide({ context: tocContext })
+  private accessor _context!: TocContext;
 
   @query('.outline-viewer-item.active')
   private accessor _activeItem: HTMLElement | null = null;

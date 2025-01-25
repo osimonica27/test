@@ -81,10 +81,21 @@ const openChat = async (page: Page) => {
   await page.getByTestId('sidebar-tab-chat').click();
 };
 
-const makeChat = async (page: Page, content: string) => {
-  await openChat(page);
+const typeChat = async (page: Page, content: string) => {
   await page.getByTestId('chat-panel-input').focus();
   await page.keyboard.type(content);
+};
+
+const typeChatSequentially = async (page: Page, content: string) => {
+  const input = await page.locator('chat-panel-input textarea').nth(0);
+  await input.pressSequentially(content, {
+    delay: 50,
+  });
+};
+
+const makeChat = async (page: Page, content: string) => {
+  await openChat(page);
+  await typeChat(page, content);
   await page.keyboard.press('Enter');
 };
 
@@ -153,8 +164,8 @@ test('can trigger login at chat side panel', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await makeChat(page, 'hello');
-  const loginTips = await page.waitForSelector('ai-error-wrapper');
-  expect(await loginTips.innerText()).toBe('Login');
+  const loginButton = await page.getByTestId('ai-error-action-button');
+  expect(await loginButton.innerText()).toBe('Login');
 });
 
 test('can chat after login at chat side panel', async ({ page }) => {
@@ -162,8 +173,8 @@ test('can chat after login at chat side panel', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await makeChat(page, 'hello');
-  const loginTips = await page.waitForSelector('ai-error-wrapper');
-  (await loginTips.$('div'))!.click();
+  const loginButton = await page.getByTestId('ai-error-action-button');
+  await loginButton.click();
   // login
   const user = await getUser();
   await loginUserDirectly(page, user);
@@ -192,6 +203,30 @@ test.describe('chat panel', () => {
     await createLocalWorkspace({ name: 'test' }, page);
     await clickNewPageButton(page);
     await makeChat(page, 'hello');
+    const history = await collectChat(page);
+    expect(history[0]).toEqual({ name: 'You', content: 'hello' });
+    expect(history[1].name).toBe('AFFiNE AI');
+    await clearChat(page);
+    expect((await collectChat(page)).length).toBe(0);
+  });
+
+  test('chat send button', async ({ page }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await clickNewPageButton(page);
+    const sendButton = await page.getByTestId('chat-panel-send');
+    await openChat(page);
+    // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
+    expect(await sendButton.getAttribute('aria-disabled')).toBe('true');
+    await typeChat(page, 'hello');
+    // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
+    expect(await sendButton.getAttribute('aria-disabled')).toBe('false');
+    await sendButton.click();
+    // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
+    expect(await sendButton.getAttribute('aria-disabled')).toBe('true');
+
     const history = await collectChat(page);
     expect(history[0]).toEqual({ name: 'You', content: 'hello' });
     expect(history[1].name).toBe('AFFiNE AI');
@@ -371,28 +406,41 @@ test.describe('chat panel', () => {
     await page.getByTestId('modal-close-button').click();
     await openChat(page);
     await page.getByTestId('chat-network-search').click();
-    await makeChat(page, 'hello');
+    await typeChatSequentially(page, 'What is the weather in Shanghai today?');
+    await page.keyboard.press('Enter');
     let history = await collectChat(page);
     expect(history[0]).toEqual({
       name: 'You',
-      content: 'hello',
+      content: 'What is the weather in Shanghai today?',
     });
     expect(history[1].name).toBe('AFFiNE AI');
     expect(
-      await page.locator('chat-panel affine-link').count()
+      await page.locator('chat-panel affine-footnote-node').count()
     ).toBeGreaterThan(0);
 
     await clearChat(page);
     expect((await collectChat(page)).length).toBe(0);
     await page.getByTestId('chat-network-search').click();
-    await makeChat(page, 'hello');
+    await typeChatSequentially(page, 'What is the weather in Shanghai today?');
+    await page.keyboard.press('Enter');
     history = await collectChat(page);
     expect(history[0]).toEqual({
       name: 'You',
-      content: 'hello',
+      content: 'What is the weather in Shanghai today?',
     });
     expect(history[1].name).toBe('AFFiNE AI');
-    expect(await page.locator('chat-panel affine-link').count()).toBe(0);
+    expect(await page.locator('chat-panel affine-footnote-node').count()).toBe(
+      0
+    );
+  });
+
+  test('can trigger inline ai input and action panel by clicking Start with AI button', async ({
+    page,
+  }) => {
+    await clickNewPageButton(page);
+    await page.getByTestId('start-with-ai-badge').click();
+    await expect(page.locator('affine-ai-panel-widget')).toBeVisible();
+    await expect(page.locator('ask-ai-panel')).toBeVisible();
   });
 });
 
@@ -674,5 +722,69 @@ test.describe('chat with block', () => {
         });
       }
     });
+  });
+});
+
+test.describe('chat with doc', () => {
+  let user: {
+    email: string;
+    password: string;
+  };
+
+  test.beforeEach(async ({ page }) => {
+    user = await getUser();
+    await loginUser(page, user);
+  });
+
+  test('can chat with current doc', async ({ page }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await clickNewPageButton(page);
+
+    await openChat(page);
+    const chipTitle = await page.getByTestId('chat-panel-chip-title');
+    expect(await chipTitle.textContent()).toBe('Untitled');
+
+    const editorTitle = await page.locator('doc-title .inline-editor').nth(0);
+    await editorTitle.pressSequentially('AFFiNE AI', {
+      delay: 50,
+    });
+    await page.keyboard.press('Enter', { delay: 50 });
+    // Wait for the editor to be ready and focused
+    await page.waitForSelector('page-editor affine-paragraph .inline-editor');
+    const richText = await page
+      .locator('page-editor affine-paragraph .inline-editor')
+      .nth(0);
+    await richText.click(); // Ensure proper focus
+    await page.keyboard.type(
+      'AFFiNE AI is an assistant with the ability to create well-structured outlines for any given content.',
+      {
+        delay: 50,
+      }
+    );
+
+    expect(await chipTitle.textContent()).toBe('AFFiNE AI');
+    const chip = await page.getByTestId('chat-panel-chip');
+    // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
+    expect(await chip.getAttribute('data-state')).toBe('candidate');
+    await chip.click();
+    // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
+    expect(await chip.getAttribute('data-state')).toBe('success');
+
+    await typeChatSequentially(page, 'What is AFFiNE AI?');
+    await page.keyboard.press('Enter');
+    const history = await collectChat(page);
+    expect(history[0]).toEqual({
+      name: 'You',
+      content: 'What is AFFiNE AI?',
+    });
+    expect(history[1].name).toBe('AFFiNE AI');
+    expect(
+      await page.locator('chat-panel affine-footnote-node').count()
+    ).toBeGreaterThan(0);
+    await clearChat(page);
+    expect((await collectChat(page)).length).toBe(0);
   });
 });

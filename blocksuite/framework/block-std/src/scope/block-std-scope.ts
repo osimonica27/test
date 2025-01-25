@@ -2,15 +2,16 @@ import { Container, type ServiceProvider } from '@blocksuite/global/di';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import {
   type ExtensionType,
-  Job,
-  type JobMiddleware,
   type Store,
   StoreSelectionExtension,
+  Transformer,
+  type TransformerMiddleware,
 } from '@blocksuite/store';
 
 import { Clipboard } from '../clipboard/index.js';
 import { CommandManager } from '../command/index.js';
 import { UIEventDispatcher } from '../event/index.js';
+import { DndController } from '../extension/dnd/index.js';
 import type { BlockService } from '../extension/index.js';
 import { GfxController } from '../gfx/controller.js';
 import { GfxSelectionManager } from '../gfx/selection.js';
@@ -44,6 +45,7 @@ const internalExtensions = [
   GfxSelectionManager,
   SurfaceMiddlewareExtension,
   ViewManager,
+  DndController,
 ];
 
 export class BlockStdScope {
@@ -61,6 +63,10 @@ export class BlockStdScope {
 
   private get _lifeCycleWatchers() {
     return this.provider.getAll(LifeCycleWatcherIdentifier);
+  }
+
+  get dnd() {
+    return this.get(DndController);
   }
 
   get clipboard() {
@@ -161,8 +167,8 @@ export class BlockStdScope {
     return this.getOptional(BlockViewIdentifier(flavour));
   }
 
-  getJob(middlewares: JobMiddleware[] = []) {
-    return new Job({
+  getTransformer(middlewares: TransformerMiddleware[] = []) {
+    return new Transformer({
       schema: this.workspace.schema,
       blobCRUD: this.workspace.blobSync,
       docCRUD: {
