@@ -1,0 +1,86 @@
+{
+  "type": "page",
+  "meta": {
+    "id": "ArQikchA-L",
+    "title": "FrameDoc",
+    "createDate": 1737997265443,
+    "tags": []
+  },
+  "blocks": {
+    "type": "block",
+    "id": "qq7mI8nDLZ",
+    "flavour": "affine:page",
+    "version": 2,
+    "props": {
+      "title": {
+        "$blocksuite:internal:text$": true,
+        "delta": [
+          {
+            "insert": "FrameDoc"
+          }
+        ]
+      }
+    },
+    "children": [
+      {
+        "type": "block",
+        "id": "6rh1ghlYSo",
+        "flavour": "affine:surface",
+        "version": 5,
+        "props": {
+          "elements": {}
+        },
+        "children": [
+          {
+            "type": "block",
+            "id": "yCrarAaUqW",
+            "flavour": "affine:frame",
+            "version": 1,
+            "props": {
+              "title": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Frame1"
+                  }
+                ]
+              },
+              "background": "transparent",
+              "xywh": "[-36.618320239403886,-43.02477852444463,532.468488236992,205.78063789944463]",
+              "index": "a3",
+              "childElementIds": {
+                "SQi7VaLNb8": true
+              },
+              "presentationIndex": "a004uIjqqu985M8JGnXKGPW2dwa7u69rSbw",
+              "lockedBySelf": false
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "SQi7VaLNb8",
+            "flavour": "affine:frame",
+            "version": 1,
+            "props": {
+              "title": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Frame2"
+                  }
+                ]
+              },
+              "index": "a4",
+              "presentationIndex": "a10GuoRJBEkSB8jqIxcQwO2hrujfAkhek8m",
+              "lockedBySelf": false,
+              "background": "transparent",
+              "xywh": "[60.759284076779295,-11.016554724217983,336.97560870618815,117.92243767863903]",
+              "childElementIds": {}
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}
