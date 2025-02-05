@@ -2,10 +2,19 @@ import { type AffineEditorContainer } from '@blocksuite/presets';
 
 import { CanvasRenderer } from './canvas-renderer.js';
 import { editor } from './editor.js';
-import type { SectionLayout } from './types.js';
+import type { Rect, SectionLayout } from './types.js';
 
 async function wait(time: number = 100) {
   return new Promise(resolve => setTimeout(resolve, time));
+}
+
+function domRectToRect(domRect: DOMRect): Rect {
+  return {
+    x: domRect.x,
+    y: domRect.y,
+    w: domRect.width,
+    h: domRect.height,
+  };
 }
 
 export class SwitchModeAnimator {
@@ -36,8 +45,8 @@ export class SwitchModeAnimator {
     await this.animate(
       beginLayout.section,
       endLayout.section,
-      beginLayout.hostRect,
-      endLayout.hostRect
+      domRectToRect(beginLayout.hostRect),
+      domRectToRect(endLayout.hostRect)
     );
     this.overlay.style.display = 'none';
   }
@@ -45,8 +54,8 @@ export class SwitchModeAnimator {
   async animate(
     beginSection: SectionLayout,
     endSection: SectionLayout,
-    beginHostRect: DOMRect,
-    endHostRect: DOMRect
+    beginHostRect: Rect,
+    endHostRect: Rect
   ): Promise<void> {
     return new Promise(resolve => {
       const duration = 600;

@@ -1,3 +1,10 @@
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface SentenceLayout {
   text: string;
   rects: TextRect[];
@@ -9,16 +16,11 @@ export interface ParagraphLayout {
 }
 
 export interface TextRect {
-  rect: DOMRect;
+  rect: Rect;
   text: string;
 }
 
 export interface SectionLayout {
   paragraphs: ParagraphLayout[];
-  rect: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
+  rect: Rect;
 }

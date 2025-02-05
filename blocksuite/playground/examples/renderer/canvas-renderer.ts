@@ -2,7 +2,11 @@ import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 
 import { getSentenceRects, segmentSentences } from './text-utils.js';
-import { type ParagraphLayout, type SectionLayout } from './types.js';
+import {
+  type ParagraphLayout,
+  type Rect,
+  type SectionLayout,
+} from './types.js';
 
 export class CanvasRenderer {
   private readonly worker: Worker;
@@ -60,8 +64,8 @@ export class CanvasRenderer {
         rects.forEach(({ rect }) => {
           sectionMinX = Math.min(sectionMinX, rect.x);
           sectionMinY = Math.min(sectionMinY, rect.y);
-          sectionMaxX = Math.max(sectionMaxX, rect.x + rect.width);
-          sectionMaxY = Math.max(sectionMaxY, rect.y + rect.height);
+          sectionMaxX = Math.max(sectionMaxX, rect.x + rect.w);
+          sectionMaxY = Math.max(sectionMaxY, rect.y + rect.h);
         });
         return {
           text: sentence,
@@ -80,8 +84,8 @@ export class CanvasRenderer {
       rect: {
         x: sectionMinX,
         y: sectionMinY,
-        width: sectionMaxX - sectionMinX,
-        height: sectionMaxY - sectionMinY,
+        w: sectionMaxX - sectionMinX,
+        h: sectionMaxY - sectionMinY,
       },
     };
 
@@ -90,7 +94,7 @@ export class CanvasRenderer {
 
   public async render(toScreen = true): Promise<void> {
     const { section, editorContainerRect } = this.hostLayout;
-    this.initWorkerSize(section.rect.width, section.rect.height);
+    this.initWorkerSize(section.rect.w, section.rect.h);
 
     return new Promise(resolve => {
       if (!this.worker) return;
@@ -118,8 +122,8 @@ export class CanvasRenderer {
 
           const ctx = this.canvas.getContext('2d');
           const bitmapCanvas = new OffscreenCanvas(
-            section.rect.width * window.devicePixelRatio,
-            section.rect.height * window.devicePixelRatio
+            section.rect.w * window.devicePixelRatio,
+            section.rect.h * window.devicePixelRatio
           );
           const bitmapCtx = bitmapCanvas.getContext('bitmaprenderer');
           bitmapCtx?.transferFromImageBitmap(bitmap);
@@ -133,8 +137,8 @@ export class CanvasRenderer {
             bitmapCanvas,
             (section.rect.x - editorContainerRect.x) * window.devicePixelRatio,
             (section.rect.y - editorContainerRect.y) * window.devicePixelRatio,
-            section.rect.width * window.devicePixelRatio,
-            section.rect.height * window.devicePixelRatio
+            section.rect.w * window.devicePixelRatio,
+            section.rect.h * window.devicePixelRatio
           );
 
           resolve();
@@ -146,8 +150,8 @@ export class CanvasRenderer {
   public renderTransitionFrame(
     beginSection: SectionLayout,
     endSection: SectionLayout,
-    beginHostRect: DOMRect,
-    endHostRect: DOMRect,
+    beginHostRect: Rect,
+    endHostRect: Rect,
     progress: number
   ) {
     const editorContainerRect = this.editorContainer.getBoundingClientRect();
@@ -161,7 +165,7 @@ export class CanvasRenderer {
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
 
-    const getParagraphRect = (paragraph: ParagraphLayout): DOMRect => {
+    const getParagraphRect = (paragraph: ParagraphLayout): Rect => {
       let minX = Infinity;
       let minY = Infinity;
       let maxX = -Infinity;
@@ -170,26 +174,27 @@ export class CanvasRenderer {
         sentence.rects.forEach(({ rect }) => {
           minX = Math.min(minX, rect.x);
           minY = Math.min(minY, rect.y);
-          maxX = Math.max(maxX, rect.x + rect.width);
-          maxY = Math.max(maxY, rect.y + rect.height);
+          maxX = Math.max(maxX, rect.x + rect.w);
+          maxY = Math.max(maxY, rect.y + rect.h);
         });
       });
 
-      return new DOMRect(minX, minY, maxX - minX, maxY - minY);
+      return {
+        x: minX,
+        y: minY,
+        w: maxX - minX,
+        h: maxY - minY,
+      };
     };
 
     // Helper function to interpolate between two rects
-    const interpolateRect = (
-      rect1: DOMRect,
-      rect2: DOMRect,
-      t: number
-    ): DOMRect => {
-      return new DOMRect(
-        rect1.x + (rect2.x - rect1.x) * t,
-        rect1.y + (rect2.y - rect1.y) * t,
-        rect1.width + (rect2.width - rect1.width) * t,
-        rect1.height + (rect2.height - rect1.height) * t
-      );
+    const interpolateRect = (rect1: Rect, rect2: Rect, t: number): Rect => {
+      return {
+        x: rect1.x + (rect2.x - rect1.x) * t,
+        y: rect1.y + (rect2.y - rect1.y) * t,
+        w: rect1.w + (rect2.w - rect1.w) * t,
+        h: rect1.h + (rect2.h - rect1.h) * t,
+      };
     };
 
     // Draw host rect
@@ -203,8 +208,8 @@ export class CanvasRenderer {
     ctx.strokeRect(
       currentHostRect.x - editorContainerRect.x,
       currentHostRect.y - editorContainerRect.y,
-      currentHostRect.width,
-      currentHostRect.height
+      currentHostRect.w,
+      currentHostRect.h
     );
 
     // Draw paragraph rects
@@ -232,8 +237,8 @@ export class CanvasRenderer {
       ctx.fillRect(
         currentRect.x - editorContainerRect.x,
         currentRect.y - editorContainerRect.y,
-        currentRect.width,
-        currentRect.height
+        currentRect.w,
+        currentRect.h
       );
     }
 

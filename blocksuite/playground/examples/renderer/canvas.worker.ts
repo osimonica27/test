@@ -54,14 +54,14 @@ class CanvasWorkerManager {
       paragraph.sentences.forEach(sentence => {
         ctx.strokeStyle = 'yellow';
         sentence.rects.forEach(textRect => {
-          const x = textRect.rect.left - section.rect.x;
-          const y = textRect.rect.top - section.rect.y;
+          const x = textRect.rect.x - section.rect.x;
+          const y = textRect.rect.y - section.rect.y;
 
           const posKey = `${x},${y}`;
           // Only render if we haven't rendered at this position before
           if (renderedPositions.has(posKey)) return;
 
-          ctx.strokeRect(x, y, textRect.rect.width, textRect.rect.height);
+          ctx.strokeRect(x, y, textRect.rect.w, textRect.rect.h);
           ctx.fillStyle = 'black';
           ctx.fillText(textRect.text, x, y + baselineY);
 

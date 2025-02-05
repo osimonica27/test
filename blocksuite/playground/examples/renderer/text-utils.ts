@@ -23,8 +23,14 @@ function getRangeRects(range: Range, fullText: string): TextRect[] {
 
   // If there's only one rect, use the full text
   if (rects.length === 1) {
+    const rect = rects[0];
     textRects.push({
-      rect: rects[0],
+      rect: {
+        x: rect.x,
+        y: rect.y,
+        w: rect.width,
+        h: rect.height,
+      },
       text: fullText,
     });
     return textRects;
@@ -60,8 +66,14 @@ function getRangeRects(range: Range, fullText: string): TextRect[] {
       currentSegments.length > 0 &&
       !isPunctuation // If it's punctuation, try merging with the previous word first
     ) {
+      const rect = rects[currentRect];
       textRects.push({
-        rect: rects[currentRect],
+        rect: {
+          x: rect.x,
+          y: rect.y,
+          w: rect.width,
+          h: rect.height,
+        },
         text: currentSegments.map(seg => seg.text).join(''),
       });
 
@@ -76,8 +88,14 @@ function getRangeRects(range: Range, fullText: string): TextRect[] {
 
   // Handle remaining segments if any
   if (currentSegments.length > 0 && currentRect < rects.length) {
+    const rect = rects[currentRect];
     textRects.push({
-      rect: rects[currentRect],
+      rect: {
+        x: rect.x,
+        y: rect.y,
+        w: rect.width,
+        h: rect.height,
+      },
       text: currentSegments.map(seg => seg.text).join(''),
     });
   }
