@@ -2,6 +2,17 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AddContextDocInput {
+  contextId: String!
+  docId: String!
+}
+
+input AddContextFileInput {
+  blobId: String!
+  contextId: String!
+  fileName: String!
+}
+
 type AlreadyInSpaceDataType {
   spaceId: String!
 }
@@ -25,17 +36,90 @@ type ChatMessage {
   role: String!
 }
 
+enum ContextFileStatus {
+  failed
+  finished
+  processing
+}
+
+type ContextMatchedDocChunk {
+  chunk: SafeInt!
+  content: String!
+  distance: Float
+  docId: String!
+}
+
+type ContextMatchedFileChunk {
+  chunk: SafeInt!
+  content: String!
+  distance: Float
+  fileId: String!
+}
+
+type ContextWorkspaceEmbeddingStatus {
+  embedded: SafeInt!
+  total: SafeInt!
+}
+
 type Copilot {
   """Get the session list of actions in the workspace"""
   actions: [String!]!
 
   """Get the session list of chats in the workspace"""
   chats: [String!]!
+
+  """Get the context list of a session"""
+  contexts(contextId: String, sessionId: String!): [CopilotContext!]!
   histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]!
 
   """Get the quota of the user in the workspace"""
   quota: CopilotQuota!
   workspaceId: ID
+}
+
+type CopilotContext {
+  createdAt: SafeInt!
+
+  """list files in context"""
+  docs: [CopilotContextDoc!]!
+
+  """list files in context"""
+  files: [CopilotContextFile!]!
+  id: ID!
+}
+
+type CopilotContextDoc {
+  createdAt: SafeInt!
+  id: ID!
+}
+
+type CopilotContextFile {
+  blobId: String!
+  chunk_size: SafeInt!
+  createdAt: SafeInt!
+  id: ID!
+  name: String!
+  status: ContextFileStatus!
+}
+
+type CopilotContextListItem {
+  blobId: String
+  chunk_size: SafeInt
+  createdAt: SafeInt!
+  id: ID!
+  name: String
+  status: ContextFileStatus
+}
+
+type CopilotFailedToMatchContextDataType {
+  content: String!
+  contextId: String!
+  message: String!
+}
+
+type CopilotFailedToModifyContextDataType {
+  contextId: String!
+  message: String!
 }
 
 type CopilotHistories {
@@ -47,6 +131,10 @@ type CopilotHistories {
 
   """The number of tokens used in the session"""
   tokens: Int!
+}
+
+type CopilotInvalidContextDataType {
+  contextId: String!
 }
 
 type CopilotMessageNotFoundDataType {
@@ -244,7 +332,7 @@ type EditorType {
   name: String!
 }
 
-union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocAccessDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidLicenseUpdateParamsDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MemberNotFoundInSpaceDataType | MissingOauthQueryParameterDataType | NotInSpaceDataType | QueryTooLongDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedSubscriptionPlanDataType | VersionRejectedDataType | WorkspaceMembersExceedLimitToDowngradeDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
+union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CopilotFailedToMatchContextDataType | CopilotFailedToModifyContextDataType | CopilotInvalidContextDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocAccessDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidLicenseUpdateParamsDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MemberNotFoundInSpaceDataType | MissingOauthQueryParameterDataType | NotInSpaceDataType | QueryTooLongDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedSubscriptionPlanDataType | VersionRejectedDataType | WorkspaceMembersExceedLimitToDowngradeDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
 
 enum ErrorNames {
   ACCESS_DENIED
@@ -262,6 +350,9 @@ enum ErrorNames {
   COPILOT_ACTION_TAKEN
   COPILOT_FAILED_TO_CREATE_MESSAGE
   COPILOT_FAILED_TO_GENERATE_TEXT
+  COPILOT_FAILED_TO_MATCH_CONTEXT
+  COPILOT_FAILED_TO_MODIFY_CONTEXT
+  COPILOT_INVALID_CONTEXT
   COPILOT_MESSAGE_NOT_FOUND
   COPILOT_PROMPT_INVALID
   COPILOT_PROMPT_NOT_FOUND
@@ -574,6 +665,12 @@ type MissingOauthQueryParameterDataType {
 type Mutation {
   acceptInviteById(inviteId: String!, sendAcceptMail: Boolean, workspaceId: String!): Boolean!
   activateLicense(license: String!, workspaceId: String!): License!
+
+  """add a doc to context"""
+  addContextDoc(options: AddContextDocInput!): [CopilotContextListItem!]!
+
+  """add a file to context"""
+  addContextFile(content: Upload!, options: AddContextFileInput!): [CopilotContextListItem!]!
   addWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Boolean!
   approveMember(userId: String!, workspaceId: String!): String!
   cancelSubscription(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, workspaceId: String): SubscriptionType!
@@ -588,6 +685,9 @@ type Mutation {
 
   """Create a subscription checkout link of stripe"""
   createCheckoutSession(input: CreateCheckoutSessionInput!): String!
+
+  """Create a context session"""
+  createCopilotContext(sessionId: String!, workspaceId: String!): String!
 
   """Create a chat message"""
   createCopilotMessage(options: CreateChatMessageInput!): String!
@@ -624,13 +724,28 @@ type Mutation {
   invite(email: String!, permission: Permission @deprecated(reason: "never used"), sendInviteMail: Boolean, workspaceId: String!): String!
   inviteBatch(emails: [String!]!, sendInviteMail: Boolean, workspaceId: String!): [InviteResult!]!
   leaveWorkspace(sendLeaveMail: Boolean, workspaceId: String!, workspaceName: String @deprecated(reason: "no longer used")): Boolean!
+
+  """remove a file from context"""
+  matchContext(content: String!, contextId: String!, limit: SafeInt): [ContextMatchedFileChunk!]!
+
+  """match workspace doc"""
+  matchWorkspaceContext(content: String!, contextId: String!, limit: SafeInt): ContextMatchedDocChunk!
   publishDoc(docId: String!, mode: PublicDocMode = Page, workspaceId: String!): DocType!
   publishPage(mode: PublicDocMode = Page, pageId: String!, workspaceId: String!): DocType! @deprecated(reason: "use publishDoc instead")
+
+  """queue workspace doc embedding"""
+  queueWorkspaceEmbedding(docId: [String!]!, workspaceId: String!): Boolean!
   recoverDoc(guid: String!, timestamp: DateTime!, workspaceId: String!): DateTime!
   releaseDeletedBlobs(workspaceId: String!): Boolean!
 
   """Remove user avatar"""
   removeAvatar: RemoveAvatar!
+
+  """remove a doc from context"""
+  removeContextDoc(options: RemoveContextFileInput!): Boolean!
+
+  """remove a file from context"""
+  removeContextFile(options: RemoveContextFileInput!): Boolean!
   removeWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Boolean!
   resumeSubscription(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, workspaceId: String): SubscriptionType!
   revoke(userId: String!, workspaceId: String!): Boolean!
@@ -758,6 +873,9 @@ type Query {
   listCopilotPrompts: [CopilotPromptType!]!
   prices: [SubscriptionPrice!]!
 
+  """query workspace embedding status"""
+  queryWorkspaceEmbeddingStatus(workspaceId: String!): ContextWorkspaceEmbeddingStatus!
+
   """server config"""
   serverConfig: ServerConfigType!
 
@@ -806,6 +924,11 @@ type QueryTooLongDataType {
 
 type RemoveAvatar {
   success: Boolean!
+}
+
+input RemoveContextFileInput {
+  contextId: String!
+  fileId: String!
 }
 
 input RevokeDocUserRoleInput {

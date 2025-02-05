@@ -238,6 +238,283 @@ export async function forkCopilotSession(
   return res.body.data.forkCopilotSession;
 }
 
+export async function createCopilotContext(
+  app: INestApplication,
+  userToken: string,
+  workspaceId: string,
+  sessionId: string
+): Promise<string> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+        mutation {
+          createCopilotContext(workspaceId: "${workspaceId}", sessionId: "${sessionId}")
+        }
+      `,
+    })
+    .expect(200);
+
+  handleGraphQLError(res);
+
+  return res.body.data.createCopilotContext;
+}
+
+export async function matchContext(
+  app: INestApplication,
+  userToken: string,
+  contextId: string,
+  content: string,
+  limit: number
+): Promise<
+  | {
+      fileId: string;
+      chunk: number;
+      content: string;
+      distance: number | null;
+    }[]
+  | undefined
+> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+        mutation matchContext($content: String!, $contextId: String!, $limit: SafeInt) {
+          matchContext(content: $content, contextId: $contextId, limit: $limit) {
+            fileId
+            chunk
+            content
+            distance
+          }
+        }
+      `,
+      variables: { contextId, content, limit },
+    })
+    .expect(200);
+
+  handleGraphQLError(res);
+
+  return res.body.data.matchContext;
+}
+
+export async function listContext(
+  app: INestApplication,
+  userToken: string,
+  workspaceId: string,
+  sessionId: string
+): Promise<
+  {
+    id: string;
+    createdAt: number;
+  }[]
+> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+        query {
+          currentUser {
+            copilot(workspaceId: "${workspaceId}") {
+              contexts(sessionId: "${sessionId}") {
+                id
+                createdAt
+              }
+            }
+          }
+        }
+      `,
+    })
+    .expect(200);
+
+  handleGraphQLError(res);
+
+  return res.body.data.currentUser?.copilot?.contexts;
+}
+
+export async function addContextFile(
+  app: INestApplication,
+  userToken: string,
+  contextId: string,
+  blobId: string,
+  fileName: string,
+  content: Buffer
+): Promise<{ id: string }[]> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .field(
+      'operations',
+      JSON.stringify({
+        query: `
+          mutation addContextFile($options: AddContextFileInput!, $content: Upload!) {
+            addContextFile(content: $content, options: $options) {
+              id
+            }
+          }
+        `,
+        variables: {
+          content: null,
+          options: { contextId, blobId, fileName },
+        },
+      })
+    )
+    .field('map', JSON.stringify({ '0': ['variables.content'] }))
+    .attach('0', content, {
+      filename: fileName,
+      contentType: 'application/octet-stream',
+    })
+    .expect(200);
+
+  handleGraphQLError(res);
+
+  return res.body.data.addContextFile;
+}
+
+export async function removeContextFile(
+  app: INestApplication,
+  userToken: string,
+  contextId: string,
+  fileId: string
+): Promise<string> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+        mutation removeContextFile($options: RemoveContextFileInput!) {
+          removeContextFile(options: $options)
+        }
+      `,
+      variables: { options: { contextId, fileId } },
+    })
+    .expect(200);
+
+  handleGraphQLError(res);
+
+  return res.body.data.removeContextFile;
+}
+
+export async function addContextDoc(
+  app: INestApplication,
+  userToken: string,
+  contextId: string,
+  docId: string
+): Promise<{ id: string }[]> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+          mutation addContextDoc($options: AddContextDocInput!) {
+            addContextDoc(options: $options) {
+              id
+            }
+          }
+        `,
+      variables: { options: { contextId, docId } },
+    })
+    .expect(200);
+
+  handleGraphQLError(res);
+
+  return res.body.data.addContextDoc;
+}
+
+export async function removeContextDoc(
+  app: INestApplication,
+  userToken: string,
+  contextId: string,
+  docId: string
+): Promise<string> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+        mutation removeContextDoc($options: RemoveContextFileInput!) {
+          removeContextDoc(options: $options)
+        }
+      `,
+      variables: { options: { contextId, docId } },
+    })
+    .expect(200);
+
+  handleGraphQLError(res);
+
+  return res.body.data.removeContextDoc;
+}
+
+export async function listContextFiles(
+  app: INestApplication,
+  userToken: string,
+  workspaceId: string,
+  sessionId: string,
+  contextId: string
+): Promise<
+  | {
+      docs: {
+        id: string;
+        createdAt: number;
+      }[];
+      files: {
+        id: string;
+        name: string;
+        blobId: string;
+        chunk_size: number;
+        status: string;
+        createdAt: number;
+      }[];
+    }
+  | undefined
+> {
+  const res = await request(app.getHttpServer())
+    .post(gql)
+    .auth(userToken, { type: 'bearer' })
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+        query {
+          currentUser {
+            copilot(workspaceId: "${workspaceId}") {
+              contexts(sessionId: "${sessionId}", contextId: "${contextId}") {
+                docs {
+                  id
+                  createdAt
+                }
+                files {
+                  id
+                  name
+                  blobId
+                  chunk_size
+                  status
+                  createdAt
+                }
+              }
+            }
+          }
+        }
+      `,
+    })
+    .expect(200);
+
+  handleGraphQLError(res);
+
+  const { docs, files } =
+    res.body.data.currentUser?.copilot?.contexts?.[0] || {};
+
+  return { docs, files };
+}
+
 export async function createCopilotMessage(
   app: INestApplication,
   userToken: string,
