@@ -1,5 +1,4 @@
 mod docx;
-mod error;
 mod html;
 mod pdf;
 mod source;
@@ -24,7 +23,6 @@ pub trait Loader: Send + Sync {
 }
 
 pub use docx::DocxLoader;
-pub use error::{LoaderError, LoaderResult};
 pub use html::HtmlLoader;
 pub use pdf::PdfExtractLoader;
 pub use source::{get_language_by_filename, LanguageParserOptions, SourceCodeLoader};
