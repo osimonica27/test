@@ -5,6 +5,14 @@ export interface Rect {
   h: number;
 }
 
+// We can't use viewport instance here because it can't be reused in worker
+export interface ViewportState {
+  zoom: number;
+  viewScale: number;
+  viewportX: number;
+  viewportY: number;
+}
+
 export interface SentenceLayout {
   text: string;
   rects: TextRect[];
@@ -12,7 +20,7 @@ export interface SentenceLayout {
 
 export interface ParagraphLayout {
   sentences: SentenceLayout[];
-  scale: number;
+  zoom: number;
 }
 
 export interface TextRect {

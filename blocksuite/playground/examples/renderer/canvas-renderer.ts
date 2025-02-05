@@ -6,6 +6,7 @@ import {
   type ParagraphLayout,
   type Rect,
   type SectionLayout,
+  type ViewportState,
 } from './types.js';
 
 export class CanvasRenderer {
@@ -28,7 +29,19 @@ export class CanvasRenderer {
 
   private initWorkerSize(width: number, height: number) {
     const dpr = window.devicePixelRatio;
-    this.worker.postMessage({ type: 'init', data: { width, height, dpr } });
+    const viewport = this.editorContainer.std.get(
+      GfxControllerIdentifier
+    ).viewport;
+    const viewportState: ViewportState = {
+      zoom: viewport.zoom,
+      viewScale: viewport.viewScale,
+      viewportX: viewport.viewportX,
+      viewportY: viewport.viewportY,
+    };
+    this.worker.postMessage({
+      type: 'init',
+      data: { width, height, dpr, viewport: viewportState },
+    });
   }
 
   get hostRect() {
@@ -75,7 +88,7 @@ export class CanvasRenderer {
 
       return {
         sentences: sentenceLayouts,
-        scale: zoom,
+        zoom,
       };
     });
 

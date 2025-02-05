@@ -1,4 +1,23 @@
-import { type SectionLayout } from './types.js';
+import { type SectionLayout, type ViewportState } from './types.js';
+
+type WorkerMessageInit = {
+  type: 'init';
+  data: {
+    width: number;
+    height: number;
+    dpr: number;
+    viewport: ViewportState;
+  };
+};
+
+type WorkerMessageDraw = {
+  type: 'draw';
+  data: {
+    section: SectionLayout;
+  };
+};
+
+type WorkerMessage = WorkerMessageInit | WorkerMessageDraw;
 
 const meta = {
   emSize: 2048,
@@ -29,13 +48,24 @@ function getBaseline() {
 class CanvasWorkerManager {
   private canvas: OffscreenCanvas | null = null;
   private ctx: OffscreenCanvasRenderingContext2D | null = null;
+  private viewport: ViewportState | null = null;
 
-  init(width: number, height: number, dpr: number) {
+  init(width: number, height: number, dpr: number, viewport: ViewportState) {
     this.canvas = new OffscreenCanvas(width * dpr, height * dpr);
     this.ctx = this.canvas.getContext('2d')!;
     this.ctx.scale(dpr, dpr);
     this.ctx.fillStyle = 'lightgrey';
     this.ctx.fillRect(0, 0, width, height);
+    this.viewport = viewport;
+  }
+
+  toViewCoord(modelX: number, modelY: number): [number, number] {
+    if (!this.viewport) return [modelX, modelY];
+    const { viewportX, viewportY, zoom, viewScale } = this.viewport;
+    return [
+      (modelX - viewportX) * zoom * viewScale,
+      (modelY - viewportY) * zoom * viewScale,
+    ];
   }
 
   draw(section: SectionLayout) {
@@ -46,10 +76,10 @@ class CanvasWorkerManager {
     const renderedPositions = new Set<string>();
 
     section.paragraphs.forEach(paragraph => {
-      const scale = paragraph.scale ?? 1;
-      const fontSize = 15 * scale;
+      const zoom = paragraph.zoom ?? 1;
+      const fontSize = 15 * zoom;
       ctx.font = `${fontSize}px Inter`;
-      const baselineY = getBaseline() * scale;
+      const baselineY = getBaseline() * zoom;
 
       paragraph.sentences.forEach(sentence => {
         ctx.strokeStyle = 'yellow';
@@ -77,12 +107,12 @@ class CanvasWorkerManager {
 
 const manager = new CanvasWorkerManager();
 
-self.onmessage = async (e: MessageEvent) => {
+self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
   const { type, data } = e.data;
   switch (type) {
     case 'init': {
-      const { width, height, dpr } = data;
-      manager.init(width, height, dpr);
+      const { width, height, dpr, viewport } = data;
+      manager.init(width, height, dpr, viewport);
       break;
     }
     case 'draw': {
