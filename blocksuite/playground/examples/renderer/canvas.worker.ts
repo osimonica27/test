@@ -50,8 +50,15 @@ class CanvasWorkerManager {
   private ctx: OffscreenCanvasRenderingContext2D | null = null;
   private viewport: ViewportState | null = null;
 
-  init(width: number, height: number, dpr: number, viewport: ViewportState) {
-    this.canvas = new OffscreenCanvas(width * dpr, height * dpr);
+  init(
+    modelWidth: number,
+    modelHeight: number,
+    dpr: number,
+    viewport: ViewportState
+  ) {
+    const width = modelWidth * dpr * viewport.zoom;
+    const height = modelHeight * dpr * viewport.zoom;
+    this.canvas = new OffscreenCanvas(width, height);
     this.ctx = this.canvas.getContext('2d')!;
     this.ctx.scale(dpr, dpr);
     this.ctx.fillStyle = 'lightgrey';
@@ -59,27 +66,20 @@ class CanvasWorkerManager {
     this.viewport = viewport;
   }
 
-  toViewCoord(modelX: number, modelY: number): [number, number] {
-    if (!this.viewport) return [modelX, modelY];
-    const { viewportX, viewportY, zoom, viewScale } = this.viewport;
-    return [
-      (modelX - viewportX) * zoom * viewScale,
-      (modelY - viewportY) * zoom * viewScale,
-    ];
-  }
-
   draw(section: SectionLayout) {
     const { canvas, ctx } = this;
     if (!canvas || !ctx) return;
+
+    const zoom = this.viewport!.zoom;
+    ctx.scale(zoom, zoom);
 
     // Track rendered positions to avoid duplicate rendering across all paragraphs and sentences
     const renderedPositions = new Set<string>();
 
     section.paragraphs.forEach(paragraph => {
-      const zoom = paragraph.zoom ?? 1;
-      const fontSize = 15 * zoom;
+      const fontSize = 15;
       ctx.font = `${fontSize}px Inter`;
-      const baselineY = getBaseline() * zoom;
+      const baselineY = getBaseline();
 
       paragraph.sentences.forEach(sentence => {
         ctx.strokeStyle = 'yellow';

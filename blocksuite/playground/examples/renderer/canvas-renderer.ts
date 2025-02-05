@@ -44,12 +44,12 @@ export class CanvasRenderer {
     });
   }
 
-  get hostRect() {
-    return this.editorContainer.host!.getBoundingClientRect();
+  get viewport() {
+    return this.editorContainer.std.get(GfxControllerIdentifier).viewport;
   }
 
-  get hostZoom() {
-    return this.editorContainer.std.get(GfxControllerIdentifier).viewport.zoom;
+  get hostRect() {
+    return this.editorContainer.host!.getBoundingClientRect();
   }
 
   get hostLayout(): {
@@ -61,7 +61,8 @@ export class CanvasRenderer {
       '.affine-paragraph-rich-text-wrapper [data-v-text="true"]'
     );
 
-    const zoom = this.hostZoom;
+    const { viewport } = this;
+    const zoom = this.viewport.zoom;
     const hostRect = this.hostRect;
     const editorContainerRect = this.editorContainer.getBoundingClientRect();
 
@@ -82,7 +83,21 @@ export class CanvasRenderer {
         });
         return {
           text: sentence,
-          rects,
+          rects: rects.map(rect => {
+            const [x, y] = viewport.toModelCoordFromClientCoord([
+              rect.rect.x,
+              rect.rect.y,
+            ]);
+            return {
+              ...rect,
+              rect: {
+                x,
+                y,
+                w: rect.rect.w / zoom / viewport.viewScale,
+                h: rect.rect.h / zoom / viewport.viewScale,
+              },
+            };
+          }),
         };
       });
 
@@ -92,13 +107,17 @@ export class CanvasRenderer {
       };
     });
 
+    const sectionModelCoord = viewport.toModelCoordFromClientCoord([
+      sectionMinX,
+      sectionMinY,
+    ]);
     const section: SectionLayout = {
       paragraphs,
       rect: {
-        x: sectionMinX,
-        y: sectionMinY,
-        w: sectionMaxX - sectionMinX,
-        h: sectionMaxY - sectionMinY,
+        x: sectionModelCoord[0],
+        y: sectionModelCoord[1],
+        w: (sectionMaxX - sectionMinX) / zoom / viewport.viewScale,
+        h: (sectionMaxY - sectionMinY) / zoom / viewport.viewScale,
       },
     };
 
@@ -135,8 +154,8 @@ export class CanvasRenderer {
 
           const ctx = this.canvas.getContext('2d');
           const bitmapCanvas = new OffscreenCanvas(
-            section.rect.w * window.devicePixelRatio,
-            section.rect.h * window.devicePixelRatio
+            section.rect.w * window.devicePixelRatio * this.viewport.zoom,
+            section.rect.h * window.devicePixelRatio * this.viewport.zoom
           );
           const bitmapCtx = bitmapCanvas.getContext('bitmaprenderer');
           bitmapCtx?.transferFromImageBitmap(bitmap);
@@ -146,12 +165,17 @@ export class CanvasRenderer {
             return;
           }
 
+          const sectionViewCoord = this.viewport.toViewCoord(
+            section.rect.x,
+            section.rect.y
+          );
+
           ctx?.drawImage(
             bitmapCanvas,
-            (section.rect.x - editorContainerRect.x) * window.devicePixelRatio,
-            (section.rect.y - editorContainerRect.y) * window.devicePixelRatio,
-            section.rect.w * window.devicePixelRatio,
-            section.rect.h * window.devicePixelRatio
+            sectionViewCoord[0] * window.devicePixelRatio,
+            sectionViewCoord[1] * window.devicePixelRatio,
+            section.rect.w * window.devicePixelRatio * this.viewport.zoom,
+            section.rect.h * window.devicePixelRatio * this.viewport.zoom
           );
 
           resolve();
