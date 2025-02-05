@@ -78,7 +78,7 @@ class CanvasWorkerManager {
 
     section.paragraphs.forEach(paragraph => {
       const fontSize = 15;
-      ctx.font = `${fontSize}px Inter`;
+      ctx.font = `300 ${fontSize}px Inter`;
       const baselineY = getBaseline();
 
       paragraph.sentences.forEach(sentence => {
