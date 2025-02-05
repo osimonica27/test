@@ -54,7 +54,6 @@ export class CanvasRenderer {
   get hostLayout(): {
     section: SectionLayout;
     hostRect: DOMRect;
-    editorContainerRect: DOMRect;
   } {
     const paragraphBlocks = this.editorContainer.host!.querySelectorAll(
       '.affine-paragraph-rich-text-wrapper [data-v-text="true"]'
@@ -63,7 +62,6 @@ export class CanvasRenderer {
     const { viewport } = this;
     const zoom = this.viewport.zoom;
     const hostRect = this.hostRect;
-    const editorContainerRect = this.editorContainer.getBoundingClientRect();
 
     let sectionMinX = Infinity;
     let sectionMinY = Infinity;
@@ -120,11 +118,11 @@ export class CanvasRenderer {
       },
     };
 
-    return { section, hostRect, editorContainerRect };
+    return { section, hostRect };
   }
 
   public async render(toScreen = true): Promise<void> {
-    const { section, editorContainerRect } = this.hostLayout;
+    const { section } = this.hostLayout;
     this.initWorkerSize(section.rect.w, section.rect.h);
 
     return new Promise(resolve => {
@@ -140,12 +138,10 @@ export class CanvasRenderer {
       this.worker.onmessage = (e: MessageEvent) => {
         const { type, bitmap } = e.data;
         if (type === 'render') {
-          this.canvas.style.width = editorContainerRect.width + 'px';
-          this.canvas.style.height = editorContainerRect.height + 'px';
-          this.canvas.width =
-            editorContainerRect.width * window.devicePixelRatio;
-          this.canvas.height =
-            editorContainerRect.height * window.devicePixelRatio;
+          this.canvas.style.width = this.hostRect.width + 'px';
+          this.canvas.style.height = this.hostRect.height + 'px';
+          this.canvas.width = this.hostRect.width * window.devicePixelRatio;
+          this.canvas.height = this.hostRect.height * window.devicePixelRatio;
 
           if (!this.targetContainer.querySelector('canvas')) {
             this.targetContainer.append(this.canvas);
