@@ -76,12 +76,13 @@ export class TableDataManager {
     const order = this.getOrder(this.rows$.value, after);
     const rowId = nanoid();
     this.model.doc.transact(() => {
-      this.model.rows[rowId] = {
+      this.model.props.rows[rowId] = {
         rowId,
         order,
       };
+
       this.columns$.value.forEach(column => {
-        this.model.cells[`${rowId}:${column.columnId}`] = {
+        this.model.props.cells[`${rowId}:${column.columnId}`] = {
           text: new Text(),
         };
       });
@@ -145,12 +146,12 @@ export class TableDataManager {
     const order = this.getOrder(this.columns$.value, after);
     const columnId = nanoid();
     this.model.doc.transact(() => {
-      this.model.columns[columnId] = {
+      this.model.props.columns[columnId] = {
         columnId,
         order,
       };
       this.rows$.value.forEach(row => {
-        this.model.cells[`${row.rowId}:${columnId}`] = {
+        this.model.props.cells[`${row.rowId}:${columnId}`] = {
           text: new Text(),
         };
       });
@@ -162,12 +163,12 @@ export class TableDataManager {
     this.model.doc.transact(() => {
       Object.keys(this.model.rows).forEach(id => {
         if (id === rowId) {
-          delete this.model.rows[id];
+          delete this.model.props.rows[id];
         }
       });
       Object.keys(this.model.cells).forEach(id => {
         if (id.startsWith(rowId)) {
-          delete this.model.cells[id];
+          delete this.model.props.cells[id];
         }
       });
     });
@@ -177,12 +178,12 @@ export class TableDataManager {
     this.model.doc.transact(() => {
       Object.keys(this.model.columns).forEach(id => {
         if (id === columnId) {
-          delete this.model.columns[id];
+          delete this.model.props.columns[id];
         }
       });
       Object.keys(this.model.cells).forEach(id => {
         if (id.endsWith(`:${columnId}`)) {
-          delete this.model.cells[id];
+          delete this.model.props.cells[id];
         }
       });
     });
@@ -190,40 +191,40 @@ export class TableDataManager {
 
   updateRowOrder(rowId: string, newOrder: string) {
     this.model.doc.transact(() => {
-      if (this.model.rows[rowId]) {
-        this.model.rows[rowId].order = newOrder;
+      if (this.model.props.rows[rowId]) {
+        this.model.props.rows[rowId].order = newOrder;
       }
     });
   }
 
   updateColumnOrder(columnId: string, newOrder: string) {
     this.model.doc.transact(() => {
-      if (this.model.columns[columnId]) {
-        this.model.columns[columnId].order = newOrder;
+      if (this.model.props.columns[columnId]) {
+        this.model.props.columns[columnId].order = newOrder;
       }
     });
   }
 
   setRowBackgroundColor(rowId: string, color?: string) {
     this.model.doc.transact(() => {
-      if (this.model.rows[rowId]) {
-        this.model.rows[rowId].backgroundColor = color;
+      if (this.model.props.rows[rowId]) {
+        this.model.props.rows[rowId].backgroundColor = color;
       }
     });
   }
 
   setColumnBackgroundColor(columnId: string, color?: string) {
     this.model.doc.transact(() => {
-      if (this.model.columns[columnId]) {
-        this.model.columns[columnId].backgroundColor = color;
+      if (this.model.props.columns[columnId]) {
+        this.model.props.columns[columnId].backgroundColor = color;
       }
     });
   }
 
   setColumnWidth(columnId: string, width: number) {
     this.model.doc.transact(() => {
-      if (this.model.columns[columnId]) {
-        this.model.columns[columnId].width = width;
+      if (this.model.props.columns[columnId]) {
+        this.model.props.columns[columnId].width = width;
       }
     });
   }
@@ -305,7 +306,7 @@ export class TableDataManager {
     if (!column) return;
     const order = this.getOrder(columns, after);
     this.model.doc.transact(() => {
-      const realColumn = this.model.columns[column.columnId];
+      const realColumn = this.model.props.columns[column.columnId];
       if (realColumn) {
         realColumn.order = order;
       }
@@ -318,7 +319,7 @@ export class TableDataManager {
     if (!row) return;
     const order = this.getOrder(rows, after);
     this.model.doc.transact(() => {
-      const realRow = this.model.rows[row.rowId];
+      const realRow = this.model.props.rows[row.rowId];
       if (realRow) {
         realRow.order = order;
       }
@@ -331,7 +332,7 @@ export class TableDataManager {
     const order = this.getOrder(this.columns$.value, index);
     const newColumnId = nanoid();
     this.model.doc.transact(() => {
-      this.model.columns[newColumnId] = {
+      this.model.props.columns[newColumnId] = {
         ...oldColumn,
         columnId: newColumnId,
         order,
@@ -354,15 +355,15 @@ export class TableDataManager {
     const order = this.getOrder(this.rows$.value, index);
     const newRowId = nanoid();
     this.model.doc.transact(() => {
-      this.model.rows[newRowId] = {
+      this.model.props.rows[newRowId] = {
         ...oldRow,
         rowId: newRowId,
         order,
       };
       this.columns$.value.forEach(column => {
-        this.model.cells[`${newRowId}:${column.columnId}`] = {
+        this.model.props.cells[`${newRowId}:${column.columnId}`] = {
           text:
-            this.model.cells[
+            this.model.props.cells[
               `${oldRow.rowId}:${column.columnId}`
             ]?.text.clone() ?? new Text(),
         };
