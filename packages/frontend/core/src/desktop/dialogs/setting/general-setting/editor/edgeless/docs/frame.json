@@ -1,14 +1,14 @@
 {
   "type": "page",
   "meta": {
-    "id": "ArQikchA-L",
+    "id": "gIUEIHL42k",
     "title": "FrameDoc",
-    "createDate": 1737997265443,
+    "createDate": 1738858597791,
     "tags": []
   },
   "blocks": {
     "type": "block",
-    "id": "qq7mI8nDLZ",
+    "id": "MCYCDPz_QH",
     "flavour": "affine:page",
     "version": 2,
     "props": {
@@ -24,7 +24,7 @@
     "children": [
       {
         "type": "block",
-        "id": "6rh1ghlYSo",
+        "id": "I_s0rS2Pbl",
         "flavour": "affine:surface",
         "version": 5,
         "props": {
@@ -33,7 +33,7 @@
         "children": [
           {
             "type": "block",
-            "id": "yCrarAaUqW",
+            "id": "mHE8GI9UWx",
             "flavour": "affine:frame",
             "version": 1,
             "props": {
@@ -41,41 +41,16 @@
                 "$blocksuite:internal:text$": true,
                 "delta": [
                   {
-                    "insert": "Frame1"
+                    "insert": "Frame 1"
                   }
                 ]
               },
               "background": "transparent",
-              "xywh": "[-36.618320239403886,-43.02477852444463,532.468488236992,205.78063789944463]",
-              "index": "a3",
-              "childElementIds": {
-                "SQi7VaLNb8": true
-              },
-              "presentationIndex": "a004uIjqqu985M8JGnXKGPW2dwa7u69rSbw",
+              "xywh": "[-186.37939453125,-68.03814697265625,375.8616943359375,114.787109375]",
+              "index": "Zz",
+              "childElementIds": {},
+              "presentationIndex": "a00zHdtY37OLhj7JOhCr9ywYQXy1SbAI6kM",
               "lockedBySelf": false
-            },
-            "children": []
-          },
-          {
-            "type": "block",
-            "id": "SQi7VaLNb8",
-            "flavour": "affine:frame",
-            "version": 1,
-            "props": {
-              "title": {
-                "$blocksuite:internal:text$": true,
-                "delta": [
-                  {
-                    "insert": "Frame2"
-                  }
-                ]
-              },
-              "index": "a4",
-              "presentationIndex": "a10GuoRJBEkSB8jqIxcQwO2hrujfAkhek8m",
-              "lockedBySelf": false,
-              "background": "transparent",
-              "xywh": "[60.759284076779295,-11.016554724217983,336.97560870618815,117.92243767863903]",
-              "childElementIds": {}
             },
             "children": []
           }

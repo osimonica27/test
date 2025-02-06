@@ -115,8 +115,8 @@ export const EdgelessSnapshot = (props: Props) => {
       doc.readonly = false;
       edgelessBlock.editorViewportSelector = 'ref-viewport';
       const frame = getFrameBlock(doc);
-      if (frame && frame.id !== 'SQi7VaLNb8') {
-        // frame with id 'SQi7VaLNb8' shouldn't be deleted, it is a part of frame settings
+      if (frame && docName !== 'frame') {
+        // docName with value 'frame' shouldn't be deleted, it is a part of frame settings
         boundMap.set(docName, Bound.deserialize(frame.xywh));
         doc.deleteBlock(frame);
       }
