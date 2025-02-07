@@ -82,12 +82,8 @@ export class FrameTool extends BaseTool {
           index: this.gfx.layer.generateIndex(true),
           presentationIndex: this.frameManager.generatePresentationIndex(),
         });
-      const nProps = {
-        ...props,
-        index: this.gfx.layer.generateIndex(),
-      };
 
-      const id = this.doc.addBlock('affine:frame', nProps, this.gfx.surface);
+      const id = this.doc.addBlock('affine:frame', props, this.gfx.surface);
 
       this.std.getOptional(TelemetryProvider)?.track('CanvasElementAdded', {
         control: 'canvas:draw',

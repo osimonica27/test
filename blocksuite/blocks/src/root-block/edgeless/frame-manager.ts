@@ -206,12 +206,8 @@ export class EdgelessFrameManager extends GfxExtension {
         index: this.gfx.layer.generateIndex(true),
         presentationIndex: this.generatePresentationIndex(),
       });
-    const nProps = {
-      ...props,
-      index: this.gfx.layer.generateIndex(),
-    };
 
-    const id = this.gfx.doc.addBlock('affine:frame', nProps, surfaceModel);
+    const id = this.gfx.doc.addBlock('affine:frame', props, surfaceModel);
     const frameModel = this.gfx.getElementById(id);
 
     if (!frameModel || !isFrameBlock(frameModel)) {
