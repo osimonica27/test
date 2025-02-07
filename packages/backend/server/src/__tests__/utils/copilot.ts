@@ -309,7 +309,7 @@ export async function listContext(
 ): Promise<
   {
     id: string;
-    createdAt: number;
+    workspaceId: string;
   }[]
 > {
   const res = await request(app.getHttpServer())
@@ -323,7 +323,7 @@ export async function listContext(
             copilot(workspaceId: "${workspaceId}") {
               contexts(sessionId: "${sessionId}") {
                 id
-                createdAt
+                workspaceId
               }
             }
           }

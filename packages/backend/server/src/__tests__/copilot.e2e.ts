@@ -738,7 +738,7 @@ test('should be able to search image from unsplash', async t => {
   t.not(resp.status, 404, 'route should be exists');
 });
 
-test.only('should be able to manage context', async t => {
+test('should be able to manage context', async t => {
   const { app, context } = t.context;
 
   const { id: workspaceId } = await createWorkspace(app, token);
@@ -788,29 +788,23 @@ test.only('should be able to manage context', async t => {
       app,
       token,
       contextId,
-      randomUUID(),
+      'fileId1',
       'sample.pdf',
       buffer
     );
-    const [, { id: docId }] = await addContextDoc(
-      app,
-      token,
-      contextId,
-      randomUUID()
-    );
+    await addContextDoc(app, token, contextId, 'docId1');
 
-    const { files, docs } =
+    const { docs, files } =
       (await listContextFiles(app, token, workspaceId, sessionId, contextId)) ||
       {};
-    t.assert(files);
-    t.assert(docs);
-    const [file] = files!;
-    t.is(file.id, fileId, 'should list file');
-    t.is(file.status, 'finished', 'should list file status');
-    t.is(file.name, 'sample.pdf', 'should list file name');
-    t.is(file.chunk_size, 3, 'should split file into chunks');
-    const [doc] = docs!;
-    t.is(doc.id, docId, 'should list doc');
+    t.snapshot(
+      docs?.map(({ createdAt: _, ...d }) => d),
+      'should list context files'
+    );
+    t.snapshot(
+      files?.map(({ createdAt: _, id: __, ...f }) => f),
+      'should list context docs'
+    );
 
     const result = (await matchContext(app, token, contextId, 'test', 2))!;
     t.is(result.length, 2, 'should match context');
