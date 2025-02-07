@@ -33,6 +33,7 @@ type CreateProxyOptions = {
   shouldByPassSignal: () => boolean;
   byPassSignalUpdate: (fn: () => void) => void;
   stashed: Set<string | number>;
+  initialized: () => boolean;
 };
 
 const proxySymbol = Symbol('proxy');
@@ -60,6 +61,7 @@ function createProxy(
     byPassSignalUpdate,
     basePath,
     onChange,
+    initialized,
     transform = (_key, value) => value,
     stashed,
   } = options;
@@ -111,6 +113,9 @@ function createProxy(
             root[signalKey] = signalData;
             onDispose.once(
               signalData.subscribe(next => {
+                if (!initialized()) {
+                  return;
+                }
                 byPassSignalUpdate(() => {
                   proxy[p] = next;
                   onChange?.(firstKey, next);
@@ -268,6 +273,8 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
   protected readonly _source: UnRecord;
   protected readonly _options?: ProxyOptions<UnRecord>;
 
+  private readonly _initialized;
+
   private readonly _observer = (event: YMapEvent<unknown>) => {
     const yMap = this._ySource;
     const proxy = this._proxy;
@@ -344,7 +351,7 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
   };
 
   private readonly _createDefaultData = (): UnRecord => {
-    const data: UnRecord = {};
+    const root: UnRecord = {};
     const transform = this._transform;
     Array.from(this._ySource.entries()).forEach(([key, value]) => {
       if (key.startsWith('sys')) {
@@ -372,21 +379,25 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
       void keys.reduce((acc: UnRecord, key, index) => {
         if (!acc[key] && index !== allLength - 1) {
           const path = keys.slice(0, index + 1).join('.');
-          const data = this._getProxy({} as UnRecord, path);
+          const data = this._getProxy({} as UnRecord, root, path);
           acc[key] = data;
         }
         if (index === allLength - 1) {
           acc[key] = finalData;
         }
         return acc[key] as UnRecord;
-      }, data);
+      }, root);
     });
 
-    return data;
+    return root;
   };
 
-  private readonly _getProxy = (source: UnRecord, path?: string): UnRecord => {
-    return createProxy(this._ySource, source, source, {
+  private readonly _getProxy = (
+    source: UnRecord,
+    root: UnRecord,
+    path?: string
+  ): UnRecord => {
+    return createProxy(this._ySource, source, root, {
       onDispose: this._onDispose,
       shouldByPassSignal: () => this._skipNext,
       byPassSignalUpdate: this._updateWithSkip,
@@ -394,6 +405,7 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
       onChange: this._onChange,
       transform: this._transform,
       stashed: this._stashed,
+      initialized: () => this._initialized,
     });
   };
 
@@ -403,16 +415,20 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
     private readonly _onChange?: OnChange
   ) {
     super();
+    this._initialized = false;
     const source = this._createDefaultData();
     this._source = source;
 
-    const proxy = this._getProxy(source);
+    const proxy = this._getProxy(source, source);
 
     Object.entries(source).forEach(([key, value]) => {
       const signalData = signal(value);
       source[`${key}$`] = signalData;
       _onDispose.once(
         signalData.subscribe(next => {
+          if (!this._initialized) {
+            return;
+          }
           this._updateWithSkip(() => {
             proxy[key] = next;
             this._onChange?.(key, next);
@@ -423,6 +439,7 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
 
     this._proxy = proxy;
     this._ySource.observe(this._observer);
+    this._initialized = true;
   }
 
   pop = (prop: string): void => {
