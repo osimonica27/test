@@ -69,8 +69,7 @@ export class FlatSyncController {
     const defaultProps = schema.model.props?.(internalPrimitives);
     if (defaultProps) {
       Object.entries(defaultProps).forEach(([key, value]) => {
-        const keyWithProp = `prop:${key}`;
-        if (keyWithProp in proxy) {
+        if (key in proxy) {
           return;
         }
         proxy[key] = value;

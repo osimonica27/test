@@ -33,6 +33,7 @@ type CreateProxyOptions = {
   shouldByPassSignal: () => boolean;
   byPassSignalUpdate: (fn: () => void) => void;
   stashed: Set<string | number>;
+  initialized: () => boolean;
 };
 
 const proxySymbol = Symbol('proxy');
@@ -62,6 +63,7 @@ function createProxy(
     onChange,
     transform = (_key, value) => value,
     stashed,
+    initialized,
   } = options;
   const isRoot = !basePath;
 
@@ -93,6 +95,10 @@ function createProxy(
         const firstKey = fullPath.split('.')[0];
         if (!firstKey) {
           throw new Error(`Invalid key for: ${fullPath}`);
+        }
+
+        if (!initialized()) {
+          return Reflect.set(target, p, value, receiver);
         }
 
         const isStashed = stashed.has(firstKey);
@@ -203,6 +209,10 @@ function createProxy(
           throw new Error(`Invalid key for: ${fullPath}`);
         }
 
+        if (!initialized()) {
+          return Reflect.deleteProperty(target, p);
+        }
+
         const isStashed = stashed.has(firstKey);
 
         const updateSignal = () => {
@@ -267,6 +277,12 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
   protected readonly _proxy: UnRecord;
   protected readonly _source: UnRecord;
   protected readonly _options?: ProxyOptions<UnRecord>;
+
+  private readonly _initialized;
+
+  private readonly _isInitialized = () => {
+    return this._initialized;
+  };
 
   private readonly _observer = (event: YMapEvent<unknown>) => {
     const yMap = this._ySource;
@@ -347,6 +363,9 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
     const data: UnRecord = {};
     const transform = this._transform;
     Array.from(this._ySource.entries()).forEach(([key, value]) => {
+      if (key.startsWith('sys')) {
+        return;
+      }
       const keys = keyWithoutPrefix(key).split('.');
       const firstKey = keys[0];
 
@@ -391,6 +410,7 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
       onChange: this._onChange,
       transform: this._transform,
       stashed: this._stashed,
+      initialized: this._isInitialized,
     });
   };
 
@@ -400,6 +420,7 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
     private readonly _onChange?: OnChange
   ) {
     super();
+    this._initialized = false;
     const source = this._createDefaultData();
     this._source = source;
 
@@ -420,6 +441,7 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
 
     this._proxy = proxy;
     this._ySource.observe(this._observer);
+    this._initialized = true;
   }
 
   pop = (prop: string): void => {
