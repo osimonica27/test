@@ -161,12 +161,12 @@ export class TableDataManager {
 
   deleteRow(rowId: string) {
     this.model.doc.transact(() => {
-      Object.keys(this.model.rows).forEach(id => {
+      Object.keys(this.model.props.rows).forEach(id => {
         if (id === rowId) {
           delete this.model.props.rows[id];
         }
       });
-      Object.keys(this.model.cells).forEach(id => {
+      Object.keys(this.model.props.cells).forEach(id => {
         if (id.startsWith(rowId)) {
           delete this.model.props.cells[id];
         }
@@ -176,12 +176,12 @@ export class TableDataManager {
 
   deleteColumn(columnId: string) {
     this.model.doc.transact(() => {
-      Object.keys(this.model.columns).forEach(id => {
+      Object.keys(this.model.props.columns).forEach(id => {
         if (id === columnId) {
           delete this.model.props.columns[id];
         }
       });
-      Object.keys(this.model.cells).forEach(id => {
+      Object.keys(this.model.props.cells).forEach(id => {
         if (id.endsWith(`:${columnId}`)) {
           delete this.model.props.cells[id];
         }
@@ -231,11 +231,11 @@ export class TableDataManager {
 
   clearRow(rowId: string) {
     this.model.doc.transact(() => {
-      Object.keys(this.model.cells).forEach(id => {
+      Object.keys(this.model.props.cells).forEach(id => {
         if (id.startsWith(rowId)) {
-          this.model.cells[id]?.text.replace(
+          this.model.props.cells[id]?.text.replace(
             0,
-            this.model.cells[id]?.text.length,
+            this.model.props.cells[id]?.text.length,
             ''
           );
         }
@@ -245,11 +245,11 @@ export class TableDataManager {
 
   clearColumn(columnId: string) {
     this.model.doc.transact(() => {
-      Object.keys(this.model.cells).forEach(id => {
+      Object.keys(this.model.props.cells).forEach(id => {
         if (id.endsWith(`:${columnId}`)) {
-          this.model.cells[id]?.text.replace(
+          this.model.props.cells[id]?.text.replace(
             0,
-            this.model.cells[id]?.text.length,
+            this.model.props.cells[id]?.text.length,
             ''
           );
         }
@@ -284,7 +284,7 @@ export class TableDataManager {
   clearCells(cells: { rowId: string; columnId: string }[]) {
     this.model.doc.transact(() => {
       cells.forEach(({ rowId, columnId }) => {
-        const text = this.model.cells[`${rowId}:${columnId}`]?.text;
+        const text = this.model.props.cells[`${rowId}:${columnId}`]?.text;
         if (text) {
           text.replace(0, text.length, '');
         }
@@ -338,9 +338,9 @@ export class TableDataManager {
         order,
       };
       this.rows$.value.forEach(row => {
-        this.model.cells[`${row.rowId}:${newColumnId}`] = {
+        this.model.props.cells[`${row.rowId}:${newColumnId}`] = {
           text:
-            this.model.cells[
+            this.model.props.cells[
               `${row.rowId}:${oldColumn.columnId}`
             ]?.text.clone() ?? new Text(),
         };

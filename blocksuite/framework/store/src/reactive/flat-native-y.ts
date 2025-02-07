@@ -142,7 +142,7 @@ function createProxy(
         if (isPureObject(value)) {
           const syncYMap = () => {
             yMap.forEach((_, key) => {
-              if (keyWithoutPrefix(key).startsWith(fullPath)) {
+              if (initialized() && keyWithoutPrefix(key).startsWith(fullPath)) {
                 yMap.delete(key);
               }
             });
@@ -159,7 +159,7 @@ function createProxy(
               });
             };
             run(value, fullPath);
-            if (list.length) {
+            if (list.length && initialized()) {
               yMap.doc?.transact(
                 () => {
                   list.forEach(fn => fn());
@@ -185,7 +185,7 @@ function createProxy(
 
         const yValue = native2Y(value);
         const next = transform(firstKey, value, yValue);
-        if (!isStashed) {
+        if (!isStashed && initialized()) {
           yMap.doc?.transact(
             () => {
               yMap.set(keyWithPrefix(fullPath), yValue);
@@ -238,7 +238,7 @@ function createProxy(
           });
         };
 
-        if (!isStashed) {
+        if (!isStashed && initialized()) {
           yMap.doc?.transact(
             () => {
               const fullKey = keyWithPrefix(fullPath);
@@ -366,7 +366,8 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
       } else if (value instanceof YArray) {
         finalData = transform(firstKey, value.toArray(), value);
       } else if (value instanceof YText) {
-        finalData = transform(firstKey, new Text(value), value);
+        const next = new Text(value);
+        finalData = transform(firstKey, next, value);
       } else if (value instanceof YMap) {
         throw new BlockSuiteError(
           ErrorCode.ReactiveProxyError,
