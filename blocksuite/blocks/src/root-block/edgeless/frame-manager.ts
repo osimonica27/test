@@ -1,5 +1,6 @@
 import type { SurfaceBlockModel } from '@blocksuite/affine-block-surface';
 import { Overlay } from '@blocksuite/affine-block-surface';
+import { EditPropsStore } from '@blocksuite/affine-shared/services';
 import {
   generateKeyBetweenV2,
   getTopElements,
@@ -23,11 +24,7 @@ import type { Store } from '@blocksuite/store';
 import { Text } from '@blocksuite/store';
 import * as Y from 'yjs';
 
-import {
-  EditPropsStore,
-  type FrameBlockModel,
-  type NoteBlockModel,
-} from '../../index.js';
+import { type FrameBlockModel, type NoteBlockModel } from '../../index.js';
 import { areSetsEqual } from './utils/misc.js';
 import { isFrameBlock } from './utils/query.js';
 
