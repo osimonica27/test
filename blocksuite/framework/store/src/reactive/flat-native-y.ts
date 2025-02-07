@@ -73,7 +73,7 @@ function createProxy(
     if (isPureObject(value) && !isProxy(value)) {
       const proxy = createProxy(yMap, value as UnRecord, root, {
         ...options,
-        basePath: `${basePath}.${key}`,
+        basePath: basePath ? `${basePath}.${key}` : key,
       });
       base[key] = proxy;
     }
@@ -148,7 +148,7 @@ function createProxy(
                   run(value, fullPath);
                 } else {
                   list.push(() => {
-                    yMap.set(keyWithPrefix(fullPath), value);
+                    yMap.set(keyWithPrefix(fullPath), native2Y(value));
                   });
                 }
               });
@@ -394,16 +394,27 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
     });
   };
 
+  private readonly _onChange?: OnChange;
+
   constructor(
     protected readonly _ySource: YMap<unknown>,
     private readonly _onDispose: Slot,
-    private readonly _onChange?: OnChange
+    _onChange?: OnChange
   ) {
     super();
     const source = this._createDefaultData();
     this._source = source;
 
     const proxy = this._getProxy(source);
+
+    if (_onChange) {
+      this._onChange = (...args) => {
+        if (!this._proxy) {
+          return;
+        }
+        _onChange(...args);
+      };
+    }
 
     Object.entries(source).forEach(([key, value]) => {
       const signalData = signal(value);

@@ -20,13 +20,13 @@ export class TableDataManager {
       `${this.virtualRowCount$.value + this.rows$.value.length} x ${this.virtualColumnCount$.value + this.columns$.value.length}`
   );
   rows$ = computed(() => {
-    return Object.values(this.model.rows$.value).sort((a, b) =>
+    return Object.values(this.model.props.rows$.value).sort((a, b) =>
       a.order > b.order ? 1 : -1
     );
   });
 
   columns$ = computed(() => {
-    return Object.values(this.model.columns$.value).sort((a, b) =>
+    return Object.values(this.model.props.columns$.value).sort((a, b) =>
       a.order > b.order ? 1 : -1
     );
   });
@@ -69,7 +69,7 @@ export class TableDataManager {
   });
 
   getCell(rowId: string, columnId: string): TableCell | undefined {
-    return this.model.cells$.value[`${rowId}:${columnId}`];
+    return this.model.props.cells$.value[`${rowId}:${columnId}`];
   }
 
   addRow(after?: number) {
