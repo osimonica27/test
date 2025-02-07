@@ -394,27 +394,16 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
     });
   };
 
-  private readonly _onChange?: OnChange;
-
   constructor(
     protected readonly _ySource: YMap<unknown>,
     private readonly _onDispose: Slot,
-    _onChange?: OnChange
+    private readonly _onChange?: OnChange
   ) {
     super();
     const source = this._createDefaultData();
     this._source = source;
 
     const proxy = this._getProxy(source);
-
-    if (_onChange) {
-      this._onChange = (...args) => {
-        if (!this._proxy) {
-          return;
-        }
-        _onChange(...args);
-      };
-    }
 
     Object.entries(source).forEach(([key, value]) => {
       const signalData = signal(value);
