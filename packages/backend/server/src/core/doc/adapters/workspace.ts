@@ -41,7 +41,9 @@ declare global {
 }
 @Injectable()
 export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
-  private readonly logger = new Logger(PgWorkspaceDocStorageAdapter.name);
+  protected override readonly logger = new Logger(
+    PgWorkspaceDocStorageAdapter.name
+  );
 
   constructor(
     private readonly models: Models,
@@ -332,7 +334,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       });
 
       if (updatedSnapshot) {
-        this.event.emit('doc.snapshot.updated', {
+        this.event.broadcast('doc.snapshot.updated', {
           workspaceId: snapshot.spaceId,
           docId: snapshot.docId,
         });

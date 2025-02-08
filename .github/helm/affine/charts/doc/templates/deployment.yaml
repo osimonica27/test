@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "sync.fullname" . }}
+  name: {{ include "doc.fullname" . }}
   labels:
-    {{- include "sync.labels" . | nindent 4 }}
+    {{- include "doc.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "sync.selectorLabels" . | nindent 6 }}
+      {{- include "doc.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -16,19 +16,15 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "sync.selectorLabels" . | nindent 8 }}
+        {{- include "doc.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "sync.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      serviceAccountName: {{ include "doc.serviceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
@@ -39,12 +35,14 @@ spec:
                 key: key
           - name: NODE_ENV
             value: "{{ .Values.env }}"
+          - name: NODE_OPTIONS
+            value: "--max-old-space-size=4096"
           - name: NO_COLOR
             value: "1"
           - name: DEPLOYMENT_TYPE
             value: "affine"
           - name: SERVER_FLAVOR
-            value: "sync"
+            value: "doc"
           - name: AFFINE_ENV
             value: "{{ .Release.Namespace }}"
           - name: DATABASE_PASSWORD
@@ -71,20 +69,24 @@ spec:
             value: "{{ .Values.global.redis.database }}"
           - name: AFFINE_SERVER_PORT
             value: "{{ .Values.service.port }}"
+          - name: AFFINE_SERVER_SUB_PATH
+            value: "{{ .Values.app.path }}"
           - name: AFFINE_SERVER_HOST
             value: "{{ .Values.app.host }}"
-          - name: DOC_SERVICE_ENDPOINT
-            value: "http://{{ .Values.global.docService.name }}:{{ .Values.global.docService.port }}"
+          - name: AFFINE_SERVER_HTTPS
+            value: "{{ .Values.app.https }}"
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /info
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /info
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
           resources:

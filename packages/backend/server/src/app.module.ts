@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import {
   DynamicModule,
   ForwardReference,
@@ -10,12 +8,12 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { PrismaClient } from '@prisma/client';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { get } from 'lodash-es';
 import { ClsModule } from 'nestjs-cls';
 
 import { AppController } from './app.controller';
-import { getOptionalModuleMetadata } from './base';
+import { genRequestId, getOptionalModuleMetadata } from './base';
 import { CacheModule } from './base/cache';
 import { AFFiNEConfig, ConfigModule, mergeConfigOverride } from './base/config';
 import { ErrorModule } from './base/error';
@@ -36,6 +34,7 @@ import { AuthModule } from './core/auth';
 import { ADD_ENABLED_FEATURES, ServerConfigModule } from './core/config';
 import { DocStorageModule } from './core/doc';
 import { DocRendererModule } from './core/doc-renderer';
+import { DocServiceModule } from './core/doc-service';
 import { FeatureModule } from './core/features';
 import { PermissionModule } from './core/permission';
 import { QuotaModule } from './core/quota';
@@ -56,9 +55,9 @@ export const FunctionalityModules = [
     middleware: {
       mount: true,
       generateId: true,
-      idGenerator() {
+      idGenerator(req: Request) {
         // make every request has a unique id to tracing
-        return `req-${randomUUID()}`;
+        return req.get('x-rpc-trace-id') ?? genRequestId('req');
       },
       setup(cls, _req, res: Response) {
         res.setHeader('X-Request-Id', cls.getId());
@@ -71,7 +70,7 @@ export const FunctionalityModules = [
       generateId: true,
       idGenerator() {
         // make every request has a unique id to tracing
-        return `ws-${randomUUID()}`;
+        return genRequestId('ws');
       },
     },
     plugins: [
@@ -199,6 +198,12 @@ export function buildAppModule() {
     .use(...FunctionalityModules)
     .use(ModelsModule)
 
+    // enable schedule module on graphql server and doc service
+    .useIf(
+      config => config.flavor.graphql || config.flavor.doc,
+      ScheduleModule.forRoot()
+    )
+
     // auth
     .use(UserModule, AuthModule, PermissionModule)
 
@@ -211,13 +216,15 @@ export function buildAppModule() {
     // graphql server only
     .useIf(
       config => config.flavor.graphql,
-      ScheduleModule.forRoot(),
       GqlModule,
       StorageModule,
       ServerConfigModule,
       WorkspaceModule,
       LicenseModule
     )
+
+    // doc service only
+    .useIf(config => config.flavor.doc, DocServiceModule)
 
     // self hosted server only
     .useIf(config => config.isSelfhosted, SelfhostModule)
