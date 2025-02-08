@@ -7,10 +7,10 @@ import {
   Config,
   mergeUpdatesInApplyWay as yotcoMergeUpdates,
   metrics,
-  Runtime,
 } from '../../base';
 import { PermissionService } from '../permission';
 import { QuotaService } from '../quota';
+import { Runtime } from '../runtime';
 import { DocStorageOptions as IDocStorageOptions } from './storage';
 
 function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {

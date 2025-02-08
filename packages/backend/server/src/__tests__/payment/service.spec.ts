@@ -6,11 +6,11 @@ import Sinon from 'sinon';
 import Stripe from 'stripe';
 
 import { AppModule } from '../../app.module';
-import { EventBus, Runtime } from '../../base';
+import { EventBus } from '../../base';
 import { ConfigModule } from '../../base/config';
-import { CurrentUser } from '../../core/auth';
-import { AuthService } from '../../core/auth/service';
+import { AuthService, CurrentUser } from '../../core/auth';
 import { EarlyAccessType, FeatureService } from '../../core/features';
+import { Runtime } from '../../core/runtime';
 import { SubscriptionService } from '../../plugins/payment/service';
 import {
   CouponType,

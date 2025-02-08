@@ -8,8 +8,8 @@ import {
 import { groupBy } from 'lodash-es';
 
 import { EventBus } from '../base';
-import { WorkspaceRole } from '../core/permission';
 import { BaseModel } from './base';
+import { WorkspaceRole } from './common';
 
 declare global {
   interface Events {

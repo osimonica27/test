@@ -1,4 +1,4 @@
-import { FlattenedAppRuntimeConfig } from '../config/types';
+import { FlattenedAppRuntimeConfig } from '../../base/config/types';
 
 declare global {
   interface Events {

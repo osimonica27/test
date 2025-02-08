@@ -2,11 +2,15 @@ import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 
 import { Config } from '../../base/config';
-import { WorkspaceRole } from '../../core/permission';
-import { PublicPageMode } from '../../models/common';
-import { PageModel } from '../../models/page';
-import { type User, UserModel } from '../../models/user';
-import { type Workspace, WorkspaceModel } from '../../models/workspace';
+import {
+  PageModel,
+  PublicDocMode,
+  type User,
+  UserModel,
+  type Workspace,
+  WorkspaceModel,
+  WorkspaceRole,
+} from '../../models';
 import { createTestingModule, type TestingModule } from '../utils';
 
 interface Context {
@@ -50,14 +54,14 @@ test('should create page with default mode and public false', async t => {
   const page = await t.context.page.upsert(workspace.id, 'page1');
   t.is(page.workspaceId, workspace.id);
   t.is(page.docId, 'page1');
-  t.is(page.mode, PublicPageMode.Page);
+  t.is(page.mode, PublicDocMode.Page);
   t.is(page.public, false);
 });
 
 test('should update page', async t => {
   const page = await t.context.page.upsert(workspace.id, 'page1');
   const data = {
-    mode: PublicPageMode.Edgeless,
+    mode: PublicDocMode.Edgeless,
     public: true,
   };
   await t.context.page.upsert(workspace.id, 'page1', data);

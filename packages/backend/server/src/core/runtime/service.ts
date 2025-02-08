@@ -5,17 +5,23 @@ import {
   Logger,
   OnModuleInit,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import { difference, keyBy } from 'lodash-es';
 
-import { Cache } from '../cache';
-import { defaultRuntimeConfig, runtimeConfigType } from '../config/register';
+import {
+  Cache,
+  InvalidRuntimeConfigType,
+  RuntimeConfigNotFound,
+} from '../../base';
+import {
+  defaultRuntimeConfig,
+  runtimeConfigType,
+} from '../../base/config/register';
 import {
   AppRuntimeConfigModules,
   FlattenedAppRuntimeConfig,
-} from '../config/types';
-import { InvalidRuntimeConfigType, RuntimeConfigNotFound } from '../error';
-import { defer } from '../utils/promise';
+} from '../../base/config/types';
+import { defer } from '../../base/utils/promise';
+import { Models } from '../../models';
 
 function validateConfigType<K extends keyof FlattenedAppRuntimeConfig>(
   key: K,
@@ -52,7 +58,7 @@ export class Runtime implements OnModuleInit {
   private readonly logger = new Logger('App:RuntimeConfig');
 
   constructor(
-    private readonly db: PrismaClient,
+    private readonly models: Models,
     // circular deps: runtime => cache => redis(maybe) => config => runtime
     @Inject(forwardRef(() => Cache)) private readonly cache: Cache
   ) {}
@@ -95,20 +101,9 @@ export class Runtime implements OnModuleInit {
       return {} as any;
     }
 
-    const records = await this.db.runtimeConfig.findMany({
-      select: {
-        id: true,
-        value: true,
-      },
-      where: {
-        id: {
-          in: keys,
-        },
-        deletedAt: null,
-      },
-    });
+    const configs = await this.models.runtimeConfig.findManyByIds(keys);
 
-    const keyed = keyBy(records, 'id');
+    const keyed = keyBy(configs, 'id');
     return keys.reduce((ret, key) => {
       ret[key] = keyed[key]?.value ?? defaultRuntimeConfig[key].value;
       return ret;
@@ -116,9 +111,7 @@ export class Runtime implements OnModuleInit {
   }
 
   async list(module?: AppRuntimeConfigModules) {
-    return await this.db.runtimeConfig.findMany({
-      where: module ? { module, deletedAt: null } : { deletedAt: null },
-    });
+    return await this.models.runtimeConfig.findManyByModule(module);
   }
 
   async set<
@@ -126,19 +119,9 @@ export class Runtime implements OnModuleInit {
     V = FlattenedAppRuntimeConfig[K],
   >(key: K, value: V) {
     validateConfigType(key, value);
-    const config = await this.db.runtimeConfig.upsert({
-      where: {
-        id: key,
-        deletedAt: null,
-      },
-      create: {
-        ...defaultRuntimeConfig[key],
-        value: value as any,
-      },
-      update: {
-        value: value as any,
-        deletedAt: null,
-      },
+    const config = await this.models.runtimeConfig.upsert(key, {
+      ...defaultRuntimeConfig[key],
+      value: value as any,
     });
 
     await this.setCache(key, config.value as FlattenedAppRuntimeConfig[K]);
@@ -161,22 +144,14 @@ export class Runtime implements OnModuleInit {
   async loadDb<K extends keyof FlattenedAppRuntimeConfig>(
     k: K
   ): Promise<FlattenedAppRuntimeConfig[K] | undefined> {
-    const v = await this.db.runtimeConfig.findFirst({
-      where: {
-        id: k,
-        deletedAt: null,
-      },
-    });
-
-    if (v) {
-      return v.value as FlattenedAppRuntimeConfig[K];
-    } else {
-      const record = await this.db.runtimeConfig.create({
-        data: defaultRuntimeConfig[k],
-      });
-
-      return record.value as any;
+    let config = await this.models.runtimeConfig.get(k);
+    if (!config) {
+      config = await this.models.runtimeConfig.upsert(
+        k,
+        defaultRuntimeConfig[k]
+      );
     }
+    return config.value as FlattenedAppRuntimeConfig[K];
   }
 
   async loadCache<K extends keyof FlattenedAppRuntimeConfig>(
@@ -200,17 +175,10 @@ export class Runtime implements OnModuleInit {
    * Upgrade the DB with latest runtime configs
    */
   private async upgradeDB() {
-    const existingConfig = await this.db.runtimeConfig.findMany({
-      select: {
-        id: true,
-      },
-      where: {
-        deletedAt: null,
-      },
-    });
+    const existingConfigs = await this.models.runtimeConfig.findManyByModule();
 
     const defined = Object.keys(defaultRuntimeConfig);
-    const existing = existingConfig.map(c => c.id);
+    const existing = existingConfigs.map(c => c.id);
     const newConfigs = difference(defined, existing);
     const deleteConfigs = difference(existing, defined);
 
@@ -228,29 +196,10 @@ export class Runtime implements OnModuleInit {
 
     if (acquired) {
       for (const key of newConfigs) {
-        await this.db.runtimeConfig.upsert({
-          create: defaultRuntimeConfig[key],
-          // old deleted setting should be restored
-          update: {
-            ...defaultRuntimeConfig[key],
-            deletedAt: null,
-          },
-          where: {
-            id: key,
-          },
-        });
+        // old deleted setting should be restored
+        await this.models.runtimeConfig.upsert(key, defaultRuntimeConfig[key]);
       }
-
-      await this.db.runtimeConfig.updateMany({
-        where: {
-          id: {
-            in: deleteConfigs,
-          },
-        },
-        data: {
-          deletedAt: new Date(),
-        },
-      });
+      await this.models.runtimeConfig.deleteByIds(deleteConfigs);
     }
 
     this.logger.log('Upgrade completed');
