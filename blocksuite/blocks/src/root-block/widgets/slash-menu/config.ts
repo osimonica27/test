@@ -300,6 +300,31 @@ export const defaultSlashMenuConfig: SlashMenuConfig = {
       },
     },
     {
+      name: 'PDF',
+      description: 'Insert a PDF.',
+      icon: FileIcon,
+      tooltip: slashMenuToolTips['PDF'],
+      showWhen: ({ model }) =>
+        model.doc.schema.flavourSchemaMap.has('affine:attachment'),
+      action: async ({ rootComponent, model }) => {
+        const file = await openFileOrFiles();
+        if (!file) return;
+
+        const maxFileSize =
+          rootComponent.std.store.get(FileSizeLimitService).maxFileSize;
+
+        await addSiblingAttachmentBlocks(
+          rootComponent.host,
+          [file],
+          maxFileSize,
+          model,
+          'after',
+          true
+        );
+        tryRemoveEmptyLine(model);
+      },
+    },
+    {
       name: 'Link',
       description: 'Add a bookmark for reference.',
       icon: LinkIcon,
