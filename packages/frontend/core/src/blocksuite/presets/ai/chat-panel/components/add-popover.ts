@@ -150,7 +150,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
   private readonly _addDocChip = (meta: DocMeta) => {
     this.addChip({
       docId: meta.id,
-      state: 'embedding',
+      state: 'processing',
     });
     this.abortController.abort();
   };

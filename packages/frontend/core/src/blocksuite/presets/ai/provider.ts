@@ -74,6 +74,10 @@ export class AIProvider {
     return AIProvider.instance.histories;
   }
 
+  static get contexts() {
+    return AIProvider.instance.contexts;
+  }
+
   static get actionHistory() {
     return AIProvider.instance.actionHistory;
   }
@@ -99,6 +103,8 @@ export class AIProvider {
   private photoEngine: BlockSuitePresets.AIPhotoEngineService | null = null;
 
   private histories: BlockSuitePresets.AIHistoryService | null = null;
+
+  private contexts: BlockSuitePresets.AIContextService | null = null;
 
   private toggleGeneralAIOnboarding: ((value: boolean) => void) | null = null;
 
@@ -265,6 +271,11 @@ export class AIProvider {
   ): void;
 
   static provide(
+    id: 'contexts',
+    service: BlockSuitePresets.AIContextService
+  ): void;
+
+  static provide(
     id: 'photoEngine',
     engine: BlockSuitePresets.AIPhotoEngineService
   ): void;
@@ -292,6 +303,9 @@ export class AIProvider {
     } else if (id === 'histories') {
       AIProvider.instance.histories =
         action as BlockSuitePresets.AIHistoryService;
+    } else if (id === 'contexts') {
+      AIProvider.instance.contexts =
+        action as BlockSuitePresets.AIContextService;
     } else if (id === 'photoEngine') {
       AIProvider.instance.photoEngine =
         action as BlockSuitePresets.AIPhotoEngineService;

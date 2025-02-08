@@ -786,5 +786,13 @@ test.describe('chat with doc', () => {
     ).toBeGreaterThan(0);
     await clearChat(page);
     expect((await collectChat(page)).length).toBe(0);
+
+    await location.reload();
+    await page.waitForTimeout(1000);
+    await openChat(page);
+    expect(await chipTitle.textContent()).toBe('AFFiNE AI');
+    const chip2 = await page.getByTestId('chat-panel-chip');
+    // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
+    expect(await chip2.getAttribute('data-state')).toBe('success');
   });
 });

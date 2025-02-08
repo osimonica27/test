@@ -1,4 +1,9 @@
-import type { getCopilotHistoriesQuery, RequestOptions } from '@affine/graphql';
+import type {
+  CopilotContextDoc,
+  CopilotContextFile,
+  getCopilotHistoriesQuery,
+  RequestOptions,
+} from '@affine/graphql';
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import type { BlockModel } from '@blocksuite/affine/store';
 
@@ -229,6 +234,35 @@ declare global {
       generateCaption<T extends AITextActionOptions>(
         options: T
       ): AIActionTextResponse<T>;
+    }
+
+    interface AIContextService {
+      createContext: (
+        workspaceId: string,
+        sessionId: string
+      ) => Promise<string>;
+      getContextId: (workspaceId: string, sessionId: string) => Promise<string>;
+      addContextDoc: (options: {
+        contextId: string;
+        docId: string;
+      }) => Promise<void>;
+      removeContextDoc: (options: {
+        contextId: string;
+        docId: string;
+      }) => Promise<void>;
+      addContextFile: (options: {
+        contextId: string;
+        fileId: string;
+      }) => Promise<void>;
+      removeContextFile: (options: {
+        contextId: string;
+        fileId: string;
+      }) => Promise<void>;
+      getContextDocsAndFiles: (
+        workspaceId: string,
+        sessionId: string,
+        contextId: string
+      ) => Promise<{ docs: CopilotContextDoc[]; files: CopilotContextFile[] }>;
     }
 
     // TODO(@Peng): should be refactored to get rid of implement details (like messages, action, role, etc.)

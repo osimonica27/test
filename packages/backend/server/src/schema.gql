@@ -741,7 +741,7 @@ type Mutation {
   removeAvatar: RemoveAvatar!
 
   """remove a doc from context"""
-  removeContextDoc(options: RemoveContextFileInput!): Boolean!
+  removeContextDoc(options: RemoveContextDocInput!): Boolean!
 
   """remove a file from context"""
   removeContextFile(options: RemoveContextFileInput!): Boolean!
@@ -923,6 +923,11 @@ type QueryTooLongDataType {
 
 type RemoveAvatar {
   success: Boolean!
+}
+
+input RemoveContextDocInput {
+  contextId: String!
+  docId: String!
 }
 
 input RemoveContextFileInput {

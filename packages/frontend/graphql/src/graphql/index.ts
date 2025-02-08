@@ -193,7 +193,7 @@ export const removeContextDocMutation = {
   definitionName: 'removeContextDoc',
   containsFile: false,
   query: `
-mutation removeContextDoc($options: RemoveContextFileInput!) {
+mutation removeContextDoc($options: RemoveContextDocInput!) {
   removeContextDoc(options: $options)
 }`,
 };
@@ -216,13 +216,13 @@ mutation addContextFile($content: Upload!, $options: AddContextFileInput!) {
 }`,
 };
 
-export const listContextFilesQuery = {
-  id: 'listContextFilesQuery' as const,
-  operationName: 'listContextFiles',
+export const listContextDocsAndFilesQuery = {
+  id: 'listContextDocsAndFilesQuery' as const,
+  operationName: 'listContextDocsAndFiles',
   definitionName: 'currentUser',
   containsFile: false,
   query: `
-query listContextFiles($workspaceId: String!, $sessionId: String!, $contextId: String!) {
+query listContextDocsAndFiles($workspaceId: String!, $sessionId: String!, $contextId: String!) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
       contexts(sessionId: $sessionId, contextId: $contextId) {

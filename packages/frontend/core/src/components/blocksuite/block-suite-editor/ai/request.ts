@@ -31,7 +31,7 @@ export type ToImageOptions = TextToTextOptions & {
   seed?: string;
 };
 
-export function createChatSession({
+export async function createChatSession({
   client,
   workspaceId,
   docId,
@@ -42,11 +42,19 @@ export function createChatSession({
   docId: string;
   promptName: string;
 }) {
-  return client.createSession({
+  const sessionId = await client.createSession({
     workspaceId,
     docId,
     promptName,
   });
+  await updateChatSession({
+    sessionId,
+    client,
+    promptName,
+  });
+  await client.createContext(workspaceId, sessionId);
+
+  return sessionId;
 }
 
 export function updateChatSession({
@@ -119,7 +127,8 @@ async function createSessionMessage({
   }
   const hasAttachments = attachments && attachments.length > 0;
   const sessionId = await (providedSessionId ??
-    client.createSession({
+    createChatSession({
+      client,
       workspaceId,
       docId,
       promptName: promptName as string,

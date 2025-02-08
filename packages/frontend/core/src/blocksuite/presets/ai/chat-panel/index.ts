@@ -4,7 +4,7 @@ import './chat-panel-messages';
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import { ShadowlessElement } from '@blocksuite/affine/block-std';
 import { NotificationProvider } from '@blocksuite/affine/blocks';
-import { debounce, WithDisposable } from '@blocksuite/affine/global/utils';
+import { WithDisposable } from '@blocksuite/affine/global/utils';
 import type { Store } from '@blocksuite/affine/store';
 import { css, html, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -28,8 +28,10 @@ import type {
   ChatContextValue,
   ChatItem,
   DocChip,
+  FileChip,
 } from './chat-context';
 import type { ChatPanelMessages } from './chat-panel-messages';
+import { isCopilotContextDoc } from './components/utils';
 
 export class ChatPanel extends WithDisposable(ShadowlessElement) {
   static override styles = css`
@@ -110,52 +112,96 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
   private readonly _chatMessages: Ref<ChatPanelMessages> =
     createRef<ChatPanelMessages>();
 
-  private _resettingCounter = 0;
+  // request counter to track the latest request
+  private _updateHistoryCounter = 0;
 
-  private readonly _resetItems = debounce(() => {
-    const counter = ++this._resettingCounter;
+  private readonly _updateHistory = async () => {
+    const { doc } = this;
     this.isLoading = true;
-    (async () => {
-      const { doc } = this;
 
-      const [histories, actions] = await Promise.all([
-        AIProvider.histories?.chats(doc.workspace.id, doc.id, { fork: false }),
-        AIProvider.histories?.actions(doc.workspace.id, doc.id),
-      ]);
+    const currentRequest = ++this._updateHistoryCounter;
 
-      if (counter !== this._resettingCounter) return;
+    const [histories, actions] = await Promise.all([
+      AIProvider.histories?.chats(doc.workspace.id, doc.id, { fork: false }),
+      AIProvider.histories?.actions(doc.workspace.id, doc.id),
+    ]);
 
-      const items: ChatItem[] = actions ? [...actions] : [];
+    // Check if this is still the latest request
+    if (currentRequest !== this._updateHistoryCounter) {
+      return;
+    }
 
-      if (histories?.at(-1)) {
-        const history = histories.at(-1);
-        if (!history) return;
-        this.chatContextValue.chatSessionId = history.sessionId;
-        items.push(...history.messages);
-        AIProvider.LAST_ROOT_SESSION_ID = history.sessionId;
-      }
+    const items: ChatItem[] = actions ? [...actions] : [];
 
-      const { chips } = this.chatContextValue;
-      const defaultChip: DocChip = {
-        docId: this.doc.id,
-        state: 'candidate',
-      };
-      const nextChips =
-        items.length === 0 && chips.length === 0 ? [defaultChip] : chips;
-      this.chatContextValue = {
-        ...this.chatContextValue,
-        items: items.sort((a, b) => {
-          return (
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
-        }),
-        chips: nextChips,
-      };
+    if (histories?.at(-1)) {
+      const history = histories.at(-1);
+      if (!history) return;
+      this.chatContextValue.chatSessionId = history.sessionId;
+      items.push(...history.messages);
+      AIProvider.LAST_ROOT_SESSION_ID = history.sessionId;
+    }
 
-      this.isLoading = false;
-      this._scrollToEnd();
-    })().catch(console.error);
-  }, 200);
+    this.chatContextValue = {
+      ...this.chatContextValue,
+      items: items.sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      ),
+    };
+
+    this.isLoading = false;
+    this._scrollToEnd();
+  };
+
+  private readonly _updateChips = async () => {
+    if (!this.chatContextValue.chatSessionId) return;
+
+    this.chatContextValue.chatContextId =
+      await AIProvider.contexts?.createContext(
+        this.doc.workspace.id,
+        this.chatContextValue.chatSessionId
+      );
+
+    const candidateChip: DocChip = {
+      docId: this.doc.id,
+      state: 'candidate',
+    };
+    let chips: (DocChip | FileChip)[] = [];
+    if (this.chatContextValue.chatContextId) {
+      const { docs = [], files = [] } =
+        (await AIProvider.contexts?.getContextDocsAndFiles(
+          this.doc.workspace.id,
+          this.chatContextValue.chatSessionId,
+          this.chatContextValue.chatContextId
+        )) || {};
+      const list = [...docs, ...files].sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+      chips = list.map(item => {
+        let chip: DocChip | FileChip;
+        if (isCopilotContextDoc(item)) {
+          chip = {
+            docId: item.id,
+            state: 'processing',
+          };
+        } else {
+          chip = {
+            fileId: item.id,
+            state: item.status === 'finished' ? 'success' : item.status,
+            fileName: item.name,
+            fileType: '',
+          };
+        }
+        return chip;
+      });
+    }
+
+    this.chatContextValue = {
+      ...this.chatContextValue,
+      chips: chips.length === 0 ? [candidateChip] : chips,
+    };
+  };
 
   @property({ attribute: false })
   accessor host!: EditorHost;
@@ -186,6 +232,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
     error: null,
     markdown: '',
     chatSessionId: null,
+    chatContextId: null,
   };
 
   private readonly _scrollToEnd = () => {
@@ -217,17 +264,17 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
       ]);
       this.chatContextValue.chatSessionId = null;
       notification.toast('History cleared');
-      this._resetItems();
+      await this._updateHistory();
     }
   };
 
   protected override updated(_changedProperties: PropertyValues) {
     if (_changedProperties.has('doc')) {
-      requestAnimationFrame(() => {
+      requestAnimationFrame(async () => {
         this.chatContextValue.chatSessionId = null;
-        // TODO get from CopilotContext
-        this.chatContextValue.chips = [];
-        this._resetItems();
+        this.chatContextValue.chatContextId = null;
+        await this._updateHistory();
+        await this._updateChips();
       });
     }
 
@@ -260,14 +307,14 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
           event === 'finished' &&
           (status === 'idle' || status === 'success')
         ) {
-          this._resetItems();
+          this._updateHistory().catch(console.error);
         }
       })
     );
     this._disposables.add(
       AIProvider.slots.userInfo.on(userInfo => {
         if (userInfo) {
-          this._resetItems();
+          this._updateHistory().catch(console.error);
         }
       })
     );

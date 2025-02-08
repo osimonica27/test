@@ -80,12 +80,6 @@ export function setupAIProvider(
           workspaceId,
           docId,
           promptName,
-        }).then(sessionId => {
-          return updateChatSession({
-            sessionId,
-            client,
-            promptName,
-          });
         }),
         promptName,
       });
@@ -548,6 +542,40 @@ Could you make a new website based on these notes and send back just the html fi
 
   AIProvider.provide('forkChat', options => {
     return forkCopilotSession(client, options);
+  });
+
+  AIProvider.provide('contexts', {
+    createContext: async (workspaceId: string, sessionId: string) => {
+      return client.createContext(workspaceId, sessionId);
+    },
+    getContextId: async (workspaceId: string, sessionId: string) => {
+      return client.getContextId(workspaceId, sessionId);
+    },
+    addContextDoc: async (options: { contextId: string; docId: string }) => {
+      return client.addContextDoc(options);
+    },
+    removeContextDoc: async (options: { contextId: string; docId: string }) => {
+      return client.removeContextDoc(options);
+    },
+    addContextFile: async (
+      content: File,
+      options: { contextId: string; blobId: string; fileName: string }
+    ) => {
+      return client.addContextFile(content, options);
+    },
+    removeContextFile: async (options: {
+      contextId: string;
+      fileId: string;
+    }) => {
+      return client.removeContextFile(options);
+    },
+    getContextDocsAndFiles: async (
+      workspaceId: string,
+      sessionId: string,
+      contextId: string
+    ) => {
+      return client.getContextDocsAndFiles(workspaceId, sessionId, contextId);
+    },
   });
 
   const disposeRequestLoginHandler = AIProvider.slots.requestLogin.on(() => {

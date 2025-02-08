@@ -32,6 +32,12 @@ export interface DocContext {
   images?: File[];
 }
 
+export interface FileContext {
+  fileId: string;
+  fileName: string;
+  fileType: string;
+}
+
 export type ChatContextValue = {
   // history messages of the chat
   items: ChatItem[];
@@ -47,6 +53,7 @@ export type ChatContextValue = {
   chips: ChatChip[];
   abortController: AbortController | null;
   chatSessionId: string | null;
+  chatContextId: string | undefined | null;
 };
 
 export type ChatBlockMessage = ChatMessage & {
@@ -55,20 +62,14 @@ export type ChatBlockMessage = ChatMessage & {
   avatarUrl?: string;
 };
 
-export type ChipState =
-  | 'candidate'
-  | 'uploading'
-  | 'embedding'
-  | 'success'
-  | 'failed';
+export type ChipState = 'candidate' | 'processing' | 'success' | 'failed';
 
 export interface BaseChip {
   /**
    * candidate: the chip is a candidate for the chat
-   * uploading: the chip is uploading
-   * embedding: the chip is embedding
-   * success: the chip is successfully embedded
-   * failed: the chip is failed to embed
+   * processing: the chip is processing
+   * success: the chip is successfully processed
+   * failed: the chip is failed to process
    */
   state: ChipState;
   tooltip?: string;

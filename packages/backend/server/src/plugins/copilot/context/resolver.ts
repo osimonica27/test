@@ -52,6 +52,15 @@ class AddContextDocInput {
 }
 
 @InputType()
+class RemoveContextDocInput {
+  @Field(() => String)
+  contextId!: string;
+
+  @Field(() => String)
+  docId!: string;
+}
+
+@InputType()
 class AddContextFileInput {
   @Field(() => String)
   contextId!: string;
@@ -336,8 +345,8 @@ export class CopilotContextResolver {
   })
   @CallMetric('ai', 'context_doc_remove')
   async removeContextDoc(
-    @Args({ name: 'options', type: () => RemoveContextFileInput })
-    options: RemoveContextFileInput
+    @Args({ name: 'options', type: () => RemoveContextDocInput })
+    options: RemoveContextDocInput
   ) {
     const lockFlag = `${COPILOT_LOCKER}:context:${options.contextId}`;
     await using lock = await this.mutex.acquire(lockFlag);
@@ -347,7 +356,7 @@ export class CopilotContextResolver {
     const session = await this.context.get(options.contextId);
 
     try {
-      return await session.removeDocRecord(options.fileId);
+      return await session.removeDocRecord(options.docId);
     } catch (e: any) {
       throw new CopilotFailedToModifyContext({
         contextId: options.contextId,

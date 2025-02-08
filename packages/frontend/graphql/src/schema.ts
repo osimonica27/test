@@ -42,10 +42,20 @@ export interface AddContextDocInput {
   docId: Scalars['String']['input'];
 }
 
+export interface RemoveContextDocInput {
+  contextId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+}
+
 export interface AddContextFileInput {
   blobId: Scalars['String']['input'];
   contextId: Scalars['String']['input'];
   fileName: Scalars['String']['input'];
+}
+
+export interface RemoveContextFileInput {
+  contextId: Scalars['String']['input'];
+  fileId: Scalars['String']['input'];
 }
 
 export interface AlreadyInSpaceDataType {
@@ -1370,11 +1380,6 @@ export interface RemoveAvatar {
   success: Scalars['Boolean']['output'];
 }
 
-export interface RemoveContextFileInput {
-  contextId: Scalars['String']['input'];
-  fileId: Scalars['String']['input'];
-}
-
 export interface RevokeDocUserRoleInput {
   docId: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -2058,13 +2063,13 @@ export type AddContextFileMutation = {
   }>;
 };
 
-export type ListContextFilesQueryVariables = Exact<{
+export type ListContextDocsAndFilesQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   sessionId: Scalars['String']['input'];
   contextId: Scalars['String']['input'];
 }>;
 
-export type ListContextFilesQuery = {
+export type ListContextDocsAndFilesQuery = {
   __typename?: 'Query';
   currentUser: {
     __typename?: 'UserType';
@@ -3536,9 +3541,9 @@ export type Queries =
       response: ListBlobsQuery;
     }
   | {
-      name: 'listContextFilesQuery';
-      variables: ListContextFilesQueryVariables;
-      response: ListContextFilesQuery;
+      name: 'listContextDocsAndFilesQuery';
+      variables: ListContextDocsAndFilesQueryVariables;
+      response: ListContextDocsAndFilesQuery;
     }
   | {
       name: 'listContextQuery';
