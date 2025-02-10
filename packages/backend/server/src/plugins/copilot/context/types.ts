@@ -78,7 +78,7 @@ export abstract class EmbeddingClient {
     signal?: AbortSignal
   ): Promise<Embedding[] | undefined> {
     if (signal?.aborted) return;
-    const buffer = new Uint8Array(await file.arrayBuffer());
+    const buffer = Buffer.from(await file.arrayBuffer());
     const doc = await parseDoc(file.name, buffer);
     if (doc && !signal?.aborted) {
       const input = doc.chunks
