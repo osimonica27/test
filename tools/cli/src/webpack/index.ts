@@ -255,25 +255,24 @@ export function createWebpackConfig(
                   loader: 'postcss-loader',
                   options: {
                     postcssOptions: {
-                      plugins: [
-                        cssnano({
-                          preset: [
-                            'default',
-                            {
-                              convertValues: false,
-                            },
+                      plugins: pkg.join('tailwind.config.js').exists()
+                        ? [
+                            [
+                              '@tailwindcss/postcss',
+                              require(pkg.join('tailwind.config.js').value),
+                            ],
+                            ['autoprefixer'],
+                          ]
+                        : [
+                            cssnano({
+                              preset: [
+                                'default',
+                                {
+                                  convertValues: false,
+                                },
+                              ],
+                            }),
                           ],
-                        }),
-                      ].concat(
-                        pkg.join('tailwind.config.js').exists()
-                          ? [
-                              require('tailwindcss')(
-                                require(pkg.join('tailwind.config.js').value)
-                              ),
-                              'autoprefixer',
-                            ]
-                          : []
-                      ),
                     },
                   },
                 },
@@ -432,6 +431,21 @@ export function createWebpackConfig(
   if (buildConfig.isElectron) {
     config.plugins.push(createShellHTMLPlugin(flags, buildConfig));
     config.plugins.push(createBackgroundWorkerHTMLPlugin(flags, buildConfig));
+
+    // sourcemap url like # sourceMappingURL=76-6370cd185962bc89.js.map wont load in electron
+    // this is because the default file:// protocol will be ignored by Chromium
+    // so we need to replace the sourceMappingURL to assets:// protocol
+    // for example:
+    // replace # sourceMappingURL=76-6370cd185962bc89.js.map
+    // to      # sourceMappingURL=assets://./{dir}/76-6370cd185962bc89.js.map
+    config.plugins.push(
+      new webpack.SourceMapDevToolPlugin({
+        append: pathData => {
+          return `\n//# sourceMappingURL=assets://./${pathData.filename}.map`;
+        },
+        filename: '[file].map',
+      })
+    );
   }
 
   return config;

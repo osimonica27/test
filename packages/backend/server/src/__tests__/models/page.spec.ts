@@ -1,13 +1,13 @@
-import { TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 
 import { Config } from '../../base/config';
-import { Permission, PublicPageMode } from '../../models/common';
+import { WorkspaceRole } from '../../core/permission';
+import { PublicPageMode } from '../../models/common';
 import { PageModel } from '../../models/page';
 import { type User, UserModel } from '../../models/user';
 import { type Workspace, WorkspaceModel } from '../../models/workspace';
-import { createTestingModule, initTestingDB } from '../utils';
+import { createTestingModule, type TestingModule } from '../utils';
 
 interface Context {
   config: Config;
@@ -35,7 +35,7 @@ let user: User;
 let workspace: Workspace;
 
 test.beforeEach(async t => {
-  await initTestingDB(t.context.db);
+  await t.context.module.initTestingDB();
   user = await t.context.user.create({
     email: 'test@affine.pro',
   });
@@ -49,7 +49,7 @@ test.after(async t => {
 test('should create page with default mode and public false', async t => {
   const page = await t.context.page.upsert(workspace.id, 'page1');
   t.is(page.workspaceId, workspace.id);
-  t.is(page.pageId, 'page1');
+  t.is(page.docId, 'page1');
   t.is(page.mode, PublicPageMode.Page);
   t.is(page.public, false);
 });
@@ -110,7 +110,7 @@ test('should get public pages of a workspace', async t => {
   await t.context.page.upsert(workspace.id, 'page3');
   const pages = await t.context.page.findPublics(workspace.id);
   t.is(pages.length, 2);
-  t.deepEqual(pages.map(p => p.pageId).sort(), ['page1', 'page2']);
+  t.deepEqual(pages.map(p => p.docId).sort(), ['page1', 'page2']);
 });
 
 test('should grant a member to access a page', async t => {
@@ -131,7 +131,7 @@ test('should grant a member to access a page', async t => {
     workspace.id,
     'page1',
     user.id,
-    Permission.Write
+    WorkspaceRole.Collaborator
   );
   t.false(hasAccess);
   // grant write permission
@@ -139,20 +139,20 @@ test('should grant a member to access a page', async t => {
     workspace.id,
     'page1',
     user.id,
-    Permission.Write
+    WorkspaceRole.Collaborator
   );
   hasAccess = await t.context.page.isMember(
     workspace.id,
     'page1',
     user.id,
-    Permission.Write
+    WorkspaceRole.Collaborator
   );
   t.true(hasAccess);
   hasAccess = await t.context.page.isMember(
     workspace.id,
     'page1',
     user.id,
-    Permission.Read
+    WorkspaceRole.Collaborator
   );
   t.true(hasAccess);
   // delete member
@@ -174,14 +174,14 @@ test('should change the page owner', async t => {
     workspace.id,
     'page1',
     user.id,
-    Permission.Owner
+    WorkspaceRole.Owner
   );
   t.true(
     await t.context.page.isMember(
       workspace.id,
       'page1',
       user.id,
-      Permission.Owner
+      WorkspaceRole.Owner
     )
   );
 
@@ -193,14 +193,14 @@ test('should change the page owner', async t => {
     workspace.id,
     'page1',
     otherUser.id,
-    Permission.Owner
+    WorkspaceRole.Owner
   );
   t.true(
     await t.context.page.isMember(
       workspace.id,
       'page1',
       otherUser.id,
-      Permission.Owner
+      WorkspaceRole.Owner
     )
   );
   t.false(
@@ -208,7 +208,7 @@ test('should change the page owner', async t => {
       workspace.id,
       'page1',
       user.id,
-      Permission.Owner
+      WorkspaceRole.Owner
     )
   );
 });
@@ -221,7 +221,7 @@ test('should not delete owner from page', async t => {
     workspace.id,
     'page1',
     user.id,
-    Permission.Owner
+    WorkspaceRole.Owner
   );
   const count = await t.context.page.deleteMember(
     workspace.id,

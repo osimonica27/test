@@ -3,6 +3,8 @@ import {
   BlocksUtils,
   DocModeProvider,
   embedSyncedDocMiddleware,
+  getImageSelectionsCommand,
+  getSelectedBlocksCommand,
   type ImageBlockModel,
   isInsideEdgelessEditor,
   MarkdownAdapter,
@@ -14,14 +16,13 @@ import type { ServiceProvider } from '@blocksuite/affine/global/di';
 import type { BlockModel, Store } from '@blocksuite/affine/store';
 import { Slice, toDraftModel, Transformer } from '@blocksuite/affine/store';
 
-import type { ChatContextValue, DocContext } from '../chat-panel/chat-context';
+import type { ChatContextValue } from '../chat-panel/chat-context';
 import {
   allToCanvas,
   getSelectedImagesAsBlobs,
   getSelectedTextContent,
   getTextContentFromBlockModels,
   selectedToCanvas,
-  traverse,
 } from './selection-utils';
 
 export async function extractSelectedContent(
@@ -71,8 +72,8 @@ async function extractPageSelected(
   } else if (!hasText && hasImages && images.length === 1) {
     host.command
       .chain()
-      .tryAll(chain => [chain.getImageSelections()])
-      .getSelectedBlocks({
+      .tryAll(chain => [chain.pipe(getImageSelectionsCommand)])
+      .pipe(getSelectedBlocksCommand, {
         types: ['image'],
       })
       .run();
@@ -156,7 +157,7 @@ export async function extractPageAll(
 export async function extractMarkdownFromDoc(
   doc: Store,
   provider: ServiceProvider
-): Promise<DocContext> {
+): Promise<{ docId: string; markdown: string }> {
   const transformer = await getTransformer(doc);
   const adapter = new MarkdownAdapter(transformer, provider);
   const blockModels = getNoteBlockModels(doc);
@@ -165,7 +166,6 @@ export async function extractMarkdownFromDoc(
       !BlocksUtils.matchFlavours(model, ['affine:image', 'affine:database'])
   );
   const drafts = textModels.map(toDraftModel);
-  drafts.forEach(draft => traverse(draft, drafts));
   const slice = Slice.fromModels(doc, drafts);
 
   const snapshot = transformer.sliceToSnapshot(slice);

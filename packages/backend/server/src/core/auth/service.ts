@@ -4,9 +4,7 @@ import { assign, pick } from 'lodash-es';
 
 import { Config, MailService, SignUpForbidden } from '../../base';
 import { Models, type User, type UserSession } from '../../models';
-import { FeatureManagementService } from '../features/management';
-import { QuotaService } from '../quota/service';
-import { QuotaType } from '../quota/types';
+import { FeatureService } from '../features';
 import type { CurrentUser } from './session';
 
 export function sessionUser(
@@ -45,8 +43,7 @@ export class AuthService implements OnApplicationBootstrap {
     private readonly config: Config,
     private readonly models: Models,
     private readonly mailer: MailService,
-    private readonly feature: FeatureManagementService,
-    private readonly quota: QuotaService
+    private readonly feature: FeatureService
   ) {}
 
   async onApplicationBootstrap() {
@@ -61,17 +58,24 @@ export class AuthService implements OnApplicationBootstrap {
             password,
           });
         }
-        await this.quota.switchUserQuota(devUser.id, QuotaType.ProPlanV1);
-        await this.feature.addAdmin(devUser.id);
-        await this.feature.addCopilot(devUser.id);
+        await this.models.userFeature.add(
+          devUser.id,
+          'administrator',
+          'dev user'
+        );
+        await this.models.userFeature.add(
+          devUser.id,
+          'unlimited_copilot',
+          'dev user'
+        );
       } catch {
         // ignore
       }
     }
   }
 
-  canSignIn(email: string) {
-    return this.feature.canEarlyAccess(email);
+  async canSignIn(email: string) {
+    return await this.feature.canEarlyAccess(email);
   }
 
   /**
@@ -302,31 +306,34 @@ export class AuthService implements OnApplicationBootstrap {
   }
 
   async sendChangePasswordEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendChangePasswordEmail(email, callbackUrl);
+    return this.mailer.sendChangePasswordMail(email, { url: callbackUrl });
   }
   async sendSetPasswordEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendSetPasswordEmail(email, callbackUrl);
+    return this.mailer.sendSetPasswordMail(email, { url: callbackUrl });
   }
   async sendChangeEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendChangeEmail(email, callbackUrl);
+    return this.mailer.sendChangeEmailMail(email, { url: callbackUrl });
   }
   async sendVerifyChangeEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendVerifyChangeEmail(email, callbackUrl);
+    return this.mailer.sendVerifyChangeEmail(email, { url: callbackUrl });
   }
   async sendVerifyEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendVerifyEmail(email, callbackUrl);
+    return this.mailer.sendVerifyEmail(email, { url: callbackUrl });
   }
   async sendNotificationChangeEmail(email: string) {
-    return this.mailer.sendNotificationChangeEmail(email);
+    return this.mailer.sendNotificationChangeEmail(email, {
+      to: email,
+    });
   }
 
-  async sendSignInEmail(email: string, link: string, signUp: boolean) {
+  async sendSignInEmail(
+    email: string,
+    link: string,
+    otp: string,
+    signUp: boolean
+  ) {
     return signUp
-      ? await this.mailer.sendSignUpMail(link, {
-          to: email,
-        })
-      : await this.mailer.sendSignInMail(link, {
-          to: email,
-        });
+      ? await this.mailer.sendSignUpMail(email, { url: link, otp })
+      : await this.mailer.sendSignInMail(email, { url: link, otp });
   }
 }

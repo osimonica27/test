@@ -17,7 +17,7 @@ let package = Package(
     .package(path: "../AffineGraphQL"),
     .package(path: "../ChidoriMenu"),
     .package(path: "../MarkdownView"),
-    .package(url: "https://github.com/apollographql/apollo-ios.git", from: "1.15.3"),
+    .package(url: "https://github.com/apollographql/apollo-ios.git", from: "1.17.0"),
     .package(url: "https://github.com/LaunchDarkly/swift-eventsource.git", from: "3.3.0"),
     .package(url: "https://github.com/apple/swift-collections", from: "1.1.4"),
   ],

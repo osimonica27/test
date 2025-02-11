@@ -12,7 +12,6 @@ import {
 import { SocketIoAdapter } from './base/websocket';
 import { AuthGuard } from './core/auth';
 import { ENABLED_FEATURES } from './core/config/server-feature';
-import { responseRequestIdHeader } from './middleware/request-id';
 import { serverTimingAndCache } from './middleware/timing';
 
 export async function createApp() {
@@ -32,7 +31,6 @@ export async function createApp() {
   }
 
   app.use(serverTimingAndCache);
-  app.use(responseRequestIdHeader);
 
   app.use(
     graphqlUploadExpress({
@@ -46,11 +44,14 @@ export async function createApp() {
   app.useGlobalInterceptors(app.get(CacheInterceptor));
   app.useGlobalFilters(new GlobalExceptionFilter(app.getHttpAdapter()));
   app.use(cookieParser());
-
-  if (AFFiNE.flavor.sync) {
-    const adapter = new SocketIoAdapter(app);
-    app.useWebSocketAdapter(adapter);
+  // only enable shutdown hooks in production
+  // https://docs.nestjs.com/fundamentals/lifecycle-events#application-shutdown
+  if (AFFiNE.NODE_ENV === 'production') {
+    app.enableShutdownHooks();
   }
+
+  const adapter = new SocketIoAdapter(app);
+  app.useWebSocketAdapter(adapter);
 
   if (AFFiNE.isSelfhosted && AFFiNE.metrics.telemetry.enabled) {
     const mixpanel = await import('mixpanel');

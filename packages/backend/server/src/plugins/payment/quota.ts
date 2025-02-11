@@ -1,48 +1,39 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
-import { type EventPayload } from '../../base';
 import { PermissionService } from '../../core/permission';
-import {
-  QuotaManagementService,
-  QuotaService,
-  QuotaType,
-} from '../../core/quota';
 import { WorkspaceService } from '../../core/workspaces/resolvers';
+import { Models } from '../../models';
+import { SubscriptionPlan } from './types';
 
 @Injectable()
-export class TeamQuotaOverride {
+export class QuotaOverride {
   constructor(
-    private readonly quota: QuotaService,
-    private readonly manager: QuotaManagementService,
     private readonly permission: PermissionService,
-    private readonly workspace: WorkspaceService
+    private readonly workspace: WorkspaceService,
+    private readonly models: Models
   ) {}
 
   @OnEvent('workspace.subscription.activated')
-  async onSubscriptionUpdated({
+  async onWorkspaceSubscriptionUpdated({
     workspaceId,
     plan,
     recurring,
     quantity,
-  }: EventPayload<'workspace.subscription.activated'>) {
+  }: Events['workspace.subscription.activated']) {
     switch (plan) {
       case 'team': {
-        const hasTeamWorkspace = await this.quota.hasWorkspaceQuota(
+        const isTeam = await this.workspace.isTeamWorkspace(workspaceId);
+        await this.models.workspaceFeature.add(
           workspaceId,
-          QuotaType.TeamPlanV1
-        );
-        await this.manager.addTeamWorkspace(
-          workspaceId,
-          `${recurring} team subscription activated`
-        );
-        await this.manager.updateWorkspaceConfig(
-          workspaceId,
-          QuotaType.TeamPlanV1,
-          { memberLimit: quantity }
+          'team_plan_v1',
+          `${recurring} team subscription activated`,
+          {
+            memberLimit: quantity,
+          }
         );
         await this.permission.refreshSeatStatus(workspaceId, quantity);
-        if (!hasTeamWorkspace) {
+        if (!isTeam) {
           // this event will triggered when subscription is activated or changed
           // we only send emails when the team workspace is activated
           await this.workspace.sendTeamWorkspaceUpgradedEmail(workspaceId);
@@ -55,14 +46,71 @@ export class TeamQuotaOverride {
   }
 
   @OnEvent('workspace.subscription.canceled')
-  async onSubscriptionCanceled({
+  async onWorkspaceSubscriptionCanceled({
     workspaceId,
     plan,
-  }: EventPayload<'workspace.subscription.canceled'>) {
+  }: Events['workspace.subscription.canceled']) {
     switch (plan) {
-      case 'team':
-        await this.manager.removeTeamWorkspace(workspaceId);
+      case SubscriptionPlan.Team:
+        await this.models.workspaceFeature.remove(workspaceId, 'team_plan_v1');
         break;
+      default:
+        break;
+    }
+  }
+
+  @OnEvent('user.subscription.activated')
+  async onUserSubscriptionUpdated({
+    userId,
+    plan,
+    recurring,
+  }: Events['user.subscription.activated']) {
+    switch (plan) {
+      case SubscriptionPlan.AI:
+        await this.models.userFeature.add(
+          userId,
+          'unlimited_copilot',
+          'subscription activated'
+        );
+        break;
+      case SubscriptionPlan.Pro:
+        await this.models.userFeature.add(
+          userId,
+          recurring === 'lifetime' ? 'lifetime_pro_plan_v1' : 'pro_plan_v1',
+          'subscription activated'
+        );
+        break;
+      default:
+        break;
+    }
+  }
+
+  @OnEvent('user.subscription.canceled')
+  async onUserSubscriptionCanceled({
+    userId,
+    plan,
+  }: Events['user.subscription.canceled']) {
+    switch (plan) {
+      case SubscriptionPlan.AI:
+        await this.models.userFeature.remove(userId, 'unlimited_copilot');
+        break;
+      case SubscriptionPlan.Pro: {
+        // edge case: when user switch from recurring Pro plan to `Lifetime` plan,
+        // a subscription canceled event will be triggered because `Lifetime` plan is not subscription based
+        const isLifetimeUser = await this.models.userFeature.has(
+          userId,
+          'lifetime_pro_plan_v1'
+        );
+
+        if (!isLifetimeUser) {
+          await this.models.userFeature.switchQuota(
+            userId,
+            'free_plan_v1',
+            'subscription canceled'
+          );
+        }
+        break;
+      }
       default:
         break;
     }

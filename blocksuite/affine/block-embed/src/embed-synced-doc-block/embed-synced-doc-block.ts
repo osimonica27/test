@@ -30,7 +30,10 @@ import {
   BlockStdScope,
   type EditorHost,
 } from '@blocksuite/block-std';
-import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
+import {
+  GfxControllerIdentifier,
+  GfxExtension,
+} from '@blocksuite/block-std/gfx';
 import { assertExists, Bound, getCommonBound } from '@blocksuite/global/utils';
 import { type GetBlocksOptions, type Query, Text } from '@blocksuite/store';
 import { computed, signal } from '@preact/signals-core';
@@ -145,8 +148,17 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
       }
     }
 
+    class GfxViewportInitializer extends GfxExtension {
+      static override key = 'gfx-viewport-initializer';
+
+      override mounted(): void {
+        this.gfx.fitToScreen();
+      }
+    }
+
     previewSpecBuilder.extend([
       EmbedSyncedDocWatcher,
+      GfxViewportInitializer,
       EditorSettingExtension(editorSetting),
     ]);
 
@@ -180,7 +192,6 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
       edgelessTheme = themeExtension.getEdgelessTheme(this.syncedDoc.id).value;
     }
     const theme = isPageMode ? appTheme : edgelessTheme;
-    const isSelected = !!this.selected?.is(BlockSelection);
 
     this.dataset.nestedEditor = '';
 
@@ -218,8 +229,8 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
             'affine-embed-synced-doc-container': true,
             [editorMode]: true,
             [theme]: true,
-            selected: isSelected,
             surface: false,
+            selected: this.selected$.value,
           })}
           @click=${this._handleClick}
           style=${containerStyleMap}
@@ -239,7 +250,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
           <div
             class=${classMap({
               'affine-embed-synced-doc-header-wrapper': true,
-              selected: isSelected,
+              selected: this.selected$.value,
             })}
           >
             <div class="affine-embed-synced-doc-header">
@@ -323,7 +334,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
 
     this.std
       .getOptional(RefNodeSlotsProvider)
-      ?.docLinkClicked.emit({ ...event, pageId });
+      ?.docLinkClicked.emit({ ...event, pageId, host: this.host });
   };
 
   refreshData = () => {
@@ -387,8 +398,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     let editorHost: EditorHost | null = this.host;
     while (editorHost && !this._cycle) {
       this._cycle = !!editorHost && editorHost.doc.id === this.model.pageId;
-      editorHost =
-        editorHost.parentElement?.closest<EditorHost>('editor-host') ?? null;
+      editorHost = editorHost.parentElement?.closest('editor-host') ?? null;
     }
   }
 

@@ -30,10 +30,12 @@
     "@blocksuite/affine-block-paragraph": "workspace:*",
     "@blocksuite/affine-block-surface": "workspace:*",
     "@blocksuite/affine-block-surface-ref": "workspace:*",
+    "@blocksuite/affine-block-table": "workspace:*",
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/affine-widget-drag-handle": "workspace:*",
+    "@blocksuite/affine-widget-edgeless-auto-connect": "workspace:*",
     "@blocksuite/affine-widget-frame-title": "workspace:*",
     "@blocksuite/affine-widget-remote-selection": "workspace:*",
     "@blocksuite/affine-widget-scroll-anchoring": "workspace:*",
@@ -56,12 +58,12 @@
     "html2canvas": "^1.4.1",
     "katex": "^0.16.11",
     "lit": "^3.2.0",
-    "lodash.isequal": "^4.5.0",
+    "lodash-es": "^4.17.21",
     "lz-string": "^1.5.0",
     "minimatch": "^10.0.1",
     "nanoid": "^5.0.7",
     "pdf-lib": "^1.17.1",
-    "shiki": "^1.14.1",
+    "shiki": "^2.0.0",
     "simple-xml-to-json": "^1.2.2",
     "yjs": "^13.6.21",
     "zod": "^3.23.8"
@@ -81,7 +83,8 @@
   ],
   "devDependencies": {
     "@types/katex": "^0.16.7",
-    "@types/lodash.isequal": "^4.5.8",
-    "vitest": "3.0.2"
+    "@types/lodash-es": "^4.17.12",
+    "@vanilla-extract/vite-plugin": "^5.0.0",
+    "vitest": "3.0.5"
   }
 }

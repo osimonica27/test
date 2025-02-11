@@ -1,4 +1,4 @@
-import { applyDecorators, Logger } from '@nestjs/common';
+import { applyDecorators, Logger, UseInterceptors } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -7,6 +7,7 @@ import {
   SubscribeMessage as RawSubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
+import { ClsInterceptor } from 'nestjs-cls';
 import { Socket } from 'socket.io';
 
 import {
@@ -26,7 +27,7 @@ import {
   PgUserspaceDocStorageAdapter,
   PgWorkspaceDocStorageAdapter,
 } from '../doc';
-import { Permission, PermissionService } from '../permission';
+import { PermissionService, WorkspaceRole } from '../permission';
 import { DocID } from '../utils/doc';
 
 const SubscribeMessage = (event: string) =>
@@ -131,6 +132,7 @@ interface UpdateAwarenessMessage {
 }
 
 @WebSocketGateway()
+@UseInterceptors(ClsInterceptor)
 export class SpaceSyncGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
@@ -147,11 +149,13 @@ export class SpaceSyncGateway
 
   handleConnection() {
     this.connectionCount++;
+    this.logger.log(`New connection, total: ${this.connectionCount}`);
     metrics.socketio.gauge('realtime_connections').record(this.connectionCount);
   }
 
   handleDisconnect() {
     this.connectionCount--;
+    this.logger.log(`Connection disconnected, total: ${this.connectionCount}`);
     metrics.socketio.gauge('realtime_connections').record(this.connectionCount);
   }
 
@@ -611,7 +615,7 @@ abstract class SyncSocketAdapter {
 
   async join(userId: string, spaceId: string, roomType: RoomType = 'sync') {
     this.assertNotIn(spaceId, roomType);
-    await this.assertAccessible(spaceId, userId, Permission.Read);
+    await this.assertAccessible(spaceId, userId, WorkspaceRole.Collaborator);
     return this.client.join(this.room(spaceId, roomType));
   }
 
@@ -639,7 +643,7 @@ abstract class SyncSocketAdapter {
   abstract assertAccessible(
     spaceId: string,
     userId: string,
-    permission?: Permission
+    permission?: WorkspaceRole
   ): Promise<void>;
 
   push(spaceId: string, docId: string, updates: Buffer[], editorId: string) {
@@ -690,7 +694,7 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
   async assertAccessible(
     spaceId: string,
     userId: string,
-    permission: Permission = Permission.Read
+    permission: WorkspaceRole = WorkspaceRole.Collaborator
   ) {
     if (
       !(await this.permission.isWorkspaceMember(spaceId, userId, permission))
@@ -708,7 +712,7 @@ class UserspaceSyncAdapter extends SyncSocketAdapter {
   async assertAccessible(
     spaceId: string,
     userId: string,
-    _permission: Permission = Permission.Read
+    _permission: WorkspaceRole = WorkspaceRole.Collaborator
   ) {
     if (spaceId !== userId) {
       throw new SpaceAccessDenied({ spaceId });

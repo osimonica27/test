@@ -8,6 +8,7 @@ import {
   Scrollable,
   useConfirmModal,
 } from '@affine/component';
+import { DocPermissionGuard } from '@affine/core/components/guard/doc-guard';
 import { useJournalRouteHelper } from '@affine/core/components/hooks/use-journal';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import {
@@ -20,7 +21,11 @@ import { JournalService } from '@affine/core/modules/journal';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { CalendarXmarkIcon, EditIcon } from '@blocksuite/icons/rc';
-import { useLiveData, useService } from '@toeverything/infra';
+import {
+  useLiveData,
+  useService,
+  useServiceOptional,
+} from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
@@ -98,9 +103,11 @@ interface JournalBlockProps {
 const mobile = environment.isMobile;
 export const EditorJournalPanel = () => {
   const t = useI18n();
-  const doc = useService(DocService).doc;
+  const doc = useServiceOptional(DocService)?.doc;
   const journalService = useService(JournalService);
-  const journalDateStr = useLiveData(journalService.journalDate$(doc.id));
+  const journalDateStr = useLiveData(
+    doc ? journalService.journalDate$(doc.id) : null
+  );
   const journalDate = journalDateStr ? dayjs(journalDateStr) : null;
   const isJournal = !!journalDate;
   const { openJournal } = useJournalRouteHelper();
@@ -362,22 +369,38 @@ const ConflictList = ({
                 }}
                 items={
                   <>
-                    <MenuItem
-                      prefixIcon={<CalendarXmarkIcon />}
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleRemoveJournalMark(docRecord.id);
-                      }}
-                      data-testid="journal-conflict-remove-mark"
+                    <DocPermissionGuard
+                      docId={docRecord.id}
+                      permission="Doc_Update"
                     >
-                      {t[
-                        'com.affine.page-properties.property.journal-remove'
-                      ]()}
-                    </MenuItem>
+                      {canEdit => (
+                        <MenuItem
+                          prefixIcon={<CalendarXmarkIcon />}
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleRemoveJournalMark(docRecord.id);
+                          }}
+                          data-testid="journal-conflict-remove-mark"
+                          disabled={!canEdit}
+                        >
+                          {t[
+                            'com.affine.page-properties.property.journal-remove'
+                          ]()}
+                        </MenuItem>
+                      )}
+                    </DocPermissionGuard>
                     <MenuSeparator />
-                    <MoveToTrash
-                      onSelect={() => handleOpenTrashModal(docRecord)}
-                    />
+                    <DocPermissionGuard
+                      docId={docRecord.id}
+                      permission="Doc_Trash"
+                    >
+                      {canTrash => (
+                        <MoveToTrash
+                          onSelect={() => handleOpenTrashModal(docRecord)}
+                          disabled={!canTrash}
+                        />
+                      )}
+                    </DocPermissionGuard>
                   </>
                 }
               >

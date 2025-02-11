@@ -1,16 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, type User } from '@prisma/client';
+import { type ConnectedAccount, Prisma, type User } from '@prisma/client';
 import { pick } from 'lodash-es';
 
 import {
   CryptoHelper,
   EmailAlreadyUsed,
-  EventEmitter,
+  EventBus,
   WrongSignInCredentials,
   WrongSignInMethod,
 } from '../base';
-import type { Payload } from '../base/event/def';
-import { Quota_FreePlanV1_1 } from '../core/quota/schema';
 import { BaseModel } from './base';
 import type { Workspace } from './workspace';
 
@@ -23,49 +21,36 @@ const publicUserSelect = {
 type CreateUserInput = Omit<Prisma.UserCreateInput, 'name'> & { name?: string };
 type UpdateUserInput = Omit<Partial<Prisma.UserCreateInput>, 'id'>;
 
-const defaultUserCreatingData = {
-  name: 'Unnamed',
-  // TODO(@forehalo): it's actually a external dependency for user
-  // how could we avoid user model's knowledge of feature?
-  features: {
-    create: {
-      reason: 'sign up',
-      activated: true,
-      feature: {
-        connect: {
-          feature_version: Quota_FreePlanV1_1,
-        },
-      },
-    },
-  },
-};
+type CreateConnectedAccountInput = Omit<
+  Prisma.ConnectedAccountUncheckedCreateInput,
+  'id'
+> & { accessToken: string };
+type UpdateConnectedAccountInput = Omit<
+  Prisma.ConnectedAccountUncheckedUpdateInput,
+  'id'
+>;
 
-declare module '../base/event/def' {
-  interface UserEvents {
-    created: Payload<User>;
-    updated: Payload<User>;
-    deleted: Payload<
-      User & {
-        // TODO(@forehalo): unlink foreign key constraint on [WorkspaceUserPermission] to delegate
-        // dealing of owned workspaces of deleted users to workspace model
-        ownedWorkspaces: Workspace['id'][];
-      }
-    >;
-  }
-
-  interface EventDefinitions {
-    user: UserEvents;
+declare global {
+  interface Events {
+    'user.created': User;
+    'user.updated': User;
+    'user.deleted': User & {
+      // TODO(@forehalo): unlink foreign key constraint on [WorkspaceUserPermission] to delegate
+      // dealing of owned workspaces of deleted users to workspace model
+      ownedWorkspaces: Workspace['id'][];
+    };
+    'user.postCreated': User;
   }
 }
 
 export type PublicUser = Pick<User, keyof typeof publicUserSelect>;
-export type { User };
+export type { ConnectedAccount, User };
 
 @Injectable()
 export class UserModel extends BaseModel {
   constructor(
     private readonly crypto: CryptoHelper,
-    private readonly event: EventEmitter
+    private readonly event: EventBus
   ) {
     super();
   }
@@ -80,6 +65,13 @@ export class UserModel extends BaseModel {
     return this.db.user.findUnique({
       select: publicUserSelect,
       where: { id },
+    });
+  }
+
+  async getPublicUsers(ids: string[]): Promise<PublicUser[]> {
+    return this.db.user.findMany({
+      select: publicUserSelect,
+      where: { id: { in: ids } },
     });
   }
 
@@ -141,16 +133,15 @@ export class UserModel extends BaseModel {
       data.password = await this.crypto.encryptPassword(data.password);
     }
 
-    if (!data.name) {
-      data.name = data.email.split('@')[0];
-    }
-
     user = await this.db.user.create({
       data: {
-        ...defaultUserCreatingData,
         ...data,
+        name: data.name ?? data.email.split('@')[0],
       },
     });
+
+    // delegate the responsibility of finish user creating setup to the corresponding models
+    await this.event.emitAsync('user.postCreated', user);
 
     this.logger.debug(`User [${user.id}] created with email [${user.email}]`);
     this.event.emit('user.created', user);
@@ -246,4 +237,44 @@ export class UserModel extends BaseModel {
   async count() {
     return this.db.user.count();
   }
+
+  // #region ConnectedAccount
+
+  async createConnectedAccount(data: CreateConnectedAccountInput) {
+    const account = await this.db.connectedAccount.create({
+      data,
+    });
+    this.logger.log(
+      `Connected account ${account.provider}:${account.id} created`
+    );
+    return account;
+  }
+
+  async getConnectedAccount(provider: string, providerAccountId: string) {
+    return await this.db.connectedAccount.findFirst({
+      where: { provider, providerAccountId },
+      include: {
+        user: true,
+      },
+    });
+  }
+
+  async updateConnectedAccount(id: string, data: UpdateConnectedAccountInput) {
+    return await this.db.connectedAccount.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deleteConnectedAccount(id: string) {
+    const { count } = await this.db.connectedAccount.deleteMany({
+      where: { id },
+    });
+    if (count > 0) {
+      this.logger.log(`Deleted connected account ${id}`);
+    }
+    return count;
+  }
+
+  // #endregion
 }

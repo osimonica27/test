@@ -1,3 +1,4 @@
+import { changeNoteDisplayMode } from '@blocksuite/affine-block-note';
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
 import type {
   EdgelessColorPickerButton,
@@ -144,8 +145,8 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
       .getFlag('enable_advanced_block_visibility');
   }
 
-  private get _pageBlockHeaderEnabled() {
-    return this.doc.get(FeatureFlagService).getFlag('enable_page_block_header');
+  private get _pageBlockEnabled() {
+    return this.doc.get(FeatureFlagService).getFlag('enable_page_block');
   }
 
   private get doc() {
@@ -154,7 +155,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
 
   private get _enableAutoHeight() {
     return !(
-      this._pageBlockHeaderEnabled &&
+      this._pageBlockEnabled &&
       this.notes.length === 1 &&
       this.notes[0].parent?.children.find(child =>
         matchFlavours(child, ['affine:note'])
@@ -195,32 +196,11 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
   }
 
   private _setDisplayMode(note: NoteBlockModel, newMode: NoteDisplayMode) {
-    const { displayMode: currentMode } = note;
-    if (newMode === currentMode) {
-      return;
-    }
-
-    this.doc.captureSync();
-
-    this.crud.updateElement(note.id, { displayMode: newMode });
-
-    const noteParent = this.doc.getParent(note);
-    if (!noteParent) return;
-
-    const noteParentChildNotes = noteParent.children.filter(block =>
-      matchFlavours(block, ['affine:note'])
-    );
-    const noteParentLastNote =
-      noteParentChildNotes[noteParentChildNotes.length - 1];
-
-    if (
-      currentMode === NoteDisplayMode.EdgelessOnly &&
-      newMode !== NoteDisplayMode.EdgelessOnly &&
-      note !== noteParentLastNote
-    ) {
-      // move to the end
-      this.doc.moveBlocks([note], noteParent, noteParentLastNote, false);
-    }
+    this.edgeless.std.command.exec(changeNoteDisplayMode, {
+      noteId: note.id,
+      mode: newMode,
+      stopCapture: true,
+    });
 
     // if change note to page only, should clear the selection
     if (newMode === NoteDisplayMode.DocOnly) {
@@ -253,13 +233,21 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
       closeNotify();
     };
 
+    const title =
+      newMode !== NoteDisplayMode.EdgelessOnly
+        ? 'Note displayed in Page Mode'
+        : 'Note removed from Page Mode';
+    const message =
+      newMode !== NoteDisplayMode.EdgelessOnly
+        ? 'Content added to your page.'
+        : 'Content removed from your page.';
+
     const notification = this.edgeless.std.getOptional(NotificationProvider);
     notification?.notify({
-      title: 'Note displayed in Page Mode',
-      message:
-        'Content added to your page. Find it in the TOC for quick navigation.',
+      title: title,
+      message: `${message}. Find it in the TOC for quick navigation.`,
       accent: 'success',
-      duration: 1000 * 1000,
+      duration: 5 * 1000,
       footer: html`<div class=${styles.viewInPageNotifyFooter}>
         <button
           class=${styles.viewInPageNotifyFooterButton}
@@ -385,7 +373,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
 
       onlyOne &&
       !isFirstNote &&
-      this._pageBlockHeaderEnabled &&
+      this._pageBlockEnabled &&
       !this._advancedVisibilityEnabled
         ? html`<editor-icon-button
             aria-label="Display In Page"

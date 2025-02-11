@@ -25,7 +25,8 @@ import { AIProvider } from '../provider';
 import { reportResponse } from '../utils/action-reporter';
 import { readBlobAsURL } from '../utils/image';
 import type { AINetworkSearchConfig } from './chat-config';
-import type { ChatContextValue, ChatMessage } from './chat-context';
+import type { ChatContextValue, ChatMessage, DocContext } from './chat-context';
+import { isDocChip } from './components/utils';
 
 const MaximumImageCount = 32;
 
@@ -362,7 +363,10 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
     const { images, status } = this.chatContextValue;
     const hasImages = images.length > 0;
     const maxHeight = hasImages ? 272 + 2 : 200 + 2;
-    const networkDisabled = !!this.chatContextValue.images.length;
+    const networkDisabled =
+      !!this.chatContextValue.images.length ||
+      !!this.chatContextValue.chips.filter(chip => chip.state !== 'candidate')
+        .length;
     const networkActive = !!this.networkSearchConfig.enabled.value;
     const uploadDisabled = networkActive && !networkDisabled;
     return html`<style>
@@ -375,7 +379,14 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
           user-select: none;
         }
       </style>
-      <div class="chat-panel-input">
+      <div
+        class="chat-panel-input"
+        @pointerdown=${(e: MouseEvent) => {
+          // by default the div will be focused and will blur the textarea
+          e.preventDefault();
+          this.textarea.focus();
+        }}
+      >
         ${hasImages ? this._renderImages(images) : nothing}
         ${this.chatContextValue.quote
           ? html`<div class="chat-selection-quote">
@@ -507,11 +518,11 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
   };
 
   send = async (text: string) => {
-    const { status, markdown, docs } = this.chatContextValue;
+    const { status, markdown, chips } = this.chatContextValue;
     if (status === 'loading' || status === 'transmitting') return;
 
     const { images } = this.chatContextValue;
-    if (!text && images.length === 0) {
+    if (!text) {
       return;
     }
     const { doc } = this.host;
@@ -528,16 +539,14 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
       images?.map(image => readBlobAsURL(image))
     );
 
-    const refDocs = docs.map(doc => doc.markdown).join('\n');
-    const content = (markdown ? `${markdown}\n` : '') + `${refDocs}\n` + text;
-
+    const userInput = (markdown ? `${markdown}\n` : '') + text;
     this.updateContext({
       items: [
         ...this.chatContextValue.items,
         {
           id: '',
           role: 'user',
-          content: content,
+          content: userInput,
           createdAt: new Date().toISOString(),
           attachments,
         },
@@ -552,8 +561,16 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
 
     try {
       const abortController = new AbortController();
+      const docs: DocContext[] = chips
+        .filter(isDocChip)
+        .filter(chip => !!chip.markdown?.value && chip.state === 'success')
+        .map(chip => ({
+          docId: chip.docId,
+          markdown: chip.markdown?.value || '',
+        }));
       const stream = AIProvider.actions.chat?.({
-        input: content,
+        input: userInput,
+        docs: docs,
         docId: doc.id,
         attachments: images,
         workspaceId: doc.workspace.id,

@@ -9,6 +9,7 @@ import type { Store } from '@blocksuite/affine/store';
 import { css, html, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
+import { throttle } from 'lodash-es';
 
 import { AIHelpIcon, SmallHintIcon } from '../_common/icons';
 import { AIProvider } from '../provider';
@@ -17,7 +18,11 @@ import {
   getSelectedImagesAsBlobs,
   getSelectedTextContent,
 } from '../utils/selection-utils';
-import type { AINetworkSearchConfig, DocDisplayConfig } from './chat-config';
+import type {
+  AINetworkSearchConfig,
+  DocDisplayConfig,
+  DocSearchMenuConfig,
+} from './chat-config';
 import type {
   ChatAction,
   ChatContextValue,
@@ -162,6 +167,9 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
   accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
+  accessor docSearchMenuConfig!: DocSearchMenuConfig;
+
+  @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
 
   @state()
@@ -174,7 +182,6 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
     abortController: null,
     items: [],
     chips: [],
-    docs: [],
     status: 'idle',
     error: null,
     markdown: '',
@@ -184,6 +191,8 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
   private readonly _scrollToEnd = () => {
     this._chatMessages.value?.scrollToEnd();
   };
+
+  private readonly _throttledScrollToEnd = throttle(this._scrollToEnd, 1000);
 
   private readonly _cleanupHistories = async () => {
     const notification = this.host.std.getOptional(NotificationProvider);
@@ -218,19 +227,24 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
         this.chatContextValue.chatSessionId = null;
         // TODO get from CopilotContext
         this.chatContextValue.chips = [];
-        this.chatContextValue.docs = [];
         this._resetItems();
       });
     }
 
     if (
-      !this.isLoading &&
       _changedProperties.has('chatContextValue') &&
       (this.chatContextValue.status === 'loading' ||
         this.chatContextValue.status === 'error' ||
         this.chatContextValue.status === 'success')
     ) {
       setTimeout(this._scrollToEnd, 500);
+    }
+
+    if (
+      _changedProperties.has('chatContextValue') &&
+      this.chatContextValue.status === 'transmitting'
+    ) {
+      this._throttledScrollToEnd();
     }
   }
 
@@ -307,6 +321,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
         .docDisplayConfig=${this.docDisplayConfig}
+        .docSearchMenuConfig=${this.docSearchMenuConfig}
       ></chat-panel-chips>
       <chat-panel-input
         .chatContextValue=${this.chatContextValue}

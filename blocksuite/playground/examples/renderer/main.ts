@@ -1,26 +1,63 @@
+import { ViewportTurboRenderer } from '@blocksuite/affine-shared/viewport-renderer';
+import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
+import { nextTick } from '@blocksuite/global/utils';
 import { Text } from '@blocksuite/store';
+import { Pane } from 'tweakpane';
 
-import { animator } from './animator.js';
-import { CanvasRenderer } from './canvas-renderer.js';
 import { doc, editor } from './editor.js';
 
-const container = document.querySelector('#right-column') as HTMLElement;
-const renderer = new CanvasRenderer(editor, container);
+type DocMode = 'page' | 'edgeless';
 
-function initUI() {
-  const toCanvasButton = document.querySelector('#to-canvas-button')!;
-  toCanvasButton.addEventListener('click', async () => {
+const rightColumn = document.querySelector('#right-column') as HTMLElement;
+const renderer = new ViewportTurboRenderer(rightColumn);
+
+async function handleToCanvasClick() {
+  renderer.setHost(editor.host!);
+  await renderer.render();
+  const viewport = editor.std.get(GfxControllerIdentifier).viewport;
+  viewport.viewportUpdated.on(async () => {
     await renderer.render();
   });
-  const switchModeButton = document.querySelector('#switch-mode-button')!;
-  switchModeButton.addEventListener('click', async () => {
-    await animator.switchMode();
+}
+
+async function handleModeChange(mode: DocMode) {
+  editor.mode = mode;
+  await nextTick();
+  renderer.setHost(editor.host!);
+  await renderer.render();
+}
+
+function initUI() {
+  const pane = new Pane({
+    container: document.querySelector('#tweakpane-container') as HTMLElement,
   });
-  document.querySelector('#left-column')?.append(editor);
+
+  const params = {
+    mode: 'edgeless' as DocMode,
+  };
+
+  pane
+    .addButton({
+      title: 'To Canvas',
+    })
+    .on('click', () => {
+      handleToCanvasClick().catch(console.error);
+    });
+  pane
+    .addBinding(params, 'mode', {
+      label: 'Editor Mode',
+      options: {
+        Doc: 'page',
+        Edgeless: 'edgeless',
+      },
+    })
+    .on('change', ({ value }) => {
+      handleModeChange(value as DocMode).catch(console.error);
+    });
 }
 
 function addParagraph(content: string) {
-  const note = doc.getBlockByFlavour('affine:note')[0];
+  const note = doc.getBlocksByFlavour('affine:note')[0];
   const props = {
     text: new Text(content),
   };
@@ -30,6 +67,7 @@ function addParagraph(content: string) {
 function main() {
   initUI();
 
+  document.querySelector('#left-column')?.append(editor);
   const firstParagraph = doc.getBlockByFlavour('affine:paragraph')[0];
   doc.updateBlock(firstParagraph, { text: new Text('Renderer') });
 

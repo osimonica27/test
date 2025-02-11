@@ -64,12 +64,9 @@ function fitViewport(
         false
       );
     } else {
-      const data = rootService.getFitToScreenData();
-      rootService.viewport.setViewport(
-        data.zoom,
-        [data.centerX, data.centerY],
-        false
-      );
+      rootService.gfx.fitToScreen({
+        smooth: false,
+      });
     }
   } catch (e) {
     logger.warn('failed to fitViewPort', e);
@@ -106,6 +103,9 @@ function DocPeekPreviewEditor({
       disposableGroup.add(
         // todo(@pengx17): seems not working
         refNodeSlots.docLinkClicked.on(options => {
+          if (options.host !== editorContainer.host) {
+            return;
+          }
           peekView
             .open({
               docRef: { docId: options.pageId },
@@ -179,7 +179,13 @@ function DocPeekPreviewEditor({
   );
 }
 
-export function DocPeekPreview({ docRef }: { docRef: DocReferenceInfo }) {
+export function DocPeekPreview({
+  docRef,
+  animating,
+}: {
+  docRef: DocReferenceInfo;
+  animating?: boolean;
+}) {
   const {
     docId,
     blockIds,
@@ -204,7 +210,8 @@ export function DocPeekPreview({ docRef }: { docRef: DocReferenceInfo }) {
           databaseRowId,
           type: 'database',
         }
-      : undefined
+      : undefined,
+    !animating
   );
 
   // if sync engine has been synced and the page is null, show 404 page.

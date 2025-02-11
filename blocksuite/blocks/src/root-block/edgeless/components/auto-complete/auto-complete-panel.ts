@@ -1,3 +1,4 @@
+import { insertEdgelessTextCommand } from '@blocksuite/affine-block-edgeless-text';
 import {
   CanvasElementType,
   EdgelessCRUDIdentifier,
@@ -157,15 +158,12 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
     const { service, surfaceBlockModel } = edgeless;
     const frameMgr = service.frame;
     const frameIndex = service.frames.length + 1;
-    const id = this.crud.addBlock(
-      'affine:frame',
-      {
-        title: new Y.Text(`Frame ${frameIndex}`),
-        xywh: serializeXYWH(...xywh),
-        presentationIndex: frameMgr.generatePresentationIndex(),
-      },
-      surfaceBlockModel
-    );
+    const props = this.std.get(EditPropsStore).applyLastProps('affine:frame', {
+      title: new Y.Text(`Frame ${frameIndex}`),
+      xywh: serializeXYWH(...xywh),
+      presentationIndex: frameMgr.generatePresentationIndex(),
+    });
+    const id = this.crud.addBlock('affine:frame', props, surfaceBlockModel);
     edgeless.doc.captureSync();
     const frame = this.crud.getElementById(id);
     if (!frame) return;
@@ -254,10 +252,13 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
       .get(FeatureFlagService)
       .getFlag('enable_edgeless_text');
     if (textFlag) {
-      const { textId } = this.edgeless.std.command.exec('insertEdgelessText', {
-        x: bound.x,
-        y: bound.y,
-      });
+      const [_, { textId }] = this.edgeless.std.command.exec(
+        insertEdgelessTextCommand,
+        {
+          x: bound.x,
+          y: bound.y,
+        }
+      );
       if (!textId) return;
 
       const textElement = this.crud.getElementById(textId);

@@ -119,7 +119,7 @@ class CreateChatMessageInput implements Omit<SubmittedMessage, 'content'> {
   blobs!: Promise<FileUpload>[] | undefined;
 
   @Field(() => GraphQLJSON, { nullable: true })
-  params!: Record<string, string> | undefined;
+  params!: Record<string, any> | undefined;
 }
 
 enum ChatHistoryOrder {
@@ -335,6 +335,7 @@ export class CopilotResolver {
       await this.permissions.checkCloudPagePermission(
         workspaceId,
         docId,
+        'Doc.Read',
         user.id
       );
     } else {
@@ -368,6 +369,7 @@ export class CopilotResolver {
     await this.permissions.checkCloudPagePermission(
       options.workspaceId,
       options.docId,
+      'Doc.Update',
       user.id
     );
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
@@ -401,6 +403,7 @@ export class CopilotResolver {
     await this.permissions.checkCloudPagePermission(
       workspaceId,
       docId,
+      'Doc.Update',
       user.id
     );
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
@@ -428,6 +431,7 @@ export class CopilotResolver {
     await this.permissions.checkCloudPagePermission(
       options.workspaceId,
       options.docId,
+      'Doc.Update',
       user.id
     );
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
@@ -456,6 +460,7 @@ export class CopilotResolver {
     await this.permissions.checkCloudPagePermission(
       options.workspaceId,
       options.docId,
+      'Doc.Update',
       user.id
     );
     if (!options.sessionIds.length) {

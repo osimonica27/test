@@ -11,12 +11,15 @@ import {
 } from '@affine-test/kit/utils/editor';
 import {
   pasteByKeyboard,
+  pressBackspace,
+  pressEnter,
   selectAllByKeyboard,
   undoByKeyboard,
 } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
+  type,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { expect, type Page } from '@playwright/test';
@@ -36,7 +39,8 @@ test.beforeEach(async ({ page }) => {
   await container.click();
 });
 
-test.describe('edgeless page header toolbar', () => {
+// the first note block is called page block
+test.describe('edgeless page block', () => {
   const locateHeaderToolbar = (page: Page) =>
     page.getByTestId('edgeless-page-block-header');
 
@@ -77,7 +81,7 @@ test.describe('edgeless page header toolbar', () => {
     expect(newNoteBox2).toEqual(noteBox);
   });
 
-  test('page title should be displayed when page block is collapsed and hidden when page block is not collapsed', async ({
+  test('page title in toolbar should be displayed when page block is collapsed and hidden when page block is not collapsed', async ({
     page,
   }) => {
     const toolbar = locateHeaderToolbar(page);
@@ -143,6 +147,45 @@ test.describe('edgeless page header toolbar', () => {
     await expect(toolbar).toBeVisible();
     await expect(infoButton).toBeHidden();
   });
+
+  test('page title should show in note when page block is not collapsed', async ({
+    page,
+  }) => {
+    const note = page.locator('affine-edgeless-note');
+    const docTitle = note.locator('doc-title');
+    await expect(docTitle).toBeVisible();
+    await expect(docTitle).toHaveText(title);
+
+    await note.dblclick();
+    await docTitle.click();
+
+    // clear the title
+    await selectAllByKeyboard(page);
+    await pressBackspace(page);
+    await expect(docTitle).toHaveText('');
+
+    // type new title
+    await type(page, 'New Title');
+    await expect(docTitle).toHaveText('New Title');
+
+    // cursor could move between doc title and note content
+    await page.keyboard.press('ArrowDown');
+    await type(page, 'xx');
+
+    const paragraphs = note.locator('affine-paragraph v-line');
+    const numParagraphs = await paragraphs.count();
+    await expect(paragraphs.first()).toHaveText('xxHello');
+
+    await page.keyboard.press('ArrowUp');
+    await type(page, 'yy');
+    await expect(docTitle).toHaveText('yyNew Title');
+
+    await pressEnter(page);
+    await expect(docTitle).toHaveText('yy');
+    await expect(paragraphs).toHaveCount(numParagraphs + 1);
+    await expect(paragraphs.nth(0)).toHaveText('New Title');
+    await expect(paragraphs.nth(1)).toHaveText('xxHello');
+  });
 });
 
 test.describe('edgeless note element toolbar', () => {
@@ -193,7 +236,7 @@ test.describe('edgeless note element toolbar', () => {
     await locateModeSwitchButton(page, 'page').click();
     expect(notes).toHaveCount(2);
 
-    await locateModeSwitchButton(page, 'edgeless').click();
+    await clickEdgelessModeButton(page);
     await clickView(page, [100, 100]);
     await displayInPage.click();
     await locateModeSwitchButton(page, 'page').click();
@@ -203,7 +246,7 @@ test.describe('edgeless note element toolbar', () => {
     const undoButton = page.getByTestId('undo-display-in-page');
     const viewTocButton = page.getByTestId('view-in-toc');
 
-    await locateModeSwitchButton(page, 'edgeless').click();
+    await clickEdgelessModeButton(page);
     await waitForEditorLoad(page);
     await clickView(page, [100, 100]);
     await displayInPage.click();
@@ -216,7 +259,7 @@ test.describe('edgeless note element toolbar', () => {
     await waitForEditorLoad(page);
     expect(notes).toHaveCount(1);
 
-    await locateModeSwitchButton(page, 'edgeless').click();
+    await clickEdgelessModeButton(page);
     await waitForEditorLoad(page);
     await clickView(page, [100, 100]);
     await displayInPage.click();
@@ -232,7 +275,7 @@ test.describe('edgeless note element toolbar', () => {
     const toc = page.locator('affine-outline-panel');
     await toc.waitFor({ state: 'visible' });
     const highlightNoteCards = toc.locator(
-      'affine-outline-note-card > .selected'
+      'affine-outline-note-card > [data-status="selected"]'
     );
     expect(highlightNoteCards).toHaveCount(1);
   });

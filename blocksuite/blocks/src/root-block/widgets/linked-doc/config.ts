@@ -45,6 +45,23 @@ export interface LinkedWidgetConfig {
     abortSignal: AbortSignal
   ) => Promise<LinkedMenuGroup[]> | LinkedMenuGroup[];
 
+  /**
+   * Auto focused item
+   *
+   * Will be called when the menu is
+   * - opened
+   * - query changed
+   * - menu group or its items changed
+   *
+   * If the return value is not null, no action will be taken.
+   */
+  autoFocusedItem?: (
+    menus: LinkedMenuGroup[],
+    query: string,
+    editorHost: EditorHost,
+    inlineEditor: AffineInlineEditor
+  ) => LinkedMenuItem | null;
+
   mobile: {
     useScreenHeight?: boolean;
     /**
@@ -69,8 +86,10 @@ export type LinkedMenuItem = {
   icon: TemplateResult<1>;
   suffix?: string | TemplateResult<1>;
   // disabled?: boolean;
-  action: () => Promise<void> | void;
+  action: LinkedMenuAction;
 };
+
+export type LinkedMenuAction = () => Promise<void> | void;
 
 export type LinkedMenuGroup = {
   name: string;

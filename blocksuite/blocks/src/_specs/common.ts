@@ -10,7 +10,7 @@ import { DividerBlockSpec } from '@blocksuite/affine-block-divider';
 import { EdgelessTextBlockSpec } from '@blocksuite/affine-block-edgeless-text';
 import { EmbedExtensions } from '@blocksuite/affine-block-embed';
 import { FrameBlockSpec } from '@blocksuite/affine-block-frame';
-import { ImageBlockSpec } from '@blocksuite/affine-block-image';
+import { ImageBlockSpec, ImageStoreSpec } from '@blocksuite/affine-block-image';
 import { LatexBlockSpec } from '@blocksuite/affine-block-latex';
 import { ListBlockSpec } from '@blocksuite/affine-block-list';
 import {
@@ -27,6 +27,10 @@ import {
   PageSurfaceRefBlockSpec,
 } from '@blocksuite/affine-block-surface-ref';
 import {
+  TableBlockSpec,
+  TableSelectionExtension,
+} from '@blocksuite/affine-block-table';
+import {
   RefNodeSlotsExtension,
   RichTextExtensions,
 } from '@blocksuite/affine-components/rich-text';
@@ -39,6 +43,7 @@ import {
   DocDisplayMetaService,
   EditPropsStore,
   FeatureFlagService,
+  FileSizeLimitService,
   FontLoaderService,
   LinkPreviewerService,
 } from '@blocksuite/affine-shared/services';
@@ -60,6 +65,7 @@ export const CommonBlockSpecs: ExtensionType[] = [
   LatexBlockSpec,
   ListBlockSpec,
   DatabaseBlockSpec,
+  TableBlockSpec,
   DataViewBlockSpec,
   DividerBlockSpec,
   BookmarkBlockSpec,
@@ -100,5 +106,9 @@ export const StoreExtensions: ExtensionType[] = [
   HighlightSelectionExtension,
   ImageSelectionExtension,
   DatabaseSelectionExtension,
+  TableSelectionExtension,
   LinkPreviewerService,
-];
+  FileSizeLimitService,
+
+  ImageStoreSpec,
+].flat();

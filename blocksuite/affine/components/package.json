@@ -34,7 +34,7 @@
     "lit-html": "^3.2.1",
     "lodash.clonedeep": "^4.5.0",
     "remark-math": "^6.0.0",
-    "shiki": "^1.12.0",
+    "shiki": "^2.0.0",
     "yjs": "^13.6.21",
     "zod": "^3.23.8"
   },
@@ -54,14 +54,16 @@
     "./caption": "./src/caption/index.ts",
     "./context-menu": "./src/context-menu/index.ts",
     "./date-picker": "./src/date-picker/index.ts",
-    "./drag-indicator": "./src/drag-indicator/index.ts",
+    "./drop-indicator": "./src/drop-indicator/index.ts",
     "./filterable-list": "./src/filterable-list/index.ts",
     "./virtual-keyboard": "./src/virtual-keyboard/index.ts",
     "./toggle-button": "./src/toggle-button/index.ts",
     "./toggle-switch": "./src/toggle-switch/index.ts",
     "./notification": "./src/notification/index.ts",
     "./block-zero-width": "./src/block-zero-width/index.ts",
-    "./block-selection": "./src/block-selection/index.ts"
+    "./block-selection": "./src/block-selection/index.ts",
+    "./doc-title": "./src/doc-title/index.ts",
+    "./embed-card-modal": "./src/embed-card-modal/index.ts"
   },
   "files": [
     "src",

@@ -7,13 +7,17 @@ import {
 import { ModuleRef } from '@nestjs/core';
 
 import { ApplyType } from '../base';
+import { DocModel } from './doc';
 import { FeatureModel } from './feature';
 import { PageModel } from './page';
 import { MODELS_SYMBOL } from './provider';
 import { SessionModel } from './session';
 import { UserModel } from './user';
+import { UserDocModel } from './user-doc';
+import { UserFeatureModel } from './user-feature';
 import { VerificationTokenModel } from './verification-token';
 import { WorkspaceModel } from './workspace';
+import { WorkspaceFeatureModel } from './workspace-feature';
 
 const MODELS = {
   user: UserModel,
@@ -22,6 +26,10 @@ const MODELS = {
   feature: FeatureModel,
   workspace: WorkspaceModel,
   page: PageModel,
+  userFeature: UserFeatureModel,
+  workspaceFeature: WorkspaceFeatureModel,
+  doc: DocModel,
+  userDoc: UserDocModel,
 };
 
 type ModelsType = {
@@ -73,9 +81,14 @@ const ModelsSymbolProvider: ExistingProvider = {
 })
 export class ModelsModule {}
 
+export * from './common';
+export * from './doc';
 export * from './feature';
 export * from './page';
 export * from './session';
 export * from './user';
+export * from './user-doc';
+export * from './user-feature';
 export * from './verification-token';
 export * from './workspace';
+export * from './workspace-feature';

@@ -4,6 +4,7 @@ import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { router } from '@affine/core/desktop/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
+import { configureDesktopBackupModule } from '@affine/core/modules/backup';
 import { ValidatorProvider } from '@affine/core/modules/cloud';
 import {
   configureDesktopApiModule,
@@ -35,7 +36,7 @@ import { WorkspacesService } from '@affine/core/modules/workspace';
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { apis, events } from '@affine/electron-api';
-import { WorkerClient } from '@affine/nbstore/worker/client';
+import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { CacheProvider } from '@emotion/react';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
@@ -43,6 +44,11 @@ import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { DesktopThemeSync } from './theme-sync';
+
+const storeManagerClient = createStoreManagerClient();
+window.addEventListener('beforeunload', () => {
+  storeManagerClient.dispose();
+});
 
 const desktopWhiteList = [
   '/open-app/signin-redirect',
@@ -77,52 +83,15 @@ configureAppTabsHeaderModule(framework);
 configureFindInPageModule(framework);
 configureDesktopApiModule(framework);
 configureSpellCheckSettingModule(framework);
+configureDesktopBackupModule(framework);
 framework.impl(NbstoreProvider, {
   openStore(key, options) {
-    const { port1: portForOpClient, port2: portForWorker } =
-      new MessageChannel();
-    let portFromWorker: MessagePort | null = null;
-    let portId = crypto.randomUUID();
+    const { store, dispose } = storeManagerClient.open(key, options);
 
-    const handleMessage = (ev: MessageEvent) => {
-      if (
-        ev.data.type === 'electron:worker-connect' &&
-        ev.data.portId === portId
-      ) {
-        portFromWorker = ev.ports[0];
-        // connect portForWorker and portFromWorker
-        portFromWorker.addEventListener('message', ev => {
-          portForWorker.postMessage(ev.data);
-        });
-        portForWorker.addEventListener('message', ev => {
-          // oxlint-disable-next-line no-non-null-assertion
-          portFromWorker!.postMessage(ev.data);
-        });
-        portForWorker.start();
-        portFromWorker.start();
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-
-    // oxlint-disable-next-line no-non-null-assertion
-    apis!.worker.connectWorker(key, portId).catch(err => {
-      console.error('failed to connect worker', err);
-    });
-
-    const store = new WorkerClient(new OpClient(portForOpClient), options);
-    portForOpClient.start();
     return {
       store,
       dispose: () => {
-        window.removeEventListener('message', handleMessage);
-        portForOpClient.close();
-        portForWorker.close();
-        portFromWorker?.close();
-        // oxlint-disable-next-line no-non-null-assertion
-        apis!.worker.disconnectWorker(key, portId).catch(err => {
-          console.error('failed to disconnect worker', err);
-        });
+        dispose();
       },
     };
   },
@@ -235,4 +204,40 @@ export function App() {
       </FrameworkRoot>
     </Suspense>
   );
+}
+
+function createStoreManagerClient() {
+  const { port1: portForOpClient, port2: portForWorker } = new MessageChannel();
+  let portFromWorker: MessagePort | null = null;
+  let portId = crypto.randomUUID();
+
+  const handleMessage = (ev: MessageEvent) => {
+    if (
+      ev.data.type === 'electron:worker-connect' &&
+      ev.data.portId === portId
+    ) {
+      portFromWorker = ev.ports[0];
+      // connect portForWorker and portFromWorker
+      portFromWorker.addEventListener('message', ev => {
+        portForWorker.postMessage(ev.data, [...ev.ports]);
+      });
+      portForWorker.addEventListener('message', ev => {
+        // oxlint-disable-next-line no-non-null-assertion
+        portFromWorker!.postMessage(ev.data, [...ev.ports]);
+      });
+      portForWorker.start();
+      portFromWorker.start();
+    }
+  };
+
+  window.addEventListener('message', handleMessage);
+
+  // oxlint-disable-next-line no-non-null-assertion
+  apis!.worker.connectWorker('affine-shared-worker', portId).catch(err => {
+    console.error('failed to connect worker', err);
+  });
+
+  const storeManager = new StoreManagerClient(new OpClient(portForOpClient));
+  portForOpClient.start();
+  return storeManager;
 }

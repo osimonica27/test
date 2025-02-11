@@ -6,16 +6,17 @@ import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
 import { DocPropertySidebar } from '@affine/core/components/doc-properties/sidebar';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
-import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import { DocService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { PeekViewService } from '@affine/core/modules/peek-view';
+import { GuardService } from '@affine/core/modules/permissions';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { isNewTabTrigger } from '@affine/core/utils';
+import track from '@affine/track';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/blocks';
 import {
   type Disposable,
@@ -72,6 +73,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     workspaceService,
     globalContextService,
     featureFlagService,
+    guardService,
   } = useServices({
     WorkbenchService,
     ViewService,
@@ -80,6 +82,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     WorkspaceService,
     GlobalContextService,
     FeatureFlagService,
+    GuardService,
   });
   const workbench = workbenchService.workbench;
   const editor = editorService.editor;
@@ -97,7 +100,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const isSideBarOpen = useLiveData(workbench.sidebarOpen$);
   const { appSettings } = useAppSettingHelper();
   const chatPanelRef = useRef<ChatPanel | null>(null);
-  const { setDocReadonly } = useDocMetaHelper();
 
   const peekView = useService(PeekViewService).peekView;
 
@@ -149,12 +151,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   }, [doc, globalContext, isActiveView, mode]);
 
   useEffect(() => {
-    if ('isMobile' in environment && environment.isMobile) {
-      setDocReadonly(doc.id, true);
-    }
-  }, [doc.id, setDocReadonly]);
-
-  useEffect(() => {
     if (isActiveView) {
       globalContext.isTrashDoc.set(!!isInTrash);
 
@@ -165,7 +161,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     return;
   }, [globalContext, isActiveView, isInTrash]);
 
-  useRegisterBlocksuiteEditorCommands(editor);
+  useRegisterBlocksuiteEditorCommands(editor, isActiveView);
   const title = useLiveData(doc.title$);
   usePageDocumentTitle(title);
 
@@ -182,11 +178,23 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           disposable.add(
             // the event should not be emitted by AffineReference
             refNodeSlots.docLinkClicked.on(
-              ({ pageId, params, openMode, event }) => {
+              ({ pageId, params, openMode, event, host }) => {
+                if (host !== editorHost) {
+                  return;
+                }
                 openMode ??=
                   event && isNewTabTrigger(event)
                     ? 'open-in-new-tab'
                     : 'open-in-active-view';
+
+                if (openMode === 'open-in-new-view') {
+                  track.doc.editor.toolbar.openInSplitView();
+                } else if (openMode === 'open-in-center-peek') {
+                  track.doc.editor.toolbar.openInPeekView();
+                } else if (openMode === 'open-in-new-tab') {
+                  track.doc.editor.toolbar.openInNewTab();
+                }
+
                 if (openMode !== 'open-in-center-peek') {
                   const at = (() => {
                     if (openMode === 'open-in-active-view') {
@@ -260,6 +268,10 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const [dragging, setDragging] = useState(false);
 
+  const canEdit = useLiveData(guardService.can$('Doc_Update', doc.id));
+
+  const readonly = !canEdit || isInTrash;
+
   return (
     <FrameworkScope scope={editor.scope}>
       <ViewHeader>
@@ -289,7 +301,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                   styles.editorContainer
                 )}
               >
-                <PageDetailEditor onLoad={onLoad} />
+                <PageDetailEditor onLoad={onLoad} readonly={readonly} />
               </Scrollable.Viewport>
               <Scrollable.Scrollbar
                 className={clsx({

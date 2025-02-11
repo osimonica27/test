@@ -1,14 +1,11 @@
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { TestingModule } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
-import { EmailAlreadyUsed } from '../../base';
-import { Permission } from '../../models/common';
+import { EmailAlreadyUsed, EventBus } from '../../base';
+import { WorkspaceRole } from '../../core/permission';
 import { UserModel } from '../../models/user';
 import { WorkspaceMemberStatus } from '../../models/workspace';
-import { createTestingModule, initTestingDB } from '../utils';
+import { createTestingModule, type TestingModule } from '../utils';
 
 interface Context {
   module: TestingModule;
@@ -25,7 +22,7 @@ test.before(async t => {
 });
 
 test.beforeEach(async t => {
-  await initTestingDB(t.context.module.get(PrismaClient));
+  await t.context.module.initTestingDB();
 });
 
 test.after(async t => {
@@ -46,7 +43,7 @@ test('should create a new user', async t => {
 });
 
 test('should trigger user.created event', async t => {
-  const event = t.context.module.get(EventEmitter2);
+  const event = t.context.module.get(EventBus);
   const spy = Sinon.spy();
   event.on('user.created', spy);
 
@@ -117,7 +114,7 @@ test('should not update email to an existing one', async t => {
 });
 
 test('should trigger user.updated event', async t => {
-  const event = t.context.module.get(EventEmitter2);
+  const event = t.context.module.get(EventBus);
   const spy = Sinon.spy();
   event.on('user.updated', spy);
 
@@ -217,7 +214,7 @@ test('should fulfill user', async t => {
 });
 
 test('should trigger user.updated event when fulfilling user', async t => {
-  const event = t.context.module.get(EventEmitter2);
+  const event = t.context.module.get(EventBus);
   const createSpy = Sinon.spy();
   const updateSpy = Sinon.spy();
   event.on('user.created', createSpy);
@@ -250,7 +247,7 @@ test('should delete user', async t => {
 });
 
 test('should trigger user.deleted event', async t => {
-  const event = t.context.module.get(EventEmitter2);
+  const event = t.context.module.get(EventBus);
   const spy = Sinon.spy();
   event.on('user.deleted', spy);
 
@@ -264,7 +261,7 @@ test('should trigger user.deleted event', async t => {
             public: false,
           },
         },
-        type: Permission.Owner,
+        type: WorkspaceRole.Owner,
         status: WorkspaceMemberStatus.Accepted,
       },
     },
@@ -278,16 +275,13 @@ test('should trigger user.deleted event', async t => {
 });
 
 test('should paginate users', async t => {
-  const db = t.context.module.get(PrismaClient);
   const now = Date.now();
   await Promise.all(
     Array.from({ length: 100 }).map((_, i) =>
-      db.user.create({
-        data: {
-          name: `test${i}`,
-          email: `test${i}@affine.pro`,
-          createdAt: new Date(now + i),
-        },
+      t.context.user.create({
+        name: `test-paginate-${i}`,
+        email: `test-paginate-${i}@affine.pro`,
+        createdAt: new Date(now + i),
       })
     )
   );
@@ -296,6 +290,52 @@ test('should paginate users', async t => {
   t.is(users.length, 10);
   t.deepEqual(
     users.map(user => user.email),
-    Array.from({ length: 10 }).map((_, i) => `test${i}@affine.pro`)
+    Array.from({ length: 10 }).map((_, i) => `test-paginate-${i}@affine.pro`)
   );
 });
+
+// #region ConnectedAccount
+
+test('should create, get, update, delete connected account', async t => {
+  const user = await t.context.user.create({
+    email: 'test@affine.pro',
+  });
+  const connectedAccount = await t.context.user.createConnectedAccount({
+    userId: user.id,
+    provider: 'test-provider',
+    providerAccountId: 'test-provider-account-id',
+    accessToken: 'test-access-token',
+  });
+  t.truthy(connectedAccount);
+
+  const connectedAccount2 = await t.context.user.getConnectedAccount(
+    connectedAccount.provider,
+    connectedAccount.providerAccountId
+  );
+  t.truthy(connectedAccount2);
+  t.is(connectedAccount2!.id, connectedAccount.id);
+  t.is(connectedAccount2!.user.id, user.id);
+
+  const updatedConnectedAccount = await t.context.user.updateConnectedAccount(
+    connectedAccount.id,
+    {
+      accessToken: 'new-access-token',
+    }
+  );
+  t.is(updatedConnectedAccount.accessToken, 'new-access-token');
+  // get the updated connected account
+  const connectedAccount3 = await t.context.user.getConnectedAccount(
+    connectedAccount.provider,
+    connectedAccount.providerAccountId
+  );
+  t.is(connectedAccount3!.accessToken, 'new-access-token');
+
+  await t.context.user.deleteConnectedAccount(connectedAccount.id);
+  const connectedAccount4 = await t.context.user.getConnectedAccount(
+    connectedAccount.provider,
+    connectedAccount.providerAccountId
+  );
+  t.is(connectedAccount4, null);
+});
+
+// #endregion

@@ -48,6 +48,7 @@ export * from '@blocksuite/affine-block-note';
 export * from '@blocksuite/affine-block-paragraph';
 export * from '@blocksuite/affine-block-surface';
 export * from '@blocksuite/affine-block-surface-ref';
+export * from '@blocksuite/affine-block-table';
 export {
   type AIError,
   type AIItemConfig,
@@ -121,6 +122,7 @@ export {
   PlainTextAdapterFactoryExtension,
   PlainTextAdapterFactoryIdentifier,
 } from '@blocksuite/affine-shared/adapters';
+export * from '@blocksuite/affine-shared/commands';
 export { HighlightSelection } from '@blocksuite/affine-shared/selection';
 export * from '@blocksuite/affine-shared/services';
 export { scrollbarStyle } from '@blocksuite/affine-shared/styles';

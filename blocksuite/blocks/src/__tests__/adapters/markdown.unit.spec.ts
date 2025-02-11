@@ -2,7 +2,11 @@ import {
   InlineDeltaToMarkdownAdapterExtensions,
   MarkdownInlineToDeltaAdapterExtensions,
 } from '@blocksuite/affine-components/rich-text';
-import { DefaultTheme, NoteDisplayMode } from '@blocksuite/affine-model';
+import {
+  DefaultTheme,
+  NoteDisplayMode,
+  TableModelFlavour,
+} from '@blocksuite/affine-model';
 import { MarkdownAdapter } from '@blocksuite/affine-shared/adapters';
 import { Container } from '@blocksuite/global/di';
 import type {
@@ -2350,6 +2354,109 @@ World!
     });
     expect(target.file).toBe(docMd);
   });
+
+  test('footnote', async () => {
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'block:vu6SK6WJpW',
+      flavour: 'affine:page',
+      props: {
+        title: {
+          '$blocksuite:internal:text$': true,
+          delta: [],
+        },
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'block:Tk4gSPocAt',
+          flavour: 'affine:surface',
+          props: {
+            elements: {},
+          },
+          children: [],
+        },
+        {
+          type: 'block',
+          id: 'block:WfnS5ZDCJT',
+          flavour: 'affine:note',
+          props: {
+            xywh: '[0,0,800,95]',
+            background: DefaultTheme.noteBackgrounColor,
+            index: 'a0',
+            hidden: false,
+            displayMode: NoteDisplayMode.DocAndEdgeless,
+          },
+          children: [
+            {
+              type: 'block',
+              id: 'block:zxDyvrg1Mh',
+              flavour: 'affine:paragraph',
+              props: {
+                type: 'text',
+                text: {
+                  '$blocksuite:internal:text$': true,
+                  delta: [
+                    {
+                      insert: 'aaa',
+                    },
+                    {
+                      insert: ' ',
+                      attributes: {
+                        footnote: {
+                          label: '1',
+                          reference: {
+                            type: 'url',
+                            url: 'https://www.example.com',
+                          },
+                        },
+                      },
+                    },
+                    {
+                      insert: ' ',
+                      attributes: {
+                        footnote: {
+                          label: '2',
+                          reference: {
+                            type: 'doc',
+                            docId: 'deadbeef',
+                          },
+                        },
+                      },
+                    },
+                    {
+                      insert: ' ',
+                      attributes: {
+                        footnote: {
+                          label: '3',
+                          reference: {
+                            type: 'attachment',
+                            blobId: 'abcdefg',
+                            fileName: 'test.txt',
+                            fileType: 'text/plain',
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+              children: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const markdown =
+      'aaa[^1][^2][^3]\n\n[^1]: {"type":"url","url":"https%3A%2F%2Fwww.example.com"}\n\n[^2]: {"type":"doc","docId":"deadbeef"}\n\n[^3]: {"type":"attachment","blobId":"abcdefg","fileName":"test.txt","fileType":"text/plain"}\n';
+
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
+    const target = await mdAdapter.fromBlockSnapshot({
+      snapshot: blockSnapshot,
+    });
+    expect(target.file).toBe(markdown);
+  });
 });
 
 describe('markdown to snapshot', () => {
@@ -3426,91 +3533,76 @@ bbb
       flavour: 'affine:note',
       props: {
         xywh: '[0,0,800,95]',
-        background: DefaultTheme.noteBackgrounColor,
+        background: {
+          dark: '#000000',
+          light: '#ffffff',
+        },
         index: 'a0',
         hidden: false,
-        displayMode: NoteDisplayMode.DocAndEdgeless,
+        displayMode: 'both',
       },
       children: [
         {
           type: 'block',
           id: 'matchesReplaceMap[1]',
-          flavour: 'affine:database',
+          flavour: TableModelFlavour,
           props: {
-            views: [
-              {
-                id: 'matchesReplaceMap[2]',
-                name: 'Table View',
-                mode: 'table',
-                columns: [],
-                filter: {
-                  type: 'group',
-                  op: 'and',
-                  conditions: [],
-                },
-                header: {
-                  titleColumn: 'matchesReplaceMap[9]',
-                  iconColumn: 'type',
-                },
+            columns: {
+              'matchesReplaceMap[3]': {
+                columnId: 'matchesReplaceMap[3]',
+                order: 'matchesReplaceMap[4]',
               },
-            ],
-            title: {
-              '$blocksuite:internal:text$': true,
-              delta: [],
+              'matchesReplaceMap[6]': {
+                columnId: 'matchesReplaceMap[6]',
+                order: 'matchesReplaceMap[7]',
+              },
+              'matchesReplaceMap[9]': {
+                columnId: 'matchesReplaceMap[9]',
+                order: 'matchesReplaceMap[10]',
+              },
+            },
+            rows: {
+              'matchesReplaceMap[12]': {
+                rowId: 'matchesReplaceMap[12]',
+                order: 'matchesReplaceMap[13]',
+              },
+              'matchesReplaceMap[15]': {
+                rowId: 'matchesReplaceMap[15]',
+                order: 'matchesReplaceMap[16]',
+              },
             },
             cells: {
-              'matchesReplaceMap[12]': {
-                'matchesReplaceMap[10]': {
-                  columnId: 'matchesReplaceMap[10]',
-                  value: {
-                    '$blocksuite:internal:text$': true,
-                    delta: [
-                      {
-                        insert: 'eee',
-                      },
-                    ],
-                  },
-                },
-                'matchesReplaceMap[11]': {
-                  columnId: 'matchesReplaceMap[11]',
-                  value: {
-                    '$blocksuite:internal:text$': true,
-                    delta: [
-                      {
-                        insert: 'fff',
-                      },
-                    ],
-                  },
+              'matchesReplaceMap[17]': {
+                text: {
+                  '$blocksuite:internal:text$': true,
+                  delta: [
+                    {
+                      insert: 'aaa',
+                    },
+                  ],
                 },
               },
-            },
-            columns: [
-              {
-                type: 'title',
-                name: 'aaa',
-                data: {},
-                id: 'matchesReplaceMap[9]',
+              'matchesReplaceMap[18]': {
+                text: {
+                  '$blocksuite:internal:text$': true,
+                  delta: [
+                    {
+                      insert: 'bbb',
+                    },
+                  ],
+                },
               },
-              {
-                type: 'rich-text',
-                name: 'bbb',
-                data: {},
-                id: 'matchesReplaceMap[10]',
+              'matchesReplaceMap[19]': {
+                text: {
+                  '$blocksuite:internal:text$': true,
+                  delta: [
+                    {
+                      insert: 'ccc',
+                    },
+                  ],
+                },
               },
-              {
-                type: 'rich-text',
-                name: 'ccc',
-                data: {},
-                id: 'matchesReplaceMap[11]',
-              },
-            ],
-          },
-          children: [
-            {
-              type: 'block',
-              id: 'matchesReplaceMap[12]',
-              flavour: 'affine:paragraph',
-              props: {
+              'matchesReplaceMap[20]': {
                 text: {
                   '$blocksuite:internal:text$': true,
                   delta: [
@@ -3519,11 +3611,30 @@ bbb
                     },
                   ],
                 },
-                type: 'text',
               },
-              children: [],
+              'matchesReplaceMap[21]': {
+                text: {
+                  '$blocksuite:internal:text$': true,
+                  delta: [
+                    {
+                      insert: 'eee',
+                    },
+                  ],
+                },
+              },
+              'matchesReplaceMap[22]': {
+                text: {
+                  '$blocksuite:internal:text$': true,
+                  delta: [
+                    {
+                      insert: 'fff',
+                    },
+                  ],
+                },
+              },
             },
-          ],
+          },
+          children: [],
         },
       ],
     };
@@ -3853,6 +3964,87 @@ hhh
       adapterConfigs.set('docLinkBaseUrl', 'https://example.com');
     };
     const mdAdapter = new MarkdownAdapter(createJob([middleware]), provider);
+    const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
+      file: markdown,
+    });
+    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+  });
+
+  test('without footnote middleware', async () => {
+    const markdown =
+      'aaa[^1][^2][^3]\n\n[^1]: {"type":"url","url":"https%3A%2F%2Fwww.example.com"}\n\n[^2]: {"type":"doc","docId":"deadbeef"}\n\n[^3]: {"type":"attachment","blobId":"abcdefg","fileName":"test.txt","fileType":"text/plain"}\n';
+
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'matchesReplaceMap[0]',
+      flavour: 'affine:note',
+      props: {
+        xywh: '[0,0,800,95]',
+        background: DefaultTheme.noteBackgrounColor,
+        index: 'a0',
+        hidden: false,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[1]',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'aaa',
+                },
+                {
+                  insert: ' ',
+                  attributes: {
+                    footnote: {
+                      label: '1',
+                      reference: {
+                        type: 'url',
+                        url: 'https://www.example.com',
+                      },
+                    },
+                  },
+                },
+                {
+                  insert: ' ',
+                  attributes: {
+                    footnote: {
+                      label: '2',
+                      reference: {
+                        type: 'doc',
+                        docId: 'deadbeef',
+                      },
+                    },
+                  },
+                },
+                {
+                  insert: ' ',
+                  attributes: {
+                    footnote: {
+                      label: '3',
+                      reference: {
+                        type: 'attachment',
+                        blobId: 'abcdefg',
+                        fileName: 'test.txt',
+                        fileType: 'text/plain',
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
     const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
       file: markdown,
     });

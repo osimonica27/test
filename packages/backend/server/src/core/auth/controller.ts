@@ -6,6 +6,7 @@ import {
   Get,
   Header,
   HttpStatus,
+  Logger,
   Post,
   Query,
   Req,
@@ -14,7 +15,9 @@ import {
 import type { Request, Response } from 'express';
 
 import {
+  Cache,
   Config,
+  CryptoHelper,
   EarlyAccessRequired,
   EmailTokenNotFound,
   InternalServerError,
@@ -49,15 +52,21 @@ interface MagicLinkCredential {
   token: string;
 }
 
+const OTP_CACHE_KEY = (otp: string) => `magic-link-otp:${otp}`;
+
 @Throttle('strict')
 @Controller('/api/auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly url: URLHelper,
     private readonly auth: AuthService,
     private readonly models: Models,
     private readonly config: Config,
-    private readonly runtime: Runtime
+    private readonly runtime: Runtime,
+    private readonly cache: Cache,
+    private readonly crypto: CryptoHelper
   ) {
     if (config.node.dev) {
       // set DNS servers in dev mode
@@ -190,13 +199,20 @@ export class AuthController {
       }
     }
 
+    const ttlInSec = 30 * 60;
     const token = await this.models.verificationToken.create(
       TokenType.SignIn,
-      email
+      email,
+      ttlInSec
     );
 
+    const otp = this.crypto.otp();
+    // TODO(@forehalo): this is a temporary solution, we should not rely on cache to store the otp
+    const cacheKey = OTP_CACHE_KEY(otp);
+    await this.cache.set(cacheKey, token, { ttl: ttlInSec * 1000 });
+
     const magicLink = this.url.link(callbackUrl, {
-      token,
+      token: otp,
       email,
       ...(redirectUrl
         ? {
@@ -204,8 +220,17 @@ export class AuthController {
           }
         : {}),
     });
+    if (this.config.node.dev) {
+      // make it easier to test in dev mode
+      this.logger.debug(`Magic link: ${magicLink}`);
+    }
 
-    const result = await this.auth.sendSignInEmail(email, magicLink, !user);
+    const result = await this.auth.sendSignInEmail(
+      email,
+      magicLink,
+      otp,
+      !user
+    );
 
     if (result.rejected.length) {
       throw new InternalServerError('Failed to send sign-in email.');
@@ -247,9 +272,16 @@ export class AuthController {
 
     validators.assertValidEmail(email);
 
+    const cacheKey = OTP_CACHE_KEY(token);
+    const cachedToken = await this.cache.get<string>(cacheKey);
+
+    if (!cachedToken) {
+      throw new InvalidEmailToken();
+    }
+
     const tokenRecord = await this.models.verificationToken.verify(
       TokenType.SignIn,
-      token,
+      cachedToken,
       {
         credential: email,
       }

@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import {
-  type WorkspacePage as Page,
-  type WorkspacePageUserPermission as PageUserPermission,
+  type WorkspaceDoc as Page,
+  type WorkspaceDocUserPermission as PageUserPermission,
 } from '@prisma/client';
 
+import { WorkspaceRole } from '../core/permission';
 import { BaseModel } from './base';
-import { Permission, PublicPageMode } from './common';
-
+import { PublicPageMode } from './common';
 export type { Page };
 export type UpdatePageInput = {
   mode?: PublicPageMode;
@@ -21,12 +21,12 @@ export class PageModel extends BaseModel {
   /**
    * Create or update the page.
    */
-  async upsert(workspaceId: string, pageId: string, data?: UpdatePageInput) {
-    return await this.db.workspacePage.upsert({
+  async upsert(workspaceId: string, docId: string, data?: UpdatePageInput) {
+    return await this.db.workspaceDoc.upsert({
       where: {
-        workspaceId_pageId: {
+        workspaceId_docId: {
           workspaceId,
-          pageId,
+          docId,
         },
       },
       update: {
@@ -35,7 +35,7 @@ export class PageModel extends BaseModel {
       create: {
         ...data,
         workspaceId,
-        pageId,
+        docId,
       },
     });
   }
@@ -45,12 +45,12 @@ export class PageModel extends BaseModel {
    * @param isPublic: if true, only return the public page. If false, only return the private page.
    * If not set, return public or private both.
    */
-  async get(workspaceId: string, pageId: string, isPublic?: boolean) {
-    return await this.db.workspacePage.findUnique({
+  async get(workspaceId: string, docId: string, isPublic?: boolean) {
+    return await this.db.workspaceDoc.findUnique({
       where: {
-        workspaceId_pageId: {
+        workspaceId_docId: {
           workspaceId,
-          pageId,
+          docId,
         },
         public: isPublic,
       },
@@ -61,7 +61,7 @@ export class PageModel extends BaseModel {
    * Find the workspace public pages.
    */
   async findPublics(workspaceId: string) {
-    return await this.db.workspacePage.findMany({
+    return await this.db.workspaceDoc.findMany({
       where: {
         workspaceId,
         public: true,
@@ -73,7 +73,7 @@ export class PageModel extends BaseModel {
    * Get the workspace public pages count.
    */
   async getPublicsCount(workspaceId: string) {
-    return await this.db.workspacePage.count({
+    return await this.db.workspaceDoc.count({
       where: {
         workspaceId,
         public: true,
@@ -91,15 +91,15 @@ export class PageModel extends BaseModel {
   @Transactional()
   async grantMember(
     workspaceId: string,
-    pageId: string,
+    docId: string,
     userId: string,
-    permission: Permission = Permission.Read
+    permission: WorkspaceRole = WorkspaceRole.Collaborator
   ): Promise<PageUserPermission> {
-    let data = await this.db.workspacePageUserPermission.findUnique({
+    let data = await this.db.workspaceDocUserPermission.findUnique({
       where: {
-        workspaceId_pageId_userId: {
+        workspaceId_docId_userId: {
           workspaceId,
-          pageId,
+          docId,
           userId,
         },
       },
@@ -109,11 +109,11 @@ export class PageModel extends BaseModel {
     if (!data || data.type !== permission) {
       if (data) {
         // Update the permission
-        data = await this.tx.workspacePageUserPermission.update({
+        data = await this.db.workspaceDocUserPermission.update({
           where: {
-            workspaceId_pageId_userId: {
+            workspaceId_docId_userId: {
               workspaceId,
-              pageId,
+              docId,
               userId,
             },
           },
@@ -121,31 +121,29 @@ export class PageModel extends BaseModel {
         });
       } else {
         // Create a new permission
-        data = await this.tx.workspacePageUserPermission.create({
+        data = await this.db.workspaceDocUserPermission.create({
           data: {
             workspaceId,
-            pageId,
+            docId,
             userId,
             type: permission,
-            // page permission does not require invitee to accept, the accepted field will be deprecated later.
-            accepted: true,
           },
         });
       }
 
       // If the new permission is owner, we need to revoke old owner
-      if (permission === Permission.Owner) {
-        await this.tx.workspacePageUserPermission.updateMany({
+      if (permission === WorkspaceRole.Owner) {
+        await this.db.workspaceDocUserPermission.updateMany({
           where: {
             workspaceId,
-            pageId,
-            type: Permission.Owner,
+            docId,
+            type: WorkspaceRole.Owner,
             userId: { not: userId },
           },
-          data: { type: Permission.Admin },
+          data: { type: WorkspaceRole.Admin },
         });
         this.logger.log(
-          `Change owner of workspace ${workspaceId} page ${pageId} to user ${userId}`
+          `Change owner of workspace ${workspaceId} doc ${docId} to user ${userId}`
         );
       }
       return data;
@@ -161,14 +159,14 @@ export class PageModel extends BaseModel {
    */
   async isMember(
     workspaceId: string,
-    pageId: string,
+    docId: string,
     userId: string,
-    permission: Permission = Permission.Read
+    permission: WorkspaceRole = WorkspaceRole.Collaborator
   ) {
-    const count = await this.db.workspacePageUserPermission.count({
+    const count = await this.db.workspaceDocUserPermission.count({
       where: {
         workspaceId,
-        pageId,
+        docId,
         userId,
         type: {
           gte: permission,
@@ -182,15 +180,15 @@ export class PageModel extends BaseModel {
    * Delete a page member
    * Except the owner, the owner can't be deleted.
    */
-  async deleteMember(workspaceId: string, pageId: string, userId: string) {
-    const { count } = await this.db.workspacePageUserPermission.deleteMany({
+  async deleteMember(workspaceId: string, docId: string, userId: string) {
+    const { count } = await this.db.workspaceDocUserPermission.deleteMany({
       where: {
         workspaceId,
-        pageId,
+        docId,
         userId,
         type: {
           // We shouldn't revoke owner permission, should auto deleted by workspace/user delete cascading
-          not: Permission.Owner,
+          not: WorkspaceRole.Owner,
         },
       },
     });

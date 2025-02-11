@@ -9,7 +9,7 @@ import {
   LongerIcon,
   NumberIcon,
   TagIcon,
-  TemplateOutlineIcon,
+  TemplateIcon,
   TextIcon,
   TodayIcon,
 } from '@blocksuite/icons/rc';
@@ -111,11 +111,10 @@ export const DocPropertyTypes = {
     description: 'com.affine.page-properties.property.pageWidth.tooltips',
   },
   template: {
-    uniqueId: 'template',
-    icon: TemplateOutlineIcon,
+    icon: TemplateIcon,
     value: TemplateValue,
     name: 'com.affine.page-properties.property.template',
-    renameable: false,
+    renameable: true,
     description: 'com.affine.page-properties.property.template.tooltips',
   },
 } as Record<

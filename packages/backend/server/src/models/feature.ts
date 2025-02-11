@@ -4,12 +4,13 @@ import { Feature } from '@prisma/client';
 import { z } from 'zod';
 
 import { BaseModel } from './base';
-import { Features, FeatureType } from './common';
-
-type FeatureNames = keyof typeof Features;
-type FeatureConfigs<T extends FeatureNames> = z.infer<
-  (typeof Features)[T]['shape']['configs']
->;
+import {
+  type FeatureConfig,
+  FeatureConfigs,
+  type FeatureName,
+  FeaturesShapes,
+  FeatureType,
+} from './common';
 
 // TODO(@forehalo):
 //   `version` column in `features` table will deprecated because it's makes the whole system complicated without any benefits.
@@ -19,8 +20,38 @@ type FeatureConfigs<T extends FeatureNames> = z.infer<
 //   This is a huge burden for us and we should remove it.
 @Injectable()
 export class FeatureModel extends BaseModel {
-  async get<T extends FeatureNames>(name: T) {
-    const feature = await this.getLatest(name);
+  async get<T extends FeatureName>(name: T) {
+    const feature = await this.get_unchecked(name);
+
+    return {
+      ...feature,
+      configs: this.check(name, feature.configs),
+    };
+  }
+
+  /**
+   * Get the latest feature from database.
+   *
+   * @internal
+   */
+  async try_get_unchecked<T extends FeatureName>(name: T) {
+    const feature = await this.db.feature.findFirst({
+      where: { name },
+    });
+
+    return feature as Omit<Feature, 'configs'> & {
+      configs: Record<string, any>;
+    };
+  }
+
+  /**
+   * Get the latest feature from database.
+   *
+   * @throws {Error} If the feature is not found in DB.
+   * @internal
+   */
+  async get_unchecked<T extends FeatureName>(name: T) {
+    const feature = await this.try_get_unchecked(name);
 
     // All features are hardcoded in the codebase
     // It would be a fatal error if the feature is not found in DB.
@@ -28,8 +59,12 @@ export class FeatureModel extends BaseModel {
       throw new Error(`Feature ${name} not found`);
     }
 
+    return feature;
+  }
+
+  check<T extends FeatureName>(name: T, config: any) {
     const shape = this.getConfigShape(name);
-    const parseResult = shape.safeParse(feature.configs);
+    const parseResult = shape.safeParse(config);
 
     if (!parseResult.success) {
       throw new Error(`Invalid feature config for ${name}`, {
@@ -37,41 +72,50 @@ export class FeatureModel extends BaseModel {
       });
     }
 
-    return {
-      ...feature,
-      configs: parseResult.data as FeatureConfigs<T>,
-    };
+    return parseResult.data as FeatureConfig<T>;
+  }
+
+  getConfigShape(name: FeatureName): z.ZodObject<any> {
+    return FeaturesShapes[name] ?? z.object({});
+  }
+
+  getFeatureType(name: FeatureName): FeatureType {
+    return FeatureConfigs[name].type;
   }
 
   @Transactional()
-  async upsert<T extends FeatureNames>(name: T, configs: FeatureConfigs<T>) {
-    const shape = this.getConfigShape(name);
-    const parseResult = shape.safeParse(configs);
-
-    if (!parseResult.success) {
-      throw new Error(`Invalid feature config for ${name}`, {
-        cause: parseResult.error,
-      });
-    }
-
-    const parsedConfigs = parseResult.data;
+  private async upsert<T extends FeatureName>(
+    name: T,
+    configs: FeatureConfig<T>,
+    deprecatedType: FeatureType,
+    deprecatedVersion: number
+  ) {
+    const parsedConfigs = this.check(name, configs);
 
     // TODO(@forehalo):
     //   could be a simple upsert operation, but we got useless `version` column in the database
     //   will be fixed when `version` column gets deprecated
-    const latest = await this.getLatest(name);
+    const latest = await this.db.feature.findFirst({
+      where: {
+        name,
+      },
+      orderBy: {
+        deprecatedVersion: 'desc',
+      },
+    });
 
     let feature: Feature;
     if (!latest) {
-      feature = await this.tx.feature.create({
+      feature = await this.db.feature.create({
         data: {
-          type: FeatureType.Feature,
-          feature: name,
+          name,
+          deprecatedType,
+          deprecatedVersion,
           configs: parsedConfigs,
         },
       });
     } else {
-      feature = await this.tx.feature.update({
+      feature = await this.db.feature.update({
         where: { id: latest.id },
         data: {
           configs: parsedConfigs,
@@ -81,17 +125,24 @@ export class FeatureModel extends BaseModel {
 
     this.logger.verbose(`Feature ${name} upserted`);
 
-    return feature as Feature & { configs: FeatureConfigs<T> };
+    return feature as Feature & { configs: FeatureConfig<T> };
   }
 
-  private async getLatest<T extends FeatureNames>(name: T) {
-    return this.tx.feature.findFirst({
-      where: { feature: name },
-      orderBy: { version: 'desc' },
-    });
-  }
-
-  private getConfigShape(name: FeatureNames): z.ZodObject<any> {
-    return Features[name]?.shape.configs ?? z.object({});
+  async refreshFeatures() {
+    for (const key in FeatureConfigs) {
+      const name = key as FeatureName;
+      const def = FeatureConfigs[name];
+      // self-hosted instance will use pro plan as free plan
+      if (name === 'free_plan_v1' && this.config.isSelfhosted) {
+        await this.upsert(
+          name,
+          FeatureConfigs['pro_plan_v1'].configs,
+          def.type,
+          def.deprecatedVersion
+        );
+      } else {
+        await this.upsert(name, def.configs, def.type, def.deprecatedVersion);
+      }
+    }
   }
 }

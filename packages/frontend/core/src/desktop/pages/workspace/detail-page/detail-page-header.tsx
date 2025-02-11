@@ -5,7 +5,6 @@ import {
   observeResize,
   useDraggable,
 } from '@affine/component';
-import { SharePageButton } from '@affine/core/components/affine/share-page-modal';
 import { FavoriteButton } from '@affine/core/components/blocksuite/block-suite-header/favorite';
 import { InfoButton } from '@affine/core/components/blocksuite/block-suite-header/info';
 import { JournalWeekDatePicker } from '@affine/core/components/blocksuite/block-suite-header/journal/date-picker';
@@ -20,6 +19,7 @@ import { DocService } from '@affine/core/modules/doc';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { EditorService } from '@affine/core/modules/editor';
 import { JournalService } from '@affine/core/modules/journal';
+import { SharePageButton } from '@affine/core/modules/share-menu';
 import { TemplateDocService } from '@affine/core/modules/template-doc';
 import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
 import type { Workspace } from '@affine/core/modules/workspace';
@@ -158,10 +158,7 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
       <ViewTitle title={title} />
       <ViewIcon icon={currentMode ?? 'page'} />
       <EditorModeSwitch />
-      <BlocksuiteHeaderTitle
-        docId={page.id}
-        inputHandleRef={titleInputHandleRef}
-      />
+      <BlocksuiteHeaderTitle inputHandleRef={titleInputHandleRef} />
       <TemplateMark />
       <div className={styles.iconButtonContainer}>
         {hideCollect ? null : (

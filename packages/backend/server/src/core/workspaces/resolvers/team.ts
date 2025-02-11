@@ -10,9 +10,9 @@ import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 import { nanoid } from 'nanoid';
 
 import {
+  ActionForbiddenOnNonTeamWorkspace,
   Cache,
-  EventEmitter,
-  type EventPayload,
+  EventBus,
   MemberNotFoundInSpace,
   OnEvent,
   RequestMutex,
@@ -22,8 +22,8 @@ import {
 } from '../../../base';
 import { Models } from '../../../models';
 import { CurrentUser } from '../../auth';
-import { Permission, PermissionService } from '../../permission';
-import { QuotaManagementService } from '../../quota';
+import { PermissionService, WorkspaceRole } from '../../permission';
+import { QuotaService } from '../../quota';
 import {
   InviteLink,
   InviteResult,
@@ -43,12 +43,12 @@ export class TeamWorkspaceResolver {
 
   constructor(
     private readonly cache: Cache,
-    private readonly event: EventEmitter,
+    private readonly event: EventBus,
     private readonly url: URLHelper,
     private readonly prisma: PrismaClient,
     private readonly permissions: PermissionService,
     private readonly models: Models,
-    private readonly quota: QuotaManagementService,
+    private readonly quota: QuotaService,
     private readonly mutex: RequestMutex,
     private readonly workspaceService: WorkspaceService
   ) {}
@@ -59,7 +59,7 @@ export class TeamWorkspaceResolver {
     complexity: 2,
   })
   team(@Parent() workspace: WorkspaceType) {
-    return this.quota.isTeamWorkspace(workspace.id);
+    return this.workspaceService.isTeamWorkspace(workspace.id);
   }
 
   @Mutation(() => [InviteResult])
@@ -72,7 +72,7 @@ export class TeamWorkspaceResolver {
     await this.permissions.checkWorkspace(
       workspaceId,
       user.id,
-      Permission.Admin
+      WorkspaceRole.Admin
     );
 
     if (emails.length > 512) {
@@ -86,7 +86,7 @@ export class TeamWorkspaceResolver {
       return new TooManyRequest();
     }
 
-    const quota = await this.quota.getWorkspaceUsage(workspaceId);
+    const quota = await this.quota.getWorkspaceSeatQuota(workspaceId);
 
     const results = [];
     for (const [idx, email] of emails.entries()) {
@@ -114,7 +114,7 @@ export class TeamWorkspaceResolver {
         ret.inviteId = await this.permissions.grant(
           workspaceId,
           target.id,
-          Permission.Write,
+          WorkspaceRole.Collaborator,
           needMoreSeat
             ? WorkspaceMemberStatus.NeedMoreSeat
             : WorkspaceMemberStatus.Pending
@@ -160,7 +160,7 @@ export class TeamWorkspaceResolver {
     await this.permissions.checkWorkspace(
       workspace.id,
       user.id,
-      Permission.Admin
+      WorkspaceRole.Admin
     );
 
     const cacheId = `workspace:inviteLink:${workspace.id}`;
@@ -187,7 +187,7 @@ export class TeamWorkspaceResolver {
     await this.permissions.checkWorkspace(
       workspaceId,
       user.id,
-      Permission.Admin
+      WorkspaceRole.Admin
     );
     const cacheWorkspaceId = `workspace:inviteLink:${workspaceId}`;
     const invite = await this.cache.get<{ inviteId: string }>(cacheWorkspaceId);
@@ -223,7 +223,7 @@ export class TeamWorkspaceResolver {
     await this.permissions.checkWorkspace(
       workspaceId,
       user.id,
-      Permission.Admin
+      WorkspaceRole.Admin
     );
     const cacheId = `workspace:inviteLink:${workspaceId}`;
     return await this.cache.delete(cacheId);
@@ -238,7 +238,7 @@ export class TeamWorkspaceResolver {
     await this.permissions.checkWorkspace(
       workspaceId,
       user.id,
-      Permission.Admin
+      WorkspaceRole.Admin
     );
 
     try {
@@ -258,7 +258,7 @@ export class TeamWorkspaceResolver {
           const result = await this.permissions.grant(
             workspaceId,
             userId,
-            Permission.Write,
+            WorkspaceRole.Collaborator,
             WorkspaceMemberStatus.Accepted
           );
 
@@ -284,12 +284,22 @@ export class TeamWorkspaceResolver {
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string,
-    @Args('permission', { type: () => Permission }) permission: Permission
+    @Args('permission', { type: () => WorkspaceRole }) permission: WorkspaceRole
   ) {
+    // non-team workspace can only transfer ownership, but no detailed permission control
+    if (permission !== WorkspaceRole.Owner) {
+      const isTeam = await this.workspaceService.isTeamWorkspace(workspaceId);
+      if (!isTeam) {
+        throw new ActionForbiddenOnNonTeamWorkspace();
+      }
+    }
+
     await this.permissions.checkWorkspace(
       workspaceId,
       user.id,
-      Permission.Owner
+      permission >= WorkspaceRole.Admin
+        ? WorkspaceRole.Owner
+        : WorkspaceRole.Admin
     );
 
     try {
@@ -312,15 +322,17 @@ export class TeamWorkspaceResolver {
         );
 
         if (result) {
-          this.event.emit('workspace.members.roleChanged', {
-            userId,
-            workspaceId,
-            permission,
-          });
-          if (permission === Permission.Owner) {
-            this.event.emit('workspace.members.ownerTransferred', {
-              email: user.email,
+          if (permission === WorkspaceRole.Owner) {
+            this.event.emit('workspace.members.ownershipTransferred', {
               workspaceId,
+              from: user.id,
+              to: userId,
+            });
+          } else {
+            this.event.emit('workspace.members.roleChanged', {
+              userId,
+              workspaceId,
+              permission,
             });
           }
         }
@@ -342,31 +354,30 @@ export class TeamWorkspaceResolver {
   @OnEvent('workspace.members.reviewRequested')
   async onReviewRequested({
     inviteId,
-  }: EventPayload<'workspace.members.reviewRequested'>) {
+  }: Events['workspace.members.reviewRequested']) {
     // send review request mail to owner and admin
     await this.workspaceService.sendReviewRequestedEmail(inviteId);
+  }
+
+  @OnEvent('workspace.members.requestApproved')
+  async onApproveRequest({
+    inviteId,
+  }: Events['workspace.members.requestApproved']) {
+    // send approve mail
+    await this.workspaceService.sendReviewApproveEmail(inviteId);
   }
 
   @OnEvent('workspace.members.requestDeclined')
   async onDeclineRequest({
     userId,
     workspaceId,
-  }: EventPayload<'workspace.members.requestDeclined'>) {
+  }: Events['workspace.members.requestDeclined']) {
     const user = await this.models.user.getPublicUser(userId);
-    const workspace = await this.workspaceService.getWorkspaceInfo(workspaceId);
     // send decline mail
     await this.workspaceService.sendReviewDeclinedEmail(
       user?.email,
-      workspace.name
+      workspaceId
     );
-  }
-
-  @OnEvent('workspace.members.requestApproved')
-  async onApproveRequest({
-    inviteId,
-  }: EventPayload<'workspace.members.requestApproved'>) {
-    // send approve mail
-    await this.workspaceService.sendReviewApproveEmail(inviteId);
   }
 
   @OnEvent('workspace.members.roleChanged')
@@ -374,7 +385,7 @@ export class TeamWorkspaceResolver {
     userId,
     workspaceId,
     permission,
-  }: EventPayload<'workspace.members.roleChanged'>) {
+  }: Events['workspace.members.roleChanged']) {
     // send role changed mail
     await this.workspaceService.sendRoleChangedEmail(userId, {
       id: workspaceId,
@@ -382,14 +393,29 @@ export class TeamWorkspaceResolver {
     });
   }
 
-  @OnEvent('workspace.members.ownerTransferred')
+  @OnEvent('workspace.members.ownershipTransferred')
   async onOwnerTransferred({
-    email,
     workspaceId,
-  }: EventPayload<'workspace.members.ownerTransferred'>) {
-    // send role changed mail
-    await this.workspaceService.sendOwnerTransferredEmail(email, {
-      id: workspaceId,
-    });
+    from,
+    to,
+  }: Events['workspace.members.ownershipTransferred']) {
+    // send ownership transferred mail
+    const fromUser = await this.models.user.getPublicUser(from);
+    const toUser = await this.models.user.getPublicUser(to);
+
+    if (fromUser) {
+      await this.workspaceService.sendOwnershipTransferredEmail(
+        fromUser.email,
+        {
+          id: workspaceId,
+        }
+      );
+    }
+
+    if (toUser) {
+      await this.workspaceService.sendOwnershipReceivedEmail(toUser.email, {
+        id: workspaceId,
+      });
+    }
   }
 }

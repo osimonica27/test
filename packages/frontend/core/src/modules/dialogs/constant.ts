@@ -8,10 +8,11 @@ export type SettingTab =
   | 'about'
   | 'plans'
   | 'billing'
+  | 'backup' // electron only
   | 'experimental-features'
   | 'editor'
   | 'account'
-  | `workspace:${'preference' | 'properties' | 'billing' | 'license'}`;
+  | `workspace:${'preference' | 'properties' | 'members' | 'storage' | 'billing' | 'license'}`;
 
 export type GLOBAL_DIALOG_SCHEMA = {
   'create-workspace': (props: { serverId?: string; forcedCloud?: boolean }) => {

@@ -3,7 +3,6 @@ import path from 'node:path';
 
 import { Package } from '@affine-tools/utils/workspace';
 import type { INestApplication } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 import request from 'supertest';
@@ -13,7 +12,6 @@ import { createTestingApp } from '../utils';
 
 const test = ava as TestFn<{
   app: INestApplication;
-  db: PrismaClient;
 }>;
 
 const mobileUAString =
@@ -51,12 +49,11 @@ test.before('init selfhost server', async t => {
   const staticPath = new Package('@affine/server').join('static').value;
   initTestStaticFiles(staticPath);
 
-  const { app } = await createTestingApp({
+  const app = await createTestingApp({
     imports: [DocRendererModule],
   });
 
   t.context.app = app;
-  t.context.db = t.context.app.get(PrismaClient);
 });
 
 test.after.always(async t => {
@@ -75,7 +72,8 @@ test('should render correct html', async t => {
   );
 });
 
-test('should render correct mobile html', async t => {
+// TODO(@forehalo): enable it when mobile version is ready
+test.skip('should render correct mobile html', async t => {
   const res = await request(t.context.app.getHttpServer())
     .get('/workspace/xxxx/xxx')
     .set('user-agent', mobileUAString)

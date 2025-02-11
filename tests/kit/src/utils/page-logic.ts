@@ -33,13 +33,6 @@ export async function waitForAllPagesLoad(page: Page) {
 }
 
 export async function clickNewPageButton(page: Page, title?: string) {
-  // FiXME: when the page is in edgeless mode, clickNewPageButton will create a new edgeless page
-  const edgelessPage = page.locator('edgeless-editor');
-  if (await edgelessPage.isVisible()) {
-    await page.getByTestId('switch-page-mode-button').click({
-      delay: 100,
-    });
-  }
   // fixme(himself65): if too fast, the page will crash
   await page.getByTestId('sidebar-new-page-button').click({
     delay: 100,
@@ -199,6 +192,7 @@ export const dragTo = async (
 };
 
 // sometimes editor loses focus, this function is to focus the editor
+// FIXME: this function is not usable since the placeholder is not unstable
 export const focusInlineEditor = async (page: Page) => {
   await page
     .locator(
@@ -227,6 +221,13 @@ export const addDatabase = async (page: Page, title?: string) => {
       )
       .blur();
   }
+};
+
+export const addCodeBlock = async (page: Page) => {
+  await page.keyboard.press('/');
+  await expect(page.locator('affine-slash-menu .slash-menu')).toBeVisible();
+  await page.keyboard.type('code');
+  await page.getByTestId('Code Block').click();
 };
 
 export const addDatabaseRow = async (page: Page, databaseTitle: string) => {

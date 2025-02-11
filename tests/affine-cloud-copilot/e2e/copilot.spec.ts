@@ -164,8 +164,8 @@ test('can trigger login at chat side panel', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await makeChat(page, 'hello');
-  const loginTips = await page.waitForSelector('ai-error-wrapper');
-  expect(await loginTips.innerText()).toBe('Login');
+  const loginButton = await page.getByTestId('ai-error-action-button');
+  expect(await loginButton.innerText()).toBe('Login');
 });
 
 test('can chat after login at chat side panel', async ({ page }) => {
@@ -173,8 +173,8 @@ test('can chat after login at chat side panel', async ({ page }) => {
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await makeChat(page, 'hello');
-  const loginTips = await page.waitForSelector('ai-error-wrapper');
-  (await loginTips.$('div'))!.click();
+  const loginButton = await page.getByTestId('ai-error-action-button');
+  await loginButton.click();
   // login
   const user = await getUser();
   await loginUserDirectly(page, user);
@@ -415,7 +415,7 @@ test.describe('chat panel', () => {
     });
     expect(history[1].name).toBe('AFFiNE AI');
     expect(
-      await page.locator('chat-panel affine-link').count()
+      await page.locator('chat-panel affine-footnote-node').count()
     ).toBeGreaterThan(0);
 
     await clearChat(page);
@@ -429,7 +429,18 @@ test.describe('chat panel', () => {
       content: 'What is the weather in Shanghai today?',
     });
     expect(history[1].name).toBe('AFFiNE AI');
-    expect(await page.locator('chat-panel affine-link').count()).toBe(0);
+    expect(await page.locator('chat-panel affine-footnote-node').count()).toBe(
+      0
+    );
+  });
+
+  test('can trigger inline ai input and action panel by clicking Start with AI button', async ({
+    page,
+  }) => {
+    await clickNewPageButton(page);
+    await page.getByTestId('start-with-ai-badge').click();
+    await expect(page.locator('affine-ai-panel-widget')).toBeVisible();
+    await expect(page.locator('ask-ai-panel')).toBeVisible();
   });
 });
 
@@ -762,14 +773,17 @@ test.describe('chat with doc', () => {
     // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
     expect(await chip.getAttribute('data-state')).toBe('success');
 
-    await makeChat(page, 'summarize');
+    await typeChatSequentially(page, 'What is AFFiNE AI?');
+    await page.keyboard.press('Enter');
     const history = await collectChat(page);
     expect(history[0]).toEqual({
       name: 'You',
-      content:
-        'AFFiNE AI is an assistant with the ability to create well-structured outlines for any given content.\nsummarize',
+      content: 'What is AFFiNE AI?',
     });
     expect(history[1].name).toBe('AFFiNE AI');
+    expect(
+      await page.locator('chat-panel affine-footnote-node').count()
+    ).toBeGreaterThan(0);
     await clearChat(page);
     expect((await collectChat(page)).length).toBe(0);
   });

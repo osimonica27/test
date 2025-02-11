@@ -12,8 +12,10 @@
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/block-std": "workspace:*",
     "@blocksuite/global": "workspace:*",
+    "@blocksuite/inline": "workspace:*",
     "@blocksuite/presets": "workspace:*",
-    "@playwright/test": "=1.49.1",
+    "@blocksuite/store": "workspace:*",
+    "@playwright/test": "=1.50.1",
     "@toeverything/theme": "^1.1.7"
   },
   "bsImport": {

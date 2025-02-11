@@ -5,7 +5,11 @@ import {
   getWorkspaceInfoQuery,
   getWorkspacesQuery,
 } from '@affine/graphql';
-import type { BlobStorage, DocStorage } from '@affine/nbstore';
+import type {
+  BlobStorage,
+  DocStorage,
+  ListedBlobRecord,
+} from '@affine/nbstore';
 import { CloudBlobStorage, StaticCloudDocStorage } from '@affine/nbstore/cloud';
 import {
   IndexedDBBlobStorage,
@@ -348,6 +352,8 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     await storage.connection.waitForConnected();
     const localBlob = await storage.get(blob);
 
+    storage.connection.disconnect();
+
     if (localBlob) {
       return new Blob([localBlob.data], { type: localBlob.mime });
     }
@@ -360,6 +366,37 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       return null;
     }
     return new Blob([cloudBlob.data], { type: cloudBlob.mime });
+  }
+
+  async listBlobs(id: string): Promise<ListedBlobRecord[]> {
+    const cloudStorage = new CloudBlobStorage({
+      id,
+      serverBaseUrl: this.server.serverMetadata.baseUrl,
+    });
+    return cloudStorage.list();
+  }
+
+  async deleteBlob(
+    id: string,
+    blob: string,
+    permanent: boolean
+  ): Promise<void> {
+    const cloudStorage = new CloudBlobStorage({
+      id,
+      serverBaseUrl: this.server.serverMetadata.baseUrl,
+    });
+    await cloudStorage.delete(blob, permanent);
+
+    // should also delete from local storage
+    const storage = new this.BlobStorageType({
+      id: id,
+      flavour: this.flavour,
+      type: 'workspace',
+    });
+    storage.connection.connect();
+    await storage.connection.waitForConnected();
+    await storage.delete(blob, permanent);
+    storage.connection.disconnect();
   }
 
   onWorkspaceInitialized(workspace: Workspace): void {

@@ -89,6 +89,7 @@ const adapted = {
 
 interface BlocksuiteEditorProps {
   page: Store;
+  readonly?: boolean;
   shared?: boolean;
   defaultOpenProperty?: DefaultOpenProperty;
 }
@@ -144,42 +145,43 @@ const usePatchSpecs = (mode: DocMode) => {
     extendEdgelessPreviewSpec(framework);
   }, [framework]);
 
-  const specs = useMemo(() => {
-    return mode === 'edgeless'
-      ? createEdgelessModeSpecs(framework)
-      : createPageModeSpecs(framework);
-  }, [mode, framework]);
-
   const confirmModal = useConfirmModal();
+
   const patchedSpecs = useMemo(() => {
-    let patched = specs.concat(
-      patchReferenceRenderer(reactToLit, referenceRenderer)
+    const builder =
+      mode === 'edgeless'
+        ? createEdgelessModeSpecs(framework)
+        : createPageModeSpecs(framework);
+
+    builder.extend(
+      [
+        patchReferenceRenderer(reactToLit, referenceRenderer),
+        patchForEdgelessNoteConfig(framework, reactToLit),
+        patchNotificationService(confirmModal),
+        patchPeekViewService(peekViewService),
+        patchOpenDocExtension(),
+        patchEdgelessClipboard(),
+        patchParseDocUrlExtension(framework),
+        patchGenerateDocUrlExtension(framework),
+        patchQuickSearchService(framework),
+        patchSideBarService(framework),
+        patchDocModeService(docService, docsService, editorService),
+      ].flat()
     );
 
     if (featureFlagService.flags.enable_pdf_embed_preview.value) {
-      patched = patched.concat(patchForAttachmentEmbedViews(reactToLit));
+      builder.extend([patchForAttachmentEmbedViews(reactToLit)]);
     }
-
-    patched = patched.concat(patchForEdgelessNoteConfig(reactToLit));
-    patched = patched.concat(patchNotificationService(confirmModal));
-    patched = patched.concat(patchPeekViewService(peekViewService));
-    patched = patched.concat(patchOpenDocExtension());
-    patched = patched.concat(patchEdgelessClipboard());
-    patched = patched.concat(patchParseDocUrlExtension(framework));
-    patched = patched.concat(patchGenerateDocUrlExtension(framework));
-    patched = patched.concat(patchQuickSearchService(framework));
-    patched = patched.concat(patchSideBarService(framework));
     if (BUILD_CONFIG.isMobileEdition) {
-      patched = patched.concat(patchForMobile());
+      builder.extend([patchForMobile()].flat());
     }
     if (BUILD_CONFIG.isElectron) {
-      patched = patched.concat(patchForClipboardInElectron(framework));
+      builder.extend([patchForClipboardInElectron(framework)].flat());
     }
-    patched = patched.concat(
-      patchDocModeService(docService, docsService, editorService)
-    );
-    return patched;
+
+    return builder.value;
   }, [
+    mode,
     confirmModal,
     docService,
     docsService,
@@ -188,7 +190,6 @@ const usePatchSpecs = (mode: DocMode) => {
     peekViewService,
     reactToLit,
     referenceRenderer,
-    specs,
     featureFlagService,
   ]);
 
@@ -220,6 +221,7 @@ export const BlocksuiteDocEditor = forwardRef<
     onClickBlank,
     titleRef: externalTitleRef,
     defaultOpenProperty,
+    readonly,
   },
   ref
 ) {
@@ -334,7 +336,7 @@ export const BlocksuiteDocEditor = forwardRef<
           data-testid="page-editor-blank"
           onClick={onClickBlank}
         ></div>
-        <StarterBar doc={page} />
+        {!readonly && <StarterBar doc={page} />}
         {!shared && displayBiDirectionalLink ? (
           <BiDirectionalLinkPanel />
         ) : null}
