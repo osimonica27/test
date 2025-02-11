@@ -13,11 +13,8 @@ export class ViewportTurboRenderer {
   private lastSection: SectionLayout | null = null;
   private lastBitmap: ImageBitmap | null = null;
 
-  constructor() {
-    // FIXME
-    this.targetContainer = document.querySelector(
-      '#right-column'
-    ) as HTMLElement;
+  constructor(targetContainer: HTMLElement) {
+    this.targetContainer = targetContainer;
 
     this.worker = new Worker(new URL('./painter.worker.ts', import.meta.url), {
       type: 'module',

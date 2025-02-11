@@ -1,14 +1,15 @@
+import { ViewportTurboRenderer } from '@blocksuite/affine-shared/viewport-renderer';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { nextTick } from '@blocksuite/global/utils';
 import { Text } from '@blocksuite/store';
 import { Pane } from 'tweakpane';
 
 import { doc, editor } from './editor.js';
-import { ViewportTurboRenderer } from './renderer.js';
 
 type DocMode = 'page' | 'edgeless';
 
-const renderer = new ViewportTurboRenderer();
+const rightColumn = document.querySelector('#right-column') as HTMLElement;
+const renderer = new ViewportTurboRenderer(rightColumn);
 
 async function handleToCanvasClick() {
   renderer.setHost(editor.host!);
