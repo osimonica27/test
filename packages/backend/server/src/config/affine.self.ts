@@ -79,8 +79,6 @@ AFFiNE.use('captcha', {
   },
 });
 
-AFFiNE.use('worker');
-
 if (AFFiNE.deploy) {
   AFFiNE.mailer = {
     service: 'gmail',
@@ -91,4 +89,7 @@ if (AFFiNE.deploy) {
   };
 
   AFFiNE.use('gcloud');
+} else {
+  // only enable dev mode
+  AFFiNE.use('worker');
 }
