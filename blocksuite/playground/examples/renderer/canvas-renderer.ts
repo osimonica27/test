@@ -1,25 +1,23 @@
+import type { EditorHost } from '@blocksuite/block-std';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
-import type { AffineEditorContainer } from '@blocksuite/presets';
 
 import { getSentenceRects, segmentSentences } from './text-utils.js';
 import { type ParagraphLayout, type SectionLayout } from './types.js';
 
 export class CanvasRenderer {
-  private readonly worker: Worker;
-  private readonly editorContainer: AffineEditorContainer;
-  private readonly targetContainer: HTMLElement;
   public readonly canvas: HTMLCanvasElement = document.createElement('canvas');
+  private readonly worker: Worker;
+  private readonly targetContainer: HTMLElement;
+  private host!: EditorHost;
   private lastZoom: number | null = null;
   private lastSection: SectionLayout | null = null;
   private lastBitmap: ImageBitmap | null = null;
-  private lastMode: 'page' | 'edgeless' = 'edgeless';
 
-  constructor(
-    editorContainer: AffineEditorContainer,
-    targetContainer: HTMLElement
-  ) {
-    this.editorContainer = editorContainer;
-    this.targetContainer = targetContainer;
+  constructor() {
+    // FIXME
+    this.targetContainer = document.querySelector(
+      '#right-column'
+    ) as HTMLElement;
 
     this.worker = new Worker(new URL('./painter.worker.ts', import.meta.url), {
       type: 'module',
@@ -30,16 +28,20 @@ export class CanvasRenderer {
     }
   }
 
+  setHost(host: EditorHost) {
+    this.host = host;
+  }
+
   get viewport() {
-    return this.editorContainer.std.get(GfxControllerIdentifier).viewport;
+    return this.host.std.get(GfxControllerIdentifier).viewport;
   }
 
   getHostRect() {
-    return this.editorContainer.host!.getBoundingClientRect();
+    return this.host.getBoundingClientRect();
   }
 
   getHostLayout() {
-    const paragraphBlocks = this.editorContainer.host!.querySelectorAll(
+    const paragraphBlocks = this.host.querySelectorAll(
       '.affine-paragraph-rich-text-wrapper [data-v-text="true"]'
     );
 
@@ -161,7 +163,6 @@ export class CanvasRenderer {
   private updateCacheState(section: SectionLayout, bitmapCopy: ImageBitmap) {
     this.lastZoom = this.viewport.zoom;
     this.lastSection = section;
-    this.lastMode = this.editorContainer.mode;
     if (this.lastBitmap) {
       this.lastBitmap.close();
     }
@@ -170,10 +171,7 @@ export class CanvasRenderer {
 
   private canUseCache(currentZoom: number): boolean {
     return (
-      this.lastZoom === currentZoom &&
-      !!this.lastSection &&
-      !!this.lastBitmap &&
-      this.lastMode === this.editorContainer.mode
+      this.lastZoom === currentZoom && !!this.lastSection && !!this.lastBitmap
     );
   }
 
