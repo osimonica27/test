@@ -3,9 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-import { expect, type Page, test as baseTest } from '@playwright/test';
+import { test as baseTest } from '@playwright/test';
 
-const currentEditorIndex = 0;
 const istanbulTempDir = process.env.ISTANBUL_TEMP_DIR
   ? path.resolve(process.env.ISTANBUL_TEMP_DIR)
   : path.join(process.cwd(), '.nyc_output');
@@ -53,29 +52,4 @@ export const test = baseTest.extend<{}>({
       }
     }
   },
-});
-
-let page: Page;
-
-test.beforeAll(async ({ browser }) => {
-  page = await browser.newPage();
-});
-
-// oxlint-disable-next-line no-empty-pattern
-test.afterAll(async ({}) => {
-  const focusInSecondEditor = await page.evaluate(
-    ([currentEditorIndex]) => {
-      const editor = document.querySelectorAll('affine-editor-container')[
-        currentEditorIndex
-      ];
-      const selection = getSelection();
-      if (!selection || selection.rangeCount === 0) {
-        return true;
-      }
-      // once the range exists, it must be in the corresponding editor
-      return editor.contains(selection.getRangeAt(0).startContainer);
-    },
-    [currentEditorIndex]
-  );
-  expect(focusInSecondEditor).toBe(true);
 });
