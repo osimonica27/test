@@ -52,10 +52,10 @@ import {
   inlineEditorInnerTextToString,
 } from './actions/misc.js';
 import { getStringFromRichText } from './inline-editor.js';
-import { currentEditorIndex } from './multiple-editor.js';
 
 export { assertExists };
 
+const currentEditorIndex = 0;
 const BLOCK_ID_ATTR = 'data-block-id';
 
 export const defaultStore = {
