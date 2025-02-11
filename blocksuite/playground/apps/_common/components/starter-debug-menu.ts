@@ -50,7 +50,7 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { SerializedXYWH } from '@blocksuite/global/utils';
 import type { DeltaInsert } from '@blocksuite/inline/types';
 import { AffineEditorContainer, type CommentPanel } from '@blocksuite/presets';
-import { type DocCollection, Job, Text } from '@blocksuite/store';
+import { Text, Transformer, type Workspace } from '@blocksuite/store';
 import type { SlDropdown } from '@shoelace-style/shoelace';
 import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path.js';
 import { css, html } from 'lit';
@@ -241,7 +241,7 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _exportFile(config: AdapterConfig) {
     const doc = this.editor.doc;
-    const job = new Job({
+    const job = new Transformer({
       schema: this.collection.schema,
       blobCRUD: this.collection.blobSync,
       docCRUD: {
@@ -329,7 +329,9 @@ export class StarterDebugMenu extends ShadowlessElement {
   private async _exportSnapshot() {
     await ZipTransformer.exportDocs(
       this.collection,
-      [...this.collection.docs.values()].map(collection => collection.getDoc())
+      Array.from(this.collection.docs.values()).map(collection =>
+        collection.getStore()
+      )
     );
   }
 
@@ -440,7 +442,7 @@ export class StarterDebugMenu extends ShadowlessElement {
         multiple: false,
       });
       if (!file) return;
-      const job = new Job({
+      const job = new Transformer({
         schema: this.collection.schema,
         blobCRUD: this.collection.blobSync,
         docCRUD: {
@@ -1019,7 +1021,7 @@ export class StarterDebugMenu extends ShadowlessElement {
   accessor blockTypeDropdown!: SlDropdown;
 
   @property({ attribute: false })
-  accessor collection!: DocCollection;
+  accessor collection!: Workspace;
 
   @property({ attribute: false })
   accessor commentPanel!: CommentPanel;

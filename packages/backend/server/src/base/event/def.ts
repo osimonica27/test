@@ -17,6 +17,7 @@ export interface WorkspaceEvents {
     }>;
     ownerTransferred: Payload<{ email: string; workspaceId: Workspace['id'] }>;
     updated: Payload<{ workspaceId: Workspace['id']; count: number }>;
+    removed: Payload<{ workspaceId: Workspace['id']; userId: User['id'] }>;
   };
   deleted: Payload<Workspace['id']>;
   blob: {
@@ -36,15 +37,6 @@ export interface DocEvents {
   updated: Payload<Pick<Snapshot, 'id' | 'workspaceId'>>;
 }
 
-export interface UserEvents {
-  updated: Payload<Omit<User, 'password'>>;
-  deleted: Payload<
-    User & {
-      ownedWorkspaces: Workspace['id'][];
-    }
-  >;
-}
-
 /**
  * Event definitions can be extended by
  *
@@ -61,7 +53,6 @@ export interface UserEvents {
 export interface EventDefinitions {
   workspace: WorkspaceEvents;
   snapshot: DocEvents;
-  user: UserEvents;
 }
 
 export type EventKV = Flatten<EventDefinitions>;

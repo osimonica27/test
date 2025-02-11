@@ -35,15 +35,32 @@ export function createChatSession({
   client,
   workspaceId,
   docId,
+  promptName,
 }: {
   client: CopilotClient;
   workspaceId: string;
   docId: string;
+  promptName: string;
 }) {
   return client.createSession({
     workspaceId,
     docId,
-    promptName: 'Chat With AFFiNE AI',
+    promptName,
+  });
+}
+
+export function updateChatSession({
+  client,
+  sessionId,
+  promptName,
+}: {
+  client: CopilotClient;
+  sessionId: string;
+  promptName: string;
+}) {
+  return client.updateSession({
+    sessionId,
+    promptName,
   });
 }
 
@@ -74,7 +91,7 @@ async function resizeImage(blob: Blob | File): Promise<Blob | null> {
     if (ctx) {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      return new Promise(resolve =>
+      return await new Promise(resolve =>
         canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.8)
       );
     }

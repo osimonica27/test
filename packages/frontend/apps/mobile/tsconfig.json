@@ -10,6 +10,8 @@
     { "path": "../../component" },
     { "path": "../../core" },
     { "path": "../../i18n" },
-    { "path": "../../../../blocksuite/affine/all" }
+    { "path": "../../../common/nbstore" },
+    { "path": "../../../../blocksuite/affine/all" },
+    { "path": "../../../common/infra" }
   ]
 }

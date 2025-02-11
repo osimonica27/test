@@ -26,11 +26,6 @@ export type GLOBAL_DIALOG_SCHEMA = {
     templateMode: DocMode;
     snapshotUrl: string;
   }) => void;
-  setting: (props: {
-    activeTab?: SettingTab;
-    workspaceMetadata?: WorkspaceMetadata | null;
-    scrollAnchor?: string;
-  }) => void;
   'sign-in': (props: { server?: string; step?: string }) => void;
   'change-password': (props: { server?: string }) => void;
   'verify-email': (props: { server?: string; changeEmail?: boolean }) => void;
@@ -42,6 +37,7 @@ export type GLOBAL_DIALOG_SCHEMA = {
 };
 
 export type WORKSPACE_DIALOG_SCHEMA = {
+  setting: (props: { activeTab?: SettingTab; scrollAnchor?: string }) => void;
   'doc-info': (props: { docId: string }) => void;
   'doc-selector': (props: {
     init: string[];

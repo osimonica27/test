@@ -1,3 +1,4 @@
+import { DatabaseSelection } from '@blocksuite/affine-block-database';
 import { HoverController } from '@blocksuite/affine-components/hover';
 import type { RichText } from '@blocksuite/affine-components/rich-text';
 import { isFormatSupported } from '@blocksuite/affine-components/rich-text';
@@ -9,19 +10,18 @@ import {
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { matchFlavours } from '@blocksuite/affine-shared/utils';
 import {
-  type BaseSelection,
   type BlockComponent,
   BlockSelection,
   CursorSelection,
   TextSelection,
   WidgetComponent,
 } from '@blocksuite/block-std';
-import { DatabaseSelection } from '@blocksuite/data-view';
 import {
   assertExists,
   DisposableGroup,
   nextTick,
 } from '@blocksuite/global/utils';
+import type { BaseSelection } from '@blocksuite/store';
 import {
   autoUpdate,
   computePosition,
@@ -567,10 +567,12 @@ export class AffineFormatBarWidget extends WidgetComponent {
   }
 
   override updated() {
+    if (this._floatDisposables) {
+      this._floatDisposables.dispose();
+      this._floatDisposables = null;
+    }
+
     if (!this._shouldDisplay()) {
-      if (this._floatDisposables) {
-        this._floatDisposables.dispose();
-      }
       return;
     }
 

@@ -1,8 +1,10 @@
 import { fuzzyMatch } from '@affine/core/utils/fuzzy-match';
 import { I18n, i18nTime } from '@affine/i18n';
 import track from '@affine/track';
+import type { EditorHost } from '@blocksuite/affine/block-std';
 import {
   type AffineInlineEditor,
+  createSignalFromObservable,
   type DocMode,
   type LinkedMenuGroup,
   type LinkedMenuItem,
@@ -11,8 +13,6 @@ import {
 } from '@blocksuite/affine/blocks';
 import type { DocMeta } from '@blocksuite/affine/store';
 import { Text } from '@blocksuite/affine/store';
-import { createSignalFromObservable } from '@blocksuite/affine-shared/utils';
-import type { EditorHost } from '@blocksuite/block-std';
 import {
   DateTimeIcon,
   NewXxxEdgelessIcon,
@@ -91,13 +91,9 @@ export class AtMenuConfigService extends Service {
         return null;
       }
 
-      let title = docDisplayMetaService.title$(meta.id, {
+      const title = docDisplayMetaService.title$(meta.id, {
         reference: true,
       }).value;
-
-      if (typeof title === 'object' && 'i18nKey' in title) {
-        title = I18n.t(title);
-      }
 
       if (!fuzzyMatch(title, query)) {
         return null;

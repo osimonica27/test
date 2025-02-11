@@ -4,7 +4,11 @@ import {
   handleError,
 } from '@blocksuite/global/exceptions';
 import { SignalWatcher, Slot, WithDisposable } from '@blocksuite/global/utils';
-import { type BlockModel, Blocks } from '@blocksuite/store';
+import {
+  type BlockModel,
+  Store,
+  type StoreSelectionExtension,
+} from '@blocksuite/store';
 import { createContext, provide } from '@lit/context';
 import { css, LitElement, nothing, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -16,17 +20,16 @@ import type { UIEventDispatcher } from '../../event/index.js';
 import { WidgetViewMapIdentifier } from '../../identifier.js';
 import type { RangeManager } from '../../range/index.js';
 import type { BlockStdScope } from '../../scope/block-std-scope.js';
-import type { SelectionManager } from '../../selection/index.js';
 import { PropTypes, requiredProperties } from '../decorators/index.js';
 import type { ViewStore } from '../view-store.js';
 import { BLOCK_ID_ATTR, WIDGET_ID_ATTR } from './consts.js';
 import { ShadowlessElement } from './shadowless-element.js';
 
-export const docContext = createContext<Blocks>('doc');
+export const docContext = createContext<Store>('doc');
 export const stdContext = createContext<BlockStdScope>('std');
 
 @requiredProperties({
-  doc: PropTypes.instanceOf(Blocks),
+  doc: PropTypes.instanceOf(Store),
   std: PropTypes.object,
 })
 export class EditorHost extends SignalWatcher(
@@ -76,17 +79,6 @@ export class EditorHost extends SignalWatcher(
     ></${tag}>`;
   };
 
-  /**
-   * @deprecated
-   * Render a block model manually instead of let blocksuite render it.
-   * If you render the same block model multiple times,
-   * the event flow and data binding will be broken.
-   * Only use this method as a last resort.
-   */
-  dangerouslyRenderModel = (model: BlockModel): TemplateResult => {
-    return this._renderModel(model);
-  };
-
   renderChildren = (
     model: BlockModel,
     filter?: (model: BlockModel) => boolean
@@ -114,7 +106,7 @@ export class EditorHost extends SignalWatcher(
     return this.std.range;
   }
 
-  get selection(): SelectionManager {
+  get selection(): StoreSelectionExtension {
     return this.std.selection;
   }
 
@@ -189,7 +181,7 @@ export class EditorHost extends SignalWatcher(
 
   @provide({ context: docContext })
   @property({ attribute: false })
-  accessor doc!: Blocks;
+  accessor doc!: Store;
 
   @provide({ context: stdContext })
   @property({ attribute: false })

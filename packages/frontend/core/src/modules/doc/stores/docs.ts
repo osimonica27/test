@@ -24,6 +24,10 @@ export class DocsStore extends Store {
     return this.workspaceService.workspace.docCollection.getDoc(id);
   }
 
+  getBlocksuiteCollection() {
+    return this.workspaceService.workspace.docCollection;
+  }
+
   createBlockSuiteDoc() {
     return this.workspaceService.workspace.docCollection.createDoc();
   }
@@ -122,9 +126,9 @@ export class DocsStore extends Store {
   }
 
   watchDocListReady() {
-    return this.workspaceService.workspace.engine.rootDocState$
-      .map(state => !state.syncing)
-      .asObservable();
+    return this.workspaceService.workspace.engine.doc
+      .docState$(this.workspaceService.workspace.id)
+      .pipe(map(state => state.synced));
   }
 
   setDocMeta(id: string, meta: Partial<DocMeta>) {
@@ -149,14 +153,10 @@ export class DocsStore extends Store {
   }
 
   waitForDocLoadReady(id: string) {
-    return this.workspaceService.workspace.engine.doc.waitForReady(id);
+    return this.workspaceService.workspace.engine.doc.waitForDocLoaded(id);
   }
 
-  setPriorityLoad(id: string, priority: number) {
-    return this.workspaceService.workspace.engine.doc.setPriority(id, priority);
-  }
-
-  markDocSyncStateAsReady(id: string) {
-    this.workspaceService.workspace.engine.doc.markAsReady(id);
+  addPriorityLoad(id: string, priority: number) {
+    return this.workspaceService.workspace.engine.doc.addPriority(id, priority);
   }
 }

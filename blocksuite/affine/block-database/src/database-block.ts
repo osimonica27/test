@@ -23,7 +23,6 @@ import {
 import {
   createRecordDetail,
   createUniComponentFromWebComponent,
-  DatabaseSelection,
   DataView,
   dataViewCommonStyle,
   type DataViewInstance,
@@ -52,16 +51,13 @@ import { popSideDetail } from './components/layout.js';
 import type { DatabaseOptionsConfig } from './config.js';
 import { HostContextKey } from './context/host-context.js';
 import { DatabaseBlockDataSource } from './data-source.js';
-import type { DatabaseBlockService } from './database-service.js';
 import { BlockRenderer } from './detail-panel/block-renderer.js';
 import { NoteRenderer } from './detail-panel/note-renderer.js';
+import { DatabaseSelection } from './selection.js';
 import { currentViewStorage } from './utils/current-view.js';
 import { getSingleDocIdFromText } from './utils/title-doc.js';
 
-export class DatabaseBlockComponent extends CaptionedBlockComponent<
-  DatabaseBlockModel,
-  DatabaseBlockService
-> {
+export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBlockModel> {
   static override styles = css`
     ${unsafeCSS(dataViewCommonStyle('affine-database'))}
     affine-database {
@@ -262,7 +258,7 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<
         const model = this.doc.getBlock(id)?.model;
         const target = result.modelState.model;
         let parent = this.doc.getParent(target.id);
-        const shouldInsertIn = result.type === 'in';
+        const shouldInsertIn = result.placement === 'in';
         if (shouldInsertIn) {
           parent = target;
         }
@@ -274,7 +270,7 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<
               [model],
               parent,
               target,
-              result.type === 'before'
+              result.placement === 'before'
             );
           }
         }
@@ -337,7 +333,12 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<
       this._dataSource = new DatabaseBlockDataSource(this.model);
       this._dataSource.contextSet(HostContextKey, this.host);
       const id = currentViewStorage.getCurrentView(this.model.id);
-      if (id) {
+      if (id && this.dataSource.viewManager.viewGet(id)) {
+        console.log(
+          'set current view',
+          id,
+          this._dataSource.viewManager.viewGet(id)
+        );
         this.dataSource.viewManager.setCurrentView(id);
       }
     }

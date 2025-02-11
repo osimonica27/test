@@ -1,7 +1,3 @@
-import {
-  DEFAULT_NOTE_HEIGHT,
-  DEFAULT_NOTE_WIDTH,
-} from '@blocksuite/affine-model';
 import { assertExists } from '@blocksuite/global/utils';
 import { expect } from '@playwright/test';
 
@@ -19,7 +15,6 @@ import {
   Shape,
   shiftClickView,
   switchEditorMode,
-  toggleEditorReadonly,
   ZOOM_BAR_RESPONSIVE_SCREEN_WIDTH,
   zoomByMouseWheel,
   zoomResetByKeyboard,
@@ -33,6 +28,7 @@ import {
   focusRichText,
   initEmptyEdgelessState,
   redoByClick,
+  switchReadonly,
   type,
   undoByClick,
   waitNextFrame,
@@ -47,6 +43,10 @@ import {
   assertSelectedBound,
   assertZoomLevel,
 } from '../utils/asserts.js';
+import {
+  DEFAULT_NOTE_HEIGHT,
+  DEFAULT_NOTE_WIDTH,
+} from '../utils/bs-alternative.js';
 import { test } from '../utils/playwright.js';
 
 const CENTER_X = 450;
@@ -203,7 +203,7 @@ test('zoom by pinch when edgeless is readonly', async ({ page }) => {
   await zoomResetByKeyboard(page);
   await assertZoomLevel(page, 100);
 
-  await toggleEditorReadonly(page);
+  await switchReadonly(page);
 
   const from = [
     { x: CENTER_X - 100, y: CENTER_Y },
@@ -217,7 +217,8 @@ test('zoom by pinch when edgeless is readonly', async ({ page }) => {
   await multiTouchMove(page, from, to);
   await multiTouchUp(page, to);
 
-  await toggleEditorReadonly(page);
+  await switchReadonly(page, false);
+  await waitNextFrame(page);
   await assertZoomLevel(page, 50);
 });
 

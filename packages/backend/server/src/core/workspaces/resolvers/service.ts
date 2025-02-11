@@ -2,11 +2,17 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { getStreamAsBuffer } from 'get-stream';
 
-import { Cache, MailService, UserNotFound } from '../../../base';
+import {
+  Cache,
+  type EventPayload,
+  MailService,
+  OnEvent,
+  UserNotFound,
+} from '../../../base';
+import { Models } from '../../../models';
 import { DocContentService } from '../../doc-renderer';
 import { Permission, PermissionService } from '../../permission';
 import { WorkspaceBlobStorage } from '../../storage';
-import { UserService } from '../../user';
 
 export const defaultWorkspaceAvatar =
   'iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAQtSURBVHgBfVa9jhxFEK6q7rkf+4T2AgdIIC0ZoXkBuNQJtngBuIzs1hIRye1FhL438D0CRgKRGUeE6wwkhHYlkE2AtGdkbN/MdJe/qu7Z27PWnnG5Znq7v/rqd47pHddkNh/918tR1/FBamXc9zxOPVFKfJ4yP86qD1LD3/986/3F2zB40+LXv83HrHq/6+gAoNS1kF4odUz2nhJRTkI5E6mD6Bk1crLJkLy5cHc+P4ohzxLng8RKLqKUq6hkUtBSe8Zvdmfir7TT2a0fnkzeaeCbv/44ztSfZskjP2ygVRM0mbYTpgHMMMS8CsIIj/c+//Hp8UYD3z758whQUwdeEwPjAZQLqJhI0VxB2MVco+kXP/0zuZKD6dP5uM397ELzqEtMba/UJ4t7iXeq8U94z52Q+js09qjlIXMxAEsRDJpI59dVPzlDTooHko7BdlR2FcYmAtbGMmAt2mFI4yDQkIjtEQkxUAMKAPD9SiOK4b578N0S7Nt+fqFKbTbmRD1YGXurEmdtnjjz4kFuIV0gtWewV62hMHBY2gpEOw3Rnmztx9jnO72xzTV/YkzgNmgkiypeYJdCLjonqyAAg7VCshVpjTbD08HbxrySdhKxcDvoJTA5gLvpeXVQ+K340WKea9UkNeZVqGSba/IbF6athj+LUeRmRCyiAVnlAKhJJQfmugGZ28ZWna24RGzwNUNUqpWGf6HkajvAgNA4NsSjHgcb9obx+k5c3DUttcwd3NcHxpVurXQ2d4MZACGw9TwEHsdtbEwytL1xywAGcxavjoH1quLVywuGi+aBhFWexRilFSwK0QzgdUdkkVMeKw4wijrgxjzz2CefCRZn+21ViOWW4Ym9nNnyFLMbMS8ivNhGP8RdlgUojBkuBLDpEPi+5LpWiDURgFkKOIIckJTgN/sZ84KtKkKpDnsOZiTQ47jD4ZGwHghbw6AXIL3lo5Zg6Tp2AwIAyYJ8BRzGfmfPl6kI7HOLUdN2LIg+4IfL5SiFdvkK4blI6h50qda7jQI0CUMLdEhFIkqtQciMvXsgpaZ1pWtVUfrIa+TX5/8+RBcftAhTa91r8ycXA5ZxBqhAh2zgVagUAddxMkxfF/JxfvbpB+8d2jhBtsPhtuqsE0HJlhxYeHKdkCU8xUCos8dmkDdnGaOlJ1yy9dM52J2spqldvz9fTgB4z+aQd2kqjUY2KU2s4dTT7ezD0AqDAbvZiKF/VO9+fGPv9IoBu+b/P5ti6djDY+JlSg4ug1jc6fJbMAx9/3b4CNGTD/evT698D9avv188m4gKvko8MiMeJC3jmOvU9MSuHXZohAVpOrmxd+10HW/jR3/58uU45TRFt35ZR2XpY61DzW+tH3z/7xdM8sP93d3Fm1gbDawbEtU7CMtt/JVxEw01Kh7RAmoBE4+u7eycYv38bRivAZbdHBtPrwOHAAAAAElFTkSuQmCC';
@@ -35,7 +41,7 @@ export class WorkspaceService {
     private readonly mailer: MailService,
     private readonly permission: PermissionService,
     private readonly prisma: PrismaClient,
-    private readonly user: UserService
+    private readonly models: Models
   ) {}
 
   async getInviteInfo(inviteId: string): Promise<InviteInfo> {
@@ -92,7 +98,7 @@ export class WorkspaceService {
       return;
     }
     const workspace = await this.getWorkspaceInfo(workspaceId);
-    const invitee = await this.user.findUserById(inviteeUserId);
+    const invitee = await this.models.user.getPublicUser(inviteeUserId);
     if (!invitee) {
       this.logger.error(
         `Invitee user not found in workspace: ${workspaceId}, userId: ${inviteeUserId}`
@@ -111,10 +117,10 @@ export class WorkspaceService {
       await this.getInviteInfo(inviteId);
     const workspace = await this.getWorkspaceInfo(workspaceId);
     const invitee = inviteeUserId
-      ? await this.user.findUserById(inviteeUserId)
+      ? await this.models.user.getPublicUser(inviteeUserId)
       : null;
     const inviter = inviterUserId
-      ? await this.user.findUserById(inviterUserId)
+      ? await this.models.user.getPublicUser(inviterUserId)
       : await this.permission.getWorkspaceOwner(workspaceId);
 
     if (!inviter || !invitee) {
@@ -131,14 +137,31 @@ export class WorkspaceService {
     return true;
   }
 
-  async sendReviewRequestedMail(inviteId: string) {
+  async sendTeamWorkspaceUpgradedEmail(workspaceId: string) {
+    const workspace = await this.getWorkspaceInfo(workspaceId);
+    const owner = await this.permission.getWorkspaceOwner(workspaceId);
+    const admin = await this.permission.getWorkspaceAdmin(workspaceId);
+
+    await this.mailer.sendTeamWorkspaceUpgradedEmail(owner.email, {
+      ...workspace,
+      isOwner: true,
+    });
+    for (const user of admin) {
+      await this.mailer.sendTeamWorkspaceUpgradedEmail(user.email, {
+        ...workspace,
+        isOwner: false,
+      });
+    }
+  }
+
+  async sendReviewRequestedEmail(inviteId: string) {
     const { workspaceId, inviteeUserId } = await this.getInviteInfo(inviteId);
     if (!inviteeUserId) {
       this.logger.error(`Invitee user not found for inviteId: ${inviteId}`);
       return;
     }
 
-    const invitee = await this.user.findUserById(inviteeUserId);
+    const invitee = await this.models.user.getPublicUser(inviteeUserId);
     if (!invitee) {
       this.logger.error(
         `Invitee user not found for inviteId: ${inviteId}, userId: ${inviteeUserId}`
@@ -151,7 +174,7 @@ export class WorkspaceService {
     const admin = await this.permission.getWorkspaceAdmin(workspaceId);
 
     for (const user of [owner, ...admin]) {
-      await this.mailer.sendReviewRequestMail(
+      await this.mailer.sendReviewRequestEmail(
         user.email,
         invitee.email,
         workspace
@@ -159,7 +182,7 @@ export class WorkspaceService {
     }
   }
 
-  async sendInviteMail(inviteId: string) {
+  async sendInviteEmail(inviteId: string) {
     const target = await this.getInviteeEmailTarget(inviteId);
 
     if (!target) {
@@ -199,7 +222,7 @@ export class WorkspaceService {
     userId: string,
     ws: { id: string; role: Permission }
   ) {
-    const user = await this.user.findUserById(userId);
+    const user = await this.models.user.getPublicUser(userId);
     if (!user) throw new UserNotFound();
     const workspace = await this.getWorkspaceInfo(ws.id);
     await this.mailer.sendRoleChangedEmail(user?.email, {
@@ -208,8 +231,43 @@ export class WorkspaceService {
     });
   }
 
-  async sendOwnerTransferred(email: string, ws: { id: string }) {
+  async sendOwnerTransferredEmail(email: string, ws: { id: string }) {
     const workspace = await this.getWorkspaceInfo(ws.id);
-    await this.mailer.sendOwnerTransferred(email, { name: workspace.name });
+    await this.mailer.sendOwnershipTransferredEmail(email, {
+      name: workspace.name,
+    });
+  }
+
+  async sendMemberRemoved(email: string, ws: { id: string }) {
+    const workspace = await this.getWorkspaceInfo(ws.id);
+    await this.mailer.sendMemberRemovedEmail(email, {
+      name: workspace.name,
+    });
+  }
+
+  @OnEvent('workspace.members.removed')
+  async onMemberRemoved({
+    userId,
+    workspaceId,
+  }: EventPayload<'workspace.members.requestDeclined'>) {
+    const user = await this.models.user.get(userId);
+    if (!user) return;
+    await this.sendMemberRemoved(user.email, { id: workspaceId });
+  }
+
+  @OnEvent('workspace.subscription.notify')
+  async onSubscriptionNotify({
+    workspaceId,
+    expirationDate,
+    deletionDate,
+  }: EventPayload<'workspace.subscription.notify'>) {
+    const owner = await this.permission.getWorkspaceOwner(workspaceId);
+    if (!owner) return;
+    const workspace = await this.getWorkspaceInfo(workspaceId);
+    await this.mailer.sendWorkspaceExpireRemindEmail(owner.email, {
+      ...workspace,
+      expirationDate,
+      deletionDate,
+    });
   }
 }

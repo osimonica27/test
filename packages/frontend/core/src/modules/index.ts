@@ -1,7 +1,10 @@
 import { configureQuotaModule } from '@affine/core/modules/quota';
 import { type Framework } from '@toeverything/infra';
 
-import { configureAIButtonModule } from './ai-button';
+import {
+  configureAIButtonModule,
+  configureAINetworkSearchModule,
+} from './ai-button';
 import { configureAppSidebarModule } from './app-sidebar';
 import { configAtMenuConfigModule } from './at-menu-config';
 import { configureCloudModule } from './cloud';
@@ -35,11 +38,12 @@ import { configureShareDocsModule } from './share-doc';
 import { configureShareSettingModule } from './share-setting';
 import {
   configureCommonGlobalStorageImpls,
-  configureGlobalStorageModule,
+  configureStorageModule,
 } from './storage';
 import { configureSystemFontFamilyModule } from './system-font-family';
 import { configureTagModule } from './tag';
 import { configureTelemetryModule } from './telemetry';
+import { configureTemplateDocModule } from './template-doc';
 import { configureAppThemeModule } from './theme';
 import { configureThemeEditorModule } from './theme-editor';
 import { configureUrlModule } from './url';
@@ -51,7 +55,7 @@ export function configureCommonModules(framework: Framework) {
   configureWorkspaceModule(framework);
   configureDocModule(framework);
   configureWorkspaceDBModule(framework);
-  configureGlobalStorageModule(framework);
+  configureStorageModule(framework);
   configureGlobalContextModule(framework);
   configureLifecycleModule(framework);
   configureFeatureFlagModule(framework);
@@ -89,5 +93,7 @@ export function configureCommonModules(framework: Framework) {
   configAtMenuConfigModule(framework);
   configureDndModule(framework);
   configureCommonGlobalStorageImpls(framework);
+  configureAINetworkSearchModule(framework);
   configureAIButtonModule(framework);
+  configureTemplateDocModule(framework);
 }

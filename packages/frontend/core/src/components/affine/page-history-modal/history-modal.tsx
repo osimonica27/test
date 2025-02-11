@@ -2,7 +2,7 @@ import { Loading, Scrollable } from '@affine/component';
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { Modal, useConfirmModal } from '@affine/component/ui/modal';
-import { GlobalDialogService } from '@affine/core/modules/dialogs';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { EditorService } from '@affine/core/modules/editor';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
@@ -11,7 +11,7 @@ import { WorkspaceService } from '@affine/core/modules/workspace';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { DocMode } from '@blocksuite/affine/blocks';
-import type { Blocks, Workspace } from '@blocksuite/affine/store';
+import type { Store, Workspace } from '@blocksuite/affine/store';
 import { CloseIcon, ToggleRightIcon } from '@blocksuite/icons/rc';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
@@ -30,7 +30,10 @@ import {
 import { encodeStateAsUpdate } from 'yjs';
 
 import { pageHistoryModalAtom } from '../../atoms/page-history';
-import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
+import {
+  BlockSuiteEditor,
+  CustomEditorWrapper,
+} from '../../blocksuite/block-suite-editor';
 import { PureEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch';
 import { AffineErrorBoundary } from '../affine-error-boundary';
 import {
@@ -87,7 +90,7 @@ const ModalContainer = ({
 interface HistoryEditorPreviewProps {
   ts?: string;
   historyList: HistoryList;
-  snapshotPage?: Blocks;
+  snapshotPage?: Store;
   mode: DocMode;
   onModeChange: (mode: DocMode) => void;
   title: string;
@@ -128,11 +131,13 @@ const HistoryEditorPreview = ({
           <AffineErrorBoundary>
             <Scrollable.Root>
               <Scrollable.Viewport className="affine-page-viewport">
-                <BlockSuiteEditor
-                  className={styles.editor}
-                  mode={mode}
-                  page={snapshotPage}
-                />
+                <CustomEditorWrapper>
+                  <BlockSuiteEditor
+                    className={styles.editor}
+                    mode={mode}
+                    page={snapshotPage}
+                  />
+                </CustomEditorWrapper>
               </Scrollable.Viewport>
               <Scrollable.Scrollbar />
             </Scrollable.Root>
@@ -187,18 +192,18 @@ const PlanPrompt = () => {
   }, [permissionService]);
 
   const [planPromptClosed, setPlanPromptClosed] = useAtom(planPromptClosedAtom);
-  const globalDialogService = useService(GlobalDialogService);
+  const workspaceDialogService = useService(WorkspaceDialogService);
   const closeFreePlanPrompt = useCallback(() => {
     setPlanPromptClosed(true);
   }, [setPlanPromptClosed]);
 
   const onClickUpgrade = useCallback(() => {
-    globalDialogService.open('setting', {
+    workspaceDialogService.open('setting', {
       activeTab: 'plans',
       scrollAnchor: 'cloudPricingPlan',
     });
     track.$.docHistory.$.viewPlans();
-  }, [globalDialogService]);
+  }, [workspaceDialogService]);
 
   const t = useI18n();
 

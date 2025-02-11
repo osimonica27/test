@@ -1,10 +1,11 @@
-import { type Disposable, Slot } from '@blocksuite/affine/global/utils';
+import { SpecProvider } from '@blocksuite/affine/blocks';
+import { Slot } from '@blocksuite/affine/global/utils';
 import {
   type AwarenessStore,
-  Blocks,
   type Doc,
   type GetBlocksOptions,
   type Query,
+  Store,
   type Workspace,
   type YBlock,
 } from '@blocksuite/affine/store';
@@ -19,8 +20,6 @@ type DocOptions = {
 };
 
 export class DocImpl implements Doc {
-  private _awarenessUpdateDisposable: Disposable | null = null;
-
   private readonly _canRedo = signal(false);
 
   private readonly _canUndo = signal(false);
@@ -28,9 +27,9 @@ export class DocImpl implements Doc {
   private readonly _collection: Workspace;
 
   private readonly _docMap = {
-    undefined: new Map<string, Blocks>(),
-    true: new Map<string, Blocks>(),
-    false: new Map<string, Blocks>(),
+    undefined: new Map<string, Store>(),
+    true: new Map<string, Store>(),
+    false: new Map<string, Store>(),
   };
 
   // doc/space container.
@@ -46,41 +45,31 @@ export class DocImpl implements Doc {
   };
 
   private readonly _initSubDoc = () => {
-    let subDoc = this.rootDoc.getMap('spaces').get(this.id);
-    if (!subDoc) {
-      subDoc = new Y.Doc({
-        guid: this.id,
-      });
-      this.rootDoc.getMap('spaces').set(this.id, subDoc);
-      this._loaded = true;
-      this._onLoadSlot.emit();
-    } else {
-      this._loaded = false;
-      this.rootDoc.on('subdocs', this._onSubdocEvent);
+    {
+      // This is a piece of old version compatible code. The old version relies on the subdoc instance on `spaces`.
+      // So if there is no subdoc on spaces, we will create it.
+      // new version no longer needs subdoc on `spaces`.
+      let subDoc = this.rootDoc.getMap('spaces').get(this.id);
+      if (!subDoc) {
+        subDoc = new Y.Doc({
+          guid: this.id,
+        });
+        this.rootDoc.getMap('spaces').set(this.id, subDoc);
+      }
     }
 
-    return subDoc;
+    const spaceDoc = new Y.Doc({
+      guid: this.id,
+    });
+    spaceDoc.clientID = this.rootDoc.clientID;
+    this._loaded = false;
+
+    return spaceDoc;
   };
 
   private _loaded!: boolean;
 
   private readonly _onLoadSlot = new Slot();
-
-  private readonly _onSubdocEvent = ({
-    loaded,
-  }: {
-    loaded: Set<Y.Doc>;
-  }): void => {
-    const result = Array.from(loaded).find(
-      doc => doc.guid === this._ySpaceDoc.guid
-    );
-    if (!result) {
-      return;
-    }
-    this.rootDoc.off('subdocs', this._onSubdocEvent);
-    this._loaded = true;
-    this._onLoadSlot.emit();
-  };
 
   /** Indicate whether the block tree is ready */
   private _ready = false;
@@ -88,8 +77,8 @@ export class DocImpl implements Doc {
   private _shouldTransact = true;
 
   private readonly _updateCanUndoRedoSignals = () => {
-    const canRedo = this.readonly ? false : this._history.canRedo();
-    const canUndo = this.readonly ? false : this._history.canUndo();
+    const canRedo = this._history.canRedo();
+    const canUndo = this._history.canUndo();
     if (this._canRedo.peek() !== canRedo) {
       this._canRedo.value = canRedo;
     }
@@ -156,10 +145,6 @@ export class DocImpl implements Doc {
 
   get meta() {
     return this.workspace.meta.getDocMeta(this.id);
-  }
-
-  get readonly(): boolean {
-    return this.awarenessStore.isReadonly(this);
   }
 
   get ready() {
@@ -266,7 +251,6 @@ export class DocImpl implements Doc {
 
   dispose() {
     this.slots.historyUpdated.dispose();
-    this._awarenessUpdateDisposable?.dispose();
 
     if (this.ready) {
       this._yBlocks.unobserveDeep(this._handleYEvents);
@@ -274,20 +258,27 @@ export class DocImpl implements Doc {
     }
   }
 
-  getBlocks({ readonly, query }: GetBlocksOptions = {}) {
+  getStore({ readonly, query, provider, extensions }: GetBlocksOptions = {}) {
     const readonlyKey = this._getReadonlyKey(readonly);
 
     const key = JSON.stringify(query);
 
     if (this._docMap[readonlyKey].has(key)) {
-      return this._docMap[readonlyKey].get(key) as Blocks;
+      return this._docMap[readonlyKey].get(key) as Store;
     }
 
-    const doc = new Blocks({
-      blockCollection: this,
+    const storeExtensions = SpecProvider.getInstance().getSpec('store');
+    const extensionSet = new Set(
+      storeExtensions.value.concat(extensions ?? [])
+    );
+
+    const doc = new Store({
+      doc: this,
       schema: this.workspace.schema,
       readonly,
       query,
+      provider,
+      extensions: Array.from(extensionSet),
     });
 
     this._docMap[readonlyKey].set(key, doc);
@@ -300,7 +291,8 @@ export class DocImpl implements Doc {
       return this;
     }
 
-    this._ySpaceDoc.load();
+    this.spaceDoc.load();
+    this.workspace.onLoadDoc?.(this.spaceDoc);
 
     if ((this.workspace.meta.docs?.length ?? 0) <= 1) {
       this._handleVersion();
@@ -312,33 +304,19 @@ export class DocImpl implements Doc {
       this._handleYBlockAdd(id);
     });
 
-    this._awarenessUpdateDisposable = this.awarenessStore.slots.update.on(
-      () => {
-        // change readonly state will affect the undo/redo state
-        this._updateCanUndoRedoSignals();
-      }
-    );
-
     initFn?.();
 
+    this._loaded = true;
     this._ready = true;
 
     return this;
   }
 
   redo() {
-    if (this.readonly) {
-      console.error('cannot modify data in readonly mode');
-      return;
-    }
     this._history.redo();
   }
 
   undo() {
-    if (this.readonly) {
-      console.error('cannot modify data in readonly mode');
-      return;
-    }
     this._history.undo();
   }
 

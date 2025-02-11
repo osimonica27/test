@@ -521,13 +521,15 @@ public protocol DocStoragePoolProtocol : AnyObject {
     
     func getDocUpdates(universalId: String, docId: String) async throws  -> [DocUpdate]
     
-    func getPeerPulledRemoteClock(universalId: String, peer: String, docId: String) async throws  -> DocClock
+    func getPeerPulledRemoteClock(universalId: String, peer: String, docId: String) async throws  -> DocClock?
     
     func getPeerPulledRemoteClocks(universalId: String, peer: String) async throws  -> [DocClock]
     
+    func getPeerPushedClock(universalId: String, peer: String, docId: String) async throws  -> DocClock?
+    
     func getPeerPushedClocks(universalId: String, peer: String) async throws  -> [DocClock]
     
-    func getPeerRemoteClock(universalId: String, peer: String, docId: String) async throws  -> DocClock
+    func getPeerRemoteClock(universalId: String, peer: String, docId: String) async throws  -> DocClock?
     
     func getPeerRemoteClocks(universalId: String, peer: String) async throws  -> [DocClock]
     
@@ -776,7 +778,7 @@ open func getDocUpdates(universalId: String, docId: String)async throws  -> [Doc
         )
 }
     
-open func getPeerPulledRemoteClock(universalId: String, peer: String, docId: String)async throws  -> DocClock {
+open func getPeerPulledRemoteClock(universalId: String, peer: String, docId: String)async throws  -> DocClock? {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
@@ -788,7 +790,7 @@ open func getPeerPulledRemoteClock(universalId: String, peer: String, docId: Str
             pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-            liftFunc: FfiConverterTypeDocClock.lift,
+            liftFunc: FfiConverterOptionTypeDocClock.lift,
             errorHandler: FfiConverterTypeUniffiError.lift
         )
 }
@@ -810,6 +812,23 @@ open func getPeerPulledRemoteClocks(universalId: String, peer: String)async thro
         )
 }
     
+open func getPeerPushedClock(universalId: String, peer: String, docId: String)async throws  -> DocClock? {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_pushed_clock(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionTypeDocClock.lift,
+            errorHandler: FfiConverterTypeUniffiError.lift
+        )
+}
+    
 open func getPeerPushedClocks(universalId: String, peer: String)async throws  -> [DocClock] {
     return
         try  await uniffiRustCallAsync(
@@ -827,7 +846,7 @@ open func getPeerPushedClocks(universalId: String, peer: String)async throws  ->
         )
 }
     
-open func getPeerRemoteClock(universalId: String, peer: String, docId: String)async throws  -> DocClock {
+open func getPeerRemoteClock(universalId: String, peer: String, docId: String)async throws  -> DocClock? {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
@@ -839,7 +858,7 @@ open func getPeerRemoteClock(universalId: String, peer: String, docId: String)as
             pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
-            liftFunc: FfiConverterTypeDocClock.lift,
+            liftFunc: FfiConverterOptionTypeDocClock.lift,
             errorHandler: FfiConverterTypeUniffiError.lift
         )
 }
@@ -1923,16 +1942,19 @@ private var initializationResult: InitializationResult = {
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_updates() != 65430) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pulled_remote_clock() != 40122) {
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pulled_remote_clock() != 56577) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pulled_remote_clocks() != 13441) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pushed_clock() != 34705) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pushed_clocks() != 47148) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_remote_clock() != 17458) {
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_remote_clock() != 47662) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_remote_clocks() != 14523) {

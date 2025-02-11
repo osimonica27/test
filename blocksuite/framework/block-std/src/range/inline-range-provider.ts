@@ -3,6 +3,7 @@ import { signal } from '@preact/signals-core';
 
 import { TextSelection } from '../selection/index.js';
 import type { BlockComponent } from '../view/element/block-component.js';
+import { isActiveInEditor } from './active.js';
 
 export const getInlineRangeProvider: (
   element: BlockComponent
@@ -84,18 +85,23 @@ export const getInlineRangeProvider: (
     }
   };
   const inlineRange$: InlineRangeProvider['inlineRange$'] = signal(null);
-  selectionManager.slots.changed.on(selections => {
-    const textSelection = selections.find(s => s.type === 'text') as
-      | TextSelection
-      | undefined;
-    const range = rangeManager.value;
-    if (!range || !textSelection) {
-      inlineRange$.value = null;
-      return;
-    }
-    const inlineRange = calculateInlineRange(range, textSelection);
-    inlineRange$.value = inlineRange;
-  });
+
+  editorHost.disposables.add(
+    selectionManager.slots.changed.on(selections => {
+      if (!isActiveInEditor(editorHost)) return;
+
+      const textSelection = selections.find(s => s.type === 'text') as
+        | TextSelection
+        | undefined;
+      const range = rangeManager.value;
+      if (!range || !textSelection) {
+        inlineRange$.value = null;
+        return;
+      }
+      const inlineRange = calculateInlineRange(range, textSelection);
+      inlineRange$.value = inlineRange;
+    })
+  );
 
   return {
     setInlineRange,

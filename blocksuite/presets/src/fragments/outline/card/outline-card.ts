@@ -7,7 +7,7 @@ import {
   once,
 } from '@blocksuite/blocks';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
-import type { BlockModel, Blocks } from '@blocksuite/store';
+import type { BlockModel, Store } from '@blocksuite/store';
 import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, unsafeCSS } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
@@ -42,7 +42,7 @@ const styles = css`
     user-select: none;
   }
 
-  .card-preview.edgeless:hover {
+  .card-preview:hover {
     background: var(--affine-hover-color);
   }
 
@@ -143,11 +143,13 @@ const styles = css`
     color: var(--affine-text-primary-color);
   }
 
-  .card-preview.edgeless .card-content:hover {
+  .card-preview .card-content:hover {
     cursor: pointer;
   }
 
-  .card-preview.edgeless .card-header-container:hover {
+  .card-container[data-invisible='false']
+    .card-preview
+    .card-header-container:hover {
     cursor: grab;
   }
 
@@ -156,11 +158,11 @@ const styles = css`
     opacity: 0.5;
   }
 
-  .card-container.selected .card-preview.edgeless {
+  .card-container.selected .card-preview {
     background: var(--affine-hover-color);
   }
 
-  .card-container.placeholder .card-preview.edgeless {
+  .card-container.placeholder .card-preview {
     background: var(--affine-hover-color);
     opacity: 0.9;
   }
@@ -178,7 +180,7 @@ const styles = css`
     pointer-events: none;
   }
 
-  .card-preview.page outline-block-preview:hover {
+  .card-preview outline-block-preview:hover {
     color: var(--affine-brand-color);
   }
 `;
@@ -217,12 +219,7 @@ export class OutlineNoteCard extends SignalWatcher(WithDisposable(LitElement)) {
 
   private _dispatchDragEvent(e: MouseEvent) {
     e.preventDefault();
-    if (
-      e.button !== 0 ||
-      this.editorMode === 'page' ||
-      !this.enableNotesSorting
-    )
-      return;
+    if (e.button !== 0 || !this.enableNotesSorting) return;
 
     const { clientX: startX, clientY: startY } = e;
     const disposeDragStart = on(this.ownerDocument, 'mousemove', e => {
@@ -317,7 +314,7 @@ export class OutlineNoteCard extends SignalWatcher(WithDisposable(LitElement)) {
         class="card-container ${this.status ?? ''} ${this.theme}"
       >
         <div
-          class="card-preview ${this.editorMode}"
+          class="card-preview"
           @mousedown=${this._dispatchDragEvent}
           @click=${this._dispatchSelectEvent}
           @dblclick=${this._dispatchFitViewEvent}
@@ -368,7 +365,7 @@ export class OutlineNoteCard extends SignalWatcher(WithDisposable(LitElement)) {
                 .cardNumber=${this.number}
                 .enableNotesSorting=${this.enableNotesSorting}
                 @click=${() => {
-                  if (this.editorMode === 'edgeless' || this.invisible) return;
+                  if (this.invisible) return;
                   this._dispatchClickBlockEvent(block);
                 }}
               ></affine-outline-block-preview>`;
@@ -393,10 +390,7 @@ export class OutlineNoteCard extends SignalWatcher(WithDisposable(LitElement)) {
   accessor activeHeadingId: string | null = null;
 
   @property({ attribute: false })
-  accessor doc!: Blocks;
-
-  @property({ attribute: false })
-  accessor editorMode: 'page' | 'edgeless' = 'page';
+  accessor doc!: Store;
 
   @property({ attribute: false })
   accessor enableNotesSorting!: boolean;

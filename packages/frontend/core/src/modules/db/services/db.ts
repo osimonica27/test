@@ -1,12 +1,14 @@
 import {
   createORMClient,
-  type DocStorage,
+  LiveData,
   ObjectPool,
   Service,
   YjsDBAdapter,
 } from '@toeverything/infra';
 import { Doc as YDoc } from 'yjs';
 
+import type { WorkspaceServerService } from '../../cloud';
+import { AuthService } from '../../cloud/services/auth';
 import type { WorkspaceService } from '../../workspace';
 import { WorkspaceDB, type WorkspaceDBWithTables } from '../entities/db';
 import {
@@ -32,7 +34,10 @@ export class WorkspaceDBService extends Service {
     },
   });
 
-  constructor(private readonly workspaceService: WorkspaceService) {
+  constructor(
+    private readonly workspaceService: WorkspaceService,
+    private readonly workspaceServerService: WorkspaceServerService
+  ) {
     super();
     this.db = this.framework.createEntity(
       WorkspaceDB<AFFiNEWorkspaceDbSchema>,
@@ -41,11 +46,11 @@ export class WorkspaceDBService extends Service {
           new YjsDBAdapter(AFFiNE_WORKSPACE_DB_SCHEMA, {
             getDoc: guid => {
               const ydoc = new YDoc({
-                // guid format: db${workspaceId}${guid}
-                guid: `db$${this.workspaceService.workspace.id}$${guid}`,
+                // guid format: db${guid}
+                guid: `db$${guid}`,
               });
-              this.workspaceService.workspace.engine.doc.addDoc(ydoc, false);
-              this.workspaceService.workspace.engine.doc.setPriority(
+              this.workspaceService.workspace.engine.doc.connectDoc(ydoc);
+              this.workspaceService.workspace.engine.doc.addPriority(
                 ydoc.guid,
                 50
               );
@@ -54,8 +59,7 @@ export class WorkspaceDBService extends Service {
           })
         ),
         schema: AFFiNE_WORKSPACE_DB_SCHEMA,
-        storageDocId: tableName =>
-          `db$${this.workspaceService.workspace.id}$${tableName}`,
+        storageDocId: tableName => `db$${tableName}`,
       }
     ) as WorkspaceDBWithTables<AFFiNEWorkspaceDbSchema>;
   }
@@ -74,11 +78,11 @@ export class WorkspaceDBService extends Service {
           new YjsDBAdapter(AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA, {
             getDoc: guid => {
               const ydoc = new YDoc({
-                // guid format: userdata${userId}${workspaceId}${guid}
-                guid: `userdata$${userId}$${this.workspaceService.workspace.id}$${guid}`,
+                // guid format: userdata${userId}${guid}
+                guid: `userdata$${userId}$${guid}`,
               });
-              this.workspaceService.workspace.engine.doc.addDoc(ydoc, false);
-              this.workspaceService.workspace.engine.doc.setPriority(
+              this.workspaceService.workspace.engine.doc.connectDoc(ydoc);
+              this.workspaceService.workspace.engine.doc.addPriority(
                 ydoc.guid,
                 50
               );
@@ -87,8 +91,7 @@ export class WorkspaceDBService extends Service {
           })
         ),
         schema: AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA,
-        storageDocId: tableName =>
-          `userdata$${userId}$${this.workspaceService.workspace.id}$${tableName}`,
+        storageDocId: tableName => `userdata$${userId}$${tableName}`,
       }
     );
 
@@ -96,33 +99,26 @@ export class WorkspaceDBService extends Service {
     return newDB as WorkspaceDBWithTables<AFFiNEWorkspaceUserdataDbSchema>;
   }
 
+  authService = this.workspaceServerService.server?.scope.get(AuthService);
+  public get userdataDB$() {
+    // if is local workspace or no account, use __local__ userdata
+    // sometimes we may have cloud workspace but no account for a short time, we also use __local__ userdata
+    if (
+      this.workspaceService.workspace.meta.flavour === 'local' ||
+      !this.authService
+    ) {
+      return new LiveData(this.userdataDB('__local__'));
+    } else {
+      return this.authService.session.account$.map(account => {
+        if (!account) {
+          return this.userdataDB('__local__');
+        }
+        return this.userdataDB(account.id);
+      });
+    }
+  }
+
   static isDBDocId(docId: string) {
     return docId.startsWith('db$') || docId.startsWith('userdata$');
-  }
-}
-
-export async function transformWorkspaceDBLocalToCloud(
-  localWorkspaceId: string,
-  cloudWorkspaceId: string,
-  localDocStorage: DocStorage,
-  cloudDocStorage: DocStorage,
-  accountId: string
-) {
-  for (const tableName of Object.keys(AFFiNE_WORKSPACE_DB_SCHEMA)) {
-    const localDocName = `db$${localWorkspaceId}$${tableName}`;
-    const localDoc = await localDocStorage.doc.get(localDocName);
-    if (localDoc) {
-      const cloudDocName = `db$${cloudWorkspaceId}$${tableName}`;
-      await cloudDocStorage.doc.set(cloudDocName, localDoc);
-    }
-  }
-
-  for (const tableName of Object.keys(AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA)) {
-    const localDocName = `userdata$__local__$${localWorkspaceId}$${tableName}`;
-    const localDoc = await localDocStorage.doc.get(localDocName);
-    if (localDoc) {
-      const cloudDocName = `userdata$${accountId}$${cloudWorkspaceId}$${tableName}`;
-      await cloudDocStorage.doc.set(cloudDocName, localDoc);
-    }
   }
 }

@@ -18,6 +18,7 @@ import type {
   DocDisplayMetaExtension,
   DocDisplayMetaParams,
   RootBlockConfig,
+  Signal,
   SpecBuilder,
   TelemetryEventMap,
   ThemeExtension,
@@ -25,21 +26,18 @@ import type {
 import {
   CodeBlockSpec,
   ColorScheme,
+  createSignalFromObservable,
   DocDisplayMetaProvider,
   EditorSettingExtension,
   ImageBlockSpec,
   ParagraphBlockSpec,
+  referenceToNode,
+  SpecProvider,
   TelemetryProvider,
   ThemeExtensionIdentifier,
 } from '@blocksuite/affine/blocks';
+import type { Container } from '@blocksuite/affine/global/di';
 import type { ExtensionType } from '@blocksuite/affine/store';
-import {
-  createSignalFromObservable,
-  referenceToNode,
-  type Signal,
-  SpecProvider,
-} from '@blocksuite/affine-shared/utils';
-import type { Container } from '@blocksuite/global/di';
 import { LinkedPageIcon, PageIcon } from '@blocksuite/icons/lit';
 import { type FrameworkProvider } from '@toeverything/infra';
 import type { TemplateResult } from 'lit';
@@ -186,8 +184,8 @@ export function buildDocDisplayMetaExtension(framework: FrameworkProvider) {
       const icon$ = docDisplayMetaService
         .icon$(docId, {
           type: 'lit',
+          title,
           reference: referenced,
-          hasTitleAlias: Boolean(title),
           referenceToNode: referenceToNode({ pageId: docId, params }),
         })
         .map(iconBuilder);
@@ -204,7 +202,7 @@ export function buildDocDisplayMetaExtension(framework: FrameworkProvider) {
 
     title(
       docId: string,
-      { title = '', referenced }: DocDisplayMetaParams = {}
+      { title, referenced }: DocDisplayMetaParams = {}
     ): Signal<string> {
       const title$ = docDisplayMetaService.title$(docId, {
         title,
@@ -212,7 +210,7 @@ export function buildDocDisplayMetaExtension(framework: FrameworkProvider) {
       });
 
       const { signal: titleSignal, cleanup } =
-        createSignalFromObservable<string>(title$, title);
+        createSignalFromObservable<string>(title$, title ?? '');
 
       this.disposables.push(cleanup);
 

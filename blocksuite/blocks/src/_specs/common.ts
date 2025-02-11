@@ -2,7 +2,10 @@ import { AttachmentBlockSpec } from '@blocksuite/affine-block-attachment';
 import { BookmarkBlockSpec } from '@blocksuite/affine-block-bookmark';
 import { CodeBlockSpec } from '@blocksuite/affine-block-code';
 import { DataViewBlockSpec } from '@blocksuite/affine-block-data-view';
-import { DatabaseBlockSpec } from '@blocksuite/affine-block-database';
+import {
+  DatabaseBlockSpec,
+  DatabaseSelectionExtension,
+} from '@blocksuite/affine-block-database';
 import { DividerBlockSpec } from '@blocksuite/affine-block-divider';
 import { EdgelessTextBlockSpec } from '@blocksuite/affine-block-edgeless-text';
 import { EmbedExtensions } from '@blocksuite/affine-block-embed';
@@ -28,10 +31,23 @@ import {
   RichTextExtensions,
 } from '@blocksuite/affine-components/rich-text';
 import {
+  HighlightSelectionExtension,
+  ImageSelectionExtension,
+} from '@blocksuite/affine-shared/selection';
+import {
+  DefaultOpenDocExtension,
   DocDisplayMetaService,
   EditPropsStore,
+  FeatureFlagService,
   FontLoaderService,
+  LinkPreviewerService,
 } from '@blocksuite/affine-shared/services';
+import {
+  BlockSelectionExtension,
+  CursorSelectionExtension,
+  SurfaceSelectionExtension,
+  TextSelectionExtension,
+} from '@blocksuite/block-std';
 import type { ExtensionType } from '@blocksuite/store';
 
 import { AdapterFactoryExtensions } from '../_common/adapters/extension.js';
@@ -53,6 +69,7 @@ export const CommonBlockSpecs: ExtensionType[] = [
   CodeBlockSpec,
   ImageBlockSpec,
   ParagraphBlockSpec,
+  DefaultOpenDocExtension,
 ].flat();
 
 export const PageFirstPartyBlockSpecs: ExtensionType[] = [
@@ -73,3 +90,15 @@ export const EdgelessFirstPartyBlockSpecs: ExtensionType[] = [
   EdgelessTextBlockSpec,
   FontLoaderService,
 ].flat();
+
+export const StoreExtensions: ExtensionType[] = [
+  FeatureFlagService,
+  BlockSelectionExtension,
+  TextSelectionExtension,
+  SurfaceSelectionExtension,
+  CursorSelectionExtension,
+  HighlightSelectionExtension,
+  ImageSelectionExtension,
+  DatabaseSelectionExtension,
+  LinkPreviewerService,
+];

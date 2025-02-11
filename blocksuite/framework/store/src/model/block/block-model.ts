@@ -2,9 +2,9 @@ import { type Disposable, Slot } from '@blocksuite/global/utils';
 import { computed, type Signal, signal } from '@preact/signals-core';
 
 import type { Text } from '../../reactive/index.js';
-import type { Blocks } from '../blocks/blocks.js';
+import type { Store } from '../store/store.js';
 import type { YBlock } from './types.js';
-import type { RoleType } from './zod.js';
+import type { BlockSchemaType } from './zod.js';
 
 type SignaledProps<Props> = Props & {
   [P in keyof Props & string as `${P}$`]: Signal<Props[P]>;
@@ -35,15 +35,12 @@ export class BlockModel<
 > extends MagicProps()<PropsSignal> {
   private readonly _children = signal<string[]>([]);
 
-  /**
-   * @deprecated use doc instead
-   */
-  page!: Blocks;
+  private _store!: Store;
 
   private readonly _childModels = computed(() => {
     const value: BlockModel[] = [];
     this._children.value.forEach(id => {
-      const block = this.page.getBlock$(id);
+      const block = this._store.getBlock$(id);
       if (block) {
         value.push(block.model);
       }
@@ -66,9 +63,9 @@ export class BlockModel<
 
   deleted = new Slot();
 
-  flavour!: string;
-
   id!: string;
+
+  schema!: BlockSchemaType;
 
   isEmpty() {
     return this.children.length === 0;
@@ -83,31 +80,39 @@ export class BlockModel<
 
   propsUpdated = new Slot<{ key: string }>();
 
-  role!: RoleType;
-
   stash!: (prop: keyof Props & string) => void;
 
   // text is optional
   text?: Text;
 
-  version!: number;
-
   yBlock!: YBlock;
+
+  get flavour(): string {
+    return this.schema.model.flavour;
+  }
+
+  get version() {
+    return this.schema.version;
+  }
 
   get children() {
     return this._childModels.value;
   }
 
   get doc() {
-    return this.page;
+    return this._store;
   }
 
-  set doc(doc: Blocks) {
-    this.page = doc;
+  set doc(doc: Store) {
+    this._store = doc;
   }
 
   get parent() {
     return this.doc.getParent(this);
+  }
+
+  get role() {
+    return this.schema.model.role;
   }
 
   constructor() {

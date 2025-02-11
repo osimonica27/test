@@ -2,7 +2,6 @@ import { textConversionConfigs } from '@blocksuite/affine-components/rich-text';
 import { NoteBlockSchema } from '@blocksuite/affine-model';
 import { matchFlavours } from '@blocksuite/affine-shared/utils';
 import {
-  type BaseSelection,
   type BlockComponent,
   BlockSelection,
   BlockService,
@@ -11,7 +10,7 @@ import {
   type UIEventHandler,
   type UIEventStateContext,
 } from '@blocksuite/block-std';
-import type { BlockModel } from '@blocksuite/store';
+import type { BaseSelection, BlockModel } from '@blocksuite/store';
 
 import { moveBlockConfigs } from './move-block';
 import { quickActionConfig } from './quick-action';
@@ -130,7 +129,7 @@ export class NoteBlockService extends BlockService {
   private _focusBlock: BlockComponent | null = null;
 
   private readonly _getClosestNoteByBlockId = (blockId: string) => {
-    const doc = this._std.doc;
+    const doc = this._std.store;
     let parent = doc.getBlock(blockId)?.model ?? null;
     while (parent) {
       if (matchFlavours(parent, [NoteBlockSchema.model.flavour])) {
@@ -423,7 +422,7 @@ export class NoteBlockService extends BlockService {
           return;
         }
 
-        const { view, doc, selection } = ctx.std;
+        const { view, store, selection } = ctx.std;
 
         const element = view.getBlock(blockSelection.blockId);
         if (!element) {
@@ -431,14 +430,19 @@ export class NoteBlockService extends BlockService {
         }
 
         const { model } = element;
-        const parent = doc.getParent(model);
+        const parent = store.getParent(model);
         if (!parent) {
           return;
         }
 
         const index = parent.children.indexOf(model) ?? undefined;
 
-        const blockId = doc.addBlock('affine:paragraph', {}, parent, index + 1);
+        const blockId = store.addBlock(
+          'affine:paragraph',
+          {},
+          parent,
+          index + 1
+        );
 
         const sel = selection.create(TextSelection, {
           from: {

@@ -1,18 +1,21 @@
+import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import type { SettingTab } from '@affine/core/modules/dialogs/constant';
-import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
+import { WorkspaceService } from '@affine/core/modules/workspace';
+import { useI18n } from '@affine/i18n';
+import { PaymentIcon, PropertyIcon, SettingsIcon } from '@blocksuite/icons/rc';
+import { useService } from '@toeverything/infra';
+import { useMemo } from 'react';
 
-import type { SettingState } from '../types';
+import type { SettingSidebarItem, SettingState } from '../types';
 import { WorkspaceSettingBilling } from './billing';
 import { WorkspaceSettingDetail } from './new-workspace-setting-detail';
 import { WorkspaceSettingProperties } from './properties';
 
 export const WorkspaceSetting = ({
-  workspaceMetadata,
   activeTab,
   onCloseSetting,
   onChangeSettingState,
 }: {
-  workspaceMetadata: WorkspaceMetadata;
   activeTab: SettingTab;
   onCloseSetting: () => void;
   onChangeSettingState: (settingState: SettingState) => void;
@@ -23,15 +26,50 @@ export const WorkspaceSetting = ({
         <WorkspaceSettingDetail
           onCloseSetting={onCloseSetting}
           onChangeSettingState={onChangeSettingState}
-          workspaceMetadata={workspaceMetadata}
         />
       );
     case 'workspace:properties':
-      return (
-        <WorkspaceSettingProperties workspaceMetadata={workspaceMetadata} />
-      );
+      return <WorkspaceSettingProperties />;
     case 'workspace:billing':
-      return <WorkspaceSettingBilling workspaceMetadata={workspaceMetadata} />;
+      return <WorkspaceSettingBilling />;
+    default:
+      return null;
   }
-  return null;
+};
+
+export const useWorkspaceSettingList = (): SettingSidebarItem[] => {
+  const workspaceService = useService(WorkspaceService);
+  const information = useWorkspaceInfo(workspaceService.workspace);
+
+  const t = useI18n();
+
+  const showBilling = information?.isTeam && information?.isOwner;
+  const items = useMemo<SettingSidebarItem[]>(() => {
+    return [
+      {
+        key: 'workspace:preference',
+        title: t['com.affine.settings.workspace.preferences'](),
+        icon: <SettingsIcon />,
+        testId: 'workspace-setting:preference',
+      },
+      {
+        key: 'workspace:properties',
+        title: t['com.affine.settings.workspace.properties'](),
+        icon: <PropertyIcon />,
+        testId: 'workspace-setting:properties',
+      },
+      ...(showBilling
+        ? [
+            {
+              key: 'workspace:billing' as SettingTab,
+              title: t['com.affine.settings.workspace.billing'](),
+              icon: <PaymentIcon />,
+              testId: 'workspace-setting:billing',
+            },
+          ]
+        : []),
+    ];
+  }, [showBilling, t]);
+
+  return items;
 };

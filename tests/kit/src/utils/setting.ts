@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 export async function clickCollaborationPanel(page: Page) {
   await page.click('[data-tab-key="collaboration"]');
@@ -38,11 +38,11 @@ export async function confirmExperimentalPrompt(page: Page) {
   await page.getByTestId('experimental-confirm-button').click();
 }
 
-export async function openWorkspaceSettingPanel(
-  page: Page,
-  workspaceName: string
-) {
-  await page.getByTestId('settings-sidebar').getByText(workspaceName).click();
+export async function openWorkspaceSettingPanel(page: Page) {
+  await page
+    .getByTestId('settings-sidebar')
+    .getByTestId('workspace-setting:preference')
+    .click();
 }
 
 export async function clickUserInfoCard(page: Page) {

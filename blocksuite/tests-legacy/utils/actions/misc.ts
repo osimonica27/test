@@ -36,7 +36,7 @@ declare global {
 }
 
 export const defaultPlaygroundURL = new URL(
-  `http://localhost:${process.env.CI ? 4173 : 5173}/starter/`
+  `http://localhost:${process.env.CI ? 4173 : 5173}/`
 );
 
 const NEXT_FRAME_TIMEOUT = 50;
@@ -85,9 +85,6 @@ async function initEmptyEditor({
           await new Promise(resolve => doc.slots.rootAdded.once(resolve));
         }
 
-        for (const [key, value] of Object.entries(flags)) {
-          doc.awarenessStore.setFlag(key as keyof typeof flags, value);
-        }
         // add app root from https://github.com/toeverything/blocksuite/commit/947201981daa64c5ceeca5fd549460c34e2dabfa
         const appRoot = document.querySelector('#app');
         if (!appRoot) {
@@ -95,6 +92,14 @@ async function initEmptyEditor({
         }
         const createEditor = () => {
           const editor = document.createElement('affine-editor-container');
+          for (const [key, value] of Object.entries(flags)) {
+            doc
+              .get(window.$blocksuite.blocks.FeatureFlagService)
+              .setFlag(key, value);
+          }
+          doc
+            .get(window.$blocksuite.blocks.FeatureFlagService)
+            .setFlag('enable_advanced_block_visibility', true);
           editor.doc = doc;
           editor.autofocus = true;
           const defaultExtensions: ExtensionType[] = [
@@ -194,7 +199,7 @@ async function initEmptyEditor({
       }
 
       if (noInit) {
-        const firstDoc = collection.docs.values().next().value?.getBlocks() as
+        const firstDoc = collection.docs.values().next().value?.getStore() as
           | ReturnType<typeof collection.createDoc>
           | undefined;
         if (firstDoc) {
@@ -521,17 +526,10 @@ export async function initEmptyDatabaseState(page: Page, rootId?: string) {
       noteId
     );
     const model = doc.getBlockById(databaseId) as DatabaseBlockModel;
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const databaseBlock = document.querySelector('affine-database');
-    const databaseService = databaseBlock?.service;
-    if (databaseService) {
-      databaseService.databaseViewInitEmpty(
-        model,
-        databaseService.viewPresets.tableViewMeta.type
-      );
-      databaseService.applyColumnUpdate(model);
-    }
-
+    const datasource = new window.$blocksuite.blocks.DatabaseBlockDataSource(
+      model
+    );
+    datasource.viewManager.viewAdd('table');
     doc.captureSync();
     return { rootId, noteId, databaseId };
   }, rootId);
@@ -565,43 +563,34 @@ export async function initKanbanViewState(
         noteId
       );
       const model = doc.getBlockById(databaseId) as DatabaseBlockModel;
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const databaseBlock = document.querySelector('affine-database');
-      const databaseService = databaseBlock?.service;
-      if (databaseService) {
-        const rowIds = config.rows.map(rowText => {
-          const rowId = doc.addBlock(
-            'affine:paragraph',
-            { type: 'text', text: new window.$blocksuite.store.Text(rowText) },
-            databaseId
-          );
-          return rowId;
-        });
-        config.columns.forEach(column => {
-          const columnId = databaseService.addColumn(model, 'end', {
-            data: {},
-            name: column.type,
-            type: column.type,
-          });
-          rowIds.forEach((rowId, index) => {
-            const value = column.value?.[index];
-            if (value !== undefined) {
-              databaseService.updateCell(model, rowId, {
-                columnId,
-                value:
-                  column.type === 'rich-text'
-                    ? new window.$blocksuite.store.Text(value as string)
-                    : value,
-              });
-            }
-          });
-        });
-        databaseService.databaseViewInitEmpty(
-          model,
-          databaseService.viewPresets.kanbanViewMeta.type
+      const datasource = new window.$blocksuite.blocks.DatabaseBlockDataSource(
+        model
+      );
+      const rowIds = config.rows.map(rowText => {
+        const rowId = doc.addBlock(
+          'affine:paragraph',
+          { type: 'text', text: new window.$blocksuite.store.Text(rowText) },
+          databaseId
         );
-        databaseService.applyColumnUpdate(model);
-      }
+        return rowId;
+      });
+      config.columns.forEach(column => {
+        const columnId = datasource.propertyAdd('end', column.type);
+        datasource.propertyNameSet(columnId, column.type);
+        rowIds.forEach((rowId, index) => {
+          const value = column.value?.[index];
+          if (value !== undefined) {
+            datasource.cellValueChange(
+              rowId,
+              columnId,
+              column.type === 'rich-text'
+                ? new window.$blocksuite.store.Text(value as string)
+                : value
+            );
+          }
+        });
+      });
+      datasource.viewManager.viewAdd('kanban');
       doc.captureSync();
       return { rootId, noteId, databaseId };
     },
@@ -631,18 +620,11 @@ export async function initEmptyDatabaseWithParagraphState(
       noteId
     );
     const model = doc.getBlockById(databaseId) as DatabaseBlockModel;
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const databaseBlock = document.querySelector('affine-database');
-    const databaseService = databaseBlock?.service;
-    if (databaseService) {
-      databaseService.databaseViewInitEmpty(
-        model,
-        databaseService.viewPresets.tableViewMeta.type
-      );
-      databaseService.applyColumnUpdate(model);
-    }
+    const datasource = new window.$blocksuite.blocks.DatabaseBlockDataSource(
+      model
+    );
+    datasource.viewManager.viewAdd('table');
     doc.addBlock('affine:paragraph', {}, noteId);
-
     doc.captureSync();
     return { rootId, noteId, databaseId };
   }, rootId);

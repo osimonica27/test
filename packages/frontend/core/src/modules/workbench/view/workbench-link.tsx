@@ -1,7 +1,7 @@
 import { useDraggable } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import type { AffineDNDData, AffineDNDEntity } from '@affine/core/types/dnd';
-import { isNewTabTrigger } from '@affine/core/utils';
+import { inferOpenMode as inferOpenAt } from '@affine/core/utils';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { type To } from 'history';
 import { forwardRef, type MouseEvent } from 'react';
@@ -47,7 +47,10 @@ function resolveToEntity(
 }
 
 export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
-  function WorkbenchLink({ to, onClick, replaceHistory, ...other }, ref) {
+  function WorkbenchLink(
+    { to, onClick, draggable = true, replaceHistory, ...other },
+    ref
+  ) {
     const { workbenchService } = useServices({
       WorkbenchService,
     });
@@ -62,13 +65,8 @@ export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
         if (event.defaultPrevented) {
           return;
         }
-        const at = (() => {
-          if (isNewTabTrigger(event)) {
-            return BUILD_CONFIG.isElectron && event.altKey ? 'tail' : 'new-tab';
-          }
-          return 'active';
-        })();
-        workbench.open(to, { at, replaceHistory });
+        const at = inferOpenAt(event);
+        workbench.open(to, { at, replaceHistory, show: false });
         event.preventDefault();
         event.stopPropagation();
       },
@@ -84,8 +82,10 @@ export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
             to: stringTo,
           },
         },
+        canDrag:
+          typeof draggable === 'boolean' ? draggable : draggable === 'true',
       };
-    }, [to, basename, stringTo]);
+    }, [to, basename, stringTo, draggable]);
 
     return (
       <a

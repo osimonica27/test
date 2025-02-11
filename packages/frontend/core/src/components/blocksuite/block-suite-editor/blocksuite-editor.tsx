@@ -1,17 +1,14 @@
 import { useRefEffect } from '@affine/component';
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import {
-  BookmarkBlockService,
   customImageProxyMiddleware,
   type DocMode,
-  EmbedGithubBlockService,
-  EmbedLoomBlockService,
-  EmbedYoutubeBlockService,
   ImageBlockService,
+  LinkPreviewerService,
 } from '@blocksuite/affine/blocks';
 import { DisposableGroup } from '@blocksuite/affine/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/affine/presets';
-import type { Blocks } from '@blocksuite/affine/store';
+import type { Store } from '@blocksuite/affine/store';
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 
@@ -20,7 +17,7 @@ import { BlocksuiteEditorContainer } from './blocksuite-editor-container';
 import { NoPageRootError } from './no-page-error';
 
 export type EditorProps = {
-  page: Blocks;
+  page: Store;
   mode: DocMode;
   shared?: boolean;
   defaultOpenProperty?: DefaultOpenProperty;
@@ -71,19 +68,9 @@ const BlockSuiteEditorImpl = ({
             );
             ImageBlockService.setImageProxyURL(BUILD_CONFIG.imageProxyUrl);
 
-            // provide link preview endpoint to blocksuite
-            BookmarkBlockService.setLinkPreviewEndpoint(
-              BUILD_CONFIG.linkPreviewUrl
-            );
-            EmbedGithubBlockService.setLinkPreviewEndpoint(
-              BUILD_CONFIG.linkPreviewUrl
-            );
-            EmbedYoutubeBlockService.setLinkPreviewEndpoint(
-              BUILD_CONFIG.linkPreviewUrl
-            );
-            EmbedLoomBlockService.setLinkPreviewEndpoint(
-              BUILD_CONFIG.linkPreviewUrl
-            );
+            editor.host?.doc
+              .get(LinkPreviewerService)
+              .setEndpoint(BUILD_CONFIG.linkPreviewUrl);
 
             return editor.host?.updateComplete;
           })

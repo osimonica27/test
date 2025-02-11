@@ -45,7 +45,7 @@ const gitShortHash = once(() => {
   if (GITHUB_SHA) {
     return GITHUB_SHA.substring(0, 9);
   }
-  const repo = new Repository(ProjectRoot.path);
+  const repo = new Repository(ProjectRoot.value);
   const shortSha = repo.head().target()?.substring(0, 9);
   if (shortSha) {
     return shortSha;
@@ -96,6 +96,19 @@ export function createShellHTMLPlugin(
     ...htmlPluginOptions,
     chunks: ['shell'],
     filename: `shell.html`,
+  });
+}
+
+export function createBackgroundWorkerHTMLPlugin(
+  flags: BuildFlags,
+  BUILD_CONFIG: BUILD_CONFIG_TYPE
+) {
+  const htmlPluginOptions = getHTMLPluginOptions(flags, BUILD_CONFIG);
+
+  return new HTMLPlugin({
+    ...htmlPluginOptions,
+    chunks: ['backgroundWorker'],
+    filename: `background-worker.html`,
   });
 }
 

@@ -1,5 +1,4 @@
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import type { BlockSuiteFlags } from '@blocksuite/global/types';
 import { NoopLogger, Slot } from '@blocksuite/global/utils';
 import {
   AwarenessEngine,
@@ -11,21 +10,20 @@ import {
   MemoryBlobSource,
   NoopDocSource,
 } from '@blocksuite/sync';
-import clonedeep from 'lodash.clonedeep';
-import merge from 'lodash.merge';
 import { Awareness } from 'y-protocols/awareness.js';
 import * as Y from 'yjs';
 
+import type { ExtensionType } from '../extension/extension.js';
 import type {
-  Blocks,
   CreateBlocksOptions,
   GetBlocksOptions,
+  Store,
   Workspace,
   WorkspaceMeta,
 } from '../model/index.js';
 import type { Schema } from '../schema/index.js';
 import { type IdGenerator, nanoid } from '../utils/id-generator.js';
-import { AwarenessStore, type RawAwarenessState } from '../yjs/index.js';
+import { AwarenessStore } from '../yjs/index.js';
 import { TestDoc } from './test-doc.js';
 import { TestMeta } from './test-meta.js';
 
@@ -33,7 +31,6 @@ export type DocCollectionOptions = {
   schema: Schema;
   id?: string;
   idGenerator?: IdGenerator;
-  defaultFlags?: Partial<BlockSuiteFlags>;
   docSources?: {
     main: DocSource;
     shadows?: DocSource[];
@@ -45,32 +42,14 @@ export type DocCollectionOptions = {
   awarenessSources?: AwarenessSource[];
 };
 
-const FLAGS_PRESET = {
-  enable_synced_doc_block: false,
-  enable_pie_menu: false,
-  enable_database_number_formatting: false,
-  enable_database_attachment_note: false,
-  enable_database_full_width: false,
-  enable_block_query: false,
-  enable_lasso_tool: false,
-  enable_edgeless_text: true,
-  enable_ai_onboarding: false,
-  enable_ai_chat_block: false,
-  enable_color_picker: false,
-  enable_mind_map_import: false,
-  enable_advanced_block_visibility: false,
-  enable_shape_shadow_blur: false,
-  enable_mobile_keyboard_toolbar: false,
-  enable_mobile_linked_doc_menu: false,
-  readonly: {},
-} satisfies BlockSuiteFlags;
-
 /**
  * Test only
  * Do not use this in production
  */
 export class TestWorkspace implements Workspace {
   protected readonly _schema: Schema;
+
+  storeExtensions: ExtensionType[] = [];
 
   readonly awarenessStore: AwarenessStore;
 
@@ -108,7 +87,6 @@ export class TestWorkspace implements Workspace {
     id,
     schema,
     idGenerator,
-    defaultFlags,
     awarenessSources = [],
     docSources = {
       main: new NoopDocSource(),
@@ -121,10 +99,7 @@ export class TestWorkspace implements Workspace {
 
     this.id = id || '';
     this.doc = new Y.Doc({ guid: id });
-    this.awarenessStore = new AwarenessStore(
-      new Awareness<RawAwarenessState>(this.doc),
-      merge(clonedeep(FLAGS_PRESET), defaultFlags)
-    );
+    this.awarenessStore = new AwarenessStore(new Awareness(this.doc));
 
     const logger = new NoopLogger();
 
@@ -205,7 +180,7 @@ export class TestWorkspace implements Workspace {
       tags: [],
     });
     this.slots.docCreated.emit(docId);
-    return this.getDoc(docId, { query, readonly }) as Blocks;
+    return this.getDoc(docId, { query, readonly }) as Store;
   }
 
   dispose() {
@@ -227,9 +202,9 @@ export class TestWorkspace implements Workspace {
     return space ?? null;
   }
 
-  getDoc(docId: string, options?: GetBlocksOptions): Blocks | null {
+  getDoc(docId: string, options?: GetBlocksOptions): Store | null {
     const collection = this.getBlockCollection(docId);
-    return collection?.getBlocks(options) ?? null;
+    return collection?.getStore(options) ?? null;
   }
 
   removeDoc(docId: string) {

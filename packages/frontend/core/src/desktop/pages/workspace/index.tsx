@@ -8,6 +8,7 @@ import {
 import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { DndService } from '@affine/core/modules/dnd/services';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { OpenInAppGuard } from '@affine/core/modules/open-in-app';
 import {
   type Workspace,
   type WorkspaceMetadata,
@@ -16,6 +17,7 @@ import {
 import { ZipTransformer } from '@blocksuite/affine/blocks';
 import {
   FrameworkScope,
+  LiveData,
   useLiveData,
   useService,
   useServices,
@@ -28,6 +30,7 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
+import { map } from 'rxjs';
 import * as _Y from 'yjs';
 
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
@@ -247,7 +250,20 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
   }, [meta, workspacesService]);
 
   const isRootDocReady =
-    useLiveData(workspace?.engine.rootDocState$.map(v => v.ready)) ?? false;
+    useLiveData(
+      useMemo(
+        () =>
+          workspace
+            ? LiveData.from(
+                workspace.engine.doc
+                  .docState$(workspace.id)
+                  .pipe(map(v => v.ready)),
+                false
+              )
+            : null,
+        [workspace]
+      )
+    ) ?? false;
 
   useEffect(() => {
     if (workspace) {
@@ -265,7 +281,7 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
           workspace.docCollection,
           Array.from(workspace.docCollection.docs.values())
             .filter(doc => (docs ? docs.includes(doc.id) : true))
-            .map(doc => doc.getBlocks())
+            .map(doc => doc.getStore())
         );
       };
       window.importWorkspaceSnapshot = async () => {
@@ -315,7 +331,9 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
     return (
       <FrameworkScope scope={workspace.scope}>
         <DNDContextProvider>
-          <AppContainer fallback />
+          <OpenInAppGuard>
+            <AppContainer fallback />
+          </OpenInAppGuard>
         </DNDContextProvider>
       </FrameworkScope>
     );
@@ -324,11 +342,13 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
   return (
     <FrameworkScope scope={workspace.scope}>
       <DNDContextProvider>
-        <AffineErrorBoundary height="100vh">
-          <WorkspaceLayout>
-            <WorkbenchRoot />
-          </WorkspaceLayout>
-        </AffineErrorBoundary>
+        <OpenInAppGuard>
+          <AffineErrorBoundary height="100vh">
+            <WorkspaceLayout>
+              <WorkbenchRoot />
+            </WorkspaceLayout>
+          </AffineErrorBoundary>
+        </OpenInAppGuard>
       </DNDContextProvider>
     </FrameworkScope>
   );

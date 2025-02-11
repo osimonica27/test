@@ -1,5 +1,5 @@
-import { getElectronAPIs } from '@affine/electron-api/web-worker';
 import type {
+  AffineTextAttributes,
   AttachmentBlockModel,
   BookmarkBlockModel,
   EmbedBlockModel,
@@ -7,19 +7,18 @@ import type {
 } from '@blocksuite/affine/blocks';
 import {
   defaultBlockMarkdownAdapterMatchers,
-  inlineDeltaToMarkdownAdapterMatchers,
+  InlineDeltaToMarkdownAdapterExtensions,
   MarkdownAdapter,
-  markdownInlineToDeltaMatchers,
+  MarkdownInlineToDeltaAdapterExtensions,
 } from '@blocksuite/affine/blocks';
 import { Container } from '@blocksuite/affine/global/di';
 import {
   createYProxy,
   type DraftModel,
-  Job,
-  type JobMiddleware,
+  Transformer,
+  type TransformerMiddleware,
   type YBlock,
 } from '@blocksuite/affine/store';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import type { DeltaInsert } from '@blocksuite/inline';
 import { Document } from '@toeverything/infra';
 import { toHexString } from 'lib0/buffer.js';
@@ -49,11 +48,6 @@ const LRU_CACHE_SIZE = 5;
 
 // lru cache for ydoc instances, last used at the end of the array
 const lruCache = [] as { doc: YDoc; hash: string }[];
-
-const electronAPIs = BUILD_CONFIG.isElectron ? getElectronAPIs() : null;
-
-// @ts-expect-error test
-globalThis.__electronAPIs = electronAPIs;
 
 async function digest(data: Uint8Array) {
   if (
@@ -155,7 +149,7 @@ function generateMarkdownPreviewBuilder(
     };
   }
 
-  const titleMiddleware: JobMiddleware = ({ adapterConfigs }) => {
+  const titleMiddleware: TransformerMiddleware = ({ adapterConfigs }) => {
     const pages = yRootDoc.getMap('meta').get('pages');
     if (!(pages instanceof YArray)) {
       return;
@@ -176,22 +170,24 @@ function generateMarkdownPreviewBuilder(
     return `${baseUrl}/${docId}?${searchParams.toString()}`;
   }
 
-  const docLinkBaseURLMiddleware: JobMiddleware = ({ adapterConfigs }) => {
+  const docLinkBaseURLMiddleware: TransformerMiddleware = ({
+    adapterConfigs,
+  }) => {
     adapterConfigs.set('docLinkBaseUrl', baseUrl);
   };
 
   const container = new Container();
   [
-    ...markdownInlineToDeltaMatchers,
+    ...MarkdownInlineToDeltaAdapterExtensions,
     ...defaultBlockMarkdownAdapterMatchers,
-    ...inlineDeltaToMarkdownAdapterMatchers,
+    ...InlineDeltaToMarkdownAdapterExtensions,
   ].forEach(ext => {
     ext.setup(container);
   });
 
   const provider = container.provider();
   const markdownAdapter = new MarkdownAdapter(
-    new Job({
+    new Transformer({
       schema: markdownPreviewDocCollection.schema,
       blobCRUD: markdownPreviewDocCollection.blobSync,
       docCRUD: {
@@ -476,7 +472,7 @@ function unindentMarkdown(markdown: string) {
 
 async function crawlingDocData({
   docBuffer,
-  storageDocId,
+  docId,
   rootDocBuffer,
   rootDocId,
 }: WorkerInput & { type: 'doc' }): Promise<WorkerOutput> {
@@ -486,18 +482,6 @@ async function crawlingDocData({
   }
 
   const yRootDoc = await getOrCreateCachedYDoc(rootDocBuffer);
-
-  let docId = null;
-  for (const [id, subdoc] of yRootDoc.getMap('spaces')) {
-    if (subdoc instanceof YDoc && storageDocId === subdoc.guid) {
-      docId = id;
-      break;
-    }
-  }
-
-  if (docId === null) {
-    return {};
-  }
 
   let docExists: boolean | null = null;
 

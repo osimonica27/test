@@ -5,25 +5,18 @@ import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hoo
 import { useSystemOnline } from '@affine/core/components/hooks/use-system-online';
 import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
-import type {
-  Workspace,
-  WorkspaceMetadata,
-} from '@affine/core/modules/workspace';
+import type { Workspace } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
+import { universalId } from '@affine/nbstore';
 import track from '@affine/track';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useState } from 'react';
 
 interface ExportPanelProps {
-  workspaceMetadata: WorkspaceMetadata;
-  workspace: Workspace | null;
+  workspace: Workspace;
 }
 
-export const DesktopExportPanel = ({
-  workspaceMetadata,
-  workspace,
-}: ExportPanelProps) => {
-  const workspaceId = workspaceMetadata.id;
+export const DesktopExportPanel = ({ workspace }: ExportPanelProps) => {
   const workspacePermissionService = useService(
     WorkspacePermissionService
   ).permission;
@@ -46,11 +39,18 @@ export const DesktopExportPanel = ({
         type: 'workspace',
       });
       if (isOnline) {
-        await workspace.engine.waitForDocSynced();
-        await workspace.engine.blob.sync();
+        await workspace.engine.doc.waitForSynced();
+        await workspace.engine.blob.fullSync();
       }
 
-      const result = await desktopApi.handler?.dialog.saveDBFileAs(workspaceId);
+      const result = await desktopApi.handler?.dialog.saveDBFileAs(
+        universalId({
+          peer: workspace.flavour,
+          type: 'workspace',
+          id: workspace.id,
+        }),
+        workspace.name$.getValue() ?? 'db'
+      );
       if (result?.error) {
         throw new Error(result.error);
       } else if (!result?.canceled) {
@@ -61,7 +61,7 @@ export const DesktopExportPanel = ({
     } finally {
       setSaving(false);
     }
-  }, [desktopApi, isOnline, saving, t, workspace, workspaceId]);
+  }, [desktopApi, isOnline, saving, t, workspace]);
 
   if (isTeam && !isOwner && !isAdmin) {
     return null;

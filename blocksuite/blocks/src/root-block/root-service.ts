@@ -41,7 +41,7 @@ export abstract class RootService extends BlockService {
   }
 
   get viewportElement() {
-    const rootId = this.std.doc.root?.id;
+    const rootId = this.std.store.root?.id;
     if (!rootId) return null;
     const rootComponent = this.std.view.getBlock(
       rootId
@@ -49,16 +49,5 @@ export abstract class RootService extends BlockService {
     if (!rootComponent) return null;
     const viewportElement = rootComponent.viewportElement;
     return viewportElement;
-  }
-
-  override mounted() {
-    super.mounted();
-
-    this.disposables.add(
-      this.std.event.add('pointerDown', ctx => {
-        const state = ctx.get('pointerState');
-        state.raw.stopPropagation();
-      })
-    );
   }
 }

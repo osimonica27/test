@@ -20,6 +20,11 @@ const ignoreList = readFileSync('.prettierignore', 'utf-8')
   .split('\n')
   .filter(line => line.trim() && !line.startsWith('#'));
 
+// Omit `.d.ts` because 1) TypeScript compilation already confirms that
+// types are resolved, and 2) it would mask an unresolved
+// `.ts`/`.tsx`/`.js`/`.jsx` implementation.
+const typeScriptExtensions = ['.ts', '.tsx', '.cts', '.mts'];
+
 export default tseslint.config(
   {
     ignores: ignoreList,
@@ -28,6 +33,12 @@ export default tseslint.config(
     settings: {
       react: {
         version: 'detect',
+      },
+      'import-x/parsers': {
+        '@typescript-eslint/parser': typeScriptExtensions,
+      },
+      'import-x/resolver': {
+        typescript: true,
       },
     },
     languageOptions: {
@@ -159,6 +170,10 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-function-type': 'error',
       '@typescript-eslint/no-wrapper-object-types': 'error',
       '@typescript-eslint/unified-signatures': 'error',
+      '@typescript-eslint/return-await': [
+        'error',
+        'error-handling-correctness-only',
+      ],
       '@typescript-eslint/no-restricted-imports': [
         'error',
         {
@@ -220,7 +235,10 @@ export default tseslint.config(
       '@typescript-eslint/require-array-sort-compare': 'error',
       '@typescript-eslint/no-misused-promises': ['error'],
       '@typescript-eslint/prefer-readonly': 'error',
-      'import-x/no-extraneous-dependencies': ['error'],
+      'import-x/no-extraneous-dependencies': [
+        'error',
+        { includeInternal: true },
+      ],
       'react-hooks/exhaustive-deps': [
         'warn',
         {
@@ -242,6 +260,33 @@ export default tseslint.config(
             '^UndoManager$': false,
           },
         },
+      ],
+    },
+  },
+  {
+    files: ['packages/frontend/admin/**/*'],
+    rules: {
+      'import-x/no-extraneous-dependencies': [
+        'error',
+        { includeInternal: true, whitelist: ['@affine/admin'] },
+      ],
+    },
+  },
+  {
+    files: ['packages/frontend/core/**/*'],
+    rules: {
+      'import-x/no-extraneous-dependencies': [
+        'error',
+        { includeInternal: true, whitelist: ['@affine/core'] },
+      ],
+    },
+  },
+  {
+    files: ['packages/frontend/component/**/*'],
+    rules: {
+      'import-x/no-extraneous-dependencies': [
+        'error',
+        { includeInternal: true, whitelist: ['@affine/component'] },
       ],
     },
   },
@@ -269,7 +314,11 @@ export default tseslint.config(
     },
   },
   {
-    files: ['packages/frontend/apps/electron/scripts/**/*'],
+    files: [
+      'packages/frontend/apps/electron/scripts/**/*',
+      'blocksuite/tests-legacy/**/*.{ts,tsx}',
+      'blocksuite/**/__tests__/**/*.{ts,tsx}',
+    ],
     rules: {
       'import-x/no-extraneous-dependencies': 'off',
     },
@@ -278,15 +327,6 @@ export default tseslint.config(
     files: ['blocksuite/**/*.{ts,tsx}'],
     rules: {
       'rxjs/finnish': 'off',
-    },
-  },
-  {
-    files: [
-      'blocksuite/tests-legacy/**/*.{ts,tsx}',
-      'blocksuite/**/__tests__/**/*.{ts,tsx}',
-    ],
-    rules: {
-      'import-x/no-extraneous-dependencies': 'off',
     },
   },
   eslintConfigPrettier

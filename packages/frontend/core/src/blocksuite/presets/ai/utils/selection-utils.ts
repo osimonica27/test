@@ -1,4 +1,5 @@
 import { type EditorHost, TextSelection } from '@blocksuite/affine/block-std';
+import type { GfxModel } from '@blocksuite/affine/block-std/gfx';
 import {
   BlocksUtils,
   type CopilotTool,
@@ -39,11 +40,22 @@ export function getEdgelessService(editor: EditorHost) {
   throw new Error('Please open switch to edgeless mode');
 }
 
-export async function selectedToCanvas(editor: EditorHost) {
-  const edgelessRoot = getEdgelessRootFromEditor(editor);
-  const { notes, frames, shapes, images } = BlocksUtils.splitElements(
+export async function selectedToCanvas(host: EditorHost) {
+  const edgelessRoot = getEdgelessRootFromEditor(host);
+  return elementsToCanvas(
+    host,
     edgelessRoot.service.selection.selectedElements
   );
+}
+
+export async function allToCanvas(host: EditorHost) {
+  const edgelessRoot = getEdgelessRootFromEditor(host);
+  return elementsToCanvas(host, edgelessRoot.gfx.gfxElements);
+}
+
+export async function elementsToCanvas(host: EditorHost, elements: GfxModel[]) {
+  const edgelessRoot = getEdgelessRootFromEditor(host);
+  const { notes, frames, shapes, images } = BlocksUtils.splitElements(elements);
   if (notes.length + frames.length + images.length + shapes.length === 0) {
     return;
   }
@@ -93,7 +105,7 @@ export function getSelectedModels(editorHost: EditorHost) {
   return selectedModels;
 }
 
-function traverse(model: DraftModel, drafts: DraftModel[]) {
+export function traverse(model: DraftModel, drafts: DraftModel[]) {
   const isDatabase = model.flavour === 'affine:database';
   const children = isDatabase
     ? model.children
@@ -124,7 +136,7 @@ export async function getTextContentFromBlockModels(
   );
   const drafts = selectedTextModels.map(toDraftModel);
   drafts.forEach(draft => traverse(draft, drafts));
-  const slice = Slice.fromModels(editorHost.std.doc, drafts);
+  const slice = Slice.fromModels(editorHost.std.store, drafts);
   return getContentFromSlice(editorHost, slice, type);
 }
 

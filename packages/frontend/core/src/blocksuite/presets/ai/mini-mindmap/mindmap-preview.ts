@@ -12,7 +12,7 @@ import {
 } from '@blocksuite/affine/blocks';
 import type { ServiceProvider } from '@blocksuite/affine/global/di';
 import { WithDisposable } from '@blocksuite/affine/global/utils';
-import { type Blocks, Job, Schema } from '@blocksuite/affine/store';
+import { Schema, type Store, Transformer } from '@blocksuite/affine/store';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -79,7 +79,7 @@ export class MiniMindmapPreview extends WithDisposable(LitElement) {
     }
   `;
 
-  doc?: Blocks;
+  doc?: Store;
 
   mindmapId?: string;
 
@@ -129,7 +129,7 @@ export class MiniMindmapPreview extends WithDisposable(LitElement) {
     this.requestUpdate();
   }
 
-  private _toMindmapNode(answer: string, doc: Blocks) {
+  private _toMindmapNode(answer: string, doc: Store) {
     return markdownToMindmap(answer, doc, this.host.std.provider);
   }
 
@@ -175,7 +175,7 @@ export class MiniMindmapPreview extends WithDisposable(LitElement) {
         })}
       >
         ${new BlockStdScope({
-          doc: this.doc,
+          store: this.doc,
           extensions: MiniMindmapSpecs,
         }).render()}
       </div>
@@ -232,11 +232,11 @@ type Node = {
 
 export const markdownToMindmap = (
   answer: string,
-  doc: Blocks,
+  doc: Store,
   provider: ServiceProvider
 ) => {
   let result: Node | null = null;
-  const job = new Job({
+  const transformer = new Transformer({
     schema: doc.workspace.schema,
     blobCRUD: doc.workspace.blobSync,
     docCRUD: {
@@ -245,7 +245,7 @@ export const markdownToMindmap = (
       delete: (id: string) => doc.workspace.removeDoc(id),
     },
   });
-  const markdown = new MarkdownAdapter(job, provider);
+  const markdown = new MarkdownAdapter(transformer, provider);
   const ast: Root = markdown['_markdownToAst'](answer);
   const traverse = (
     markdownNode: Unpacked<(typeof ast)['children']>,

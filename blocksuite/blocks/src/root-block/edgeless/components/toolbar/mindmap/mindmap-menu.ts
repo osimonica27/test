@@ -2,6 +2,7 @@ import { toast } from '@blocksuite/affine-components/toast';
 import type { MindmapStyle } from '@blocksuite/affine-model';
 import {
   EditPropsStore,
+  FeatureFlagService,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
 import type { BlockStdScope } from '@blocksuite/block-std';
@@ -316,7 +317,9 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
             </div>
           `;
         })}
-        ${this.std.doc.awarenessStore.getFlag('enable_mind_map_import')
+        ${this.std.store
+          .get(FeatureFlagService)
+          .getFlag('enable_mind_map_import')
           ? this._importMindMapEntry()
           : nothing}
       </div>

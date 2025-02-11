@@ -1,5 +1,5 @@
 import { effects as blocksEffects } from '@blocksuite/blocks/effects';
-import type { Blocks, Job } from '@blocksuite/store';
+import type { Store, Transformer } from '@blocksuite/store';
 
 import { effects } from '../../effects.js';
 
@@ -10,6 +10,7 @@ import {
   CommunityCanvasTextFonts,
   type DocMode,
   FontConfigExtension,
+  StoreExtensions,
 } from '@blocksuite/blocks';
 import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import { assertExists } from '@blocksuite/global/utils';
@@ -59,7 +60,7 @@ async function createEditor(collection: TestWorkspace, mode: DocMode = 'page') {
   const app = document.createElement('div');
   const blockCollection = collection.docs.values().next().value;
   assertExists(blockCollection, 'Need to create a doc first');
-  const doc = blockCollection.getBlocks();
+  const doc = blockCollection.getStore();
   const editor = new AffineEditorContainer();
   editor.doc = doc;
   editor.mode = mode;
@@ -76,6 +77,7 @@ async function createEditor(collection: TestWorkspace, mode: DocMode = 'page') {
 
   app.style.width = '100%';
   app.style.height = '1280px';
+  app.style.overflowY = 'auto';
 
   document.body.append(app);
   await editor.updateComplete;
@@ -84,6 +86,7 @@ async function createEditor(collection: TestWorkspace, mode: DocMode = 'page') {
 
 export async function setupEditor(mode: DocMode = 'page') {
   const collection = new TestWorkspace(createCollectionOptions());
+  collection.storeExtensions = StoreExtensions;
   collection.meta.initialize();
 
   window.collection = collection;
@@ -109,13 +112,13 @@ export function cleanup() {
 
 declare global {
   const editor: AffineEditorContainer;
-  const doc: Blocks;
+  const doc: Store;
   const collection: TestWorkspace;
-  const job: Job;
+  const job: Transformer;
   interface Window {
     editor: AffineEditorContainer;
-    doc: Blocks;
-    job: Job;
+    doc: Store;
+    job: Transformer;
     collection: TestWorkspace;
   }
 }

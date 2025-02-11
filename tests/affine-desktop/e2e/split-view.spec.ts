@@ -28,8 +28,8 @@ test('open split view', async ({ page }) => {
   await expect(page.getByTestId('split-view-label')).toHaveCount(2);
   await expectTabTitle(page, 0, ['Untitled', 'hi from another page']);
 
-  // the second split view should be active
-  await expectActiveTab(page, 0, 1);
+  // the first split view should be active
+  await expectActiveTab(page, 0, 0);
 
   // by clicking the first split view label, the first split view should be active
   await page.getByTestId('split-view-label').nth(0).click();
@@ -39,14 +39,14 @@ test('open split view', async ({ page }) => {
     'true'
   );
 
-  const firstDragHandel = page
+  const firstDragHandle = page
     .getByTestId('split-view-panel')
     .first()
     .getByTestId('split-view-indicator');
 
   await dragTo(
     page,
-    firstDragHandel,
+    firstDragHandle,
     page.getByTestId('split-view-panel').last(),
     'center',
     true

@@ -21,6 +21,7 @@ test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   const dbPath = path.join(
     appInfo.sessionData,
     'workspaces',
+    'local',
     w.meta.id,
     'storage.db'
   );
@@ -42,7 +43,7 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   const newWorkspaceName = 'new-test-name';
 
   // goto workspace setting
-  await page.getByTestId('workspace-list-item').click();
+  await page.getByTestId('workspace-setting:preference').click();
   const input = page.getByTestId('workspace-name-input');
   await expect(input).toBeVisible();
 

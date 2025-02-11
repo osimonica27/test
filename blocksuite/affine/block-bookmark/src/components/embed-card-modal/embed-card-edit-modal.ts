@@ -279,6 +279,7 @@ export class EmbedCardEditModal extends SignalWatcher(
   override connectedCallback() {
     super.connectedCallback();
 
+    this.disposables.add(this.host.slots.unmounted.on(this._hide));
     this._updateInfo();
   }
 
@@ -305,6 +306,9 @@ export class EmbedCardEditModal extends SignalWatcher(
     this.disposables.add(listenClickAway(this, this._hide));
     this.disposables.addFromEvent(this, 'keydown', this._onKeydown);
     this.disposables.addFromEvent(this, 'pointerdown', stopPropagation);
+    this.disposables.addFromEvent(this, 'cup', stopPropagation);
+    this.disposables.addFromEvent(this, 'copy', stopPropagation);
+    this.disposables.addFromEvent(this, 'paste', stopPropagation);
 
     this.titleInput.focus();
     this.titleInput.select();

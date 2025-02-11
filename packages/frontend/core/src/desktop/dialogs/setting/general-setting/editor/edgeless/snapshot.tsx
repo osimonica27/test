@@ -15,13 +15,13 @@ import type {
 } from '@blocksuite/affine/blocks';
 import {
   ColorScheme,
+  createSignalFromObservable,
   SpecProvider,
   ThemeExtensionIdentifier,
 } from '@blocksuite/affine/blocks';
+import type { Container } from '@blocksuite/affine/global/di';
 import { Bound } from '@blocksuite/affine/global/utils';
-import type { Block, Blocks } from '@blocksuite/affine/store';
-import { createSignalFromObservable } from '@blocksuite/affine-shared/utils';
-import type { Container } from '@blocksuite/global/di';
+import type { Block, Store } from '@blocksuite/affine/store';
 import type { Signal } from '@preact/signals-core';
 import type { FrameworkProvider } from '@toeverything/infra';
 import { useFramework } from '@toeverything/infra';
@@ -45,8 +45,8 @@ interface Props {
   docName: DocName;
   keyName: keyof EditorSettingSchema;
   height?: number;
-  getElements: (doc: Blocks) => Array<Block | GfxPrimitiveElementModel>;
-  firstUpdate?: (doc: Blocks, editorHost: EditorHost) => void;
+  getElements: (doc: Store) => Array<Block | GfxPrimitiveElementModel>;
+  firstUpdate?: (doc: Store, editorHost: EditorHost) => void;
   children?: React.ReactElement;
 }
 
@@ -63,7 +63,7 @@ export const EdgelessSnapshot = (props: Props) => {
     children,
   } = props;
   const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const docRef = useRef<Blocks | null>(null);
+  const docRef = useRef<Store | null>(null);
   const editorHostRef = useRef<EditorHost | null>(null);
   const framework = useFramework();
   const { editorSetting } = framework.get(EditorSettingService);
@@ -90,7 +90,7 @@ export const EdgelessSnapshot = (props: Props) => {
     if (!doc) return;
 
     const editorHost = new BlockStdScope({
-      doc,
+      store: doc,
       extensions: [
         ...SpecProvider.getInstance().getSpec('edgeless:preview').value,
         getThemeExtension(framework),

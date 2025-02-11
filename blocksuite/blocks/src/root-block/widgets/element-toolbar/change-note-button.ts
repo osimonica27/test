@@ -28,15 +28,20 @@ import {
   resolveColor,
   type StrokeStyle,
 } from '@blocksuite/affine-model';
-import { ThemeProvider } from '@blocksuite/affine-shared/services';
+import {
+  FeatureFlagService,
+  NotificationProvider,
+  SidebarExtensionIdentifier,
+  ThemeProvider,
+} from '@blocksuite/affine-shared/services';
 import { matchFlavours } from '@blocksuite/affine-shared/utils';
 import {
-  assertExists,
   Bound,
   countBy,
   maxBy,
   WithDisposable,
 } from '@blocksuite/global/utils';
+import { LinkedPageIcon } from '@blocksuite/icons/lit';
 import { html, LitElement, nothing, type TemplateResult } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { join } from 'lit/directives/join.js';
@@ -49,6 +54,7 @@ import {
 } from '../../edgeless/components/panel/line-styles-panel.js';
 import { getTooltipWithShortcut } from '../../edgeless/components/utils.js';
 import type { EdgelessRootBlockComponent } from '../../edgeless/edgeless-root-block.js';
+import * as styles from './styles.css';
 
 const SIZE_LIST = [
   { name: 'None', value: 0 },
@@ -133,11 +139,27 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
   };
 
   private get _advancedVisibilityEnabled() {
-    return this.doc.awarenessStore.getFlag('enable_advanced_block_visibility');
+    return this.doc
+      .get(FeatureFlagService)
+      .getFlag('enable_advanced_block_visibility');
+  }
+
+  private get _pageBlockHeaderEnabled() {
+    return this.doc.get(FeatureFlagService).getFlag('enable_page_block_header');
   }
 
   private get doc() {
     return this.edgeless.doc;
+  }
+
+  private get _enableAutoHeight() {
+    return !(
+      this._pageBlockHeaderEnabled &&
+      this.notes.length === 1 &&
+      this.notes[0].parent?.children.find(child =>
+        matchFlavours(child, ['affine:note'])
+      ) === this.notes[0]
+    );
   }
 
   private _getScaleLabel(scale: number) {
@@ -178,13 +200,16 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
       return;
     }
 
+    this.doc.captureSync();
+
     this.crud.updateElement(note.id, { displayMode: newMode });
 
     const noteParent = this.doc.getParent(note);
-    assertExists(noteParent);
+    if (!noteParent) return;
+
     const noteParentChildNotes = noteParent.children.filter(block =>
       matchFlavours(block, ['affine:note'])
-    ) as NoteBlockModel[];
+    );
     const noteParentLastNote =
       noteParentChildNotes[noteParentChildNotes.length - 1];
 
@@ -201,6 +226,61 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     if (newMode === NoteDisplayMode.DocOnly) {
       this.edgeless.service.selection.clear();
     }
+
+    const abortController = new AbortController();
+    const clear = () => {
+      this.doc.history.off('stack-item-added', addHandler);
+      this.doc.history.off('stack-item-popped', popHandler);
+      disposable.dispose();
+    };
+    const closeNotify = () => {
+      abortController.abort();
+      clear();
+    };
+
+    const addHandler = this.doc.history.on('stack-item-added', closeNotify);
+    const popHandler = this.doc.history.on('stack-item-popped', closeNotify);
+    const disposable = this.edgeless.std.host.slots.unmounted.on(closeNotify);
+
+    const undo = () => {
+      this.doc.undo();
+      closeNotify();
+    };
+
+    const viewInToc = () => {
+      const sidebar = this.edgeless.std.getOptional(SidebarExtensionIdentifier);
+      sidebar?.open('outline');
+      closeNotify();
+    };
+
+    const notification = this.edgeless.std.getOptional(NotificationProvider);
+    notification?.notify({
+      title: 'Note displayed in Page Mode',
+      message:
+        'Content added to your page. Find it in the TOC for quick navigation.',
+      accent: 'success',
+      duration: 1000 * 1000,
+      footer: html`<div class=${styles.viewInPageNotifyFooter}>
+        <button
+          class=${styles.viewInPageNotifyFooterButton}
+          @click=${undo}
+          data-testid="undo-display-in-page"
+        >
+          Undo
+        </button>
+        <button
+          class=${styles.viewInPageNotifyFooterButton}
+          @click=${viewInToc}
+          data-testid="view-in-toc"
+        >
+          View in Toc
+        </button>
+      </div>`,
+      abort: abortController.signal,
+      onClose: () => {
+        clear();
+      },
+    });
   }
 
   private _setShadowType(shadowType: string) {
@@ -269,6 +349,11 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     const currentMode = DisplayModeMap[displayMode];
     const onlyOne = len === 1;
     const isDocOnly = displayMode === NoteDisplayMode.DocOnly;
+    const isFirstNote =
+      onlyOne &&
+      note.parent?.children.find(child =>
+        matchFlavours(child, ['affine:note'])
+      ) === note;
     const theme = this.edgeless.std.get(ThemeProvider).theme;
     const buttons = [
       onlyOne && this._advancedVisibilityEnabled
@@ -298,10 +383,38 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
           `
         : nothing,
 
+      onlyOne &&
+      !isFirstNote &&
+      this._pageBlockHeaderEnabled &&
+      !this._advancedVisibilityEnabled
+        ? html`<editor-icon-button
+            aria-label="Display In Page"
+            .showTooltip=${displayMode === NoteDisplayMode.DocAndEdgeless}
+            .tooltip=${'This note is part of Page Mode. Click to remove it from the page.'}
+            data-testid="display-in-page"
+            @click=${() =>
+              this._setDisplayMode(
+                note,
+                displayMode === NoteDisplayMode.EdgelessOnly
+                  ? NoteDisplayMode.DocAndEdgeless
+                  : NoteDisplayMode.EdgelessOnly
+              )}
+          >
+            ${LinkedPageIcon({ width: '20px', height: '20px' })}
+            <span class="label"
+              >${displayMode === NoteDisplayMode.EdgelessOnly
+                ? 'Display In Page'
+                : 'Displayed In Page'}</span
+            >
+          </editor-icon-button>`
+        : nothing,
+
       isDocOnly
         ? nothing
         : when(
-            this.edgeless.doc.awarenessStore.getFlag('enable_color_picker'),
+            this.edgeless.doc
+              .get(FeatureFlagService)
+              .getFlag('enable_color_picker'),
             () => {
               const { type, colors } = packColorsWithColorScheme(
                 colorScheme,
@@ -427,15 +540,18 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
 
       onlyOne ? this.quickConnectButton : nothing,
 
-      html`
-        <editor-icon-button
-          aria-label="Size"
-          .tooltip=${collapse ? 'Auto height' : 'Customized height'}
-          @click=${() => this._setCollapse()}
-        >
-          ${collapse ? ExpandIcon : ShrinkIcon}
-        </editor-icon-button>
+      this._enableAutoHeight
+        ? html`<editor-icon-button
+            aria-label="Size"
+            data-testid="edgeless-note-auto-height"
+            .tooltip=${collapse ? 'Auto height' : 'Customized height'}
+            @click=${() => this._setCollapse()}
+          >
+            ${collapse ? ExpandIcon : ShrinkIcon}
+          </editor-icon-button>`
+        : nothing,
 
+      html`
         <editor-menu-button
           ${ref(this._scalePanelRef)}
           .contentPadding=${'8px'}

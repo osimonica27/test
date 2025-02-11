@@ -1,30 +1,20 @@
-import { LoggingWinston } from '@google-cloud/logging-winston';
-import { ConsoleLogger, LoggerService, Provider, Scope } from '@nestjs/common';
-import { createLogger, transports } from 'winston';
+import { ConsoleLogger, Injectable, type LogLevel } from '@nestjs/common';
+import { ClsServiceManager } from 'nestjs-cls';
 
-import { Config } from '../config';
-import { AFFiNELogger } from './logger';
-
-export const loggerProvider: Provider<LoggerService> = {
-  provide: AFFiNELogger,
-  useFactory: (config: Config) => {
-    if (config.NODE_ENV !== 'production') {
-      return new ConsoleLogger();
+// DO NOT use this Logger directly
+// Use it via this way: `private readonly logger = new Logger(MyService.name)`
+@Injectable()
+export class AFFiNELogger extends ConsoleLogger {
+  override stringifyMessage(message: unknown, logLevel: LogLevel) {
+    const messageString = super.stringifyMessage(message, logLevel);
+    const requestId = AFFiNELogger.getRequestId();
+    if (!requestId) {
+      return messageString;
     }
-    const loggingWinston = new LoggingWinston();
-    // Create a Winston logger that streams to Cloud Logging
-    const instance = createLogger({
-      level: config.affine.stable ? 'log' : 'verbose',
-      transports: [
-        new transports.Console(),
-        // Add Cloud Logging
-        loggingWinston,
-      ],
-    });
-    return new AFFiNELogger(instance);
-  },
-  inject: [Config],
-  // use transient to make sure the logger is created for each di context
-  // to make the `setContext` method works as expected
-  scope: Scope.TRANSIENT,
-};
+    return `<${requestId}> ${messageString}`;
+  }
+
+  static getRequestId(): string | undefined {
+    return ClsServiceManager.getClsService()?.getId();
+  }
+}

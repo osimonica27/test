@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import {
+  AFFiNELogger,
   CacheInterceptor,
   CloudThrottlerGuard,
   GlobalExceptionFilter,
@@ -11,6 +12,7 @@ import {
 import { SocketIoAdapter } from './base/websocket';
 import { AuthGuard } from './core/auth';
 import { ENABLED_FEATURES } from './core/config/server-feature';
+import { responseRequestIdHeader } from './middleware/request-id';
 import { serverTimingAndCache } from './middleware/timing';
 
 export async function createApp() {
@@ -20,13 +22,17 @@ export async function createApp() {
     cors: true,
     rawBody: true,
     bodyParser: true,
+    bufferLogs: true,
   });
+
+  app.useLogger(app.get(AFFiNELogger));
 
   if (AFFiNE.server.path) {
     app.setGlobalPrefix(AFFiNE.server.path);
   }
 
   app.use(serverTimingAndCache);
+  app.use(responseRequestIdHeader);
 
   app.use(
     graphqlUploadExpress({

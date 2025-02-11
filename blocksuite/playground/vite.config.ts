@@ -4,6 +4,7 @@ import { cpus } from 'node:os';
 import path, { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import type { GetManualChunk } from 'rollup';
 import type { Plugin } from 'vite';
 import { defineConfig, loadEnv } from 'vite';
@@ -187,6 +188,7 @@ export default defineConfig(({ mode }) => {
           forceBuildInstrument: true,
         }),
       wasm(),
+      vanillaExtractPlugin(),
       clearSiteDataPlugin(),
     ],
     esbuild: {
@@ -213,7 +215,6 @@ export default defineConfig(({ mode }) => {
         },
         input: {
           main: resolve(__dirname, 'index.html'),
-          'starter/': resolve(__dirname, 'starter/index.html'),
           'examples/basic/page': resolve(
             __dirname,
             'examples/basic/page/index.html'
@@ -235,6 +236,10 @@ export default defineConfig(({ mode }) => {
             'examples/multiple-editors/edgeless-edgeless/index.html'
           ),
           'examples/inline': resolve(__dirname, 'examples/inline/index.html'),
+          'examples/renderer': resolve(
+            __dirname,
+            'examples/renderer/index.html'
+          ),
         },
         treeshake: true,
         output: {

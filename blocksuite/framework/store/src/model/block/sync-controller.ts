@@ -11,7 +11,7 @@ import {
   y2Native,
 } from '../../reactive/index.js';
 import type { Schema } from '../../schema/schema.js';
-import type { Blocks } from '../blocks/blocks.js';
+import type { Store } from '../store/store.js';
 import { BlockModel } from './block-model.js';
 import type { YBlock } from './types.js';
 import { internalPrimitives } from './zod.js';
@@ -104,7 +104,7 @@ export class SyncController {
   constructor(
     readonly schema: Schema,
     readonly yBlock: YBlock,
-    readonly doc?: Blocks,
+    readonly doc?: Store,
     readonly onChange?: (key: string, value: unknown) => void
   ) {
     const { id, flavour, version, yChildren, props } = this._parseYBlock();
@@ -130,6 +130,7 @@ export class SyncController {
     }
 
     const model = schema.model.toModel?.() ?? new BlockModel<object>();
+    model.schema = schema;
     const signalWithProps = Object.entries(props).reduce(
       (acc, [key, value]) => {
         const data = signal(value);
@@ -153,10 +154,7 @@ export class SyncController {
     Object.assign(model, signalWithProps);
 
     model.id = this.id;
-    model.version = this.version;
     model.keys = Object.keys(props);
-    model.flavour = schema.model.flavour;
-    model.role = schema.model.role;
     model.yBlock = this.yBlock;
     model.stash = this.stash;
     model.pop = this.pop;
@@ -224,7 +222,7 @@ export class SyncController {
         if (signalKey in this.model) {
           this._mutex(() => {
             // @ts-expect-error allow magic props
-            this.model[signalKey].value = this.model[name];
+            this.model[signalKey].value = y2Native(value);
           });
         }
       },

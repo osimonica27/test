@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   DynamicModule,
   ForwardReference,
@@ -5,7 +7,11 @@ import {
   Module,
 } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ClsPluginTransactional } from '@nestjs-cls/transactional';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
+import { PrismaClient } from '@prisma/client';
 import { get } from 'lodash-es';
+import { ClsModule } from 'nestjs-cls';
 
 import { AppController } from './app.controller';
 import { getOptionalModuleMetadata } from './base';
@@ -37,10 +43,30 @@ import { StorageModule } from './core/storage';
 import { SyncModule } from './core/sync';
 import { UserModule } from './core/user';
 import { WorkspaceModule } from './core/workspaces';
+import { ModelsModule } from './models';
 import { REGISTERED_PLUGINS } from './plugins';
 import { ENABLED_PLUGINS } from './plugins/registry';
 
 export const FunctionalityModules = [
+  ClsModule.forRoot({
+    global: true,
+    middleware: {
+      mount: true,
+      generateId: true,
+      idGenerator() {
+        // make every request has a unique id to tracing
+        return randomUUID();
+      },
+    },
+    plugins: [
+      // https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional/prisma-adapter
+      new ClsPluginTransactional({
+        adapter: new TransactionalAdapterPrisma({
+          prismaInjectionToken: PrismaClient,
+        }),
+      }),
+    ],
+  }),
   ConfigModule.forRoot(),
   RuntimeModule,
   EventModule,
@@ -154,6 +180,7 @@ export function buildAppModule() {
   factor
     // basic
     .use(...FunctionalityModules)
+    .use(ModelsModule)
     .useIf(config => config.flavor.sync, WebSocketModule)
 
     // auth

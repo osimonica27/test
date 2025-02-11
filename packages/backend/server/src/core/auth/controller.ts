@@ -26,12 +26,11 @@ import {
   URLHelper,
   UseNamedGuard,
 } from '../../base';
-import { UserService } from '../user';
+import { Models, TokenType } from '../../models';
 import { validators } from '../utils/validators';
 import { Public } from './guard';
 import { AuthService } from './service';
 import { CurrentUser, Session } from './session';
-import { TokenService, TokenType } from './token';
 
 interface PreflightResponse {
   registered: boolean;
@@ -56,8 +55,7 @@ export class AuthController {
   constructor(
     private readonly url: URLHelper,
     private readonly auth: AuthService,
-    private readonly user: UserService,
-    private readonly token: TokenService,
+    private readonly models: Models,
     private readonly config: Config,
     private readonly runtime: Runtime
   ) {
@@ -81,9 +79,7 @@ export class AuthController {
     }
     validators.assertValidEmail(params.email);
 
-    const user = await this.user.findUserWithHashedPasswordByEmail(
-      params.email
-    );
+    const user = await this.models.user.getUserByEmail(params.email);
 
     const magicLinkAvailable = !!this.config.mailer.host;
 
@@ -159,7 +155,7 @@ export class AuthController {
     redirectUrl?: string
   ) {
     // send email magic link
-    const user = await this.user.findUserByEmail(email);
+    const user = await this.models.user.getUserByEmail(email);
     if (!user) {
       const allowSignup = await this.runtime.fetch('auth/allowSignup');
       if (!allowSignup) {
@@ -194,7 +190,10 @@ export class AuthController {
       }
     }
 
-    const token = await this.token.createToken(TokenType.SignIn, email);
+    const token = await this.models.verificationToken.create(
+      TokenType.SignIn,
+      email
+    );
 
     const magicLink = this.url.link(callbackUrl, {
       token,
@@ -248,18 +247,19 @@ export class AuthController {
 
     validators.assertValidEmail(email);
 
-    const tokenRecord = await this.token.verifyToken(TokenType.SignIn, token, {
-      credential: email,
-    });
+    const tokenRecord = await this.models.verificationToken.verify(
+      TokenType.SignIn,
+      token,
+      {
+        credential: email,
+      }
+    );
 
     if (!tokenRecord) {
       throw new InvalidEmailToken();
     }
 
-    const user = await this.user.fulfillUser(email, {
-      emailVerifiedAt: new Date(),
-      registered: true,
-    });
+    const user = await this.models.user.fulfill(email);
 
     await this.auth.setCookies(req, res, user.id);
     res.send({ id: user.id });

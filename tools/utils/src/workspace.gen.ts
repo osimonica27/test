@@ -34,6 +34,7 @@ export const PackageList = [
     name: '@blocksuite/affine-block-bookmark',
     workspaceDependencies: [
       'blocksuite/affine/block-embed',
+      'blocksuite/affine/block-surface',
       'blocksuite/affine/components',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
@@ -300,6 +301,7 @@ export const PackageList = [
     location: 'blocksuite/affine/widget-frame-title',
     name: '@blocksuite/affine-widget-frame-title',
     workspaceDependencies: [
+      'blocksuite/affine/components',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/framework/block-std',
@@ -310,6 +312,8 @@ export const PackageList = [
     location: 'blocksuite/affine/widget-remote-selection',
     name: '@blocksuite/affine-widget-remote-selection',
     workspaceDependencies: [
+      'blocksuite/affine/block-surface',
+      'blocksuite/affine/components',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/framework/block-std',
@@ -399,6 +403,7 @@ export const PackageList = [
     workspaceDependencies: [
       'blocksuite/affine/components',
       'blocksuite/affine/model',
+      'blocksuite/affine/shared',
       'blocksuite/framework/block-std',
       'blocksuite/blocks',
       'blocksuite/affine/data-view',
@@ -451,6 +456,7 @@ export const PackageList = [
     workspaceDependencies: [
       'tests/kit',
       'tools/cli',
+      'tools/utils',
       'packages/backend/native',
     ],
   },
@@ -462,7 +468,7 @@ export const PackageList = [
   {
     location: 'packages/common/env',
     name: '@affine/env',
-    workspaceDependencies: ['blocksuite/affine/all'],
+    workspaceDependencies: [],
   },
   {
     location: 'packages/common/infra',
@@ -499,13 +505,13 @@ export const PackageList = [
       'packages/frontend/core',
       'packages/frontend/i18n',
       'blocksuite/affine/all',
+      'packages/common/infra',
     ],
   },
   {
     location: 'packages/frontend/apps/electron',
     name: '@affine/electron',
     workspaceDependencies: [
-      'tests/kit',
       'tools/utils',
       'packages/frontend/native',
       'packages/common/nbstore',
@@ -520,6 +526,8 @@ export const PackageList = [
       'packages/frontend/core',
       'packages/frontend/electron-api',
       'packages/frontend/i18n',
+      'packages/common/nbstore',
+      'packages/common/infra',
       'tools/utils',
     ],
   },
@@ -530,6 +538,7 @@ export const PackageList = [
       'packages/frontend/component',
       'packages/frontend/core',
       'packages/frontend/i18n',
+      'packages/common/nbstore',
       'blocksuite/affine/all',
       'packages/common/infra',
       'packages/frontend/native',
@@ -542,7 +551,9 @@ export const PackageList = [
       'packages/frontend/component',
       'packages/frontend/core',
       'packages/frontend/i18n',
+      'packages/common/nbstore',
       'blocksuite/affine/all',
+      'packages/common/infra',
     ],
   },
   {
@@ -552,6 +563,8 @@ export const PackageList = [
       'packages/frontend/component',
       'packages/frontend/core',
       'packages/frontend/i18n',
+      'packages/common/nbstore',
+      'packages/common/infra',
     ],
   },
   {
@@ -575,9 +588,11 @@ export const PackageList = [
       'packages/common/env',
       'packages/frontend/graphql',
       'packages/frontend/i18n',
+      'packages/common/nbstore',
       'packages/frontend/templates',
       'packages/frontend/track',
       'blocksuite/affine/all',
+      'packages/common/infra',
     ],
   },
   {
@@ -643,7 +658,7 @@ export const PackageList = [
   {
     location: 'tests/kit',
     name: '@affine-test/kit',
-    workspaceDependencies: ['tools/utils'],
+    workspaceDependencies: ['tools/utils', 'blocksuite/affine/all'],
   },
   {
     location: 'tools/@types/build-config',

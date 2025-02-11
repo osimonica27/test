@@ -6,8 +6,12 @@ import { isLinkedDoc } from '../../utils/title-doc.js';
 
 export const titleColumnType = propertyType('title');
 
-export const titlePurePropertyConfig = titleColumnType.modelConfig<Text>({
+export const titlePropertyModelConfig = titleColumnType.modelConfig<Text>({
   name: 'Title',
+  fixed: {
+    defaultData: {},
+    defaultShow: true,
+  },
   type: () => t.richText.instance(),
   defaultData: () => ({}),
   cellToString: ({ value }) => value?.toString() ?? '',
@@ -17,6 +21,7 @@ export const titlePurePropertyConfig = titleColumnType.modelConfig<Text>({
     };
   },
   cellToJson: ({ value, dataSource }) => {
+    if (!value) return null;
     const host = dataSource.contextGet(HostContextKey);
     if (host) {
       const collection = host.std.workspace;
