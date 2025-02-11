@@ -17,7 +17,6 @@ import type { ConsoleMessage, Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 import lz from 'lz-string';
 
-import { currentEditorIndex, multiEditor } from '../multiple-editor.js';
 import {
   pressArrowRight,
   pressEnter,
@@ -34,6 +33,8 @@ declare global {
     'blocksuite:doc-ready': CustomEvent<string>;
   }
 }
+
+const currentEditorIndex = 0;
 
 export const defaultPlaygroundURL = new URL(
   `http://localhost:${process.env.CI ? 4173 : 5173}/`
@@ -65,15 +66,13 @@ async function initEmptyEditor({
   page,
   flags = {},
   noInit = false,
-  multiEditor = false,
 }: {
   page: Page;
   flags?: Partial<BlockSuiteFlags>;
   noInit?: boolean;
-  multiEditor?: boolean;
 }) {
   await page.evaluate(
-    ([flags, noInit, multiEditor]) => {
+    ([flags, noInit]) => {
       const { collection } = window;
 
       async function waitForMountPageEditor(
@@ -146,7 +145,6 @@ async function initEmptyEditor({
         };
 
         const editor = createEditor();
-        if (multiEditor) createEditor();
 
         editor.updateComplete
           .then(() => {
@@ -230,7 +228,7 @@ async function initEmptyEditor({
         waitForMountPageEditor(doc).catch(console.error);
       }
     },
-    [flags, noInit, multiEditor] as const
+    [flags, noInit] as const
   );
   await waitNextFrame(page);
 }
@@ -357,7 +355,6 @@ export async function enterPlaygroundRoom(
     page,
     flags: ops?.flags,
     noInit: ops?.noInit,
-    multiEditor,
   });
 
   const locator = page.locator('affine-editor-container');
