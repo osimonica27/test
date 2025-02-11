@@ -55,6 +55,20 @@ const assertAndSnapshotRaw = async (
 test('should proxy image', async t => {
   const assertAndSnapshot = assertAndSnapshotRaw.bind(null, t);
 
+  await assertAndSnapshot(
+    '/api/worker/image-proxy',
+    'should return proper CORS headers on OPTIONS request',
+    {
+      status: 204,
+      method: 'OPTIONS',
+      checker: (res: Response) => {
+        if (!res.headers['access-control-allow-methods']) {
+          throw new Error('Missing CORS headers');
+        }
+      },
+    }
+  );
+
   {
     await assertAndSnapshot(
       '/api/worker/image-proxy',
@@ -96,7 +110,7 @@ test('should proxy image', async t => {
   }
 });
 
-test('shound preview link', async t => {
+test('should preview link', async t => {
   const assertAndSnapshot = assertAndSnapshotRaw.bind(null, t);
 
   await assertAndSnapshot(
