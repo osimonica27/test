@@ -3,12 +3,12 @@ import { nextTick } from '@blocksuite/global/utils';
 import { Text } from '@blocksuite/store';
 import { Pane } from 'tweakpane';
 
-import { CanvasRenderer } from './canvas-renderer.js';
 import { doc, editor } from './editor.js';
+import { ViewportTurboRenderer } from './renderer.js';
 
 type DocMode = 'page' | 'edgeless';
 
-const renderer = new CanvasRenderer();
+const renderer = new ViewportTurboRenderer();
 
 async function handleToCanvasClick() {
   renderer.setHost(editor.host!);

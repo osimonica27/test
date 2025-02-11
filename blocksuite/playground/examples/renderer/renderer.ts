@@ -4,7 +4,7 @@ import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { getSentenceRects, segmentSentences } from './text-utils.js';
 import { type ParagraphLayout, type SectionLayout } from './types.js';
 
-export class CanvasRenderer {
+export class ViewportTurboRenderer {
   public readonly canvas: HTMLCanvasElement = document.createElement('canvas');
   private readonly worker: Worker;
   private readonly targetContainer: HTMLElement;
