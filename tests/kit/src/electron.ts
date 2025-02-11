@@ -97,19 +97,6 @@ export const test = base.extend<{
     // wait for blocksuite to be loaded
     await page.waitForSelector('v-line');
 
-    await page.evaluate(() => {
-      window.localStorage.setItem('dismissAiOnboarding', 'true');
-      window.localStorage.setItem('dismissAiOnboardingEdgeless', 'true');
-      window.localStorage.setItem('dismissAiOnboardingLocal', 'true');
-    });
-
-    await page.reload({
-      timeout: 30000,
-    });
-
-    // wait until the page is stable enough
-    await page.waitForTimeout(2000);
-
     await use(page as Page);
   },
   views: async ({ electronApp, page }, use) => {
@@ -160,7 +147,6 @@ export const test = base.extend<{
       });
 
       await use(electronApp);
-      console.log('Cleaning up...');
       const pages = electronApp.windows();
       for (const page of pages) {
         await page.close();

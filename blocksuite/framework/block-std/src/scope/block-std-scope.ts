@@ -11,6 +11,7 @@ import {
 import { Clipboard } from '../clipboard/index.js';
 import { CommandManager } from '../command/index.js';
 import { UIEventDispatcher } from '../event/index.js';
+import { DndController } from '../extension/dnd/index.js';
 import type { BlockService } from '../extension/index.js';
 import { GfxController } from '../gfx/controller.js';
 import { GfxSelectionManager } from '../gfx/selection.js';
@@ -44,12 +45,11 @@ const internalExtensions = [
   GfxSelectionManager,
   SurfaceMiddlewareExtension,
   ViewManager,
+  DndController,
 ];
 
 export class BlockStdScope {
   static internalExtensions = internalExtensions;
-
-  private _getHost: () => EditorHost;
 
   readonly container: Container;
 
@@ -61,6 +61,12 @@ export class BlockStdScope {
 
   private get _lifeCycleWatchers() {
     return this.provider.getAll(LifeCycleWatcherIdentifier);
+  }
+
+  private _host!: EditorHost;
+
+  get dnd() {
+    return this.get(DndController);
   }
 
   get clipboard() {
@@ -88,7 +94,14 @@ export class BlockStdScope {
   }
 
   get host() {
-    return this._getHost();
+    if (!this._host) {
+      throw new BlockSuiteError(
+        ErrorCode.ValueNotExists,
+        'Host is not ready to use, the `render` method should be called first'
+      );
+    }
+
+    return this._host;
   }
 
   get range() {
@@ -104,12 +117,6 @@ export class BlockStdScope {
   }
 
   constructor(options: BlockStdOptions) {
-    this._getHost = () => {
-      throw new BlockSuiteError(
-        ErrorCode.ValueNotExists,
-        'Host is not ready to use, the `render` method should be called first'
-      );
-    };
     this.store = options.store;
     this.userExtensions = options.extensions;
     this.container = new Container();
@@ -128,7 +135,7 @@ export class BlockStdScope {
     this.provider = this.container.provider(undefined, this.store.provider);
 
     this._lifeCycleWatchers.forEach(watcher => {
-      watcher.created.call(watcher);
+      watcher.created();
     });
   }
 
@@ -176,7 +183,7 @@ export class BlockStdScope {
 
   mount() {
     this._lifeCycleWatchers.forEach(watcher => {
-      watcher.mounted.call(watcher);
+      watcher.mounted();
     });
   }
 
@@ -184,9 +191,9 @@ export class BlockStdScope {
     const element = new EditorHost();
     element.std = this;
     element.doc = this.store;
-    this._getHost = () => element;
+    this._host = element;
     this._lifeCycleWatchers.forEach(watcher => {
-      watcher.rendered.call(watcher);
+      watcher.rendered();
     });
 
     return element;
@@ -194,9 +201,8 @@ export class BlockStdScope {
 
   unmount() {
     this._lifeCycleWatchers.forEach(watcher => {
-      watcher.unmounted.call(watcher);
+      watcher.unmounted();
     });
-    this._getHost = () => null as unknown as EditorHost;
   }
 }
 

@@ -1,4 +1,4 @@
-import type { OpClient } from '@toeverything/infra/op';
+import { OpClient, transfer } from '@toeverything/infra/op';
 
 import { DummyConnection } from '../connection';
 import { AwarenessFrontend, BlobFrontend, DocFrontend } from '../frontend';
@@ -14,19 +14,68 @@ import {
 import type { AwarenessSync } from '../sync/awareness';
 import type { BlobSync } from '../sync/blob';
 import type { DocSync } from '../sync/doc';
-import type { WorkerInitOptions, WorkerOps } from './ops';
+import type { StoreInitOptions, WorkerManagerOps, WorkerOps } from './ops';
 
-export type { WorkerInitOptions } from './ops';
+export type { StoreInitOptions as WorkerInitOptions } from './ops';
 
-export class WorkerClient {
-  constructor(
-    private readonly client: OpClient<WorkerOps>,
-    options: WorkerInitOptions
-  ) {
-    client.listen();
-    this.client.call('worker.init', options).catch(err => {
-      console.error('error initializing worker', err);
+export class StoreManagerClient {
+  private readonly connections = new Map<
+    string,
+    {
+      store: StoreClient;
+      dispose: () => void;
+    }
+  >();
+
+  constructor(private readonly client: OpClient<WorkerManagerOps>) {}
+
+  open(key: string, options: StoreInitOptions) {
+    const { port1, port2 } = new MessageChannel();
+
+    const client = new OpClient<WorkerOps>(port1);
+    const closeKey = crypto.randomUUID();
+
+    this.client
+      .call(
+        'open',
+        transfer(
+          {
+            key,
+            closeKey,
+            options,
+            port: port2,
+          },
+          [port2]
+        )
+      )
+      .catch(err => {
+        console.error('error opening', err);
+      });
+
+    const connection = {
+      store: new StoreClient(client),
+      dispose: () => {
+        this.client.call('close', closeKey).catch(err => {
+          console.error('error closing', err);
+        });
+        this.connections.delete(closeKey);
+      },
+    };
+
+    this.connections.set(closeKey, connection);
+
+    return connection;
+  }
+
+  dispose() {
+    this.connections.forEach(connection => {
+      connection.dispose();
     });
+  }
+}
+
+export class StoreClient {
+  constructor(private readonly client: OpClient<WorkerOps>) {
     this.docStorage = new WorkerDocStorage(this.client);
     this.blobStorage = new WorkerBlobStorage(this.client);
     this.docSync = new WorkerDocSync(this.client);
@@ -156,7 +205,9 @@ class WorkerBlobStorage implements BlobStorage {
 class WorkerDocSync implements DocSync {
   constructor(private readonly client: OpClient<WorkerOps>) {}
 
-  readonly state$ = this.client.ob$('docSync.state');
+  get state$() {
+    return this.client.ob$('docSync.state');
+  }
 
   docState$(docId: string) {
     return this.client.ob$('docSync.docState', docId);
@@ -174,7 +225,9 @@ class WorkerDocSync implements DocSync {
 
 class WorkerBlobSync implements BlobSync {
   constructor(private readonly client: OpClient<WorkerOps>) {}
-  readonly state$ = this.client.ob$('blobSync.state');
+  get state$() {
+    return this.client.ob$('blobSync.state');
+  }
   setMaxBlobSize(size: number): void {
     this.client.call('blobSync.setMaxBlobSize', size).catch(err => {
       console.error('error setting max blob size', err);

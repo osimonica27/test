@@ -18,7 +18,7 @@ import {
 import type { BlockComponent } from '@blocksuite/block-std';
 import { getInlineRangeProvider, TextSelection } from '@blocksuite/block-std';
 import type { InlineRangeProvider } from '@blocksuite/inline';
-import { effect, signal } from '@preact/signals-core';
+import { computed, effect, signal } from '@preact/signals-core';
 import { html, nothing, type TemplateResult } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -33,6 +33,14 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
   ParagraphBlockService
 > {
   static override styles = paragraphBlockStyles;
+
+  focused$ = computed(() => {
+    const selection = this.std.selection.value.find(
+      selection => selection.blockId === this.model?.id
+    );
+    if (!selection) return false;
+    return selection.is(TextSelection);
+  });
 
   private readonly _composing = signal(false);
 
@@ -121,7 +129,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
         }
         const textSelection = this.host.selection.find(TextSelection);
         const isCollapsed = textSelection?.isCollapsed() ?? false;
-        if (!this.selected || !isCollapsed) {
+        if (!this.focused$.value || !isCollapsed) {
           this._displayPlaceholder.value = false;
           return;
         }
@@ -157,7 +165,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
         this._readonlyCollapsed = collapsed;
 
         // reset text selection when selected block is collapsed
-        if (this.model.type.startsWith('h') && collapsed) {
+        if (this.model.type$.value.startsWith('h') && collapsed) {
           const collapsedSiblings = this.collapsedSiblings;
           const textSelection = this.host.selection.find(TextSelection);
 
@@ -177,7 +185,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
     // # 456
     //
     // we need to update collapsed state of 123 when 456 converted to text
-    let beforeType = this.model.type;
+    let beforeType = this.model.type$.peek();
     this.disposables.add(
       effect(() => {
         const type = this.model.type$.value;
@@ -211,7 +219,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
     const collapsedSiblings = this.collapsedSiblings;
 
     let style = html``;
-    if (this.model.type.startsWith('h') && collapsed) {
+    if (this.model.type$.value.startsWith('h') && collapsed) {
       style = html`
         <style>
           ${collapsedSiblings.map(sibling =>
@@ -245,7 +253,8 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
             [TOGGLE_BUTTON_PARENT_CLASS]: true,
           })}
         >
-          ${this.model.type.startsWith('h') && collapsedSiblings.length > 0
+          ${this.model.type$.value.startsWith('h') &&
+          collapsedSiblings.length > 0
             ? html`
                 <affine-paragraph-heading-icon
                   .model=${this.model}

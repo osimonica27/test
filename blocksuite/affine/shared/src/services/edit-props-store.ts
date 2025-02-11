@@ -21,6 +21,12 @@ export type LastProps = z.infer<typeof NodePropsSchema>;
 export type LastPropsKey = keyof LastProps;
 
 const SessionPropsSchema = z.object({
+  templateCache: z.string(),
+  remoteColor: z.string(),
+  showBidirectional: z.boolean(),
+});
+
+const LocalPropsSchema = z.object({
   viewport: z.union([
     z.object({
       centerX: z.number(),
@@ -34,12 +40,6 @@ const SessionPropsSchema = z.object({
         .optional(),
     }),
   ]),
-  templateCache: z.string(),
-  remoteColor: z.string(),
-  showBidirectional: z.boolean(),
-});
-
-const LocalPropsSchema = z.object({
   presentBlackBackground: z.boolean(),
   presentFillScreen: z.boolean(),
   presentHideToolbar: z.boolean(),
@@ -139,7 +139,10 @@ export class EditPropsStore extends LifeCycleWatcher {
     }
   }
 
-  applyLastProps(key: LastPropsKey, props: Record<string, unknown>) {
+  applyLastProps<K extends LastPropsKey>(
+    key: K,
+    props: Record<string, unknown>
+  ) {
     if (['__proto__', 'constructor', 'prototype'].includes(key)) {
       throw new BlockSuiteError(
         ErrorCode.DefaultRuntimeError,

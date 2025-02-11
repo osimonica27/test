@@ -1,6 +1,3 @@
-/// <reference types="../global.d.ts" />
-
-import { TestingModule } from '@nestjs/testing';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
@@ -41,7 +38,7 @@ import {
 } from '../plugins/copilot/workflow/executor';
 import { AutoRegisteredWorkflowExecutor } from '../plugins/copilot/workflow/executor/utils';
 import { WorkflowGraphList } from '../plugins/copilot/workflow/graph';
-import { createTestingModule } from './utils';
+import { createTestingModule, TestingModule } from './utils';
 import { MockCopilotTestProvider, WorkflowTestCases } from './utils/copilot';
 
 const test = ava as TestFn<{
@@ -58,8 +55,9 @@ const test = ava as TestFn<{
     json: CopilotCheckJsonExecutor;
   };
 }>;
+let userId: string;
 
-test.beforeEach(async t => {
+test.before(async t => {
   const module = await createTestingModule({
     imports: [
       ConfigModule.forRoot({
@@ -102,15 +100,17 @@ test.beforeEach(async t => {
   };
 });
 
-test.afterEach.always(async t => {
-  await t.context.module.close();
-});
-
-let userId: string;
 test.beforeEach(async t => {
-  const { auth } = t.context;
+  Sinon.restore();
+  const { module, auth, prompt } = t.context;
+  await module.initTestingDB();
+  await prompt.onModuleInit();
   const user = await auth.signUp('test@affine.pro', '123456');
   userId = user.id;
+});
+
+test.after.always(async t => {
+  await t.context.module.close();
 });
 
 // ==================== prompt ====================
@@ -629,6 +629,57 @@ test('should revert message correctly', async t => {
   }
 });
 
+test('should handle params correctly in chat session', async t => {
+  const { prompt, session } = t.context;
+
+  await prompt.set('prompt', 'model', [
+    { role: 'system', content: 'hello {{word}}' },
+  ]);
+
+  const sessionId = await session.create({
+    docId: 'test',
+    workspaceId: 'test',
+    userId,
+    promptName: 'prompt',
+  });
+
+  const s = (await session.get(sessionId))!;
+
+  // Case 1: When params is provided directly
+  {
+    const directParams = { word: 'direct' };
+    const messages = s.finish(directParams);
+    t.is(messages[0].content, 'hello direct', 'should use provided params');
+  }
+
+  // Case 2: When no params provided but last message has params
+  {
+    s.push({
+      role: 'user',
+      content: 'test message',
+      params: { word: 'fromMessage' },
+      createdAt: new Date(),
+    });
+    const messages = s.finish({});
+    t.is(
+      messages[0].content,
+      'hello fromMessage',
+      'should use params from last message'
+    );
+  }
+
+  // Case 3: When neither params provided nor last message has params
+  {
+    s.push({
+      role: 'user',
+      content: 'test message without params',
+      createdAt: new Date(),
+    });
+    const messages = s.finish({});
+    t.is(messages[0].content, 'hello ', 'should use empty params');
+  }
+});
+
 // ==================== provider ====================
 
 test('should be able to get provider', async t => {
@@ -1096,10 +1147,14 @@ test('CitationParser should replace citation placeholders with URLs', t => {
   const citations = ['https://example1.com', 'https://example2.com'];
 
   const parser = new CitationParser();
-  const result = parser.parse(content, citations);
+  const result = parser.parse(content, citations) + parser.end();
 
-  const expected =
-    'This is [a] test sentence with [citations [[1](https://example1.com)]] and [[2](https://example2.com)] and [3].';
+  const expected = [
+    'This is [a] test sentence with [citations [^1]] and [^2] and [3].',
+    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
+    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
+  ].join('\n');
+
   t.is(result, expected);
 });
 
@@ -1130,10 +1185,18 @@ test('CitationParser should replace chunks of citation placeholders with URLs', 
   let result = contents.reduce((acc, current) => {
     return acc + parser.parse(current, citations);
   }, '');
-  result += parser.flush();
+  result += parser.end();
 
-  const expected =
-    '[[]]This is [a] test sentence with citations [[1](https://example1.com)] and [[2](https://example2.com)] and [[3](https://example3.com)] and [[4](https://example4.com)] and [[5](https://example5.com)] and [[6](https://example6.com)] and [7';
+  const expected = [
+    '[[]]This is [a] test sentence with citations [^1] and [^2] and [^3] and [^4] and [^5] and [^6] and [7',
+    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
+    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
+    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
+    `[^4]: {"type":"url","url":"${encodeURIComponent(citations[3])}"}`,
+    `[^5]: {"type":"url","url":"${encodeURIComponent(citations[4])}"}`,
+    `[^6]: {"type":"url","url":"${encodeURIComponent(citations[5])}"}`,
+    `[^7]: {"type":"url","url":"${encodeURIComponent(citations[6])}"}`,
+  ].join('\n');
   t.is(result, expected);
 });
 
@@ -1147,9 +1210,14 @@ test('CitationParser should not replace citation already with URLs', t => {
   ];
 
   const parser = new CitationParser();
-  const result = parser.parse(content, citations);
+  const result = parser.parse(content, citations) + parser.end();
 
-  const expected = content;
+  const expected = [
+    content,
+    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
+    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
+    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
+  ].join('\n');
   t.is(result, expected);
 });
 
@@ -1169,8 +1237,13 @@ test('CitationParser should not replace chunks of citation already with URLs', t
   let result = contents.reduce((acc, current) => {
     return acc + parser.parse(current, citations);
   }, '');
-  result += parser.flush();
+  result += parser.end();
 
-  const expected = contents.join('');
+  const expected = [
+    contents.join(''),
+    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
+    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
+    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
+  ].join('\n');
   t.is(result, expected);
 });

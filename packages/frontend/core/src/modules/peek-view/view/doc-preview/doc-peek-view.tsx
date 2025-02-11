@@ -2,7 +2,10 @@ import { Scrollable } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
-import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
+import {
+  BlockSuiteEditor,
+  CustomEditorWrapper,
+} from '@affine/core/components/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
 import { PageNotFound } from '@affine/core/desktop/pages/404';
 import { EditorService } from '@affine/core/modules/editor';
@@ -61,12 +64,9 @@ function fitViewport(
         false
       );
     } else {
-      const data = rootService.getFitToScreenData();
-      rootService.viewport.setViewport(
-        data.zoom,
-        [data.centerX, data.centerY],
-        false
-      );
+      rootService.gfx.fitToScreen({
+        smooth: false,
+      });
     }
   } catch (e) {
     logger.warn('failed to fitViewPort', e);
@@ -103,6 +103,9 @@ function DocPeekPreviewEditor({
       disposableGroup.add(
         // todo(@pengx17): seems not working
         refNodeSlots.docLinkClicked.on(options => {
+          if (options.host !== editorContainer.host) {
+            return;
+          }
           peekView
             .open({
               docRef: { docId: options.pageId },
@@ -153,13 +156,15 @@ function DocPeekPreviewEditor({
         <Scrollable.Viewport
           className={clsx('affine-page-viewport', styles.affineDocViewport)}
         >
-          <BlockSuiteEditor
-            className={styles.editor}
-            mode={mode}
-            page={doc.blockSuiteDoc}
-            onEditorReady={handleOnEditorReady}
-            defaultOpenProperty={defaultOpenProperty}
-          />
+          <CustomEditorWrapper>
+            <BlockSuiteEditor
+              className={styles.editor}
+              mode={mode}
+              page={doc.blockSuiteDoc}
+              onEditorReady={handleOnEditorReady}
+              defaultOpenProperty={defaultOpenProperty}
+            />
+          </CustomEditorWrapper>
         </Scrollable.Viewport>
         <Scrollable.Scrollbar />
       </Scrollable.Root>
@@ -174,7 +179,13 @@ function DocPeekPreviewEditor({
   );
 }
 
-export function DocPeekPreview({ docRef }: { docRef: DocReferenceInfo }) {
+export function DocPeekPreview({
+  docRef,
+  animating,
+}: {
+  docRef: DocReferenceInfo;
+  animating?: boolean;
+}) {
   const {
     docId,
     blockIds,
@@ -199,7 +210,8 @@ export function DocPeekPreview({ docRef }: { docRef: DocReferenceInfo }) {
           databaseRowId,
           type: 'database',
         }
-      : undefined
+      : undefined,
+    !animating
   );
 
   // if sync engine has been synced and the page is null, show 404 page.

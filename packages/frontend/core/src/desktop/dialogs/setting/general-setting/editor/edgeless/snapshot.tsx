@@ -15,13 +15,13 @@ import type {
 } from '@blocksuite/affine/blocks';
 import {
   ColorScheme,
+  createSignalFromObservable,
   SpecProvider,
   ThemeExtensionIdentifier,
 } from '@blocksuite/affine/blocks';
+import type { Container } from '@blocksuite/affine/global/di';
 import { Bound } from '@blocksuite/affine/global/utils';
 import type { Block, Store } from '@blocksuite/affine/store';
-import { createSignalFromObservable } from '@blocksuite/affine-shared/utils';
-import type { Container } from '@blocksuite/global/di';
 import type { Signal } from '@preact/signals-core';
 import type { FrameworkProvider } from '@toeverything/infra';
 import { useFramework } from '@toeverything/infra';
@@ -115,7 +115,8 @@ export const EdgelessSnapshot = (props: Props) => {
       doc.readonly = false;
       edgelessBlock.editorViewportSelector = 'ref-viewport';
       const frame = getFrameBlock(doc);
-      if (frame) {
+      if (frame && docName !== 'frame') {
+        // docName with value 'frame' shouldn't be deleted, it is a part of frame settings
         boundMap.set(docName, Bound.deserialize(frame.xywh));
         doc.deleteBlock(frame);
       }

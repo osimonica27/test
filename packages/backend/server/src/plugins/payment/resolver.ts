@@ -16,15 +16,18 @@ import type { User } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import { GraphQLJSONObject } from 'graphql-scalars';
 import { groupBy } from 'lodash-es';
+import Stripe from 'stripe';
 import { z } from 'zod';
 
 import {
   AccessDenied,
+  AuthenticationRequired,
   FailedToCheckout,
+  Throttle,
   WorkspaceIdRequiredToUpdateTeamSubscription,
 } from '../../base';
 import { CurrentUser, Public } from '../../core/auth';
-import { Permission, PermissionService } from '../../core/permission';
+import { PermissionService, WorkspaceRole } from '../../core/permission';
 import { UserType } from '../../core/user';
 import { WorkspaceType } from '../../core/workspaces';
 import { Invoice, Subscription, WorkspaceSubscriptionManager } from './manager';
@@ -193,7 +196,7 @@ class CreateCheckoutSessionInput implements z.infer<typeof CheckoutParams> {
   idempotencyKey?: string;
 
   @Field(() => GraphQLJSONObject, { nullable: true })
-  args!: { workspaceId?: string };
+  args!: { workspaceId?: string; quantity?: number } | null;
 }
 
 @Resolver(() => SubscriptionType)
@@ -261,19 +264,33 @@ export class SubscriptionResolver {
     }, [] as SubscriptionPrice[]);
   }
 
+  @Public()
   @Mutation(() => String, {
     description: 'Create a subscription checkout link of stripe',
   })
   async createCheckoutSession(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | null,
     @Args({ name: 'input', type: () => CreateCheckoutSessionInput })
     input: CreateCheckoutSessionInput
   ) {
-    const session = await this.service.checkout(input, {
-      plan: input.plan as any,
-      user,
-      workspaceId: input.args?.workspaceId,
-    });
+    let session: Stripe.Checkout.Session;
+
+    if (input.plan === SubscriptionPlan.SelfHostedTeam) {
+      session = await this.service.checkout(input, {
+        plan: input.plan as any,
+        quantity: input.args?.quantity ?? 10,
+      });
+    } else {
+      if (!user) {
+        throw new AuthenticationRequired();
+      }
+
+      session = await this.service.checkout(input, {
+        plan: input.plan as any,
+        user,
+        workspaceId: input.args?.workspaceId,
+      });
+    }
 
     if (!session.url) {
       throw new FailedToCheckout();
@@ -415,6 +432,15 @@ export class SubscriptionResolver {
       idempotencyKey
     );
   }
+
+  @Public()
+  @Throttle('strict')
+  @Mutation(() => String)
+  async generateLicenseKey(
+    @Args('sessionId', { type: () => String }) sessionId: string
+  ) {
+    return this.service.generateLicenseKey(sessionId);
+  }
 }
 
 @Resolver(() => UserType)
@@ -515,7 +541,11 @@ export class WorkspaceSubscriptionResolver {
     @CurrentUser() me: CurrentUser,
     @Parent() workspace: WorkspaceType
   ) {
-    await this.permission.checkWorkspace(workspace.id, me.id, Permission.Owner);
+    await this.permission.checkWorkspace(
+      workspace.id,
+      me.id,
+      WorkspaceRole.Owner
+    );
     return this.db.invoice.count({
       where: {
         targetId: workspace.id,
@@ -531,7 +561,11 @@ export class WorkspaceSubscriptionResolver {
     take: number,
     @Args('skip', { type: () => Int, nullable: true }) skip?: number
   ) {
-    await this.permission.checkWorkspace(workspace.id, me.id, Permission.Owner);
+    await this.permission.checkWorkspace(
+      workspace.id,
+      me.id,
+      WorkspaceRole.Owner
+    );
 
     return this.db.invoice.findMany({
       where: {

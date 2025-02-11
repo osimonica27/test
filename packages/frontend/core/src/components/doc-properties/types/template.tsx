@@ -4,8 +4,9 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { type ChangeEvent, useCallback } from 'react';
 
 import * as styles from './template.css';
+import type { PropertyValueProps } from './types';
 
-export const TemplateValue = () => {
+export const TemplateValue = ({ readonly }: PropertyValueProps) => {
   const docService = useService(DocService);
 
   const isTemplate = useLiveData(
@@ -14,23 +15,26 @@ export const TemplateValue = () => {
 
   const onChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
+      if (readonly) return;
       const value = e.target.checked;
       docService.doc.record.setProperty('isTemplate', value);
     },
-    [docService.doc.record]
+    [docService.doc.record, readonly]
   );
 
   const toggle = useCallback(() => {
+    if (readonly) return;
     docService.doc.record.setProperty('isTemplate', !isTemplate);
-  }, [docService.doc.record, isTemplate]);
+  }, [docService.doc.record, isTemplate, readonly]);
 
   return (
-    <PropertyValue className={styles.property} onClick={toggle}>
+    <PropertyValue className={styles.property} onClick={toggle} readonly>
       <Checkbox
         data-testid="toggle-template-checkbox"
         checked={!!isTemplate}
         onChange={onChange}
         className={styles.checkbox}
+        disabled={readonly}
       />
     </PropertyValue>
   );

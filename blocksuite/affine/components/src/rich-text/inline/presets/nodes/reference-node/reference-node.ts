@@ -145,10 +145,9 @@ export class AffineReference extends WithDisposable(ShadowlessElement) {
   get _title() {
     const { pageId, params, title } = this.referenceInfo;
     return (
-      title ||
       this.block?.std
         ?.get(DocDisplayMetaProvider)
-        .title(pageId, { params, title, referenced: true }).value
+        .title(pageId, { params, title, referenced: true }).value || title
     );
   }
 
@@ -201,9 +200,10 @@ export class AffineReference extends WithDisposable(ShadowlessElement) {
 
   private _onClick() {
     if (!this.config.interactable) return;
-    this.std
-      .getOptional(RefNodeSlotsProvider)
-      ?.docLinkClicked.emit(this.referenceInfo);
+    this.std.getOptional(RefNodeSlotsProvider)?.docLinkClicked.emit({
+      ...this.referenceInfo,
+      host: this.std.host,
+    });
   }
 
   override connectedCallback() {

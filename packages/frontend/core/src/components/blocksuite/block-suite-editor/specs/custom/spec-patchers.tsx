@@ -13,6 +13,7 @@ import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { type DocService, DocsService } from '@affine/core/modules/doc';
 import type { EditorService } from '@affine/core/modules/editor';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
+import { JournalService } from '@affine/core/modules/journal';
 import { resolveLinkToDoc } from '@affine/core/modules/navigation';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
 import {
@@ -24,6 +25,7 @@ import {
 } from '@affine/core/modules/quicksearch';
 import { ExternalLinksQuickSearchSession } from '@affine/core/modules/quicksearch/impls/external-links';
 import { JournalsQuickSearchSession } from '@affine/core/modules/quicksearch/impls/journals';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { DebugLogger } from '@affine/debug';
 import { I18n } from '@affine/i18n';
@@ -52,14 +54,17 @@ import {
   EdgelessRootBlockComponent,
   EmbedLinkedDocBlockComponent,
   GenerateDocUrlExtension,
+  insertLinkByQuickSearchCommand,
   MobileSpecsPatches,
   NativeClipboardExtension,
+  NoteConfigExtension,
   NotificationExtension,
   OpenDocExtension,
   ParseDocUrlExtension,
   PeekViewExtension,
   QuickSearchExtension,
   ReferenceNodeConfigExtension,
+  SidebarExtension,
 } from '@blocksuite/affine/blocks';
 import { Bound } from '@blocksuite/affine/global/utils';
 import {
@@ -75,7 +80,7 @@ import {
   SplitViewIcon,
 } from '@blocksuite/icons/lit';
 import { type FrameworkProvider } from '@toeverything/infra';
-import { type TemplateResult } from 'lit';
+import { html, type TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { literal } from 'lit/static-html.js';
 import { pick } from 'lodash-es';
@@ -83,6 +88,8 @@ import { pick } from 'lodash-es';
 import type { DocProps } from '../../../../../blocksuite/initialization';
 import { AttachmentEmbedPreview } from '../../../../attachment-viewer/pdf-viewer-embedded';
 import { generateUrl } from '../../../../hooks/affine/use-share-url';
+import { BlocksuiteEditorJournalDocTitle } from '../../journal-doc-title';
+import { EdgelessNoteHeader } from './widgets/edgeless-note-header';
 import { createKeyboardToolbarConfig } from './widgets/keyboard-toolbar';
 
 export type ReferenceReactRenderer = (
@@ -221,6 +228,7 @@ export function patchNotificationService({
         {
           title: toReactNode(notification.title),
           message: toReactNode(notification.message),
+          footer: toReactNode(notification.footer),
           action: notification.action?.onClick
             ? {
                 label: toReactNode(notification.action?.label),
@@ -455,34 +463,28 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
             (item.name === 'Linked Doc' || item.name === 'Link')
           ) {
             item.action = async ({ rootComponent }) => {
-              // @ts-expect-error fixme
-              const { success, insertedLinkType } =
-                // @ts-expect-error fixme
-                rootComponent.std.command.exec('insertLinkByQuickSearch');
+              const [success, { insertedLinkType }] =
+                rootComponent.std.command.exec(insertLinkByQuickSearchCommand);
 
               if (!success) return;
 
               insertedLinkType
-                ?.then(
-                  (type: {
-                    flavour?: 'affine:embed-linked-doc' | 'affine:bookmark';
-                  }) => {
-                    const flavour = type?.flavour;
-                    if (!flavour) return;
+                ?.then(type => {
+                  const flavour = type?.flavour;
+                  if (!flavour) return;
 
-                    if (flavour === 'affine:bookmark') {
-                      track.doc.editor.slashMenu.bookmark();
-                      return;
-                    }
-
-                    if (flavour === 'affine:embed-linked-doc') {
-                      track.doc.editor.slashMenu.linkDoc({
-                        control: 'linkDoc',
-                      });
-                      return;
-                    }
+                  if (flavour === 'affine:bookmark') {
+                    track.doc.editor.slashMenu.bookmark();
+                    return;
                   }
-                )
+
+                  if (flavour === 'affine:embed-linked-doc') {
+                    track.doc.editor.slashMenu.linkDoc({
+                      control: 'linkDoc',
+                    });
+                    return;
+                  }
+                })
                 .catch(console.error);
             };
           }
@@ -652,5 +654,41 @@ export function patchForClipboardInElectron(framework: FrameworkProvider) {
   const desktopApi = framework.get(DesktopApiService);
   return NativeClipboardExtension({
     copyAsPNG: desktopApi.handler.clipboard.copyAsPNG,
+  });
+}
+
+export function patchForEdgelessNoteConfig(
+  framework: FrameworkProvider,
+  reactToLit: (element: ElementOrFactory) => TemplateResult
+) {
+  return NoteConfigExtension({
+    edgelessNoteHeader: ({ note }) =>
+      reactToLit(<EdgelessNoteHeader note={note} />),
+    pageBlockTitle: ({ note }) => {
+      const journalService = framework.get(JournalService);
+      const isJournal = !!journalService.journalDate$(note.doc.id).value;
+      if (isJournal) {
+        return reactToLit(<BlocksuiteEditorJournalDocTitle page={note.doc} />);
+      } else {
+        return html`<doc-title .doc=${note.doc}></doc-title>`;
+      }
+    },
+  });
+}
+
+export function patchSideBarService(framework: FrameworkProvider) {
+  const { workbench } = framework.get(WorkbenchService);
+
+  return SidebarExtension({
+    open: (tabId?: string) => {
+      workbench.openSidebar();
+      workbench.activeView$.value.activeSidebarTab(tabId ?? null);
+    },
+    close: () => {
+      workbench.closeSidebar();
+    },
+    getTabIds: () => {
+      return workbench.activeView$.value.sidebarTabs$.value.map(tab => tab.id);
+    },
   });
 }

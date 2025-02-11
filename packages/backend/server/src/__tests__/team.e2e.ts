@@ -1,58 +1,58 @@
-/// <reference types="../global.d.ts" />
-
 import { randomUUID } from 'node:crypto';
 
 import { getCurrentMailMessageCount } from '@affine-test/kit/utils/cloud';
-import { INestApplication } from '@nestjs/common';
-import { WorkspaceMemberStatus } from '@prisma/client';
+import { User, WorkspaceMemberStatus } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
+import { nanoid } from 'nanoid';
 import Sinon from 'sinon';
 
 import { AppModule } from '../app.module';
-import { EventEmitter } from '../base';
+import { EventBus } from '../base';
 import { AuthService } from '../core/auth';
 import { DocContentService } from '../core/doc-renderer';
-import { Permission, PermissionService } from '../core/permission';
-import { QuotaManagementService, QuotaService, QuotaType } from '../core/quota';
+import { DocRole, PermissionService, WorkspaceRole } from '../core/permission';
 import { WorkspaceType } from '../core/workspaces';
+import { Models } from '../models';
 import {
   acceptInviteById,
   approveMember,
   createInviteLink,
   createTestingApp,
   createWorkspace,
+  docGrantedUsersList,
   getInviteInfo,
   getInviteLink,
   getWorkspace,
+  grantDocUserRoles,
   grantMember,
   inviteUser,
   inviteUsers,
   leaveWorkspace,
-  PermissionEnum,
+  revokeDocUserRoles,
   revokeInviteLink,
+  revokeMember,
   revokeUser,
-  signUp,
   sleep,
-  UserAuthedType,
+  TestingApp,
+  updateDocDefaultRole,
 } from './utils';
 
 const test = ava as TestFn<{
-  app: INestApplication;
+  app: TestingApp;
   auth: AuthService;
-  event: Sinon.SinonStubbedInstance<EventEmitter>;
-  quota: QuotaService;
-  quotaManager: QuotaManagementService;
+  event: Sinon.SinonStubbedInstance<EventBus>;
+  models: Models;
   permissions: PermissionService;
 }>;
 
-test.beforeEach(async t => {
-  const { app } = await createTestingApp({
+test.before(async t => {
+  const app = await createTestingApp({
     imports: [AppModule],
     tapModule: module => {
       module
-        .overrideProvider(EventEmitter)
-        .useValue(Sinon.createStubInstance(EventEmitter));
+        .overrideProvider(EventBus)
+        .useValue(Sinon.createStubInstance(EventBus));
       module.overrideProvider(DocContentService).useValue({
         getWorkspaceContent() {
           return {
@@ -66,78 +66,71 @@ test.beforeEach(async t => {
 
   t.context.app = app;
   t.context.auth = app.get(AuthService);
-  t.context.event = app.get(EventEmitter);
-  t.context.quota = app.get(QuotaService);
-  t.context.quotaManager = app.get(QuotaManagementService);
+  t.context.event = app.get(EventBus);
+  t.context.models = app.get(Models);
   t.context.permissions = app.get(PermissionService);
 });
 
-test.afterEach.always(async t => {
+test.beforeEach(async t => {
+  await t.context.app.initTestingDB();
+});
+
+test.after.always(async t => {
   await t.context.app.close();
 });
 
 const init = async (
-  app: INestApplication,
+  app: TestingApp,
   memberLimit = 10,
   prefix = randomUUID()
 ) => {
-  const owner = await signUp(
-    app,
-    'owner',
-    `${prefix}owner@affine.pro`,
-    '123456'
-  );
+  const owner = await app.signup(`${prefix}owner@affine.pro`);
+  const models = app.get(Models);
   {
-    const quota = app.get(QuotaService);
-    await quota.switchUserQuota(owner.id, QuotaType.ProPlanV1);
+    await models.userFeature.add(owner.id, 'pro_plan_v1', 'test');
   }
 
-  const workspace = await createWorkspace(app, owner.token.token);
-  const teamWorkspace = await createWorkspace(app, owner.token.token);
+  const workspace = await createWorkspace(app);
+  const teamWorkspace = await createWorkspace(app);
   {
-    const quota = app.get(QuotaManagementService);
-    await quota.addTeamWorkspace(teamWorkspace.id, 'test');
-    await quota.updateWorkspaceConfig(teamWorkspace.id, QuotaType.TeamPlanV1, {
+    models.workspaceFeature.add(teamWorkspace.id, 'team_plan_v1', 'test', {
       memberLimit,
     });
   }
 
   const invite = async (
     email: string,
-    permission: PermissionEnum = 'Write',
+    permission: WorkspaceRole = WorkspaceRole.Collaborator,
     shouldSendEmail: boolean = false
   ) => {
-    const member = await signUp(app, email.split('@')[0], email, '123456');
+    const member = await app.signup(email);
 
     {
       // normal workspace
+      app.switchUser(owner);
       const inviteId = await inviteUser(
         app,
-        owner.token.token,
         workspace.id,
         member.email,
         shouldSendEmail
       );
+      app.switchUser(member);
       await acceptInviteById(app, workspace.id, inviteId, shouldSendEmail);
     }
 
     {
       // team workspace
+      app.switchUser(owner);
       const inviteId = await inviteUser(
         app,
-        owner.token.token,
         teamWorkspace.id,
         member.email,
         shouldSendEmail
       );
+      app.switchUser(member);
       await acceptInviteById(app, teamWorkspace.id, inviteId, shouldSendEmail);
-      await grantMember(
-        app,
-        owner.token.token,
-        teamWorkspace.id,
-        member.id,
-        permission
-      );
+      app.switchUser(owner);
+      await grantMember(app, teamWorkspace.id, member.id, permission);
     }
 
     return member;
@@ -149,12 +142,13 @@ const init = async (
   ) => {
     const members = [];
     for (const email of emails) {
-      const member = await signUp(app, email.split('@')[0], email, '123456');
+      const member = await app.signup(email);
       members.push(member);
     }
+
+    app.switchUser(owner);
     const invites = await inviteUsers(
       app,
-      owner.token.token,
       teamWorkspace.id,
       emails,
       shouldSendEmail
@@ -163,39 +157,36 @@ const init = async (
   };
 
   const getCreateInviteLinkFetcher = async (ws: WorkspaceType) => {
-    const { link } = await createInviteLink(
-      app,
-      owner.token.token,
-      ws.id,
-      'OneDay'
-    );
+    app.switchUser(owner);
+    const { link } = await createInviteLink(app, ws.id, 'OneDay');
     const inviteId = link.split('/').pop()!;
     return [
       inviteId,
-      async (
-        email: string,
-        shouldSendEmail: boolean = false
-      ): Promise<UserAuthedType> => {
-        const member = await signUp(app, email.split('@')[0], email, '123456');
-        await acceptInviteById(
-          app,
-          ws.id,
-          inviteId,
-          shouldSendEmail,
-          member.token.token
-        );
+      async (email: string, shouldSendEmail: boolean = false) => {
+        const member = await app.signup(email);
+        await acceptInviteById(app, ws.id, inviteId, shouldSendEmail);
         return member;
       },
-      async (token: string) => {
-        await acceptInviteById(app, ws.id, inviteId, false, token);
+      async (userId: string) => {
+        app.switchUser(userId);
+        await acceptInviteById(app, ws.id, inviteId, false);
       },
     ] as const;
   };
 
-  const admin = await invite(`${prefix}admin@affine.pro`, 'Admin');
+  const admin = await invite(`${prefix}admin@affine.pro`, WorkspaceRole.Admin);
   const write = await invite(`${prefix}write@affine.pro`);
-  const read = await invite(`${prefix}read@affine.pro`, 'Read');
+  const read = await invite(
+    `${prefix}read@affine.pro`,
+    WorkspaceRole.Collaborator
+  );
 
+  const external = await invite(
+    `${prefix}external@affine.pro`,
+    WorkspaceRole.External
+  );
+
+  app.switchUser(owner.id);
   return {
     invite,
     inviteBatch,
@@ -206,22 +197,25 @@ const init = async (
     admin,
     write,
     read,
+    external,
   };
 };
 
 test('should be able to invite multiple users', async t => {
   const { app } = t.context;
-  const { teamWorkspace: ws, owner, admin, write, read } = await init(app, 4);
+  const { teamWorkspace: ws, owner, admin, write, read } = await init(app, 5);
 
   {
     // no permission
+    app.switchUser(read);
     await t.throwsAsync(
-      inviteUsers(app, read.token.token, ws.id, ['test@affine.pro']),
+      inviteUsers(app, ws.id, ['test@affine.pro']),
       { instanceOf: Error },
       'should throw error if not manager'
     );
+    app.switchUser(write);
     await t.throwsAsync(
-      inviteUsers(app, write.token.token, ws.id, ['test@affine.pro']),
+      inviteUsers(app, ws.id, ['test@affine.pro']),
       { instanceOf: Error },
       'should throw error if not manager'
     );
@@ -229,20 +223,22 @@ test('should be able to invite multiple users', async t => {
 
   {
     // manager
-    const m1 = await signUp(app, 'm1', 'm1@affine.pro', '123456');
-    const m2 = await signUp(app, 'm2', 'm2@affine.pro', '123456');
+    const m1 = await app.signup('m1@affine.pro');
+    const m2 = await app.signup('m2@affine.pro');
+    app.switchUser(owner);
     t.is(
-      (await inviteUsers(app, owner.token.token, ws.id, [m1.email])).length,
+      (await inviteUsers(app, ws.id, [m1.email])).length,
+      1,
+      'should be able to invite user'
+    );
+    app.switchUser(admin);
+    t.is(
+      (await inviteUsers(app, ws.id, [m2.email])).length,
       1,
       'should be able to invite user'
     );
     t.is(
-      (await inviteUsers(app, admin.token.token, ws.id, [m2.email])).length,
-      1,
-      'should be able to invite user'
-    );
-    t.is(
-      (await inviteUsers(app, admin.token.token, ws.id, [m2.email])).length,
+      (await inviteUsers(app, ws.id, [m2.email])).length,
       0,
       'should not be able to invite user if already in workspace'
     );
@@ -250,7 +246,6 @@ test('should be able to invite multiple users', async t => {
     await t.throwsAsync(
       inviteUsers(
         app,
-        admin.token.token,
         ws.id,
         Array.from({ length: 513 }, (_, i) => `m${i}@affine.pro`)
       ),
@@ -261,21 +256,21 @@ test('should be able to invite multiple users', async t => {
 });
 
 test('should be able to check seat limit', async t => {
-  const { app, permissions, quotaManager } = t.context;
-  const { invite, inviteBatch, teamWorkspace: ws } = await init(app, 4);
+  const { app, permissions, models } = t.context;
+  const { invite, inviteBatch, teamWorkspace: ws } = await init(app, 5);
 
   {
     // invite
     await t.throwsAsync(
-      invite('member3@affine.pro', 'Read'),
+      invite('member3@affine.pro', WorkspaceRole.Collaborator),
       { message: 'You have exceeded your workspace member quota.' },
       'should throw error if exceed member limit'
     );
-    await quotaManager.updateWorkspaceConfig(ws.id, QuotaType.TeamPlanV1, {
-      memberLimit: 5,
+    models.workspaceFeature.add(ws.id, 'team_plan_v1', 'test', {
+      memberLimit: 6,
     });
     await t.notThrowsAsync(
-      invite('member4@affine.pro', 'Read'),
+      invite('member4@affine.pro', WorkspaceRole.Collaborator),
       'should not throw error if not exceed member limit'
     );
   }
@@ -298,9 +293,9 @@ test('should be able to check seat limit', async t => {
     );
 
     // refresh seat, fifo
-    sleep(1000);
+    await sleep(1000);
     const [[members2]] = await inviteBatch(['member6@affine.pro']);
-    await permissions.refreshSeatStatus(ws.id, 6);
+    await permissions.refreshSeatStatus(ws.id, 7);
 
     t.is(
       await permissions.getWorkspaceMemberStatus(
@@ -320,36 +315,43 @@ test('should be able to check seat limit', async t => {
 
 test('should be able to grant team member permission', async t => {
   const { app, permissions } = t.context;
-  const { owner, teamWorkspace: ws, admin, write, read } = await init(app);
+  const { owner, teamWorkspace: ws, write, read } = await init(app);
 
+  app.switchUser(read);
   await t.throwsAsync(
-    grantMember(app, read.token.token, ws.id, write.id, 'Write'),
+    grantMember(app, ws.id, write.id, WorkspaceRole.Collaborator),
     { instanceOf: Error },
     'should throw error if not owner'
   );
+
+  app.switchUser(write);
   await t.throwsAsync(
-    grantMember(app, write.token.token, ws.id, read.id, 'Write'),
-    { instanceOf: Error },
-    'should throw error if not owner'
-  );
-  await t.throwsAsync(
-    grantMember(app, admin.token.token, ws.id, read.id, 'Write'),
+    grantMember(app, ws.id, read.id, WorkspaceRole.Collaborator),
     { instanceOf: Error },
     'should throw error if not owner'
   );
 
   {
     // owner should be able to grant permission
+    app.switchUser(owner);
     t.true(
-      await permissions.tryCheckWorkspaceIs(ws.id, read.id, Permission.Read),
+      await permissions.tryCheckWorkspaceIs(
+        ws.id,
+        read.id,
+        WorkspaceRole.Collaborator
+      ),
       'should be able to check permission'
     );
     t.truthy(
-      await grantMember(app, owner.token.token, ws.id, read.id, 'Admin'),
+      await grantMember(app, ws.id, read.id, WorkspaceRole.Admin),
       'should be able to grant permission'
     );
     t.true(
-      await permissions.tryCheckWorkspaceIs(ws.id, read.id, Permission.Admin),
+      await permissions.tryCheckWorkspaceIs(
+        ws.id,
+        read.id,
+        WorkspaceRole.Admin
+      ),
       'should be able to check permission'
     );
   }
@@ -359,20 +361,27 @@ test('should be able to leave workspace', async t => {
   const { app } = t.context;
   const { owner, teamWorkspace: ws, admin, write, read } = await init(app);
 
+  app.switchUser(owner);
   t.false(
-    await leaveWorkspace(app, owner.token.token, ws.id),
+    await leaveWorkspace(app, ws.id),
     'owner should not be able to leave workspace'
   );
+
+  app.switchUser(admin);
   t.true(
-    await leaveWorkspace(app, admin.token.token, ws.id),
+    await leaveWorkspace(app, ws.id),
     'admin should be able to leave workspace'
   );
+
+  app.switchUser(write);
   t.true(
-    await leaveWorkspace(app, write.token.token, ws.id),
+    await leaveWorkspace(app, ws.id),
     'write should be able to leave workspace'
   );
+
+  app.switchUser(read);
   t.true(
-    await leaveWorkspace(app, read.token.token, ws.id),
+    await leaveWorkspace(app, ws.id),
     'read should be able to leave workspace'
   );
 });
@@ -383,13 +392,14 @@ test('should be able to revoke team member', async t => {
 
   {
     // no permission
+    app.switchUser(read);
     await t.throwsAsync(
-      revokeUser(app, read.token.token, ws.id, read.id),
+      revokeUser(app, ws.id, read.id),
       { instanceOf: Error },
       'should throw error if not admin'
     );
     await t.throwsAsync(
-      revokeUser(app, read.token.token, ws.id, write.id),
+      revokeUser(app, ws.id, write.id),
       { instanceOf: Error },
       'should throw error if not admin'
     );
@@ -397,32 +407,35 @@ test('should be able to revoke team member', async t => {
 
   {
     // manager
+    app.switchUser(admin);
     t.true(
-      await revokeUser(app, admin.token.token, ws.id, read.id),
+      await revokeUser(app, ws.id, read.id),
       'admin should be able to revoke member'
     );
 
+    await t.throwsAsync(
+      revokeUser(app, ws.id, admin.id),
+      { instanceOf: Error },
+      'should not be able to revoke themselves'
+    );
+
+    app.switchUser(owner);
     t.true(
-      await revokeUser(app, owner.token.token, ws.id, write.id),
+      await revokeUser(app, ws.id, write.id),
       'owner should be able to revoke member'
     );
 
-    await t.throwsAsync(
-      revokeUser(app, admin.token.token, ws.id, admin.id),
-      { instanceOf: Error },
-      'should not be able to revoke themselves'
-    );
-
     t.false(
-      await revokeUser(app, owner.token.token, ws.id, owner.id),
+      await revokeUser(app, ws.id, owner.id),
       'should not be able to revoke themselves'
     );
 
-    await revokeUser(app, owner.token.token, ws.id, admin.id);
+    await revokeUser(app, ws.id, admin.id);
+    app.switchUser(admin);
     await t.throwsAsync(
-      revokeUser(app, admin.token.token, ws.id, read.id),
+      revokeUser(app, ws.id, read.id),
       { instanceOf: Error },
-      'should not be able to revoke member not in workspace'
+      'should not be able to revoke member not in workspace after revoked'
     );
   }
 });
@@ -436,45 +449,38 @@ test('should be able to manage invite link', async t => {
     admin,
     write,
     read,
-  } = await init(app, 4);
+  } = await init(app);
 
   for (const [workspace, managers] of [
     [ws, [owner]],
     [tws, [owner, admin]],
   ] as const) {
     for (const manager of managers) {
-      const { link } = await createInviteLink(
-        app,
-        manager.token.token,
-        workspace.id,
-        'OneDay'
-      );
-      const { link: currLink } = await getInviteLink(
-        app,
-        manager.token.token,
-        workspace.id
-      );
+      app.switchUser(manager.id);
+      const { link } = await createInviteLink(app, workspace.id, 'OneDay');
+      const { link: currLink } = await getInviteLink(app, workspace.id);
       t.is(link, currLink, 'should be able to get invite link');
 
       t.true(
-        await revokeInviteLink(app, manager.token.token, workspace.id),
+        await revokeInviteLink(app, workspace.id),
         'should be able to revoke invite link'
       );
     }
 
     for (const collaborator of [write, read]) {
+      app.switchUser(collaborator.id);
       await t.throwsAsync(
-        createInviteLink(app, collaborator.token.token, workspace.id, 'OneDay'),
+        createInviteLink(app, workspace.id, 'OneDay'),
         { instanceOf: Error },
         'should throw error if not manager'
       );
       await t.throwsAsync(
-        getInviteLink(app, collaborator.token.token, workspace.id),
+        getInviteLink(app, workspace.id),
         { instanceOf: Error },
         'should throw error if not manager'
       );
       await t.throwsAsync(
-        revokeInviteLink(app, collaborator.token.token, workspace.id),
+        revokeInviteLink(app, workspace.id),
         { instanceOf: Error },
         'should throw error if not manager'
       );
@@ -484,51 +490,45 @@ test('should be able to manage invite link', async t => {
 
 test('should be able to approve team member', async t => {
   const { app } = t.context;
-  const { teamWorkspace: tws, owner, admin, write, read } = await init(app, 5);
+  const { teamWorkspace: tws, owner, admin, write, read } = await init(app, 6);
 
   {
-    const { link } = await createInviteLink(
-      app,
-      owner.token.token,
-      tws.id,
-      'OneDay'
-    );
+    app.switchUser(owner);
+    const { link } = await createInviteLink(app, tws.id, 'OneDay');
     const inviteId = link.split('/').pop()!;
 
-    const member = await signUp(
-      app,
-      'newmember',
-      'newmember@affine.pro',
-      '123456'
-    );
+    const member = await app.signup('newmember@affine.pro');
     t.true(
-      await acceptInviteById(app, tws.id, inviteId, false, member.token.token),
+      await acceptInviteById(app, tws.id, inviteId, false),
       'should be able to accept invite'
     );
 
-    const { members } = await getWorkspace(app, owner.token.token, tws.id);
+    app.switchUser(owner);
+    const { members } = await getWorkspace(app, tws.id);
     const memberInvite = members.find(m => m.id === member.id)!;
     t.is(memberInvite.status, 'UnderReview', 'should be under review');
 
-    t.is(
-      await approveMember(app, admin.token.token, tws.id, member.id),
-      memberInvite.inviteId
-    );
+    t.is(await approveMember(app, tws.id, member.id), memberInvite.inviteId);
   }
 
   {
+    app.switchUser(admin);
     await t.throwsAsync(
-      approveMember(app, admin.token.token, tws.id, 'not_exists_id'),
+      approveMember(app, tws.id, 'not_exists_id'),
       { instanceOf: Error },
       'should throw error if member not exists'
     );
+
+    app.switchUser(write);
     await t.throwsAsync(
-      approveMember(app, write.token.token, tws.id, 'not_exists_id'),
+      approveMember(app, tws.id, 'not_exists_id'),
       { instanceOf: Error },
       'should throw error if not manager'
     );
+
+    app.switchUser(read);
     await t.throwsAsync(
-      approveMember(app, read.token.token, tws.id, 'not_exists_id'),
+      approveMember(app, tws.id, 'not_exists_id'),
       { instanceOf: Error },
       'should throw error if not manager'
     );
@@ -536,30 +536,31 @@ test('should be able to approve team member', async t => {
 });
 
 test('should be able to invite by link', async t => {
-  const { app, permissions, quotaManager } = t.context;
+  const { app, permissions, models } = t.context;
   const {
     createInviteLink,
     owner,
     workspace: ws,
     teamWorkspace: tws,
-  } = await init(app, 4);
+  } = await init(app, 5);
   const [inviteId, invite] = await createInviteLink(ws);
   const [teamInviteId, teamInvite, acceptTeamInvite] =
     await createInviteLink(tws);
 
   {
     // check invite link
-    const info = await getInviteInfo(app, owner.token.token, inviteId);
+    app.switchUser(owner);
+    const info = await getInviteInfo(app, inviteId);
     t.is(info.workspace.id, ws.id, 'should be able to get invite info');
 
     // check team invite link
-    const teamInfo = await getInviteInfo(app, owner.token.token, teamInviteId);
+    const teamInfo = await getInviteInfo(app, teamInviteId);
     t.is(teamInfo.workspace.id, tws.id, 'should be able to get invite info');
   }
 
   {
     // invite link
-    for (const [i] of Array.from({ length: 6 }).entries()) {
+    for (const [i] of Array.from({ length: 5 }).entries()) {
       const user = await invite(`test${i}@affine.pro`);
       const status = await permissions.getWorkspaceMemberStatus(ws.id, user.id);
       t.is(
@@ -578,7 +579,7 @@ test('should be able to invite by link', async t => {
 
   {
     // team invite link
-    const members: UserAuthedType[] = [];
+    const members: User[] = [];
     await t.notThrowsAsync(async () => {
       members.push(await teamInvite('member3@affine.pro'));
       members.push(await teamInvite('member4@affine.pro'));
@@ -596,10 +597,10 @@ test('should be able to invite by link', async t => {
       'should not change status'
     );
 
-    await quotaManager.updateWorkspaceConfig(tws.id, QuotaType.TeamPlanV1, {
-      memberLimit: 5,
+    models.workspaceFeature.add(tws.id, 'team_plan_v1', 'test', {
+      memberLimit: 6,
     });
-    await permissions.refreshSeatStatus(tws.id, 5);
+    await permissions.refreshSeatStatus(tws.id, 6);
     t.is(
       await permissions.getWorkspaceMemberStatus(tws.id, m3.id),
       WorkspaceMemberStatus.UnderReview,
@@ -611,10 +612,10 @@ test('should be able to invite by link', async t => {
       'should not change status'
     );
 
-    await quotaManager.updateWorkspaceConfig(tws.id, QuotaType.TeamPlanV1, {
-      memberLimit: 6,
+    models.workspaceFeature.add(tws.id, 'team_plan_v1', 'test', {
+      memberLimit: 7,
     });
-    await permissions.refreshSeatStatus(tws.id, 6);
+    await permissions.refreshSeatStatus(tws.id, 7);
     t.is(
       await permissions.getWorkspaceMemberStatus(tws.id, m4.id),
       WorkspaceMemberStatus.UnderReview,
@@ -622,19 +623,16 @@ test('should be able to invite by link', async t => {
     );
 
     {
-      const message = `You have already joined in Space ${tws.id}.`;
-      await t.throwsAsync(
-        acceptTeamInvite(owner.token.token),
-        { message },
-        'should throw error if member already in workspace'
-      );
+      await t.throwsAsync(acceptTeamInvite(owner.id), {
+        message: `You have already joined in Space ${tws.id}.`,
+      });
     }
   }
 });
 
 test('should be able to send mails', async t => {
   const { app } = t.context;
-  const { inviteBatch } = await init(app, 4);
+  const { inviteBatch } = await init(app, 5);
   const primitiveMailCount = await getCurrentMailMessageCount();
 
   {
@@ -647,7 +645,7 @@ test('should be able to emit events', async t => {
   const { app, event } = t.context;
 
   {
-    const { teamWorkspace: tws, inviteBatch } = await init(app, 4);
+    const { teamWorkspace: tws, inviteBatch } = await init(app, 5);
 
     await inviteBatch(['m1@affine.pro', 'm2@affine.pro']);
     const [membersUpdated] = event.emit
@@ -658,7 +656,7 @@ test('should be able to emit events', async t => {
       'workspace.members.updated',
       {
         workspaceId: tws.id,
-        count: 6,
+        count: 7,
       },
     ]);
   }
@@ -667,7 +665,7 @@ test('should be able to emit events', async t => {
     const { teamWorkspace: tws, owner, createInviteLink } = await init(app);
     const [, invite] = await createInviteLink(tws);
     const user = await invite('m3@affine.pro');
-    const { members } = await getWorkspace(app, owner.token.token, tws.id);
+    const { members } = await getWorkspace(app, tws.id);
     const memberInvite = members.find(m => m.id === user.id)!;
     t.deepEqual(
       event.emit.lastCall.args,
@@ -678,7 +676,8 @@ test('should be able to emit events', async t => {
       'should emit review requested event'
     );
 
-    await revokeUser(app, owner.token.token, tws.id, user.id);
+    app.switchUser(owner);
+    await revokeUser(app, tws.id, user.id);
     t.deepEqual(
       event.emit.lastCall.args,
       [
@@ -691,36 +690,239 @@ test('should be able to emit events', async t => {
 
   {
     const { teamWorkspace: tws, owner, read } = await init(app);
-    await grantMember(app, owner.token.token, tws.id, read.id, 'Admin');
+    await grantMember(app, tws.id, read.id, WorkspaceRole.Admin);
     t.deepEqual(
       event.emit.lastCall.args,
       [
         'workspace.members.roleChanged',
-        { userId: read.id, workspaceId: tws.id, permission: Permission.Admin },
+        {
+          userId: read.id,
+          workspaceId: tws.id,
+          permission: WorkspaceRole.Admin,
+        },
       ],
       'should emit role changed event'
     );
 
-    await grantMember(app, owner.token.token, tws.id, read.id, 'Owner');
-    const [ownerTransferred, roleChanged] = event.emit
+    await grantMember(app, tws.id, read.id, WorkspaceRole.Owner);
+    const [ownershipTransferred] = event.emit
       .getCalls()
       .map(call => call.args)
       .toReversed();
     t.deepEqual(
-      roleChanged,
+      ownershipTransferred,
       [
-        'workspace.members.roleChanged',
-        { userId: read.id, workspaceId: tws.id, permission: Permission.Owner },
-      ],
-      'should emit role changed event'
-    );
-    t.deepEqual(
-      ownerTransferred,
-      [
-        'workspace.members.ownerTransferred',
-        { email: owner.email, workspaceId: tws.id },
+        'workspace.members.ownershipTransferred',
+        { from: owner.id, to: read.id, workspaceId: tws.id },
       ],
       'should emit owner transferred event'
     );
+
+    app.switchUser(read);
+    await revokeMember(app, tws.id, owner.id);
+    const [memberRemoved, memberUpdated] = event.emit
+      .getCalls()
+      .map(call => call.args)
+      .toReversed();
+    t.deepEqual(
+      memberRemoved,
+      [
+        'workspace.members.removed',
+        {
+          userId: owner.id,
+          workspaceId: tws.id,
+        },
+      ],
+      'should emit owner transferred event'
+    );
+    t.deepEqual(
+      memberUpdated,
+      [
+        'workspace.members.updated',
+        {
+          count: 4,
+          workspaceId: tws.id,
+        },
+      ],
+      'should emit role changed event'
+    );
   }
+});
+
+test('should be able to grant and revoke users role in page', async t => {
+  const { app } = t.context;
+  const {
+    teamWorkspace: ws,
+    admin,
+    write,
+    read,
+    external,
+  } = await init(app, 5);
+  const docId = nanoid();
+
+  app.switchUser(admin);
+  const res = await grantDocUserRoles(
+    app,
+    ws.id,
+    docId,
+    [read.id, write.id],
+    DocRole.Manager
+  );
+
+  t.deepEqual(res, {
+    grantDocUserRoles: true,
+  });
+
+  // should not downgrade the role if role exists
+  {
+    await grantDocUserRoles(app, ws.id, docId, [read.id], DocRole.Reader);
+
+    // read still be the Manager of this doc
+    app.switchUser(read);
+    const res = await grantDocUserRoles(
+      app,
+      ws.id,
+      docId,
+      [external.id],
+      DocRole.Editor
+    );
+    t.deepEqual(res, {
+      grantDocUserRoles: true,
+    });
+
+    app.switchUser(admin);
+    const docUsersList = await docGrantedUsersList(app, ws.id, docId);
+    t.is(docUsersList.workspace.doc.grantedUsersList.totalCount, 3);
+    const externalRole = docUsersList.workspace.doc.grantedUsersList.edges.find(
+      (edge: any) => edge.node.user.id === external.id
+    )?.node.role;
+    t.is(externalRole, DocRole[DocRole.Editor]);
+  }
+});
+
+test('should be able to change the default role in page', async t => {
+  const { app } = t.context;
+  const { teamWorkspace: ws, admin } = await init(app, 5);
+  const docId = nanoid();
+  app.switchUser(admin);
+  const res = await updateDocDefaultRole(app, ws.id, docId, DocRole.Reader);
+
+  t.deepEqual(res, {
+    updateDocDefaultRole: true,
+  });
+});
+
+test('default page role should be able to override the workspace role', async t => {
+  const { app } = t.context;
+  const {
+    teamWorkspace: workspace,
+    admin,
+    read,
+    external,
+  } = await init(app, 5);
+
+  const docId = nanoid();
+
+  app.switchUser(admin);
+  const res = await updateDocDefaultRole(
+    app,
+    workspace.id,
+    docId,
+    DocRole.Manager
+  );
+
+  t.deepEqual(res, {
+    updateDocDefaultRole: true,
+  });
+
+  // reader can manage the page if the page default role is Manager
+  {
+    app.switchUser(read);
+    const readerRes = await updateDocDefaultRole(
+      app,
+      workspace.id,
+      docId,
+      DocRole.Manager
+    );
+
+    t.deepEqual(readerRes, {
+      updateDocDefaultRole: true,
+    });
+  }
+
+  // external can't manage the page even if the page default role is Manager
+  {
+    app.switchUser(external);
+    await t.throwsAsync(
+      updateDocDefaultRole(app, workspace.id, docId, DocRole.Manager),
+      {
+        message: `You do not have permission to access doc ${docId} under Space ${workspace.id}.`,
+      }
+    );
+  }
+});
+
+test('should be able to grant and revoke doc user role', async t => {
+  const { app } = t.context;
+  const { teamWorkspace: ws, admin, read, external } = await init(app, 5);
+  const docId = nanoid();
+
+  app.switchUser(admin);
+  const res = await grantDocUserRoles(
+    app,
+    ws.id,
+    docId,
+    [external.id],
+    DocRole.Manager
+  );
+
+  t.deepEqual(res, {
+    grantDocUserRoles: true,
+  });
+
+  // external user now can manage the page
+  {
+    app.switchUser(external);
+    const externalRes = await grantDocUserRoles(
+      app,
+      ws.id,
+      docId,
+      [read.id],
+      DocRole.Manager
+    );
+
+    t.deepEqual(externalRes, {
+      grantDocUserRoles: true,
+    });
+  }
+
+  // revoke the role of the external user
+  {
+    app.switchUser(admin);
+    const revokeRes = await revokeDocUserRoles(app, ws.id, docId, external.id);
+
+    t.deepEqual(revokeRes, {
+      revokeDocUserRoles: true,
+    });
+
+    // external user can't manage the page
+    app.switchUser(external);
+    await t.throwsAsync(revokeDocUserRoles(app, ws.id, docId, read.id), {
+      message: `You do not have permission to access doc ${docId} under Space ${ws.id}.`,
+    });
+  }
+});
+
+test('update page default role should throw error if the space does not exist', async t => {
+  const { app } = t.context;
+  const { admin } = await init(app, 5);
+  const docId = nanoid();
+  const nonExistWorkspaceId = 'non-exist-workspace';
+  app.switchUser(admin);
+  await t.throwsAsync(
+    updateDocDefaultRole(app, nonExistWorkspaceId, docId, DocRole.Manager),
+    {
+      message: `You do not have permission to access doc ${docId} under Space ${nonExistWorkspaceId}.`,
+    }
+  );
 });

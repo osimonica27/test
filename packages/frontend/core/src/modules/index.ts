@@ -7,6 +7,7 @@ import {
 } from './ai-button';
 import { configureAppSidebarModule } from './app-sidebar';
 import { configAtMenuConfigModule } from './at-menu-config';
+import { configureBlobManagementModule } from './blob-management';
 import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
 import { configureWorkspaceDBModule } from './db';
@@ -16,6 +17,7 @@ import { configureDocModule } from './doc';
 import { configureDocDisplayMetaModule } from './doc-display-meta';
 import { configureDocInfoModule } from './doc-info';
 import { configureDocLinksModule } from './doc-link';
+import { configDocSearchMenuModule } from './doc-search-menu';
 import { configureDocsSearchModule } from './docs-search';
 import { configureEditorModule } from './editor';
 import { configureEditorSettingModule } from './editor-setting';
@@ -38,7 +40,7 @@ import { configureShareDocsModule } from './share-doc';
 import { configureShareSettingModule } from './share-setting';
 import {
   configureCommonGlobalStorageImpls,
-  configureGlobalStorageModule,
+  configureStorageModule,
 } from './storage';
 import { configureSystemFontFamilyModule } from './system-font-family';
 import { configureTagModule } from './tag';
@@ -55,7 +57,7 @@ export function configureCommonModules(framework: Framework) {
   configureWorkspaceModule(framework);
   configureDocModule(framework);
   configureWorkspaceDBModule(framework);
-  configureGlobalStorageModule(framework);
+  configureStorageModule(framework);
   configureGlobalContextModule(framework);
   configureLifecycleModule(framework);
   configureFeatureFlagModule(framework);
@@ -91,9 +93,11 @@ export function configureCommonModules(framework: Framework) {
   configureDocInfoModule(framework);
   configureOpenInApp(framework);
   configAtMenuConfigModule(framework);
+  configDocSearchMenuModule(framework);
   configureDndModule(framework);
   configureCommonGlobalStorageImpls(framework);
   configureAINetworkSearchModule(framework);
   configureAIButtonModule(framework);
   configureTemplateDocModule(framework);
+  configureBlobManagementModule(framework);
 }

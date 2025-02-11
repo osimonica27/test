@@ -14,6 +14,7 @@ import { effects as blockNoteEffects } from '@blocksuite/affine-block-note/effec
 import { effects as blockParagraphEffects } from '@blocksuite/affine-block-paragraph/effects';
 import { effects as blockSurfaceEffects } from '@blocksuite/affine-block-surface/effects';
 import { effects as blockSurfaceRefEffects } from '@blocksuite/affine-block-surface-ref/effects';
+import { effects as blockTableEffects } from '@blocksuite/affine-block-table/effects';
 import { effects as componentAiItemEffects } from '@blocksuite/affine-components/ai-item';
 import { BlockSelection } from '@blocksuite/affine-components/block-selection';
 import { BlockZeroWidth } from '@blocksuite/affine-components/block-zero-width';
@@ -21,7 +22,8 @@ import { effects as componentCaptionEffects } from '@blocksuite/affine-component
 import { effects as componentColorPickerEffects } from '@blocksuite/affine-components/color-picker';
 import { effects as componentContextMenuEffects } from '@blocksuite/affine-components/context-menu';
 import { effects as componentDatePickerEffects } from '@blocksuite/affine-components/date-picker';
-import { effects as componentDragIndicatorEffects } from '@blocksuite/affine-components/drag-indicator';
+import { effects as componentDropIndicatorEffects } from '@blocksuite/affine-components/drop-indicator';
+import { effects as componentEmbedCardModalEffects } from '@blocksuite/affine-components/embed-card-modal';
 import { FilterableListComponent } from '@blocksuite/affine-components/filterable-list';
 import { IconButton } from '@blocksuite/affine-components/icon-button';
 import { effects as componentPortalEffects } from '@blocksuite/affine-components/portal';
@@ -31,14 +33,13 @@ import { effects as componentToggleButtonEffects } from '@blocksuite/affine-comp
 import { ToggleSwitch } from '@blocksuite/affine-components/toggle-switch';
 import { effects as componentToolbarEffects } from '@blocksuite/affine-components/toolbar';
 import { effects as widgetDragHandleEffects } from '@blocksuite/affine-widget-drag-handle/effects';
+import { effects as widgetEdgelessAutoConnectEffects } from '@blocksuite/affine-widget-edgeless-auto-connect/effects';
 import { effects as widgetFrameTitleEffects } from '@blocksuite/affine-widget-frame-title/effects';
 import { effects as widgetRemoteSelectionEffects } from '@blocksuite/affine-widget-remote-selection/effects';
 import { effects as widgetScrollAnchoringEffects } from '@blocksuite/affine-widget-scroll-anchoring/effects';
-import type { BlockComponent } from '@blocksuite/block-std';
 import { effects as stdEffects } from '@blocksuite/block-std/effects';
 import { effects as dataViewEffects } from '@blocksuite/data-view/effects';
 import { effects as inlineEffects } from '@blocksuite/inline/effects';
-import type { BlockModel } from '@blocksuite/store';
 
 import { registerSpecs } from './_specs/register-specs.js';
 import { EdgelessAutoCompletePanel } from './root-block/edgeless/components/auto-complete/auto-complete-panel.js';
@@ -153,10 +154,6 @@ import {
   AIPanelGenerating,
   AIPanelInput,
 } from './root-block/widgets/ai-panel/components/index.js';
-import {
-  AFFINE_EDGELESS_AUTO_CONNECT_WIDGET,
-  EdgelessAutoConnectWidget,
-} from './root-block/widgets/edgeless-auto-connect/edgeless-auto-connect.js';
 import { EdgelessCopilotPanel } from './root-block/widgets/edgeless-copilot-panel/index.js';
 import { AFFINE_EDGELESS_ZOOM_TOOLBAR_WIDGET } from './root-block/widgets/edgeless-zoom-toolbar/index.js';
 import { ZoomBarToggleButton } from './root-block/widgets/edgeless-zoom-toolbar/zoom-bar-toggle-button.js';
@@ -204,6 +201,7 @@ export function effects() {
   blockDividerEffects();
   blockDataViewEffects();
   blockCodeEffects();
+  blockTableEffects();
 
   componentCaptionEffects();
   componentContextMenuEffects();
@@ -211,10 +209,11 @@ export function effects() {
   componentPortalEffects();
   componentRichTextEffects();
   componentToolbarEffects();
-  componentDragIndicatorEffects();
+  componentDropIndicatorEffects();
   componentToggleButtonEffects();
   componentAiItemEffects();
   componentColorPickerEffects();
+  componentEmbedCardModalEffects();
 
   widgetScrollAnchoringEffects();
   widgetMobileToolbarEffects();
@@ -223,6 +222,7 @@ export function effects() {
   widgetEdgelessElementToolbarEffects();
   widgetRemoteSelectionEffects();
   widgetDragHandleEffects();
+  widgetEdgelessAutoConnectEffects();
   dataViewEffects();
 
   customElements.define('affine-page-root', PageRootBlockComponent);
@@ -392,20 +392,11 @@ export function effects() {
     AffineEdgelessZoomToolbarWidget
   );
   customElements.define(AFFINE_SURFACE_REF_TOOLBAR, AffineSurfaceRefToolbar);
-  customElements.define(
-    AFFINE_EDGELESS_AUTO_CONNECT_WIDGET,
-    EdgelessAutoConnectWidget
-  );
   customElements.define(AFFINE_FORMAT_BAR_WIDGET, AffineFormatBarWidget);
 }
 
 declare global {
   namespace BlockSuite {
-    interface CommandContext {
-      focusBlock?: BlockComponent | null;
-      anchorBlock?: BlockComponent | null;
-      updatedBlocks?: BlockModel[];
-    }
     interface BlockConfigs {
       'affine:page': RootBlockConfig;
     }

@@ -1,10 +1,13 @@
+import { handleInlineAskAIAction } from '@affine/core/blocksuite/presets/ai';
+import { pageAIGroups } from '@affine/core/blocksuite/presets/ai/_common/config';
 import { DocsService } from '@affine/core/modules/doc';
+import { EditorService } from '@affine/core/modules/editor';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import {
-  TemplateDocService,
-  TemplateListMenu,
-} from '@affine/core/modules/template-doc';
+import { TemplateDocService } from '@affine/core/modules/template-doc';
+import { TemplateListMenu } from '@affine/core/modules/template-doc/view/template-list-menu';
 import { useI18n } from '@affine/i18n';
+import track from '@affine/track';
+import { PageRootBlockComponent } from '@blocksuite/affine/blocks';
 import type { Store } from '@blocksuite/affine/store';
 import {
   AiIcon,
@@ -16,6 +19,7 @@ import clsx from 'clsx';
 import {
   forwardRef,
   type HTMLAttributes,
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -51,6 +55,7 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
   const templateDocService = useService(TemplateDocService);
   const featureFlagService = useService(FeatureFlagService);
   const docsService = useService(DocsService);
+  const editorService = useService(EditorService);
 
   const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
 
@@ -60,6 +65,7 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
       [doc.id, templateDocService.list]
     )
   );
+  const enableAI = useLiveData(featureFlagService.flags.enable_ai.$);
   const enableTemplateDoc = useLiveData(
     featureFlagService.flags.enable_template_doc.$
   );
@@ -67,15 +73,45 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
   const handleSelectTemplate = useAsyncCallback(
     async (templateId: string) => {
       await docsService.duplicateFromTemplate(templateId, doc.id);
+      track.doc.editor.starterBar.quickStart({ with: 'template' });
     },
     [doc.id, docsService]
   );
 
-  const showAI = false;
-  const showEdgeless = false;
+  const startWithEdgeless = useCallback(() => {
+    const record = docsService.list.doc$(doc.id).value;
+    record?.setPrimaryMode('edgeless');
+    editorService.editor.setMode('edgeless');
+  }, [doc.id, docsService.list, editorService.editor]);
+
+  const onTemplateMenuOpenChange = useCallback((open: boolean) => {
+    if (open) track.doc.editor.starterBar.openTemplateListMenu();
+    setTemplateMenuOpen(open);
+  }, []);
+
+  const startWithAI = useCallback(() => {
+    const std = editorService.editor.editorContainer$.value?.std;
+    if (!std) return;
+
+    const rootBlockId = std.host.doc.root?.id;
+    if (!rootBlockId) return;
+
+    const rootComponent = std.view.getBlock(rootBlockId);
+    if (!(rootComponent instanceof PageRootBlockComponent)) return;
+
+    const { id, created } = rootComponent.focusFirstParagraph();
+    if (created) {
+      std.view.viewUpdated.once(v => {
+        if (v.id === id) handleInlineAskAIAction(std.host, pageAIGroups);
+      });
+    } else {
+      handleInlineAskAIAction(std.host, pageAIGroups);
+    }
+  }, [editorService.editor]);
+
   const showTemplate = !isTemplate && enableTemplateDoc;
 
-  if (!showAI && !showEdgeless && !showTemplate) {
+  if (!enableAI && !showTemplate) {
     return null;
   }
 
@@ -83,10 +119,12 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
     <div className={styles.root}>
       {t['com.affine.page-starter-bar.start']()}
       <ul className={styles.badges}>
-        {showAI ? (
+        {enableAI ? (
           <Badge
+            data-testid="start-with-ai-badge"
             icon={<AiIcon />}
             text={t['com.affine.page-starter-bar.ai']()}
+            onClick={startWithAI}
           />
         ) : null}
 
@@ -95,7 +133,7 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
             onSelect={handleSelectTemplate}
             rootOptions={{
               open: templateMenuOpen,
-              onOpenChange: setTemplateMenuOpen,
+              onOpenChange: onTemplateMenuOpenChange,
             }}
           >
             <Badge
@@ -107,12 +145,11 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
           </TemplateListMenu>
         ) : null}
 
-        {showEdgeless ? (
-          <Badge
-            icon={<EdgelessIcon />}
-            text={t['com.affine.page-starter-bar.edgeless']()}
-          />
-        ) : null}
+        <Badge
+          icon={<EdgelessIcon />}
+          text={t['com.affine.page-starter-bar.edgeless']()}
+          onClick={startWithEdgeless}
+        />
       </ul>
     </div>
   );

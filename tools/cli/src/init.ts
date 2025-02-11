@@ -1,7 +1,11 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 import type { Path } from '@affine-tools/utils/path';
-import { type Package, Workspace } from '@affine-tools/utils/workspace';
+import {
+  type Package,
+  Workspace,
+  yarnList,
+} from '@affine-tools/utils/workspace';
 import { applyEdits, modify } from 'jsonc-parser';
 import { type BuiltInParserName, format } from 'prettier';
 
@@ -17,7 +21,7 @@ export class InitCommand extends Command {
   }
 
   async generateWorkspaceFiles() {
-    this.workspace = new Workspace(this.workspace.yarnList());
+    this.workspace = new Workspace(yarnList());
     const filesToGenerate: [
       Path,
       (prev: string) => string,
@@ -80,7 +84,7 @@ export class InitCommand extends Command {
   };
 
   genWorkspaceInfo = () => {
-    const list = this.workspace.yarnList();
+    const list = yarnList();
 
     const names = list.map(p => p.name);
 
@@ -103,13 +107,6 @@ export class InitCommand extends Command {
         ['references'],
         this.workspace.packages
           .filter(p => p.isTsProject)
-          .filter(
-            p =>
-              // NOTE(@forehalo): there two packages including outdated types, will be fixed when merged with affine-e2e
-              !['@blocksuite/playground', '@blocksuite/legacy-e2e'].includes(
-                p.name
-              )
-          )
           .map(p => ({ path: p.path.relativePath })),
         {}
       )

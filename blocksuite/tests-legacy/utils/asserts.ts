@@ -1,27 +1,26 @@
 import './declare-test-window.js';
 
-import type {
-  AffineInlineEditor,
-  NoteBlockModel,
-  RichText,
-  RootBlockModel,
-} from '@blocks/index.js';
-import {
-  DEFAULT_NOTE_HEIGHT,
-  DEFAULT_NOTE_WIDTH,
-  DefaultTheme,
-} from '@blocksuite/affine-model';
+import type { EdgelessNoteBackground } from '@blocksuite/affine-block-note';
 import type {
   BlockComponent,
   EditorHost,
   TextSelection,
 } from '@blocksuite/block-std';
-import { BLOCK_ID_ATTR } from '@blocksuite/block-std';
+import type {
+  AffineInlineEditor,
+  NoteBlockModel,
+  RichText,
+  RootBlockModel,
+} from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
-import type { InlineRootElement } from '@inline/inline-editor.js';
+import type { InlineRootElement } from '@blocksuite/inline';
+import type { BlockModel } from '@blocksuite/store';
 import { expect, type Locator, type Page } from '@playwright/test';
-import type { BlockModel } from '@store/index.js';
 
+import {
+  DEFAULT_NOTE_HEIGHT,
+  DEFAULT_NOTE_WIDTH,
+} from '../utils/bs-alternative.js';
 import {
   getCanvasElementsCount,
   getConnectorPath,
@@ -56,6 +55,8 @@ import { getStringFromRichText } from './inline-editor.js';
 import { currentEditorIndex } from './multiple-editor.js';
 
 export { assertExists };
+
+const BLOCK_ID_ATTR = 'data-block-id';
 
 export const defaultStore = {
   meta: {
@@ -110,7 +111,7 @@ export const defaultStore = {
           'sys:children': ['2'],
           'sys:version': 1,
           'prop:xywh': `[0,0,${DEFAULT_NOTE_WIDTH}, ${DEFAULT_NOTE_HEIGHT}]`,
-          'prop:background': DefaultTheme.noteBackgrounColor,
+          'prop:background': 'rgba(255, 255, 255, 1)',
           'prop:index': 'a0',
           'prop:hidden': false,
           'prop:displayMode': 'both',
@@ -302,7 +303,7 @@ export async function assertVisibleBlockCount(
   // not only count, but also check if all the blocks are visible
   const locator = page.locator(`affine-${flavour}`);
   let visibleCount = 0;
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < (await locator.count()); i++) {
     if (await locator.nth(i).isVisible()) {
       visibleCount++;
     }
@@ -462,7 +463,9 @@ export async function assertBlockChildrenFlavours(
 ) {
   const actual = await page.evaluate(
     ({ blockId }) => {
-      const element = document.querySelector(`[data-block-id="${blockId}"]`);
+      const element = document.querySelector<BlockComponent>(
+        `[data-block-id="${blockId}"]`
+      );
       // @ts-ignore
       const model = element.model as BlockModel;
       return model.children.map(child => child.flavour);
@@ -963,12 +966,13 @@ export async function assertEdgelessNoteBackground(
   const backgroundColor = await editor
     .locator(`affine-edgeless-note[data-block-id="${noteId}"]`)
     .evaluate(ele => {
-      const noteWrapper =
-        ele?.querySelector<HTMLDivElement>('.note-background');
+      const noteWrapper = ele?.querySelector<EdgelessNoteBackground>(
+        'edgeless-note-background'
+      );
       if (!noteWrapper) {
         throw new Error(`Could not find note: ${noteId}`);
       }
-      return noteWrapper.style.backgroundColor;
+      return noteWrapper.backgroundStyle$.value.backgroundColor;
     });
 
   expect(toHex(backgroundColor)).toEqual(color);

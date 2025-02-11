@@ -19,7 +19,7 @@
     "@blocksuite/sync": "workspace:*",
     "@preact/signals-core": "^1.8.0",
     "@types/lodash.ismatch": "^4.4.9",
-    "file-type": "^19.5.0",
+    "file-type": "^20.0.0",
     "lib0": "^0.2.97",
     "lodash.clonedeep": "^4.5.0",
     "lodash.ismatch": "^4.4.0",
@@ -33,7 +33,7 @@
   "devDependencies": {
     "@types/lodash.clonedeep": "^4.5.9",
     "@types/lodash.merge": "^4.6.9",
-    "vitest": "2.1.8"
+    "vitest": "3.0.5"
   },
   "exports": {
     ".": "./src/index.ts",

@@ -1,7 +1,3 @@
-import {
-  DEFAULT_NOTE_HEIGHT,
-  DEFAULT_NOTE_WIDTH,
-} from '@blocksuite/affine-model';
 import { assertExists } from '@blocksuite/global/utils';
 import { expect } from '@playwright/test';
 
@@ -47,6 +43,10 @@ import {
   assertSelectedBound,
   assertZoomLevel,
 } from '../utils/asserts.js';
+import {
+  DEFAULT_NOTE_HEIGHT,
+  DEFAULT_NOTE_WIDTH,
+} from '../utils/bs-alternative.js';
 import { test } from '../utils/playwright.js';
 
 const CENTER_X = 450;
@@ -138,7 +138,9 @@ test('zoom by mouse without ctrl pressed when edgelessScrollZoom is enabled', as
 
   // enable edgelessScrollZoom
   await page.evaluate(() => {
+    // @ts-expect-error set a setting
     window.editorSetting$.value = {
+      // @ts-expect-error set a setting
       ...window.editorSetting$.value,
       edgelessScrollZoom: true,
     };
@@ -153,7 +155,9 @@ test('zoom by mouse without ctrl pressed when edgelessScrollZoom is enabled', as
 
   // disable edgelessScrollZoom
   await page.evaluate(() => {
+    // @ts-expect-error set a setting
     window.editorSetting$.value = {
+      // @ts-expect-error set a setting
       ...window.editorSetting$.value,
       edgelessScrollZoom: false,
     };

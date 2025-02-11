@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import {
+  AFFiNELogger,
   CacheInterceptor,
   CloudThrottlerGuard,
   GlobalExceptionFilter,
@@ -20,7 +21,10 @@ export async function createApp() {
     cors: true,
     rawBody: true,
     bodyParser: true,
+    bufferLogs: true,
   });
+
+  app.useLogger(app.get(AFFiNELogger));
 
   if (AFFiNE.server.path) {
     app.setGlobalPrefix(AFFiNE.server.path);
@@ -40,11 +44,14 @@ export async function createApp() {
   app.useGlobalInterceptors(app.get(CacheInterceptor));
   app.useGlobalFilters(new GlobalExceptionFilter(app.getHttpAdapter()));
   app.use(cookieParser());
-
-  if (AFFiNE.flavor.sync) {
-    const adapter = new SocketIoAdapter(app);
-    app.useWebSocketAdapter(adapter);
+  // only enable shutdown hooks in production
+  // https://docs.nestjs.com/fundamentals/lifecycle-events#application-shutdown
+  if (AFFiNE.NODE_ENV === 'production') {
+    app.enableShutdownHooks();
   }
+
+  const adapter = new SocketIoAdapter(app);
+  app.useWebSocketAdapter(adapter);
 
   if (AFFiNE.isSelfhosted && AFFiNE.metrics.telemetry.enabled) {
     const mixpanel = await import('mixpanel');

@@ -1,3 +1,6 @@
+import '@toeverything/theme/style.css';
+import '@toeverything/theme/fonts.css';
+
 import { effects as blocksEffects } from '@blocksuite/blocks/effects';
 import type { Store, Transformer } from '@blocksuite/store';
 
@@ -77,6 +80,7 @@ async function createEditor(collection: TestWorkspace, mode: DocMode = 'page') {
 
   app.style.width = '100%';
   app.style.height = '1280px';
+  app.style.overflowY = 'auto';
 
   document.body.append(app);
   await editor.updateComplete;

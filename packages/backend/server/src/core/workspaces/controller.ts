@@ -13,7 +13,8 @@ import {
 } from '../../base';
 import { CurrentUser, Public } from '../auth';
 import { PgWorkspaceDocStorageAdapter } from '../doc';
-import { Permission, PermissionService, PublicPageMode } from '../permission';
+import { DocReader } from '../doc/reader';
+import { PermissionService, PublicDocMode } from '../permission';
 import { WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
 
@@ -24,6 +25,7 @@ export class WorkspacesController {
     private readonly storage: WorkspaceBlobStorage,
     private readonly permission: PermissionService,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
+    private readonly docReader: DocReader,
     private readonly prisma: PrismaClient
   ) {}
 
@@ -95,7 +97,7 @@ export class WorkspacesController {
       throw new AccessDenied();
     }
 
-    const binResponse = await this.workspace.getDoc(
+    const binResponse = await this.docReader.getDoc(
       docId.workspace,
       docId.guid
     );
@@ -109,16 +111,16 @@ export class WorkspacesController {
 
     if (!docId.isWorkspace) {
       // fetch the publish page mode for publish page
-      const publishPage = await this.prisma.workspacePage.findUnique({
+      const publishPage = await this.prisma.workspaceDoc.findUnique({
         where: {
-          workspaceId_pageId: {
+          workspaceId_docId: {
             workspaceId: docId.workspace,
-            pageId: docId.guid,
+            docId: docId.guid,
           },
         },
       });
       const publishPageMode =
-        publishPage?.mode === PublicPageMode.Edgeless ? 'edgeless' : 'page';
+        publishPage?.mode === PublicDocMode.Edgeless ? 'edgeless' : 'page';
 
       res.setHeader('publish-mode', publishPageMode);
     }
@@ -147,8 +149,8 @@ export class WorkspacesController {
     await this.permission.checkPagePermission(
       docId.workspace,
       docId.guid,
-      user.id,
-      Permission.Write
+      'Doc.Read',
+      user.id
     );
 
     const history = await this.workspace.getDocHistory(

@@ -236,8 +236,28 @@ export const AFFINE_FLAGS = {
     displayName: 'Enable template doc',
     description:
       'Allow users to mark a doc as a template, and create new docs from it',
-    configurable: !isMobile,
+    configurable: true,
     defaultState: isCanaryBuild,
+  },
+  // TODO(@L-Sun): remove this flag when ready
+  enable_page_block: {
+    category: 'blocksuite',
+    bsFlag: 'enable_page_block',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-page-block-header.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-page-block-header.description',
+    configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
+  },
+  enable_editor_rtl: {
+    category: 'affine',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-editor-rtl.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-editor-rtl.description',
+    configurable: isCanaryBuild,
+    defaultState: false,
   },
 } satisfies { [key in string]: FlagInfo };
 

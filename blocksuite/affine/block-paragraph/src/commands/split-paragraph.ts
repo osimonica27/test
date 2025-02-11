@@ -6,10 +6,11 @@ import { matchFlavours } from '@blocksuite/affine-shared/utils';
 import { type Command, TextSelection } from '@blocksuite/block-std';
 
 export const splitParagraphCommand: Command<
-  never,
-  'paragraphConvertedId',
   {
     blockId?: string;
+  },
+  {
+    paragraphConvertedId: string;
   }
 > = (ctx, next) => {
   const { std } = ctx;
@@ -60,7 +61,7 @@ export const splitParagraphCommand: Command<
   store.captureSync();
   const right = model.text.split(splitIndex, splitLength);
   const id = store.addBlock(
-    model.flavour,
+    model.flavour as BlockSuite.Flavour,
     {
       text: right,
       type: model.type,

@@ -5,6 +5,15 @@ import {
   TextBackgroundDuotoneIcon,
   TextForegroundDuotoneIcon,
 } from '@blocksuite/affine-components/icons';
+import {
+  formatBlockCommand,
+  formatNativeCommand,
+  formatTextCommand,
+} from '@blocksuite/affine-components/rich-text';
+import {
+  getBlockSelectionsCommand,
+  getTextSelectionCommand,
+} from '@blocksuite/affine-shared/commands';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import type { EditorHost } from '@blocksuite/block-std';
 import { assertExists } from '@blocksuite/global/utils';
@@ -16,8 +25,8 @@ import type { AffineFormatBarWidget } from '../../format-bar.js';
 import { backgroundConfig, foregroundConfig } from './consts.js';
 
 enum HighlightType {
-  Foreground,
-  Background,
+  Color = 'color',
+  Background = 'background',
 }
 
 let lastUsedColor: string | null = null;
@@ -35,16 +44,15 @@ const updateHighlight = (
     styles: AffineTextAttributes;
   } = {
     styles: {
-      color: highlightType === HighlightType.Foreground ? color : null,
-      background: highlightType === HighlightType.Background ? color : null,
+      [`${highlightType}`]: color,
     },
   };
   host.std.command
     .chain()
     .try(chain => [
-      chain.getTextSelection().formatText(payload),
-      chain.getBlockSelections().formatBlock(payload),
-      chain.formatNative(payload),
+      chain.pipe(getTextSelectionCommand).pipe(formatTextCommand, payload),
+      chain.pipe(getBlockSelectionsCommand).pipe(formatBlockCommand, payload),
+      chain.pipe(formatNativeCommand, payload),
     ])
     .run();
 };
@@ -63,11 +71,7 @@ const HighlightPanel = (
             <editor-menu-action
               data-testid="${color ?? 'unset'}"
               @click="${() => {
-                updateHighlight(
-                  formatBar.host,
-                  color,
-                  HighlightType.Foreground
-                );
+                updateHighlight(formatBar.host, color, HighlightType.Color);
                 formatBar.requestUpdate();
               }}"
             >
@@ -84,6 +88,7 @@ const HighlightPanel = (
         ${backgroundConfig.map(
           ({ name, color }) => html`
             <editor-menu-action
+              data-testid="${color ?? 'transparent'}"
               @click="${() => {
                 updateHighlight(
                   formatBar.host,

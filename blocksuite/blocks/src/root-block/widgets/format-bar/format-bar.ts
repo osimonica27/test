@@ -1,11 +1,19 @@
+import { updateBlockType } from '@blocksuite/affine-block-note';
 import { HoverController } from '@blocksuite/affine-components/hover';
-import type { RichText } from '@blocksuite/affine-components/rich-text';
-import { isFormatSupported } from '@blocksuite/affine-components/rich-text';
+import {
+  isFormatSupported,
+  isTextStyleActive,
+  type RichText,
+} from '@blocksuite/affine-components/rich-text';
 import {
   cloneGroups,
   getMoreMenuConfig,
   type MenuItemGroup,
 } from '@blocksuite/affine-components/toolbar';
+import {
+  getSelectedBlocksCommand,
+  getTextSelectionCommand,
+} from '@blocksuite/affine-shared/commands';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { matchFlavours } from '@blocksuite/affine-shared/utils';
 import {
@@ -15,7 +23,6 @@ import {
   TextSelection,
   WidgetComponent,
 } from '@blocksuite/block-std';
-import { DatabaseSelection } from '@blocksuite/data-view';
 import {
   assertExists,
   DisposableGroup,
@@ -166,11 +173,11 @@ export class AffineFormatBarWidget extends WidgetComponent {
               if (!rootComponent.std.range) return;
               this.host.std.command
                 .chain()
-                .getTextSelection()
-                .getSelectedBlocks({
+                .pipe(getTextSelectionCommand)
+                .pipe(getSelectedBlocksCommand, {
                   types: ['text'],
                 })
-                .inline(ctx => {
+                .pipe(ctx => {
                   const { selectedBlocks } = ctx;
                   if (!selectedBlocks) return;
                   this._selectedBlocks = selectedBlocks;
@@ -205,34 +212,20 @@ export class AffineFormatBarWidget extends WidgetComponent {
     );
     this.disposables.addFromEvent(document, 'selectionchange', () => {
       if (!this.host.event.active) return;
-
-      const databaseSelection = this.host.selection.find(DatabaseSelection);
-      if (!databaseSelection) {
-        return;
-      }
-
       const reset = () => {
         this.reset();
         this.requestUpdate();
       };
-      const viewSelection = databaseSelection.viewSelection;
-      // check table selection
-      if (
-        viewSelection.type === 'table' &&
-        (viewSelection.selectionType !== 'area' || !viewSelection.isEditing)
-      )
-        return reset();
-      // check kanban selection
-      if (
-        (viewSelection.type === 'kanban' &&
-          viewSelection.selectionType !== 'cell') ||
-        !viewSelection.isEditing
-      )
-        return reset();
-
       const range = this.nativeRange;
-
-      if (!range || range.collapsed) return reset();
+      if (!range) return;
+      const container =
+        range.commonAncestorContainer instanceof Element
+          ? range.commonAncestorContainer
+          : range.commonAncestorContainer.parentElement;
+      if (!container) return;
+      const notBlockText = container.closest('rich-text')?.dataset.notBlockText;
+      if (notBlockText == null) return;
+      if (range.collapsed) return reset();
       this._displayType = 'native';
       this.requestUpdate();
     });
@@ -435,7 +428,7 @@ export class AffineFormatBarWidget extends WidgetComponent {
       name: config.name ?? camelCaseToWords(type ?? flavour),
       action: chain => {
         chain
-          .updateBlockType({
+          .pipe(updateBlockType, {
             flavour,
             props: type != null ? { type } : undefined,
           })
@@ -492,7 +485,7 @@ export class AffineFormatBarWidget extends WidgetComponent {
       name: camelCaseToWords(key),
       icon: config.icon,
       isActive: chain => {
-        const [result] = chain.isTextStyleActive({ key }).run();
+        const [result] = chain.pipe(isTextStyleActive, { key }).run();
         return result;
       },
       action: config.action,
@@ -551,12 +544,16 @@ export class AffineFormatBarWidget extends WidgetComponent {
     }
 
     const items = ConfigRenderer(this);
-
+    const moreButton = toolbarMoreButton(this);
     return html`
       <editor-toolbar class="${AFFINE_FORMAT_BAR_WIDGET}">
         ${items}
-        <editor-toolbar-separator></editor-toolbar-separator>
-        ${toolbarMoreButton(this)}
+        ${moreButton
+          ? html`
+              <editor-toolbar-separator></editor-toolbar-separator>
+              ${moreButton}
+            `
+          : nothing}
       </editor-toolbar>
     `;
   }
@@ -567,10 +564,12 @@ export class AffineFormatBarWidget extends WidgetComponent {
   }
 
   override updated() {
+    if (this._floatDisposables) {
+      this._floatDisposables.dispose();
+      this._floatDisposables = null;
+    }
+
     if (!this._shouldDisplay()) {
-      if (this._floatDisposables) {
-        this._floatDisposables.dispose();
-      }
       return;
     }
 

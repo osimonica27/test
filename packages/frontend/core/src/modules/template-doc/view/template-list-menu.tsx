@@ -1,21 +1,25 @@
 import { Menu, MenuItem, type MenuProps, Scrollable } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useI18n } from '@affine/i18n';
+import { InformationIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useState } from 'react';
 
 import { type DocRecord } from '../../doc';
 import { DocDisplayMetaService } from '../../doc-display-meta';
+import { WorkbenchLink } from '../../workbench';
 import { TemplateDocService } from '../services/template-doc';
 import * as styles from './styles.css';
 interface CommonProps {
   onSelect?: (docId: string) => void;
+  asLink?: boolean;
 }
 
 interface DocItemProps extends CommonProps {
   doc: DocRecord;
 }
 
-const DocItem = ({ doc, onSelect }: DocItemProps) => {
+const DocItem = ({ doc, onSelect, asLink }: DocItemProps) => {
   const docDisplayService = useService(DocDisplayMetaService);
   const Icon = useLiveData(docDisplayService.icon$(doc.id));
   const title = useLiveData(docDisplayService.title$(doc.id));
@@ -24,9 +28,30 @@ const DocItem = ({ doc, onSelect }: DocItemProps) => {
     onSelect?.(doc.id);
   }, [doc.id, onSelect]);
 
-  return (
-    <MenuItem prefixIcon={<Icon />} onClick={onClick}>
+  const menuItem = (
+    <MenuItem
+      prefixIcon={<Icon />}
+      onClick={onClick}
+      data-testid={`template-doc-item-${doc.id}`}
+    >
       {title}
+    </MenuItem>
+  );
+
+  if (asLink) {
+    return <WorkbenchLink to={`/${doc.id}`}>{menuItem}</WorkbenchLink>;
+  }
+  return menuItem;
+};
+
+const Empty = () => {
+  const t = useI18n();
+  return (
+    <MenuItem
+      disabled
+      prefixIcon={<InformationIcon className={styles.emptyIcon} />}
+    >
+      {t['com.affine.template-list.empty']()}
     </MenuItem>
   );
 };
@@ -48,9 +73,11 @@ export const TemplateListMenuContent = ({
   return (
     <ul className={styles.list}>
       {prefixItems}
-      {templateDocs.map(doc => (
-        <DocItem key={doc.id} doc={doc} {...props} />
-      ))}
+      {templateDocs.length ? (
+        templateDocs.map(doc => <DocItem key={doc.id} doc={doc} {...props} />)
+      ) : (
+        <Empty />
+      )}
       {suffixItems}
     </ul>
   );
@@ -75,6 +102,7 @@ interface TemplateListMenuProps
 export const TemplateListMenu = ({
   children,
   onSelect,
+  asLink,
   prefixItems,
   suffixItems,
   contentOptions,
@@ -85,6 +113,7 @@ export const TemplateListMenu = ({
       items={
         <TemplateListMenuContentScrollable
           onSelect={onSelect}
+          asLink={asLink}
           prefixItems={prefixItems}
           suffixItems={suffixItems}
         />

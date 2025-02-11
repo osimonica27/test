@@ -1,14 +1,16 @@
 import { stopPropagation } from '@affine/core/utils';
 import type { EditorHost } from '@blocksuite/affine/block-std';
-import { type AIError, openFileOrFiles } from '@blocksuite/affine/blocks';
+import {
+  type AIError,
+  openFileOrFiles,
+  unsafeCSSVarV2,
+} from '@blocksuite/affine/blocks';
 import {
   assertExists,
   SignalWatcher,
   WithDisposable,
 } from '@blocksuite/affine/global/utils';
-import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { ImageIcon, PublishIcon } from '@blocksuite/icons/lit';
-import type { Signal } from '@preact/signals-core';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -22,19 +24,15 @@ import {
 import { AIProvider } from '../provider';
 import { reportResponse } from '../utils/action-reporter';
 import { readBlobAsURL } from '../utils/image';
-import type { ChatContextValue, ChatMessage } from './chat-context';
+import type { AINetworkSearchConfig } from './chat-config';
+import type { ChatContextValue, ChatMessage, DocContext } from './chat-context';
+import { isDocChip } from './components/utils';
 
 const MaximumImageCount = 32;
 
 function getFirstTwoLines(text: string) {
   const lines = text.split('\n');
   return lines.slice(0, 2);
-}
-
-export interface AINetworkSearchConfig {
-  visible: Signal<boolean | undefined>;
-  enabled: Signal<boolean | undefined>;
-  setEnabled: (state: boolean) => void;
 }
 
 export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
@@ -365,7 +363,10 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
     const { images, status } = this.chatContextValue;
     const hasImages = images.length > 0;
     const maxHeight = hasImages ? 272 + 2 : 200 + 2;
-    const networkDisabled = !!this.chatContextValue.images.length;
+    const networkDisabled =
+      !!this.chatContextValue.images.length ||
+      !!this.chatContextValue.chips.filter(chip => chip.state !== 'candidate')
+        .length;
     const networkActive = !!this.networkSearchConfig.enabled.value;
     const uploadDisabled = networkActive && !networkDisabled;
     return html`<style>
@@ -378,7 +379,14 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
           user-select: none;
         }
       </style>
-      <div class="chat-panel-input">
+      <div
+        class="chat-panel-input"
+        @pointerdown=${(e: MouseEvent) => {
+          // by default the div will be focused and will blur the textarea
+          e.preventDefault();
+          this.textarea.focus();
+        }}
+      >
         ${hasImages ? this._renderImages(images) : nothing}
         ${this.chatContextValue.quote
           ? html`<div class="chat-selection-quote">
@@ -510,11 +518,11 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
   };
 
   send = async (text: string) => {
-    const { status, markdown } = this.chatContextValue;
+    const { status, markdown, chips } = this.chatContextValue;
     if (status === 'loading' || status === 'transmitting') return;
 
     const { images } = this.chatContextValue;
-    if (!text && images.length === 0) {
+    if (!text) {
       return;
     }
     const { doc } = this.host;
@@ -531,15 +539,14 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
       images?.map(image => readBlobAsURL(image))
     );
 
-    const content = (markdown ? `${markdown}\n` : '') + text;
-
+    const userInput = (markdown ? `${markdown}\n` : '') + text;
     this.updateContext({
       items: [
         ...this.chatContextValue.items,
         {
           id: '',
           role: 'user',
-          content: content,
+          content: userInput,
           createdAt: new Date().toISOString(),
           attachments,
         },
@@ -554,8 +561,16 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
 
     try {
       const abortController = new AbortController();
+      const docs: DocContext[] = chips
+        .filter(isDocChip)
+        .filter(chip => !!chip.markdown?.value && chip.state === 'success')
+        .map(chip => ({
+          docId: chip.docId,
+          markdown: chip.markdown?.value || '',
+        }));
       const stream = AIProvider.actions.chat?.({
-        input: content,
+        input: userInput,
+        docs: docs,
         docId: doc.id,
         attachments: images,
         workspaceId: doc.workspace.id,

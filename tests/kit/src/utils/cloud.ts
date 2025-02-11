@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
@@ -5,6 +7,7 @@ import {
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
+import { Package } from '@affine-tools/utils/workspace';
 import { faker } from '@faker-js/faker';
 import { hash } from '@node-rs/argon2';
 import type { BrowserContext, Cookie, Page } from '@playwright/test';
@@ -50,6 +53,9 @@ const cloudUserSchema = z.object({
   password: z.string(),
 });
 
+const server = new Package('@affine/server');
+const require = createRequire(server.srcPath.join('index.ts').toFileUrl());
+
 export const runPrisma = async <T>(
   cb: (
     prisma: InstanceType<
@@ -58,12 +64,7 @@ export const runPrisma = async <T>(
     >
   ) => Promise<T>
 ): Promise<T> => {
-  const {
-    PrismaClient,
-    // oxlint-disable-next-line @typescript-eslint/consistent-type-imports
-  } = await import(
-    '../../../../packages/backend/server/node_modules/@prisma/client'
-  );
+  const { PrismaClient } = require('@prisma/client');
   const client = new PrismaClient({
     datasourceUrl:
       process.env.DATABASE_URL ||
@@ -118,9 +119,8 @@ export async function createRandomUser(): Promise<{
   const result = await runPrisma(async client => {
     const featureId = await client.feature
       .findFirst({
-        where: { feature: 'free_plan_v1' },
+        where: { name: 'free_plan_v1' },
         select: { id: true },
-        orderBy: { version: 'desc' },
       })
       .then(f => f!.id);
 
@@ -134,6 +134,8 @@ export async function createRandomUser(): Promise<{
             reason: 'created by test case',
             activated: true,
             featureId,
+            name: 'free_plan_v1',
+            type: 1,
           },
         },
       },
@@ -168,16 +170,14 @@ export async function createRandomAIUser(): Promise<{
   const result = await runPrisma(async client => {
     const freeFeatureId = await client.feature
       .findFirst({
-        where: { feature: 'free_plan_v1' },
+        where: { name: 'free_plan_v1' },
         select: { id: true },
-        orderBy: { version: 'desc' },
       })
       .then(f => f!.id);
     const aiFeatureId = await client.feature
       .findFirst({
-        where: { feature: 'unlimited_copilot' },
+        where: { name: 'unlimited_copilot' },
         select: { id: true },
-        orderBy: { version: 'desc' },
       })
       .then(f => f!.id);
 
@@ -192,11 +192,15 @@ export async function createRandomAIUser(): Promise<{
               reason: 'created by test case',
               activated: true,
               featureId: freeFeatureId,
+              name: 'free_plan_v1',
+              type: 1,
             },
             {
               reason: 'created by test case',
               activated: true,
               featureId: aiFeatureId,
+              name: 'unlimited_copilot',
+              type: 0,
             },
           ],
         },
@@ -281,7 +285,7 @@ export async function loginUserDirectly(
 
 export async function enableCloudWorkspace(page: Page) {
   await clickSideBarSettingButton(page);
-  await page.getByTestId('current-workspace-label').click();
+  await page.getByTestId('workspace-setting:preference').click();
   await page.getByTestId('publish-enable-affine-cloud-button').click();
   await page.getByTestId('confirm-enable-affine-cloud-button').click();
   // wait for upload and delete local workspace

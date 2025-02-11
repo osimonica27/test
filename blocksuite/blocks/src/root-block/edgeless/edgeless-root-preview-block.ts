@@ -5,6 +5,7 @@ import type {
 import type { EdgelessPreviewer } from '@blocksuite/affine-block-surface-ref';
 import type { RootBlockModel } from '@blocksuite/affine-model';
 import {
+  EditorSettingProvider,
   FontLoaderService,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
@@ -176,6 +177,12 @@ export class EdgelessRootPreviewBlockComponent
     );
   }
 
+  private get _disableScheduleUpdate() {
+    const editorSetting = this.std.getOptional(EditorSettingProvider);
+
+    return editorSetting?.peek().edgelessDisableScheduleUpdate ?? false;
+  }
+
   override connectedCallback() {
     super.connectedCallback();
 
@@ -223,6 +230,7 @@ export class EdgelessRootPreviewBlockComponent
     return html`
       <div class="edgeless-background edgeless-container">
         <gfx-viewport
+          .enableChildrenSchedule=${!this._disableScheduleUpdate}
           .viewport=${this.service.viewport}
           .getModelsInViewport=${() => {
             const blocks = this.service.gfx.grid.search(

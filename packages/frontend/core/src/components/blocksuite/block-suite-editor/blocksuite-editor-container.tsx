@@ -1,23 +1,24 @@
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import {
+  appendParagraphCommand,
   type DocMode,
-  type NoteBlockModel,
-  NoteDisplayMode,
+  focusBlockEnd,
+  getLastNoteBlock,
 } from '@blocksuite/affine/blocks';
-import { Slot } from '@blocksuite/affine/global/utils';
 import type {
   AffineEditorContainer,
   DocTitle,
   EdgelessEditor,
   PageEditor,
 } from '@blocksuite/affine/presets';
-import { type BlockModel, type Store } from '@blocksuite/affine/store';
+import { type Store } from '@blocksuite/affine/store';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
 import {
   forwardRef,
   useCallback,
   useImperativeHandle,
-  useLayoutEffect,
   useMemo,
   useRef,
 } from 'react';
@@ -30,47 +31,31 @@ interface BlocksuiteEditorContainerProps {
   page: Store;
   mode: DocMode;
   shared?: boolean;
+  readonly?: boolean;
   className?: string;
   defaultOpenProperty?: DefaultOpenProperty;
   style?: React.CSSProperties;
 }
 
-// mimic the interface of the webcomponent and expose slots & host
-type BlocksuiteEditorContainerRef = Pick<
-  (typeof AffineEditorContainer)['prototype'],
-  'mode' | 'doc' | 'slots' | 'host'
-> &
-  HTMLDivElement;
-
 export const BlocksuiteEditorContainer = forwardRef<
   AffineEditorContainer,
   BlocksuiteEditorContainerProps
 >(function AffineEditorContainer(
-  { page, mode, className, style, shared, defaultOpenProperty },
+  { page, mode, className, style, shared, readonly, defaultOpenProperty },
   ref
 ) {
   const rootRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<PageEditor>(null);
   const docTitleRef = useRef<DocTitle>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
-
-  const slots: BlocksuiteEditorContainerRef['slots'] = useMemo(() => {
-    return {
-      editorModeSwitched: new Slot(),
-      docUpdated: new Slot(),
-    };
-  }, []);
-
-  useLayoutEffect(() => {
-    slots.docUpdated.emit({ newDocId: page.id });
-  }, [page, slots.docUpdated]);
+  const featureFlags = useService(FeatureFlagService).flags;
+  const enableEditorRTL = useLiveData(featureFlags.enable_editor_rtl.$);
 
   /**
    * mimic an AffineEditorContainer using proxy
    */
   const affineEditorContainerProxy = useMemo(() => {
     const api = {
-      slots,
       get page() {
         return page;
       },
@@ -128,14 +113,14 @@ export const BlocksuiteEditorContainer = forwardRef<
     }) as unknown as AffineEditorContainer & { origin: HTMLDivElement };
 
     return proxy;
-  }, [mode, page, slots]);
+  }, [mode, page]);
 
   useImperativeHandle(ref, () => affineEditorContainerProxy, [
     affineEditorContainerProxy,
   ]);
 
   const handleClickPageModeBlank = useCallback(() => {
-    if (shared || page.readonly) return;
+    if (shared || readonly || page.readonly) return;
     const std = affineEditorContainerProxy.host?.std;
     if (!std) {
       return;
@@ -148,19 +133,21 @@ export const BlocksuiteEditorContainer = forwardRef<
         lastBlock.flavour === 'affine:paragraph' &&
         lastBlock.text?.length === 0
       ) {
-        std.command.exec('focusBlockEnd' as never, {
-          focusBlock: std.view.getBlock(lastBlock.id) as never,
+        const focusBlock = std.view.getBlock(lastBlock.id) ?? undefined;
+        std.command.exec(focusBlockEnd, {
+          focusBlock,
         });
         return;
       }
     }
 
-    std.command.exec('appendParagraph' as never, {});
-  }, [affineEditorContainerProxy, page, shared]);
+    std.command.exec(appendParagraphCommand);
+  }, [affineEditorContainerProxy.host?.std, page, readonly, shared]);
 
   return (
     <div
       data-testid={`editor-${page.id}`}
+      dir={enableEditorRTL ? 'rtl' : 'ltr'}
       className={clsx(
         `editor-wrapper ${mode}-mode`,
         styles.docEditorRoot,
@@ -175,6 +162,7 @@ export const BlocksuiteEditorContainer = forwardRef<
           shared={shared}
           page={page}
           ref={docRef}
+          readonly={readonly}
           titleRef={docTitleRef}
           onClickBlank={handleClickPageModeBlank}
           defaultOpenProperty={defaultOpenProperty}
@@ -189,32 +177,3 @@ export const BlocksuiteEditorContainer = forwardRef<
     </div>
   );
 });
-
-// copy from '@blocksuite/affine-shared/utils'
-export function getLastNoteBlock(doc: Store) {
-  let note: NoteBlockModel | null = null;
-  if (!doc.root) return null;
-  const { children } = doc.root;
-  for (let i = children.length - 1; i >= 0; i--) {
-    const child = children[i];
-    if (
-      matchFlavours(child, ['affine:note']) &&
-      child.displayMode !== NoteDisplayMode.EdgelessOnly
-    ) {
-      note = child as NoteBlockModel;
-      break;
-    }
-  }
-  return note;
-}
-export function matchFlavours<Key extends (keyof BlockSuite.BlockModels)[]>(
-  model: BlockModel | null,
-  expected: Key
-): model is BlockSuite.BlockModels[Key[number]] {
-  return (
-    !!model &&
-    expected.some(
-      key => (model.flavour as keyof BlockSuite.BlockModels) === key
-    )
-  );
-}

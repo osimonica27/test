@@ -8,7 +8,10 @@ import {
   EMBED_CARD_HEIGHT,
   EMBED_CARD_WIDTH,
 } from '@blocksuite/affine-shared/consts';
-import { TelemetryProvider } from '@blocksuite/affine-shared/services';
+import {
+  FileSizeLimitService,
+  TelemetryProvider,
+} from '@blocksuite/affine-shared/services';
 import { humanFileSize } from '@blocksuite/affine-shared/utils';
 import type { BlockStdScope, EditorHost } from '@blocksuite/block-std';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
@@ -261,18 +264,13 @@ export async function addSiblingAttachmentBlocks(
 export async function addAttachments(
   std: BlockStdScope,
   files: File[],
-  point?: IVec
+  point?: IVec,
+  transformPoint?: boolean // determines whether we should use `toModelCoord` to convert the point
 ): Promise<string[]> {
   if (!files.length) return [];
 
-  const attachmentService = std.getService('affine:attachment');
   const gfx = std.get(GfxControllerIdentifier);
-
-  if (!attachmentService) {
-    console.error('Attachment service not found');
-    return [];
-  }
-  const maxFileSize = attachmentService.maxFileSize;
+  const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
   const isSizeExceeded = files.some(file => file.size > maxFileSize);
   if (isSizeExceeded) {
     toast(
@@ -287,7 +285,14 @@ export async function addAttachments(
   }
 
   let { x, y } = gfx.viewport.center;
-  if (point) [x, y] = gfx.viewport.toModelCoord(...point);
+  if (point) {
+    let transform = transformPoint ?? true;
+    if (transform) {
+      [x, y] = gfx.viewport.toModelCoord(...point);
+    } else {
+      [x, y] = point;
+    }
+  }
 
   const CARD_STACK_GAP = 32;
 

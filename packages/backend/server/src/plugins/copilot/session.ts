@@ -12,8 +12,8 @@ import {
   CopilotSessionNotFound,
   PrismaTransaction,
 } from '../../base';
-import { FeatureManagementService } from '../../core/features';
 import { QuotaService } from '../../core/quota';
+import { Models } from '../../models';
 import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
 import {
@@ -165,9 +165,10 @@ export class ChatSession implements AsyncDisposable {
       return finished;
     }
 
+    const lastMessage = messages.at(-1);
     return [
       ...this.state.prompt.finish(
-        Object.keys(params).length ? params : firstMessage?.params || {},
+        Object.keys(params).length ? params : lastMessage?.params || {},
         this.config.sessionId
       ),
       ...messages.filter(m => m.content?.trim() || m.attachments?.length),
@@ -194,10 +195,10 @@ export class ChatSessionService {
 
   constructor(
     private readonly db: PrismaClient,
-    private readonly feature: FeatureManagementService,
     private readonly quota: QuotaService,
     private readonly messageCache: ChatMessageCache,
-    private readonly prompt: PromptService
+    private readonly prompt: PromptService,
+    private readonly models: Models
   ) {}
 
   private async haveSession(
@@ -544,12 +545,15 @@ export class ChatSessionService {
   }
 
   async getQuota(userId: string) {
-    const isCopilotUser = await this.feature.isCopilotUser(userId);
+    const isCopilotUser = await this.models.userFeature.has(
+      userId,
+      'unlimited_copilot'
+    );
 
     let limit: number | undefined;
     if (!isCopilotUser) {
       const quota = await this.quota.getUserQuota(userId);
-      limit = quota.feature.copilotActionLimit;
+      limit = quota.copilotActionLimit;
     }
 
     const used = await this.countUserMessages(userId);

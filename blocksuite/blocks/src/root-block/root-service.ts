@@ -1,4 +1,10 @@
 import { RootBlockSchema } from '@blocksuite/affine-model';
+import {
+  getBlockSelectionsCommand,
+  getImageSelectionsCommand,
+  getSelectedBlocksCommand,
+  getTextSelectionCommand,
+} from '@blocksuite/affine-shared/commands';
 import type { BlockComponent } from '@blocksuite/block-std';
 import { BlockService } from '@blocksuite/block-std';
 
@@ -23,12 +29,12 @@ export abstract class RootService extends BlockService {
     this.std.command
       .chain()
       .tryAll(chain => [
-        chain.getTextSelection(),
-        chain.getImageSelections(),
-        chain.getBlockSelections(),
+        chain.pipe(getTextSelectionCommand),
+        chain.pipe(getImageSelectionsCommand),
+        chain.pipe(getBlockSelectionsCommand),
       ])
-      .getSelectedBlocks()
-      .inline(({ selectedBlocks }) => {
+      .pipe(getSelectedBlocksCommand)
+      .pipe(({ selectedBlocks }) => {
         if (!selectedBlocks) return;
         result = selectedBlocks;
       })
@@ -49,16 +55,5 @@ export abstract class RootService extends BlockService {
     if (!rootComponent) return null;
     const viewportElement = rootComponent.viewportElement;
     return viewportElement;
-  }
-
-  override mounted() {
-    super.mounted();
-
-    this.disposables.add(
-      this.std.event.add('pointerDown', ctx => {
-        const state = ctx.get('pointerState');
-        state.raw.stopPropagation();
-      })
-    );
   }
 }

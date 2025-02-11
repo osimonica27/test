@@ -14,8 +14,14 @@ export {
   getAFFiNEConfigModifier,
 } from './config';
 export * from './error';
-export { EventEmitter, type EventPayload, OnEvent } from './event';
-export type { GraphqlContext } from './graphql';
+export { EventBus, OnEvent } from './event';
+export {
+  type GraphqlContext,
+  paginate,
+  Paginated,
+  PaginationInput,
+  registerObjectType,
+} from './graphql';
 export * from './guard';
 export { CryptoHelper, URLHelper } from './helpers';
 export { AFFiNELogger } from './logger';
@@ -35,10 +41,4 @@ export { Runtime } from './runtime';
 export * from './storage';
 export { type StorageProvider, StorageProviderFactory } from './storage';
 export { CloudThrottlerGuard, SkipThrottle, Throttle } from './throttler';
-export {
-  getRequestFromHost,
-  getRequestResponseFromContext,
-  getRequestResponseFromHost,
-  parseCookies,
-} from './utils/request';
-export type * from './utils/types';
+export * from './utils';

@@ -216,6 +216,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       ...this.referenceInfo$.peek(),
       openMode,
       event,
+      host: this.host,
     });
   };
 
@@ -229,10 +230,9 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   title$ = computed(() => {
     const { pageId, params, title } = this.referenceInfo$.value;
     return (
-      title ||
       this.std
         .get(DocDisplayMetaProvider)
-        .title(pageId, { params, title, referenced: true })
+        .title(pageId, { params, title, referenced: true }) || title
     );
   });
 

@@ -1,4 +1,4 @@
-import { ZERO_WIDTH_SPACE } from '@inline/consts.js';
+import { ZERO_WIDTH_SPACE } from '@blocksuite/inline';
 import { expect } from '@playwright/test';
 import {
   assertRichTextInlineDeltas,
@@ -185,7 +185,7 @@ test('latex editor', async ({ page }) => {
    * abababababababababa|babab
    */
   await cutByKeyboard(page);
-  expect(await latexEditorLine.innerText()).toBe('ababababababababababbabab');
+  expect(await latexEditorLine.innerText()).toBe('ababababababababababababab');
   /**
    * abababababababababab|babab
    */
@@ -195,7 +195,7 @@ test('latex editor', async ({ page }) => {
    */
   await pasteByKeyboard(page);
   expect(await latexEditorLine.innerText()).toBe(
-    'ababababababababababbaabababababababababababababab'
+    'ababababababababababababababababababababababababab'
   );
 
   await selectAllByKeyboard(page);

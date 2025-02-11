@@ -9,6 +9,7 @@ import type { Store } from '@blocksuite/affine/store';
 import { css, html, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
+import { throttle } from 'lodash-es';
 
 import { AIHelpIcon, SmallHintIcon } from '../_common/icons';
 import { AIProvider } from '../provider';
@@ -17,8 +18,17 @@ import {
   getSelectedImagesAsBlobs,
   getSelectedTextContent,
 } from '../utils/selection-utils';
-import type { ChatAction, ChatContextValue, ChatItem } from './chat-context';
-import type { AINetworkSearchConfig } from './chat-panel-input';
+import type {
+  AINetworkSearchConfig,
+  DocDisplayConfig,
+  DocSearchMenuConfig,
+} from './chat-config';
+import type {
+  ChatAction,
+  ChatContextValue,
+  ChatItem,
+  DocChip,
+} from './chat-context';
 import type { ChatPanelMessages } from './chat-panel-messages';
 
 export class ChatPanel extends WithDisposable(ShadowlessElement) {
@@ -125,6 +135,13 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
         AIProvider.LAST_ROOT_SESSION_ID = history.sessionId;
       }
 
+      const { chips } = this.chatContextValue;
+      const defaultChip: DocChip = {
+        docId: this.doc.id,
+        state: 'candidate',
+      };
+      const nextChips =
+        items.length === 0 && chips.length === 0 ? [defaultChip] : chips;
       this.chatContextValue = {
         ...this.chatContextValue,
         items: items.sort((a, b) => {
@@ -132,6 +149,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
           );
         }),
+        chips: nextChips,
       };
 
       this.isLoading = false;
@@ -148,6 +166,12 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor networkSearchConfig!: AINetworkSearchConfig;
 
+  @property({ attribute: false })
+  accessor docSearchMenuConfig!: DocSearchMenuConfig;
+
+  @property({ attribute: false })
+  accessor docDisplayConfig!: DocDisplayConfig;
+
   @state()
   accessor isLoading = false;
 
@@ -157,6 +181,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
     images: [],
     abortController: null,
     items: [],
+    chips: [],
     status: 'idle',
     error: null,
     markdown: '',
@@ -166,6 +191,8 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
   private readonly _scrollToEnd = () => {
     this._chatMessages.value?.scrollToEnd();
   };
+
+  private readonly _throttledScrollToEnd = throttle(this._scrollToEnd, 1000);
 
   private readonly _cleanupHistories = async () => {
     const notification = this.host.std.getOptional(NotificationProvider);
@@ -198,24 +225,26 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
     if (_changedProperties.has('doc')) {
       requestAnimationFrame(() => {
         this.chatContextValue.chatSessionId = null;
+        // TODO get from CopilotContext
+        this.chatContextValue.chips = [];
         this._resetItems();
       });
     }
 
     if (
-      !this.isLoading &&
       _changedProperties.has('chatContextValue') &&
-      this.chatContextValue.status !== 'idle'
-    ) {
-      if (this.chatContextValue.status === 'transmitting') {
-        this._scrollToEnd();
-      } else if (
-        this.chatContextValue.status === 'loading' ||
+      (this.chatContextValue.status === 'loading' ||
         this.chatContextValue.status === 'error' ||
-        this.chatContextValue.status === 'success'
-      ) {
-        setTimeout(this._scrollToEnd, 500);
-      }
+        this.chatContextValue.status === 'success')
+    ) {
+      setTimeout(this._scrollToEnd, 500);
+    }
+
+    if (
+      _changedProperties.has('chatContextValue') &&
+      this.chatContextValue.status === 'transmitting'
+    ) {
+      this._throttledScrollToEnd();
     }
   }
 
@@ -287,6 +316,13 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
         .host=${this.host}
         .isLoading=${this.isLoading}
       ></chat-panel-messages>
+      <chat-panel-chips
+        .host=${this.host}
+        .chatContextValue=${this.chatContextValue}
+        .updateContext=${this.updateContext}
+        .docDisplayConfig=${this.docDisplayConfig}
+        .docSearchMenuConfig=${this.docSearchMenuConfig}
+      ></chat-panel-chips>
       <chat-panel-input
         .chatContextValue=${this.chatContextValue}
         .networkSearchConfig=${this.networkSearchConfig}

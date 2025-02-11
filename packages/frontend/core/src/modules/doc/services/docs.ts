@@ -1,9 +1,12 @@
 import { DebugLogger } from '@affine/debug';
 import { Unreachable } from '@affine/env/constant';
-import { type DocMode, replaceIdMiddleware } from '@blocksuite/affine/blocks';
+import {
+  type AffineTextAttributes,
+  type DocMode,
+  replaceIdMiddleware,
+} from '@blocksuite/affine/blocks';
 import type { DeltaInsert } from '@blocksuite/affine/inline';
 import { Slice, Text, Transformer } from '@blocksuite/affine/store';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { LiveData, ObjectPool, Service } from '@toeverything/infra';
 import { omitBy } from 'lodash-es';
 import { combineLatest, map } from 'rxjs';
@@ -61,6 +64,14 @@ export class DocsService extends Service {
     super();
   }
 
+  loaded(docId: string) {
+    const exists = this.pool.get(docId);
+    if (exists) {
+      return { doc: exists.obj, release: exists.release };
+    }
+    return null;
+  }
+
   open(docId: string) {
     const docRecord = this.list.doc$(docId).value;
     if (!docRecord) {
@@ -102,11 +113,11 @@ export class DocsService extends Service {
     options: {
       primaryMode?: DocMode;
       docProps?: DocProps;
+      isTemplate?: boolean;
     } = {}
   ) {
     const doc = this.store.createBlockSuiteDoc();
     initDocFromProps(doc, options.docProps);
-    this.store.markDocSyncStateAsReady(doc.id);
     const docRecord = this.list.doc$(doc.id).value;
     if (!docRecord) {
       throw new Unreachable();
@@ -114,14 +125,18 @@ export class DocsService extends Service {
     if (options.primaryMode) {
       docRecord.setPrimaryMode(options.primaryMode);
     }
+    if (options.isTemplate) {
+      docRecord.setProperty('isTemplate', true);
+    }
     this.eventBus.emit(DocCreated, docRecord);
     return docRecord;
   }
 
   async addLinkedDoc(targetDocId: string, linkedDocId: string) {
     const { doc, release } = this.open(targetDocId);
-    doc.setPriorityLoad(10);
+    const disposePriorityLoad = doc.addPriorityLoad(10);
     await doc.waitForSyncReady();
+    disposePriorityLoad();
     const text = new Text([
       {
         insert: ' ',
@@ -145,8 +160,9 @@ export class DocsService extends Service {
 
   async changeDocTitle(docId: string, newTitle: string) {
     const { doc, release } = this.open(docId);
-    doc.setPriorityLoad(10);
+    const disposePriorityLoad = doc.addPriorityLoad(10);
     await doc.waitForSyncReady();
+    disposePriorityLoad();
     doc.changeDocTitle(newTitle);
     release();
   }

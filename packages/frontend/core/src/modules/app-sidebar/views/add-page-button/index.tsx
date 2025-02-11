@@ -4,10 +4,8 @@ import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hoo
 import { DocsService } from '@affine/core/modules/doc';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import {
-  TemplateDocService,
-  TemplateListMenuContentScrollable,
-} from '@affine/core/modules/template-doc';
+import { TemplateDocService } from '@affine/core/modules/template-doc';
+import { TemplateListMenuContentScrollable } from '@affine/core/modules/template-doc/view/template-list-menu';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { inferOpenMode } from '@affine/core/utils';
@@ -104,6 +102,7 @@ function AddPageWithAsk({ className, style }: AddPageButtonProps) {
     (e?: MouseEvent) => {
       createDoc(e, 'page');
       track.$.navigationPanel.$.createDoc();
+      track.$.sidebar.newDoc.quickStart({ with: 'page' });
     },
     [createDoc]
   );
@@ -111,6 +110,7 @@ function AddPageWithAsk({ className, style }: AddPageButtonProps) {
     (e?: MouseEvent) => {
       createDoc(e, 'edgeless');
       track.$.navigationPanel.$.createDoc();
+      track.$.sidebar.newDoc.quickStart({ with: 'edgeless' });
     },
     [createDoc]
   );
@@ -119,6 +119,7 @@ function AddPageWithAsk({ className, style }: AddPageButtonProps) {
     async (templateId: string) => {
       const docId = await docsService.duplicateFromTemplate(templateId);
       workbench.openDoc(docId);
+      track.$.sidebar.newDoc.quickStart({ with: 'template' });
     },
     [docsService, workbench]
   );
@@ -163,7 +164,7 @@ function AddPageWithAsk({ className, style }: AddPageButtonProps) {
       <Button
         tooltip={t['New Page']()}
         tooltipOptions={sideBottom}
-        data-testid="sidebar-new-page-button"
+        data-testid="sidebar-new-page-with-ask-button"
         className={clsx([styles.withAskRoot, className])}
         style={style}
       >

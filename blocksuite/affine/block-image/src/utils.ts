@@ -1,10 +1,14 @@
+import { autoResizeElementsCommand } from '@blocksuite/affine-block-surface';
 import { toast } from '@blocksuite/affine-components/toast';
 import type {
   AttachmentBlockProps,
   ImageBlockModel,
   ImageBlockProps,
 } from '@blocksuite/affine-model';
-import { NativeClipboardProvider } from '@blocksuite/affine-shared/services';
+import {
+  FileSizeLimitService,
+  NativeClipboardProvider,
+} from '@blocksuite/affine-shared/services';
 import {
   downloadBlob,
   humanFileSize,
@@ -424,20 +428,15 @@ export async function addImages(
   options: {
     point?: IVec;
     maxWidth?: number;
+    transformPoint?: boolean; // determines whether we should use `toModelCoord` to convert the point
   }
 ): Promise<string[]> {
   const imageFiles = [...files].filter(file => file.type.startsWith('image/'));
   if (!imageFiles.length) return [];
 
-  const imageService = std.getService('affine:image');
   const gfx = std.get(GfxControllerIdentifier);
 
-  if (!imageService) {
-    console.error('Image service not found');
-    return [];
-  }
-
-  const maxFileSize = imageService.maxFileSize;
+  const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
   const isSizeExceeded = imageFiles.some(file => file.size > maxFileSize);
   if (isSizeExceeded) {
     toast(
@@ -451,9 +450,15 @@ export async function addImages(
     return [];
   }
 
-  const { point, maxWidth } = options;
+  const { point, maxWidth, transformPoint = true } = options;
   let { x, y } = gfx.viewport.center;
-  if (point) [x, y] = gfx.viewport.toModelCoord(...point);
+  if (point) {
+    if (transformPoint) {
+      [x, y] = gfx.viewport.toModelCoord(...point);
+    } else {
+      [x, y] = point;
+    }
+  }
 
   const dropInfos: { point: Point; blockId: string }[] = [];
   const IMAGE_STACK_GAP = 32;
@@ -516,7 +521,7 @@ export async function addImages(
     editing: false,
   });
   if (isMultipleFiles) {
-    std.command.exec('autoResizeElements');
+    std.command.exec(autoResizeElementsCommand);
   }
   return blockIds;
 }
