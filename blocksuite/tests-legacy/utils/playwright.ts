@@ -5,12 +5,7 @@ import process from 'node:process';
 
 import { expect, type Page, test as baseTest } from '@playwright/test';
 
-import {
-  enterPlaygroundRoom,
-  initEmptyParagraphState,
-} from './actions/misc.js';
-import { currentEditorIndex, scope } from './multiple-editor.js';
-
+const currentEditorIndex = 0;
 const istanbulTempDir = process.env.ISTANBUL_TEMP_DIR
   ? path.resolve(process.env.ISTANBUL_TEMP_DIR)
   : path.join(process.cwd(), '.nyc_output');
@@ -21,7 +16,7 @@ function generateUUID() {
 
 const enableCoverage = !!process.env.CI || !!process.env.COVERAGE;
 export const scoped = (stringsArray: TemplateStringsArray) => {
-  return `${scope ?? ''}${stringsArray.join()}`;
+  return stringsArray.join();
 };
 export const test = baseTest.extend<{}>({
   context: async ({ context }, use) => {
@@ -59,52 +54,28 @@ export const test = baseTest.extend<{}>({
     }
   },
 });
-if (scope) {
-  test.beforeEach(async ({ browser }, testInfo) => {
-    if (!testInfo.title.startsWith(scope!)) {
-      testInfo.fn = () => {
-        testInfo.skip();
-      };
-      testInfo.skip();
-      await browser.close();
-    }
-  });
 
-  let page: Page;
+let page: Page;
 
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
-  });
+test.beforeAll(async ({ browser }) => {
+  page = await browser.newPage();
+});
 
-  // oxlint-disable-next-line no-empty-pattern
-  test.afterAll(async ({}, testInfo) => {
-    if (!testInfo.title.startsWith(scope!)) {
-      return;
-    }
-    const focusInSecondEditor = await page.evaluate(
-      ([currentEditorIndex]) => {
-        const editor = document.querySelectorAll('affine-editor-container')[
-          currentEditorIndex
-        ];
-        const selection = getSelection();
-        if (!selection || selection.rangeCount === 0) {
-          return true;
-        }
-        // once the range exists, it must be in the corresponding editor
-        return editor.contains(selection.getRangeAt(0).startContainer);
-      },
-      [currentEditorIndex]
-    );
-    expect(focusInSecondEditor).toBe(true);
-  });
-
-  test('ensure enable two editor', async ({ page }) => {
-    await enterPlaygroundRoom(page);
-    await initEmptyParagraphState(page);
-    const count = await page.evaluate(() => {
-      return document.querySelectorAll('affine-editor-container').length;
-    });
-
-    expect(count).toBe(2);
-  });
-}
+// oxlint-disable-next-line no-empty-pattern
+test.afterAll(async ({}) => {
+  const focusInSecondEditor = await page.evaluate(
+    ([currentEditorIndex]) => {
+      const editor = document.querySelectorAll('affine-editor-container')[
+        currentEditorIndex
+      ];
+      const selection = getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        return true;
+      }
+      // once the range exists, it must be in the corresponding editor
+      return editor.contains(selection.getRangeAt(0).startContainer);
+    },
+    [currentEditorIndex]
+  );
+  expect(focusInSecondEditor).toBe(true);
+});
