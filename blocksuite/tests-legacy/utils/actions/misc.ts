@@ -34,8 +34,6 @@ declare global {
   }
 }
 
-const currentEditorIndex = 0;
-
 export const defaultPlaygroundURL = new URL(
   `http://localhost:${process.env.CI ? 4173 : 5173}/`
 );
@@ -234,11 +232,11 @@ async function initEmptyEditor({
 }
 
 export const getEditorLocator = (page: Page) => {
-  return page.locator('affine-editor-container').nth(currentEditorIndex);
+  return page.locator('affine-editor-container').nth(0);
 };
 
 export const getEditorHostLocator = (page: Page) => {
-  return page.locator('editor-host').nth(currentEditorIndex);
+  return page.locator('editor-host').nth(0);
 };
 
 type TaggedConsoleMessage = ConsoleMessage & { __ignore?: boolean };
@@ -736,14 +734,13 @@ export async function focusRichText(
 
 export async function focusRichTextEnd(page: Page, i = 0) {
   await page.evaluate(
-    ([i, currentEditorIndex]) => {
-      const editorHost =
-        document.querySelectorAll('editor-host')[currentEditorIndex];
+    ([i]) => {
+      const editorHost = document.querySelectorAll('editor-host')[0];
       const richTexts = Array.from(editorHost.querySelectorAll('rich-text'));
 
       richTexts[i].inlineEditor?.focusEnd();
     },
-    [i, currentEditorIndex]
+    [i]
   );
   await waitNextFrame(page);
 }
@@ -1082,15 +1079,8 @@ export async function setSelection(
   focusOffset: number
 ) {
   await page.evaluate(
-    ({
-      anchorBlockId,
-      anchorOffset,
-      focusBlockId,
-      focusOffset,
-      currentEditorIndex,
-    }) => {
-      const editorHost =
-        document.querySelectorAll('editor-host')[currentEditorIndex];
+    ({ anchorBlockId, anchorOffset, focusBlockId, focusOffset }) => {
+      const editorHost = document.querySelectorAll('editor-host')[0];
       const anchorRichText = editorHost.querySelector<RichText>(
         `[data-block-id="${anchorBlockId}"] rich-text`
       )!;
@@ -1125,7 +1115,6 @@ export async function setSelection(
       anchorOffset,
       focusBlockId,
       focusOffset,
-      currentEditorIndex,
     }
   );
 }
@@ -1210,9 +1199,8 @@ export async function getIndexCoordinate(
   coordOffSet: { x: number; y: number } = { x: 0, y: 0 }
 ) {
   const coord = await page.evaluate(
-    ({ richTextIndex, vIndex, coordOffSet, currentEditorIndex }) => {
-      const editorHost =
-        document.querySelectorAll('editor-host')[currentEditorIndex];
+    ({ richTextIndex, vIndex, coordOffSet }) => {
+      const editorHost = document.querySelectorAll('editor-host')[0];
       const richText = editorHost.querySelectorAll('rich-text')[
         richTextIndex
       ] as any;
@@ -1230,7 +1218,6 @@ export async function getIndexCoordinate(
       richTextIndex,
       vIndex,
       coordOffSet,
-      currentEditorIndex,
     }
   );
   return coord;
@@ -1242,8 +1229,8 @@ export function inlineEditorInnerTextToString(innerText: string): string {
 
 export async function focusTitle(page: Page) {
   await page.locator('doc-title rich-text').click();
-  await page.evaluate(i => {
-    const docTitle = document.querySelectorAll('doc-title')[i];
+  await page.evaluate(() => {
+    const docTitle = document.querySelectorAll('doc-title')[0];
     if (!docTitle) {
       throw new Error('Doc title component not found');
     }
@@ -1255,7 +1242,7 @@ export async function focusTitle(page: Page) {
       throw new Error('Doc title inline editor not found');
     }
     docTitleRichText.inlineEditor.focusEnd();
-  }, currentEditorIndex);
+  });
   await waitNextFrame(page, 200);
 }
 
@@ -1346,12 +1333,12 @@ export async function initImageState(page: Page, prependParagraph = false) {
 }
 
 export async function getCurrentEditorDocId(page: Page) {
-  return page.evaluate(index => {
-    const editor = document.querySelectorAll('affine-editor-container')[index];
+  return page.evaluate(() => {
+    const editor = document.querySelectorAll('affine-editor-container')[0];
     if (!editor) throw new Error("Can't find affine-editor-container");
     const docId = editor.doc.id;
     return docId;
-  }, currentEditorIndex);
+  });
 }
 
 export async function getCurrentHTMLTheme(page: Page) {
