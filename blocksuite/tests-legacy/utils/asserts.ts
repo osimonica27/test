@@ -55,7 +55,6 @@ import { getStringFromRichText } from './inline-editor.js';
 
 export { assertExists };
 
-const currentEditorIndex = 0;
 const BLOCK_ID_ATTR = 'data-block-id';
 
 export const defaultStore = {
@@ -169,17 +168,13 @@ export async function assertRichTextInlineDeltas(
   deltas: unknown[],
   i = 0
 ) {
-  const actual = await page.evaluate(
-    ([i, currentEditorIndex]) => {
-      const editorHost =
-        document.querySelectorAll('editor-host')[currentEditorIndex];
-      const inlineRoot = editorHost.querySelectorAll<InlineRootElement>(
-        'rich-text [data-v-root="true"]'
-      )[i];
-      return inlineRoot.inlineEditor.yTextDeltas;
-    },
-    [i, currentEditorIndex]
-  );
+  const actual = await page.evaluate(i => {
+    const editorHost = document.querySelectorAll('editor-host')[0];
+    const inlineRoot = editorHost.querySelectorAll<InlineRootElement>(
+      'rich-text [data-v-root="true"]'
+    )[i];
+    return inlineRoot.inlineEditor.yTextDeltas;
+  }, i);
   expect(actual).toEqual(deltas);
 }
 
@@ -194,9 +189,8 @@ export async function assertTextContain(page: Page, text: string, i = 0) {
 }
 
 export async function assertRichTexts(page: Page, texts: string[]) {
-  const actualTexts = await page.evaluate(currentEditorIndex => {
-    const editorHost =
-      document.querySelectorAll('editor-host')[currentEditorIndex];
+  const actualTexts = await page.evaluate(() => {
+    const editorHost = document.querySelectorAll('editor-host')[0];
     const richTexts = Array.from(
       editorHost?.querySelectorAll<RichText>('rich-text') ?? []
     );
@@ -204,7 +198,7 @@ export async function assertRichTexts(page: Page, texts: string[]) {
       const editor = richText.inlineEditor as AffineInlineEditor;
       return editor.yText.toString();
     });
-  }, currentEditorIndex);
+  });
   expect(actualTexts).toEqual(texts);
 }
 
@@ -318,14 +312,13 @@ export async function assertRichTextInlineRange(
   rangeLength = 0
 ) {
   const actual = await page.evaluate(
-    ([richTextIndex, currentEditorIndex]) => {
-      const editorHost =
-        document.querySelectorAll('editor-host')[currentEditorIndex];
+    ([richTextIndex]) => {
+      const editorHost = document.querySelectorAll('editor-host')[0];
       const richText = editorHost?.querySelectorAll('rich-text')[richTextIndex];
       const inlineEditor = richText.inlineEditor;
       return inlineEditor?.getInlineRange();
     },
-    [richTextIndex, currentEditorIndex]
+    [richTextIndex]
   );
   expect(actual).toEqual({ index: rangeIndex, length: rangeLength });
 }
@@ -365,9 +358,8 @@ export async function assertTextFormat(
   resultObj: unknown
 ) {
   const actual = await page.evaluate(
-    ({ richTextIndex, index, currentEditorIndex }) => {
-      const editorHost =
-        document.querySelectorAll('editor-host')[currentEditorIndex];
+    ({ richTextIndex, index }) => {
+      const editorHost = document.querySelectorAll('editor-host')[0];
       const richText = editorHost.querySelectorAll('rich-text')[richTextIndex];
       const inlineEditor = richText.inlineEditor;
       if (!inlineEditor) {
@@ -380,7 +372,7 @@ export async function assertTextFormat(
       });
       return result;
     },
-    { richTextIndex, index, currentEditorIndex }
+    { richTextIndex, index }
   );
   expect(actual).toEqual(resultObj);
 }
@@ -391,9 +383,8 @@ export async function assertRichTextModelType(
   index = 0
 ) {
   const actual = await page.evaluate(
-    ({ index, BLOCK_ID_ATTR, currentEditorIndex }) => {
-      const editorHost =
-        document.querySelectorAll('editor-host')[currentEditorIndex];
+    ({ index, BLOCK_ID_ATTR }) => {
+      const editorHost = document.querySelectorAll('editor-host')[0];
       const richText = editorHost.querySelectorAll('rich-text')[index];
       const block = richText.closest<BlockComponent>(`[${BLOCK_ID_ATTR}]`);
 
@@ -402,14 +393,14 @@ export async function assertRichTextModelType(
       }
       return (block.model as BlockModel<{ type: string }>).type;
     },
-    { index, BLOCK_ID_ATTR, currentEditorIndex }
+    { index, BLOCK_ID_ATTR }
   );
   expect(actual).toEqual(type);
 }
 
 export async function assertTextFormats(page: Page, resultObj: unknown[]) {
-  const actual = await page.evaluate(index => {
-    const editorHost = document.querySelectorAll('editor-host')[index];
+  const actual = await page.evaluate(() => {
+    const editorHost = document.querySelectorAll('editor-host')[0];
     const elements = editorHost.querySelectorAll('rich-text');
     return Array.from(elements).map(el => {
       const inlineEditor = el.inlineEditor;
@@ -423,7 +414,7 @@ export async function assertTextFormats(page: Page, resultObj: unknown[]) {
       });
       return result;
     });
-  }, currentEditorIndex);
+  });
   expect(actual).toEqual(resultObj);
 }
 
@@ -620,8 +611,8 @@ export async function assertBlockProps(
 }
 
 export async function assertBlockTypes(page: Page, blockTypes: string[]) {
-  const actual = await page.evaluate(index => {
-    const editor = document.querySelectorAll('affine-editor-container')[index];
+  const actual = await page.evaluate(() => {
+    const editor = document.querySelectorAll('affine-editor-container')[0];
     const elements = editor?.querySelectorAll('[data-block-id]');
     return (
       Array.from(elements)
@@ -629,7 +620,7 @@ export async function assertBlockTypes(page: Page, blockTypes: string[]) {
         // @ts-ignore
         .map(el => el.model.type)
     );
-  }, currentEditorIndex);
+  });
   expect(actual).toEqual(blockTypes);
 }
 

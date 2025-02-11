@@ -733,15 +733,12 @@ export async function focusRichText(
 }
 
 export async function focusRichTextEnd(page: Page, i = 0) {
-  await page.evaluate(
-    ([i]) => {
-      const editorHost = document.querySelectorAll('editor-host')[0];
-      const richTexts = Array.from(editorHost.querySelectorAll('rich-text'));
+  await page.evaluate(i => {
+    const editorHost = document.querySelectorAll('editor-host')[0];
+    const richTexts = Array.from(editorHost.querySelectorAll('rich-text'));
 
-      richTexts[i].inlineEditor?.focusEnd();
-    },
-    [i]
-  );
+    richTexts[i].inlineEditor?.focusEnd();
+  }, i);
   await waitNextFrame(page);
 }
 
