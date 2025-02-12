@@ -62,6 +62,7 @@ import { viewPresets } from '@blocksuite/data-view/view-presets';
 import { assertType } from '@blocksuite/global/utils';
 import {
   DualLinkIcon,
+  ExportToPdfIcon,
   GroupingIcon,
   TableIcon,
   TeXIcon,
@@ -301,8 +302,8 @@ export const defaultSlashMenuConfig: SlashMenuConfig = {
     },
     {
       name: 'PDF',
-      description: 'Insert a PDF.',
-      icon: FileIcon,
+      description: 'Upload a PDF to document.',
+      icon: ExportToPdfIcon({ width: '20', height: '20' }),
       tooltip: slashMenuToolTips['PDF'],
       showWhen: ({ model }) =>
         model.doc.schema.flavourSchemaMap.has('affine:attachment'),
