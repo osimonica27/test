@@ -193,8 +193,28 @@ export const removeContextDocMutation = {
   definitionName: 'removeContextDoc',
   containsFile: false,
   query: `
-mutation removeContextDoc($options: RemoveContextFileInput!) {
+mutation removeContextDoc($options: RemoveContextDocInput!) {
   removeContextDoc(options: $options)
+}`,
+};
+
+export const listContextDocsAndFilesQuery = {
+  id: 'listContextDocsAndFilesQuery' as const,
+  operationName: 'listContextDocsAndFiles',
+  definitionName: 'currentUser',
+  containsFile: false,
+  query: `
+query listContextDocsAndFiles($workspaceId: String!, $sessionId: String!, $contextId: String!) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      contexts(sessionId: $sessionId, contextId: $contextId) {
+        docs {
+          id
+          createdAt
+        }
+      }
+    }
+  }
 }`,
 };
 
@@ -594,6 +614,21 @@ query getCurrentUser {
 }`,
 };
 
+export const getDocDefaultRoleQuery = {
+  id: 'getDocDefaultRoleQuery' as const,
+  operationName: 'getDocDefaultRole',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getDocDefaultRole($workspaceId: String!, $docId: String!) {
+  workspace(id: $workspaceId) {
+    doc(docId: $docId) {
+      defaultRole
+    }
+  }
+}`,
+};
+
 export const getInviteInfoQuery = {
   id: 'getInviteInfoQuery' as const,
   operationName: 'getInviteInfo',
@@ -863,6 +898,24 @@ query getWorkspaceInfo($workspaceId: String!) {
 }`,
 };
 
+export const getWorkspacePageByIdQuery = {
+  id: 'getWorkspacePageByIdQuery' as const,
+  operationName: 'getWorkspacePageById',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getWorkspacePageById($workspaceId: String!, $pageId: String!) {
+  workspace(id: $workspaceId) {
+    doc(docId: $pageId) {
+      id
+      mode
+      defaultRole
+      public
+    }
+  }
+}`,
+};
+
 export const getWorkspacePageMetaByIdQuery = {
   id: 'getWorkspacePageMetaByIdQuery' as const,
   operationName: 'getWorkspacePageMetaById',
@@ -896,22 +949,6 @@ export const getWorkspacePublicByIdQuery = {
 query getWorkspacePublicById($id: String!) {
   workspace(id: $id) {
     public
-  }
-}`,
-};
-
-export const getWorkspacePublicPageByIdQuery = {
-  id: 'getWorkspacePublicPageByIdQuery' as const,
-  operationName: 'getWorkspacePublicPageById',
-  definitionName: 'workspace',
-  containsFile: false,
-  query: `
-query getWorkspacePublicPageById($workspaceId: String!, $pageId: String!) {
-  workspace(id: $workspaceId) {
-    publicDoc(docId: $pageId) {
-      id
-      mode
-    }
   }
 }`,
 };
@@ -1360,6 +1397,17 @@ mutation updateAccount($id: String!, $input: ManageUserInput!) {
     name
     email
   }
+}`,
+};
+
+export const updateDocDefaultRoleMutation = {
+  id: 'updateDocDefaultRoleMutation' as const,
+  operationName: 'updateDocDefaultRole',
+  definitionName: 'updateDocDefaultRole',
+  containsFile: false,
+  query: `
+mutation updateDocDefaultRole($input: UpdateDocDefaultRoleInput!) {
+  updateDocDefaultRole(input: $input)
 }`,
 };
 

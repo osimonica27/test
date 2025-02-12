@@ -42,6 +42,11 @@ export interface AddContextDocInput {
   docId: Scalars['String']['input'];
 }
 
+export interface RemoveContextDocInput {
+  contextId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+}
+
 export interface AlreadyInSpaceDataType {
   __typename?: 'AlreadyInSpaceDataType';
   spaceId: Scalars['String']['output'];
@@ -359,6 +364,7 @@ export enum DocRole {
 
 export interface DocType {
   __typename?: 'DocType';
+  defaultRole: DocRole;
   /** paginated doc granted users list */
   grantedUsersList: PaginatedGrantedDocUserType;
   id: Scalars['String']['output'];
@@ -1012,7 +1018,7 @@ export interface MutationReleaseDeletedBlobsArgs {
 }
 
 export interface MutationRemoveContextDocArgs {
-  options: RemoveContextFileInput;
+  options: RemoveContextDocInput;
 }
 
 export interface MutationRemoveWorkspaceFeatureArgs {
@@ -1307,11 +1313,6 @@ export interface QueryTooLongDataType {
 export interface RemoveAvatar {
   __typename?: 'RemoveAvatar';
   success: Scalars['Boolean']['output'];
-}
-
-export interface RemoveContextFileInput {
-  contextId: Scalars['String']['input'];
-  fileId: Scalars['String']['input'];
 }
 
 export interface RevokeDocUserRoleInput {
@@ -1747,13 +1748,11 @@ export interface WorkspaceType {
   pageMeta: WorkspacePageMeta;
   /** is Public workspace */
   public: Scalars['Boolean']['output'];
-  /** Get public page of a workspace by page id. */
-  publicDoc: Maybe<DocType>;
   /** Get public docs of a workspace */
   publicDocs: Array<DocType>;
   /**
    * Get public page of a workspace by page id.
-   * @deprecated use [WorkspaceType.publicDoc] instead
+   * @deprecated use [WorkspaceType.doc] instead
    */
   publicPage: Maybe<DocType>;
   /** @deprecated use [WorkspaceType.publicDocs] instead */
@@ -1791,10 +1790,6 @@ export interface WorkspaceTypeMembersArgs {
 
 export interface WorkspaceTypePageMetaArgs {
   pageId: Scalars['String']['input'];
-}
-
-export interface WorkspaceTypePublicDocArgs {
-  docId: Scalars['String']['input'];
 }
 
 export interface WorkspaceTypePublicPageArgs {
@@ -1957,26 +1952,54 @@ export type AddContextDocMutationVariables = Exact<{
   options: AddContextDocInput;
 }>;
 
+export type RemoveContextDocMutationVariables = Exact<{
+  options: RemoveContextDocInput;
+}>;
+
 export type AddContextDocMutation = {
   __typename?: 'Mutation';
   addContextDoc: Array<{
     __typename?: 'CopilotContextListItem';
     id: string;
-    createdAt: number;
-    name: string | null;
-    chunkSize: number | null;
-    status: ContextFileStatus | null;
-    blobId: string | null;
   }>;
 };
-
-export type RemoveContextDocMutationVariables = Exact<{
-  options: RemoveContextFileInput;
-}>;
 
 export type RemoveContextDocMutation = {
   __typename?: 'Mutation';
   removeContextDoc: boolean;
+};
+
+export type ListContextDocsAndFilesQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  sessionId: Scalars['String']['input'];
+  contextId: Scalars['String']['input'];
+}>;
+
+export type ListContextDocsAndFilesQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      contexts: Array<{
+        __typename?: 'CopilotContext';
+        docs: Array<{
+          __typename?: 'CopilotContextDoc';
+          id: string;
+          createdAt: number;
+        }>;
+        files: Array<{
+          __typename?: 'CopilotContextFile';
+          id: string;
+          name: string;
+          blobId: string;
+          chunkSize: number;
+          status: ContextFileStatus;
+          createdAt: number;
+        }>;
+      }>;
+    };
+  } | null;
 };
 
 export type ListContextQueryVariables = Exact<{
@@ -2354,6 +2377,19 @@ export type GetCurrentUserQuery = {
   } | null;
 };
 
+export type GetDocDefaultRoleQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+}>;
+
+export type GetDocDefaultRoleQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    doc: { __typename?: 'DocType'; defaultRole: DocRole };
+  };
+};
+
 export type GetInviteInfoQueryVariables = Exact<{
   inviteId: Scalars['String']['input'];
 }>;
@@ -2601,6 +2637,25 @@ export type GetWorkspaceInfoQuery = {
   workspace: { __typename?: 'WorkspaceType'; team: boolean };
 };
 
+export type GetWorkspacePageByIdQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  pageId: Scalars['String']['input'];
+}>;
+
+export type GetWorkspacePageByIdQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    doc: {
+      __typename?: 'DocType';
+      id: string;
+      mode: PublicDocMode;
+      defaultRole: DocRole;
+      public: boolean;
+    };
+  };
+};
+
 export type GetWorkspacePageMetaByIdQueryVariables = Exact<{
   id: Scalars['String']['input'];
   pageId: Scalars['String']['input'];
@@ -2635,23 +2690,6 @@ export type GetWorkspacePublicByIdQueryVariables = Exact<{
 export type GetWorkspacePublicByIdQuery = {
   __typename?: 'Query';
   workspace: { __typename?: 'WorkspaceType'; public: boolean };
-};
-
-export type GetWorkspacePublicPageByIdQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  pageId: Scalars['String']['input'];
-}>;
-
-export type GetWorkspacePublicPageByIdQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    publicDoc: {
-      __typename?: 'DocType';
-      id: string;
-      mode: PublicDocMode;
-    } | null;
-  };
 };
 
 export type GetWorkspacePublicPagesQueryVariables = Exact<{
@@ -3056,6 +3094,15 @@ export type UpdateAccountMutation = {
   };
 };
 
+export type UpdateDocDefaultRoleMutationVariables = Exact<{
+  input: UpdateDocDefaultRoleInput;
+}>;
+
+export type UpdateDocDefaultRoleMutation = {
+  __typename?: 'Mutation';
+  updateDocDefaultRole: boolean;
+};
+
 export type UpdateDocUserRoleMutationVariables = Exact<{
   input: UpdateDocUserRoleInput;
 }>;
@@ -3354,6 +3401,11 @@ export type Queries =
       response: ListBlobsQuery;
     }
   | {
+      name: 'listContextDocsAndFilesQuery';
+      variables: ListContextDocsAndFilesQueryVariables;
+      response: ListContextDocsAndFilesQuery;
+    }
+  | {
       name: 'listContextQuery';
       variables: ListContextQueryVariables;
       response: ListContextQuery;
@@ -3397,6 +3449,11 @@ export type Queries =
       name: 'getCurrentUserQuery';
       variables: GetCurrentUserQueryVariables;
       response: GetCurrentUserQuery;
+    }
+  | {
+      name: 'getDocDefaultRoleQuery';
+      variables: GetDocDefaultRoleQueryVariables;
+      response: GetDocDefaultRoleQuery;
     }
   | {
       name: 'getInviteInfoQuery';
@@ -3474,6 +3531,11 @@ export type Queries =
       response: GetWorkspaceInfoQuery;
     }
   | {
+      name: 'getWorkspacePageByIdQuery';
+      variables: GetWorkspacePageByIdQueryVariables;
+      response: GetWorkspacePageByIdQuery;
+    }
+  | {
       name: 'getWorkspacePageMetaByIdQuery';
       variables: GetWorkspacePageMetaByIdQueryVariables;
       response: GetWorkspacePageMetaByIdQuery;
@@ -3482,11 +3544,6 @@ export type Queries =
       name: 'getWorkspacePublicByIdQuery';
       variables: GetWorkspacePublicByIdQueryVariables;
       response: GetWorkspacePublicByIdQuery;
-    }
-  | {
-      name: 'getWorkspacePublicPageByIdQuery';
-      variables: GetWorkspacePublicPageByIdQueryVariables;
-      response: GetWorkspacePublicPageByIdQuery;
     }
   | {
       name: 'getWorkspacePublicPagesQuery';
@@ -3789,6 +3846,11 @@ export type Mutations =
       name: 'updateAccountMutation';
       variables: UpdateAccountMutationVariables;
       response: UpdateAccountMutation;
+    }
+  | {
+      name: 'updateDocDefaultRoleMutation';
+      variables: UpdateDocDefaultRoleMutationVariables;
+      response: UpdateDocDefaultRoleMutation;
     }
   | {
       name: 'updateDocUserRoleMutation';
