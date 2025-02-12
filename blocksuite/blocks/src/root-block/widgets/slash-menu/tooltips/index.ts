@@ -151,6 +151,11 @@ export const slashMenuToolTips: Record<string, SlashMenuTooltip> = {
     caption: 'Attachment',
   },
 
+  PDF: {
+    figure: PDFTooltip,
+    caption: 'PDF',
+  },
+
   Github: {
     figure: GithubRepoTooltip,
     caption: 'GitHub Repo',
@@ -164,11 +169,6 @@ export const slashMenuToolTips: Record<string, SlashMenuTooltip> = {
   Image: {
     figure: PhotoTooltip,
     caption: 'Photo',
-  },
-
-  PDF: {
-    figure: PDFTooltip,
-    caption: 'PDF',
   },
 
   'X (Twitter)': {

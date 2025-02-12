@@ -301,31 +301,6 @@ export const defaultSlashMenuConfig: SlashMenuConfig = {
       },
     },
     {
-      name: 'PDF',
-      description: 'Upload a PDF to document.',
-      icon: ExportToPdfIcon({ width: '20', height: '20' }),
-      tooltip: slashMenuToolTips['PDF'],
-      showWhen: ({ model }) =>
-        model.doc.schema.flavourSchemaMap.has('affine:attachment'),
-      action: async ({ rootComponent, model }) => {
-        const file = await openFileOrFiles();
-        if (!file) return;
-
-        const maxFileSize =
-          rootComponent.std.store.get(FileSizeLimitService).maxFileSize;
-
-        await addSiblingAttachmentBlocks(
-          rootComponent.host,
-          [file],
-          maxFileSize,
-          model,
-          'after',
-          true
-        );
-        tryRemoveEmptyLine(model);
-      },
-    },
-    {
       name: 'Link',
       description: 'Add a bookmark for reference.',
       icon: LinkIcon,
@@ -367,6 +342,31 @@ export const defaultSlashMenuConfig: SlashMenuConfig = {
           [file],
           maxFileSize,
           model
+        );
+        tryRemoveEmptyLine(model);
+      },
+    },
+    {
+      name: 'PDF',
+      description: 'Upload a PDF to document.',
+      icon: ExportToPdfIcon({ width: '20', height: '20' }),
+      tooltip: slashMenuToolTips['PDF'],
+      showWhen: ({ model }) =>
+        model.doc.schema.flavourSchemaMap.has('affine:attachment'),
+      action: async ({ rootComponent, model }) => {
+        const file = await openFileOrFiles();
+        if (!file) return;
+
+        const maxFileSize =
+          rootComponent.std.store.get(FileSizeLimitService).maxFileSize;
+
+        await addSiblingAttachmentBlocks(
+          rootComponent.host,
+          [file],
+          maxFileSize,
+          model,
+          'after',
+          true
         );
         tryRemoveEmptyLine(model);
       },

@@ -18,9 +18,9 @@ export const PDFTooltip = html`<svg width="170" height="68" viewBox="0 0 170 68"
 <g clip-path="url(#clip0_16460_1013)">
 <path fill-rule="evenodd" clip-rule="evenodd" d="M20.1088 36.804L17.0887 39.8241C16.1371 40.7509 16.1371 42.2492 17.0886 43.1759C18.0457 44.108 19.6014 44.108 20.5584 43.1759L23.5034 40.3144C23.6519 40.1701 23.8893 40.1735 24.0337 40.322C24.178 40.4706 24.1746 40.708 24.026 40.8523L21.0817 43.7132C21.0817 43.7133 21.0818 43.7131 21.0817 43.7132C19.8334 44.9288 17.8136 44.9289 16.5653 43.7132C15.3122 42.4926 15.3116 40.5099 16.5635 39.2886L19.5838 36.2683C20.4645 35.4105 21.8884 35.4106 22.7691 36.2683C23.6548 37.1309 23.6554 38.5332 22.771 39.3965L19.7507 42.4169C19.2376 42.9167 18.4095 42.9166 17.8964 42.4168C17.3777 41.9116 17.3777 41.0884 17.8964 40.5832L20.9956 37.5647C21.1439 37.4202 21.3813 37.4233 21.5259 37.5717C21.6704 37.7201 21.6672 37.9575 21.5189 38.102L18.4197 41.1205C18.2033 41.3312 18.2033 41.6688 18.4197 41.8796C18.6411 42.0952 19.0038 42.0957 19.2259 41.881L22.2458 38.861C22.8298 38.2923 22.8298 37.3744 22.2459 36.8056C21.6569 36.232 20.6984 36.2315 20.1088 36.804Z" fill="#77757D"/>
 </g>
-<text fill="#121212" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="10" font-weight="600" letter-spacing="0em"><tspan x="30" y="43.6364">MyFile.pdf</tspan></text>
+<text fill="#121212" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="10" font-weight="600" letter-spacing="0em"><tspan x="30" y="43.6364">Rickroll.pdf</tspan></text>
 </g>
-<text fill="#8E8D91" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="10" letter-spacing="0px"><tspan x="10" y="18.6364">Attach a PDF.</tspan></text>
+<text fill="#8E8D91" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="10" letter-spacing="0px"><tspan x="10" y="18.6364">Upload a pdf to document.</tspan></text>
 </g>
 <defs>
 <filter id="filter0_d_16460_1013" x="118.277" y="34.2783" width="48.7936" height="55.3602" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
