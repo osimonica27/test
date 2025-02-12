@@ -1,14 +1,14 @@
-import type {
-  DatabaseBlockModel,
-  RootBlockModel,
+import {
+  CodeBlockModel,
+  type DatabaseBlockModel,
+  ListBlockModel,
+  ParagraphBlockModel,
+  type RootBlockModel,
 } from '@blocksuite/affine-model';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
 import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
-import {
-  createDefaultDoc,
-  matchFlavours,
-} from '@blocksuite/affine-shared/utils';
+import { createDefaultDoc, matchModels } from '@blocksuite/affine-shared/utils';
 import { type EditorHost, ShadowlessElement } from '@blocksuite/block-std';
 import type { DetailSlotProps, SingleView } from '@blocksuite/data-view';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
@@ -72,10 +72,10 @@ export class NoteRenderer
         note.root.children
           .find(child => child.flavour === 'affine:note')
           ?.children.find(block =>
-            matchFlavours(block, [
-              'affine:paragraph',
-              'affine:list',
-              'affine:code',
+            matchModels(block, [
+              ParagraphBlockModel,
+              ListBlockModel,
+              CodeBlockModel,
             ])
           );
       }

@@ -2,7 +2,8 @@ import {
   focusTextModel,
   getInlineEditorByModel,
 } from '@blocksuite/affine-components/rich-text';
-import { matchFlavours } from '@blocksuite/affine-shared/utils';
+import { ParagraphBlockModel } from '@blocksuite/affine-model';
+import { matchModels } from '@blocksuite/affine-shared/utils';
 import { type Command, TextSelection } from '@blocksuite/block-std';
 
 export const splitParagraphCommand: Command<
@@ -23,7 +24,7 @@ export const splitParagraphCommand: Command<
   if (!blockId) return;
 
   const model = store.getBlock(blockId)?.model;
-  if (!model || !matchFlavours(model, ['affine:paragraph'])) return;
+  if (!model || !matchModels(model, [ParagraphBlockModel])) return;
 
   const inlineEditor = getInlineEditorByModel(host, model);
   const range = inlineEditor?.getInlineRange();
@@ -42,7 +43,7 @@ export const splitParagraphCommand: Command<
     store.captureSync();
     const right = model.text.split(splitIndex, splitLength);
     const id = store.addBlock(
-      model.flavour as BlockSuite.Flavour,
+      model.flavour,
       {
         text: right,
         type: model.type,
@@ -61,7 +62,7 @@ export const splitParagraphCommand: Command<
   store.captureSync();
   const right = model.text.split(splitIndex, splitLength);
   const id = store.addBlock(
-    model.flavour as BlockSuite.Flavour,
+    model.flavour,
     {
       text: right,
       type: model.type,

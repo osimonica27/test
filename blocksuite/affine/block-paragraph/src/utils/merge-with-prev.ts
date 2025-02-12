@@ -2,14 +2,25 @@ import {
   asyncSetInlineRange,
   focusTextModel,
 } from '@blocksuite/affine-components/rich-text';
-import type { RootBlockModel } from '@blocksuite/affine-model';
-import { EMBED_BLOCK_FLAVOUR_LIST } from '@blocksuite/affine-shared/consts';
+import {
+  AttachmentBlockModel,
+  BookmarkBlockModel,
+  CodeBlockModel,
+  DatabaseBlockModel,
+  DividerBlockModel,
+  EdgelessTextBlockModel,
+  ImageBlockModel,
+  ListBlockModel,
+  ParagraphBlockModel,
+  type RootBlockModel,
+} from '@blocksuite/affine-model';
+import { EMBED_BLOCK_MODEL_LIST } from '@blocksuite/affine-shared/consts';
 import type { ExtendedModel } from '@blocksuite/affine-shared/types';
 import {
   focusTitle,
   getDocTitleInlineEditor,
   getPrevContentBlock,
-  matchFlavours,
+  matchModels,
 } from '@blocksuite/affine-shared/utils';
 import { BlockSelection, type EditorHost } from '@blocksuite/block-std';
 import type { BlockModel, Text } from '@blocksuite/store';
@@ -33,7 +44,7 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
   const parent = doc.getParent(model);
   if (!parent) return false;
 
-  if (matchFlavours(parent, ['affine:edgeless-text'])) {
+  if (matchModels(parent, [EdgelessTextBlockModel])) {
     return true;
   }
 
@@ -42,7 +53,7 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
     return handleNoPreviousSibling(editorHost, model);
   }
 
-  if (matchFlavours(prevBlock, ['affine:paragraph', 'affine:list'])) {
+  if (matchModels(prevBlock, [ParagraphBlockModel, ListBlockModel])) {
     const modelIndex = parent.children.indexOf(model);
     if (
       (modelIndex === -1 || modelIndex === parent.children.length - 1) &&
@@ -63,13 +74,13 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
   }
 
   if (
-    matchFlavours(prevBlock, [
-      'affine:attachment',
-      'affine:bookmark',
-      'affine:code',
-      'affine:image',
-      'affine:divider',
-      ...EMBED_BLOCK_FLAVOUR_LIST,
+    matchModels(prevBlock, [
+      AttachmentBlockModel,
+      BookmarkBlockModel,
+      CodeBlockModel,
+      ImageBlockModel,
+      DividerBlockModel,
+      ...EMBED_BLOCK_MODEL_LIST,
     ])
   ) {
     const selection = editorHost.selection.create(BlockSelection, {
@@ -86,7 +97,7 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
     return true;
   }
 
-  if (matchFlavours(parent, ['affine:database'])) {
+  if (matchModels(parent, [DatabaseBlockModel])) {
     doc.deleteBlock(model);
     focusTextModel(editorHost.std, prevBlock.id, prevBlock.text?.yText.length);
     return true;
@@ -104,7 +115,7 @@ function handleNoPreviousSibling(editorHost: EditorHost, model: ExtendedModel) {
   // Probably no title, e.g. in edgeless mode
   if (!titleEditor) {
     if (
-      matchFlavours(parent, ['affine:edgeless-text']) ||
+      matchModels(parent, [EdgelessTextBlockModel]) ||
       model.children.length > 0
     ) {
       doc.deleteBlock(model, {

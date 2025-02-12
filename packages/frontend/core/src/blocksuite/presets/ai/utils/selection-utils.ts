@@ -1,9 +1,12 @@
 import { type EditorHost, TextSelection } from '@blocksuite/affine/block-std';
-import type { GfxModel } from '@blocksuite/affine/block-std/gfx';
+import {
+  GfxControllerIdentifier,
+  type GfxModel,
+} from '@blocksuite/affine/block-std/gfx';
 import {
   BlocksUtils,
   type CopilotTool,
-  EdgelessRootService,
+  DatabaseBlockModel,
   type FrameBlockModel,
   getBlockSelectionsCommand,
   getImageSelectionsCommand,
@@ -13,7 +16,6 @@ import {
   ImageBlockModel,
   type SurfaceBlockComponent,
 } from '@blocksuite/affine/blocks';
-import { assertExists } from '@blocksuite/affine/global/utils';
 import {
   type BlockModel,
   type DraftModel,
@@ -22,11 +24,7 @@ import {
 } from '@blocksuite/affine/store';
 
 import { getContentFromSlice } from '../../_common';
-import { getEdgelessCopilotWidget, getService } from './edgeless';
-
-export const getRootService = (host: EditorHost) => {
-  return host.std.getService('affine:page');
-};
+import { getEdgelessCopilotWidget } from './edgeless';
 
 export function getEdgelessRootFromEditor(editor: EditorHost) {
   const edgelessRoot = editor.getElementsByTagName('affine-edgeless-root')[0];
@@ -35,14 +33,6 @@ export function getEdgelessRootFromEditor(editor: EditorHost) {
     throw new Error('Please open switch to edgeless mode');
   }
   return edgelessRoot;
-}
-export function getEdgelessService(editor: EditorHost) {
-  const rootService = editor.std.getService('affine:page');
-  if (rootService instanceof EdgelessRootService) {
-    return rootService;
-  }
-  alert('Please switch to edgeless mode');
-  throw new Error('Please open switch to edgeless mode');
 }
 
 export async function selectedToCanvas(host: EditorHost) {
@@ -134,7 +124,7 @@ export async function getTextContentFromBlockModels(
   // Currently only filter out images and databases
   const selectedTextModels = models.filter(
     model =>
-      !BlocksUtils.matchFlavours(model, ['affine:image', 'affine:database'])
+      !BlocksUtils.matchModels(model, [ImageBlockModel, DatabaseBlockModel])
   );
   const drafts = selectedTextModels.map(toDraftModel);
   drafts.forEach(draft => traverse(draft, drafts));
@@ -147,13 +137,13 @@ export async function getSelectedTextContent(
   type: 'markdown' | 'plain-text' = 'markdown'
 ) {
   const selectedModels = getSelectedModels(editorHost);
-  assertExists(selectedModels);
+  if (!selectedModels) return '';
   return getTextContentFromBlockModels(editorHost, selectedModels, type);
 }
 
 export async function selectAboveBlocks(editorHost: EditorHost, num = 10) {
   let selectedModels = getSelectedModels(editorHost);
-  assertExists(selectedModels);
+  if (!selectedModels) return '';
 
   const lastLeafModel = selectedModels[selectedModels.length - 1];
 
@@ -163,8 +153,7 @@ export async function selectAboveBlocks(editorHost: EditorHost, num = 10) {
     lastRootModel = noteModel;
     noteModel = editorHost.doc.getParent(noteModel);
   }
-  assertExists(noteModel);
-  assertExists(lastRootModel);
+  if (!noteModel || !lastRootModel) return '';
 
   const endIndex = noteModel.children.indexOf(lastRootModel) + 1;
   const startIndex = Math.max(0, endIndex - num);
@@ -212,13 +201,13 @@ export const stopPropagation = (e: Event) => {
 export function getSurfaceElementFromEditor(editor: EditorHost) {
   const { doc } = editor;
   const surfaceModel = doc.getBlockByFlavour('affine:surface')[0];
-  assertExists(surfaceModel);
+  if (!surfaceModel) return null;
 
   const surfaceId = surfaceModel.id;
   const surfaceElement = editor.querySelector(
     `affine-surface[data-block-id="${surfaceId}"]`
   ) as SurfaceBlockComponent;
-  assertExists(surfaceElement);
+  if (!surfaceElement) return null;
 
   return surfaceElement;
 }
@@ -287,18 +276,16 @@ export const getSelectedNoteAnchor = (host: EditorHost, id: string) => {
   return host.querySelector(`affine-edgeless-note[data-block-id="${id}"]`);
 };
 
-export function getCopilotSelectedElems(
-  host: EditorHost
-): BlockSuite.EdgelessModel[] {
-  const service = getService(host);
+export function getCopilotSelectedElems(host: EditorHost): GfxModel[] {
+  const gfx = host.std.get(GfxControllerIdentifier);
   const copilotWidget = getEdgelessCopilotWidget(host);
 
   if (copilotWidget.visible) {
-    const currentTool = service.gfx.tool.currentTool$.peek() as CopilotTool;
+    const currentTool = gfx.tool.currentTool$.peek() as CopilotTool;
     return currentTool?.selectedElements ?? [];
   }
 
-  return service.selection.selectedElements;
+  return gfx.selection.selectedElements;
 }
 
 export const imageCustomInput = async (host: EditorHost) => {

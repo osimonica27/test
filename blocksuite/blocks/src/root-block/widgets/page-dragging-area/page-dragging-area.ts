@@ -1,8 +1,8 @@
-import type { RootBlockModel } from '@blocksuite/affine-model';
+import { NoteBlockModel, RootBlockModel } from '@blocksuite/affine-model';
 import {
   autoScroll,
   getScrollContainer,
-  matchFlavours,
+  matchModels,
 } from '@blocksuite/affine-shared/utils';
 import {
   BLOCK_ID_ATTR,
@@ -445,7 +445,7 @@ function isDragArea(e: PointerEventState) {
   const el = e.raw.target;
   assertInstanceOf(el, Element);
   const block = el.closest<BlockComponent>(`[${BLOCK_ID_ATTR}]`);
-  return block && matchFlavours(block.model, ['affine:page', 'affine:note']);
+  return block && matchModels(block.model, [RootBlockModel, NoteBlockModel]);
 }
 
 declare global {

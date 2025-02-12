@@ -24,7 +24,7 @@ import {
 import {
   type ColorScheme,
   DefaultTheme,
-  type NoteBlockModel,
+  NoteBlockModel,
   NoteDisplayMode,
   resolveColor,
   type StrokeStyle,
@@ -35,7 +35,7 @@ import {
   SidebarExtensionIdentifier,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
-import { matchFlavours } from '@blocksuite/affine-shared/utils';
+import { matchModels } from '@blocksuite/affine-shared/utils';
 import {
   Bound,
   countBy,
@@ -99,6 +99,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     this.notes.forEach(note => {
       const props = {
         edgeless: {
+          ...note.edgeless,
           style: {
             ...note.edgeless.style,
             borderRadius,
@@ -158,7 +159,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
       this._pageBlockEnabled &&
       this.notes.length === 1 &&
       this.notes[0].parent?.children.find(child =>
-        matchFlavours(child, ['affine:note'])
+        matchModels(child, [NoteBlockModel])
       ) === this.notes[0]
     );
   }
@@ -275,6 +276,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     this.notes.forEach(note => {
       const props = {
         edgeless: {
+          ...note.edgeless,
           style: {
             ...note.edgeless.style,
             shadowType,
@@ -289,6 +291,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     this.notes.forEach(note => {
       const props = {
         edgeless: {
+          ...note.edgeless,
           style: {
             ...note.edgeless.style,
             borderStyle,
@@ -303,6 +306,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     this.notes.forEach(note => {
       const props = {
         edgeless: {
+          ...note.edgeless,
           style: {
             ...note.edgeless.style,
             borderSize,
@@ -340,7 +344,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     const isFirstNote =
       onlyOne &&
       note.parent?.children.find(child =>
-        matchFlavours(child, ['affine:note'])
+        matchModels(child, [NoteBlockModel])
       ) === note;
     const theme = this.edgeless.std.get(ThemeProvider).theme;
     const buttons = [

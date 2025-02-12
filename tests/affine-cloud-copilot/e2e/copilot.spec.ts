@@ -4,16 +4,14 @@ import {
   loginUser,
   loginUserDirectly,
 } from '@affine-test/kit/utils/cloud';
+import { getPageMode } from '@affine-test/kit/utils/editor';
 import { openHomePage, setCoreUrl } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import {
-  clickSideBarAllPageButton,
-  clickSideBarUseAvatar,
-} from '@affine-test/kit/utils/sidebar';
+import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect, type Page } from '@playwright/test';
 
@@ -302,23 +300,115 @@ test.describe('chat panel', () => {
     expect(editorContent).toBe(content);
   });
 
-  // feature not launched yet
-  test.skip('can be save chat to block', async ({ page }) => {
-    await page.reload();
-    await clickSideBarAllPageButton(page);
-    await page.waitForTimeout(200);
-    await createLocalWorkspace({ name: 'test' }, page);
-    await clickNewPageButton(page);
-    await makeChat(page, 'hello');
-    const contents = (await collectChat(page)).map(m => m.content);
-    await switchToEdgelessMode(page);
-    await page.getByTestId('action-save-chat-to-block').click();
-    const chatBlock = await page.waitForSelector('affine-edgeless-ai-chat');
-    expect(
-      await Promise.all(
-        (await chatBlock.$$('.ai-chat-user-message')).map(m => m.innerText())
-      )
-    ).toBe(contents);
+  test.describe('chat block', () => {
+    const collectNewMessages = async (page: Page) => {
+      // wait ai response
+      const newMessagesContainer = await page.waitForSelector(
+        '.new-chat-messages-container'
+      );
+      await page.waitForSelector(
+        '.new-chat-messages-container .assistant-message-container chat-copy-more'
+      );
+      const lastMessage = await newMessagesContainer
+        .$$('.assistant-message-container')
+        .then(m => m[m.length - 1]);
+      await lastMessage.waitForSelector('chat-copy-more');
+      await page.waitForTimeout(ONE_SECOND);
+      return Promise.all(
+        Array.from(await newMessagesContainer.$$('.ai-chat-message')).map(
+          async m => ({
+            name: await m.$('.user-name').then(i => i?.innerText()),
+            content: await m
+              .$('.ai-answer-text-editor')
+              .then(t => t?.$('editor-host'))
+              .then(e => e?.innerText()),
+          })
+        )
+      );
+    };
+
+    // make chat before each test
+    test.beforeEach(async ({ page }) => {
+      await page.reload();
+      await clickSideBarAllPageButton(page);
+      await page.waitForTimeout(200);
+      await createLocalWorkspace({ name: 'test' }, page);
+      await clickNewPageButton(page);
+      await makeChat(page, 'hello');
+    });
+
+    test('can be save chat to block when page mode', async ({ page }) => {
+      const contents = (await collectChat(page)).map(m => m.content);
+      expect(await getPageMode(page)).toBe('page');
+      await page.getByTestId('action-save-chat-to-block').click();
+      const chatBlock = await page.waitForSelector('affine-edgeless-ai-chat');
+      // should switch to edgeless mode
+      expect(await getPageMode(page)).toBe('edgeless');
+      expect(
+        await Promise.all(
+          (await chatBlock.$$('.ai-chat-message .ai-answer-text-editor')).map(
+            m => m.innerText()
+          )
+        )
+      ).toStrictEqual(contents);
+    });
+
+    test('can be save chat to block when edgeless mode', async ({ page }) => {
+      const contents = (await collectChat(page)).map(m => m.content);
+      await switchToEdgelessMode(page);
+      expect(await getPageMode(page)).toBe('edgeless');
+      await page.getByTestId('action-save-chat-to-block').click();
+      const chatBlock = await page.waitForSelector('affine-edgeless-ai-chat');
+      expect(
+        await Promise.all(
+          (await chatBlock.$$('.ai-chat-message .ai-answer-text-editor')).map(
+            m => m.innerText()
+          )
+        )
+      ).toStrictEqual(contents);
+    });
+
+    test('chat in center peek', async ({ page }) => {
+      const contents = (await collectChat(page)).map(m => m.content);
+      await page.getByTestId('action-save-chat-to-block').click();
+      const chatBlock = await page.waitForSelector('affine-edgeless-ai-chat');
+      // open chat in center peek
+      await chatBlock.dblclick();
+      const chatBlockPeekView = await page.waitForSelector(
+        'ai-chat-block-peek-view'
+      );
+      expect(await chatBlockPeekView.isVisible()).toBe(true);
+      expect(
+        await Promise.all(
+          (
+            await chatBlockPeekView.$$(
+              '.ai-chat-message .ai-answer-text-editor'
+            )
+          ).map(m => m.innerText())
+        )
+      ).toStrictEqual(contents);
+
+      // chat in center peek
+      await page.getByTestId('chat-block-input').focus();
+      await page.keyboard.type('hi');
+      await page.keyboard.press('Enter');
+
+      // collect new messages
+      const newMessages = await collectNewMessages(page);
+      expect(newMessages[0].content).toEqual('hi');
+      expect(newMessages[1].name).toBe('AFFiNE AI');
+      expect(newMessages[1].content?.length).toBeGreaterThan(0);
+
+      // close peek view
+      await page.getByTestId('peek-view-control').click();
+      await page.waitForSelector('ai-chat-block-peek-view', {
+        state: 'hidden',
+      });
+
+      // there should be two chat block
+      const chatBlocks = await page.$$('affine-edgeless-ai-chat');
+      expect(chatBlocks.length).toBe(2);
+    });
   });
 
   test('can be chat and insert below in page mode', async ({ page }) => {
@@ -394,20 +484,12 @@ test.describe('chat panel', () => {
     await page.waitForTimeout(200);
     await createLocalWorkspace({ name: 'test' }, page);
     await clickNewPageButton(page);
-    await clickSideBarUseAvatar(page);
-    await page.getByTestId('workspace-modal-account-settings-option').click();
-    await page.getByTestId('experimental-features-trigger').click();
-    await page
-      .getByTestId('experimental-prompt')
-      .getByTestId('affine-checkbox')
-      .click();
-    await page.getByTestId('experimental-confirm-button').click();
-    await page.getByTestId('enable_ai_network_search').click();
-    await page.getByTestId('modal-close-button').click();
+
     await openChat(page);
     await page.getByTestId('chat-network-search').click();
     await typeChatSequentially(page, 'What is the weather in Shanghai today?');
     await page.keyboard.press('Enter');
+    await page.waitForTimeout(3000);
     let history = await collectChat(page);
     expect(history[0]).toEqual({
       name: 'You',
@@ -423,6 +505,7 @@ test.describe('chat panel', () => {
     await page.getByTestId('chat-network-search').click();
     await typeChatSequentially(page, 'What is the weather in Shanghai today?');
     await page.keyboard.press('Enter');
+    await page.waitForTimeout(3000);
     history = await collectChat(page);
     expect(history[0]).toEqual({
       name: 'You',
@@ -770,11 +853,13 @@ test.describe('chat with doc', () => {
     // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
     expect(await chip.getAttribute('data-state')).toBe('candidate');
     await chip.click();
+    await page.waitForTimeout(1000);
     // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
     expect(await chip.getAttribute('data-state')).toBe('success');
 
     await typeChatSequentially(page, 'What is AFFiNE AI?');
     await page.keyboard.press('Enter');
+    await page.waitForTimeout(3000);
     const history = await collectChat(page);
     expect(history[0]).toEqual({
       name: 'You',
@@ -786,5 +871,13 @@ test.describe('chat with doc', () => {
     ).toBeGreaterThan(0);
     await clearChat(page);
     expect((await collectChat(page)).length).toBe(0);
+
+    await page.reload();
+    await page.waitForTimeout(1000);
+    await openChat(page);
+    expect(await chipTitle.textContent()).toBe('AFFiNE AI');
+    const chip2 = await page.getByTestId('chat-panel-chip');
+    // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
+    expect(await chip2.getAttribute('data-state')).toBe('success');
   });
 });

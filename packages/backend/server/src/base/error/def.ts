@@ -1,4 +1,5 @@
 import { STATUS_CODES } from 'node:http';
+import { escape } from 'node:querystring';
 
 import { HttpStatus, Logger } from '@nestjs/common';
 import { ClsServiceManager } from 'nestjs-cls';
@@ -99,6 +100,15 @@ export class UserFriendlyError extends Error {
     this.name = name;
     this.data = args;
     this.requestId = ClsServiceManager.getClsService()?.getId();
+  }
+
+  static fromUserFriendlyErrorJSON(body: UserFriendlyError) {
+    return new UserFriendlyError(
+      body.type as UserFriendlyErrorBaseType,
+      body.name.toLowerCase() as keyof typeof USER_FRIENDLY_ERRORS,
+      body.message,
+      body.data
+    );
   }
 
   toJSON() {
@@ -236,6 +246,10 @@ export const USER_FRIENDLY_ERRORS = {
   not_found: {
     type: 'resource_not_found',
     message: 'Resource not found.',
+  },
+  bad_request: {
+    type: 'bad_request',
+    message: 'Bad request.',
   },
 
   // Input errors
@@ -595,6 +609,29 @@ export const USER_FRIENDLY_ERRORS = {
     args: { provider: 'string', kind: 'string', message: 'string' },
     message: ({ provider, kind, message }) =>
       `Provider ${provider} failed with ${kind} error: ${message || 'unknown'}`,
+  },
+  copilot_invalid_context: {
+    type: 'invalid_input',
+    args: { contextId: 'string' },
+    message: ({ contextId }) => `Invalid copilot context ${contextId}.`,
+  },
+  copilot_context_file_not_supported: {
+    type: 'bad_request',
+    args: { fileName: 'string', message: 'string' },
+    message: ({ fileName, message }) =>
+      `File ${fileName} is not supported to use as context: ${message}`,
+  },
+  copilot_failed_to_modify_context: {
+    type: 'internal_server_error',
+    args: { contextId: 'string', message: 'string' },
+    message: ({ contextId, message }) =>
+      `Failed to modify context ${contextId}: ${message}`,
+  },
+  copilot_failed_to_match_context: {
+    type: 'internal_server_error',
+    args: { contextId: 'string', content: 'string', message: 'string' },
+    message: ({ contextId, content, message }) =>
+      `Failed to match context ${contextId} with "${escape(content)}": ${message}`,
   },
 
   // Quota & Limit errors

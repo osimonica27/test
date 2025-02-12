@@ -34,7 +34,6 @@ export const PackageList = [
     name: '@blocksuite/affine-block-bookmark',
     workspaceDependencies: [
       'blocksuite/affine/block-embed',
-      'blocksuite/affine/block-surface',
       'blocksuite/affine/components',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
@@ -740,11 +739,6 @@ export const PackageList = [
     name: '@affine-tools/utils',
     workspaceDependencies: [],
   },
-  {
-    location: 'tools/workers',
-    name: '@affine/workers',
-    workspaceDependencies: [],
-  },
 ];
 
 export type PackageName =
@@ -820,5 +814,4 @@ export type PackageName =
   | '@affine/commitlint-config'
   | '@affine/copilot-result'
   | '@affine/playstore-auto-bump'
-  | '@affine-tools/utils'
-  | '@affine/workers';
+  | '@affine-tools/utils';

@@ -1,8 +1,12 @@
 import { TextUtils } from '@blocksuite/affine-block-surface';
 import { formatBlockCommand } from '@blocksuite/affine-components/rich-text';
-import type { EdgelessTextBlockModel } from '@blocksuite/affine-model';
+import {
+  type EdgelessTextBlockModel,
+  ListBlockModel,
+  ParagraphBlockModel,
+} from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
-import { matchFlavours } from '@blocksuite/affine-shared/utils';
+import { matchModels } from '@blocksuite/affine-shared/utils';
 import type { BlockComponent } from '@blocksuite/block-std';
 import {
   BlockSelection,
@@ -158,7 +162,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
         const firstChild = this.model.firstChild();
         if (
           !firstChild ||
-          !matchFlavours(firstChild, ['affine:list', 'affine:paragraph'])
+          !matchModels(firstChild, [ListBlockModel, ParagraphBlockModel])
         ) {
           newParagraphId = this.doc.addBlock(
             'affine:paragraph',
@@ -171,7 +175,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
         const lastChild = this.model.lastChild();
         if (
           !lastChild ||
-          !matchFlavours(lastChild, ['affine:list', 'affine:paragraph'])
+          !matchModels(lastChild, [ListBlockModel, ParagraphBlockModel])
         ) {
           newParagraphId = this.doc.addBlock(
             'affine:paragraph',

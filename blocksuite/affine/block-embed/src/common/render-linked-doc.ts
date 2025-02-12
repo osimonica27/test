@@ -1,12 +1,15 @@
 import { getSurfaceBlock } from '@blocksuite/affine-block-surface';
 import {
   type DocMode,
-  type ImageBlockModel,
+  ImageBlockModel,
+  ListBlockModel,
+  NoteBlockModel,
   NoteDisplayMode,
+  ParagraphBlockModel,
 } from '@blocksuite/affine-model';
 import { EMBED_CARD_HEIGHT } from '@blocksuite/affine-shared/consts';
 import { NotificationProvider } from '@blocksuite/affine-shared/services';
-import { matchFlavours, SpecProvider } from '@blocksuite/affine-shared/utils';
+import { matchModels, SpecProvider } from '@blocksuite/affine-shared/utils';
 import { BlockStdScope } from '@blocksuite/block-std';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -68,7 +71,7 @@ async function renderPageAsBanner(card: EmbedSyncedDocCard) {
   }
 
   const target = notes.flatMap(note =>
-    note.children.filter(child => matchFlavours(child, ['affine:image']))
+    note.children.filter(child => matchModels(child, [ImageBlockModel]))
   )[0];
 
   if (target) {
@@ -135,13 +138,11 @@ async function renderNoteContent(
 
   const cardStyle = card.model.style;
   const isHorizontal = cardStyle === 'horizontal';
-  const allowFlavours: (keyof BlockSuite.BlockModels)[] = isHorizontal
-    ? []
-    : ['affine:image'];
+  const allowFlavours = isHorizontal ? [] : [ImageBlockModel];
 
   const noteChildren = notes.flatMap(note =>
     note.children.filter(model => {
-      if (matchFlavours(model, allowFlavours)) {
+      if (matchModels(model, allowFlavours)) {
         return true;
       }
       return filterTextModel(model);
@@ -214,7 +215,7 @@ async function renderNoteContent(
 }
 
 function filterTextModel(model: BlockModel) {
-  if (matchFlavours(model, ['affine:paragraph', 'affine:list'])) {
+  if (matchModels(model, [ParagraphBlockModel, ListBlockModel])) {
     return !!model.text?.toString().length;
   }
   return false;
@@ -223,7 +224,7 @@ function filterTextModel(model: BlockModel) {
 export function getNotesFromDoc(doc: Store) {
   const notes = doc.root?.children.filter(
     child =>
-      matchFlavours(child, ['affine:note']) &&
+      matchModels(child, [NoteBlockModel]) &&
       child.displayMode !== NoteDisplayMode.EdgelessOnly
   );
 
@@ -304,7 +305,7 @@ export function getDocContentWithMaxLength(doc: Store, maxlength = 500) {
 export function getTitleFromSelectedModels(selectedModels: DraftModel[]) {
   const firstBlock = selectedModels[0];
   if (
-    matchFlavours(firstBlock, ['affine:paragraph']) &&
+    matchModels(firstBlock, [ParagraphBlockModel]) &&
     firstBlock.type.startsWith('h')
   ) {
     return firstBlock.text.toString();

@@ -1,5 +1,14 @@
+import {
+  AttachmentBlockModel,
+  BookmarkBlockModel,
+  CodeBlockModel,
+  DatabaseBlockModel,
+  ImageBlockModel,
+  SurfaceRefBlockModel,
+} from '@blocksuite/affine-model';
 import { getSelectionRectsCommand } from '@blocksuite/affine-shared/commands';
-import { matchFlavours } from '@blocksuite/affine-shared/utils';
+import { EMBED_BLOCK_MODEL_LIST } from '@blocksuite/affine-shared/consts';
+import { matchModels } from '@blocksuite/affine-shared/utils';
 import {
   BlockSelection,
   TextSelection,
@@ -67,16 +76,15 @@ export class AffineDocRemoteSelectionWidget extends WidgetComponent {
   private get _config(): DocRemoteSelectionConfig {
     return {
       blockSelectionBackgroundTransparent: block => {
-        return (
-          matchFlavours(block, [
-            'affine:code',
-            'affine:database',
-            'affine:image',
-            'affine:attachment',
-            'affine:bookmark',
-            'affine:surface-ref',
-          ]) || /affine:embed-*/.test(block.flavour)
-        );
+        return matchModels(block, [
+          CodeBlockModel,
+          DatabaseBlockModel,
+          ImageBlockModel,
+          AttachmentBlockModel,
+          BookmarkBlockModel,
+          SurfaceRefBlockModel,
+          ...EMBED_BLOCK_MODEL_LIST,
+        ]);
       },
     };
   }

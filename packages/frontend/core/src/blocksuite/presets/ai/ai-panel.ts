@@ -1,12 +1,14 @@
 import { AINetworkSearchService } from '@affine/core/modules/ai-button/services/network-search';
 import type { EditorHost } from '@blocksuite/affine/block-std';
+import { GfxControllerIdentifier } from '@blocksuite/affine/block-std/gfx';
 import {
   type AffineAIPanelWidget,
   type AffineAIPanelWidgetConfig,
   type AIItemConfig,
   ImageBlockModel,
   isInsideEdgelessEditor,
-  matchFlavours,
+  matchModels,
+  NoteBlockModel,
   NoteDisplayMode,
 } from '@blocksuite/affine/blocks';
 import { assertExists, Bound } from '@blocksuite/affine/global/utils';
@@ -37,7 +39,7 @@ import { AIProvider } from './provider';
 import { reportResponse } from './utils/action-reporter';
 import { getAIPanelWidget } from './utils/ai-widgets';
 import { AIContext } from './utils/context';
-import { findNoteBlockModel, getService } from './utils/edgeless';
+import { findNoteBlockModel } from './utils/edgeless';
 import { copyTextAnswer } from './utils/editor-actions';
 import { getSelections } from './utils/selection-utils';
 
@@ -92,7 +94,7 @@ function createNewNote(host: EditorHost): AIItemConfig {
       const newBound = new Bound(bound.x - bound.w - 20, bound.y, bound.w, 72);
       const doc = host.doc;
       const panel = getAIPanelWidget(host);
-      const service = getService(host);
+      const gfx = host.std.get(GfxControllerIdentifier);
       doc.transact(() => {
         assertExists(doc.root);
         const noteBlockId = doc.addBlock(
@@ -100,7 +102,7 @@ function createNewNote(host: EditorHost): AIItemConfig {
           {
             xywh: newBound.serialize(),
             displayMode: NoteDisplayMode.EdgelessOnly,
-            index: service.generateIndex(),
+            index: gfx.layer.generateIndex(),
           },
           doc.root.id
         );
@@ -108,17 +110,17 @@ function createNewNote(host: EditorHost): AIItemConfig {
         assertExists(panel.answer);
         insertFromMarkdown(host, panel.answer, doc, noteBlockId)
           .then(() => {
-            service.selection.set({
+            gfx.selection.set({
               elements: [noteBlockId],
               editing: false,
             });
 
             // set the viewport to show the new note block and original note block
             const newNote = doc.getBlock(noteBlockId)?.model;
-            if (!newNote || !matchFlavours(newNote, ['affine:note'])) return;
+            if (!newNote || !matchModels(newNote, [NoteBlockModel])) return;
             const newNoteBound = Bound.deserialize(newNote.xywh);
             const bounds = [bound, newNoteBound];
-            service.gfx.fitToScreen({
+            gfx.fitToScreen({
               bounds,
               padding: [20, 20, 20, 20],
             });

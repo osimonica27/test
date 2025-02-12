@@ -1,5 +1,5 @@
 import { test } from '@affine-test/kit/playwright';
-import { locateModeSwitchButton } from '@affine-test/kit/utils/editor';
+import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
 import {
   pasteByKeyboard,
   writeTextToClipboard,
@@ -473,6 +473,21 @@ test('@ popover with click "select a specific date" should show a date picker', 
   ).toBeVisible();
 });
 
+test('@ popover can auto focus on the "New Doc" item when query returns no items', async ({
+  page,
+}) => {
+  await page.keyboard.press('Enter');
+  await waitForEmptyEditor(page);
+  await page.keyboard.press('@');
+  await page.keyboard.type('nawowenni');
+  await expect(page.locator('.linked-doc-popover')).toBeVisible();
+  const newDocMenuItem = page
+    .locator('.linked-doc-popover')
+    .locator('[data-id="create-page"]');
+  await expect(newDocMenuItem).toBeVisible();
+  await expect(newDocMenuItem).toHaveAttribute('hover', 'true');
+});
+
 test('linked doc should show markdown preview in the backlink section', async ({
   page,
 }) => {
@@ -506,7 +521,7 @@ test('the viewport should be fit when the linked document is with edgeless mode'
 }) => {
   await page.keyboard.press('Enter');
 
-  await locateModeSwitchButton(page, 'edgeless').click();
+  await clickEdgelessModeButton(page);
 
   const note = page.locator('affine-edgeless-note');
   const noteBoundingBox = await note.boundingBox();
@@ -570,7 +585,7 @@ test('should show edgeless content when switching card view of linked mode doc i
 }) => {
   await page.keyboard.press('Enter');
 
-  await locateModeSwitchButton(page, 'edgeless').click();
+  await clickEdgelessModeButton(page);
 
   const note = page.locator('affine-edgeless-note');
   const noteBoundingBox = await note.boundingBox();
@@ -596,7 +611,7 @@ test('should show edgeless content when switching card view of linked mode doc i
   const url = new URL(page.url());
 
   await clickNewPageButton(page);
-  await locateModeSwitchButton(page, 'edgeless').click();
+  await clickEdgelessModeButton(page);
 
   await page.mouse.move(x, y);
   await writeTextToClipboard(page, url.toString());

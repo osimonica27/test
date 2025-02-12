@@ -21,6 +21,12 @@ export class NotFound extends UserFriendlyError {
     super('resource_not_found', 'not_found', message);
   }
 }
+
+export class BadRequest extends UserFriendlyError {
+  constructor(message?: string) {
+    super('bad_request', 'bad_request', message);
+  }
+}
 @ObjectType()
 class QueryTooLongDataType {
   @Field() max!: number
@@ -608,6 +614,50 @@ export class CopilotProviderSideError extends UserFriendlyError {
     super('internal_server_error', 'copilot_provider_side_error', message, args);
   }
 }
+@ObjectType()
+class CopilotInvalidContextDataType {
+  @Field() contextId!: string
+}
+
+export class CopilotInvalidContext extends UserFriendlyError {
+  constructor(args: CopilotInvalidContextDataType, message?: string | ((args: CopilotInvalidContextDataType) => string)) {
+    super('invalid_input', 'copilot_invalid_context', message, args);
+  }
+}
+@ObjectType()
+class CopilotContextFileNotSupportedDataType {
+  @Field() fileName!: string
+  @Field() message!: string
+}
+
+export class CopilotContextFileNotSupported extends UserFriendlyError {
+  constructor(args: CopilotContextFileNotSupportedDataType, message?: string | ((args: CopilotContextFileNotSupportedDataType) => string)) {
+    super('bad_request', 'copilot_context_file_not_supported', message, args);
+  }
+}
+@ObjectType()
+class CopilotFailedToModifyContextDataType {
+  @Field() contextId!: string
+  @Field() message!: string
+}
+
+export class CopilotFailedToModifyContext extends UserFriendlyError {
+  constructor(args: CopilotFailedToModifyContextDataType, message?: string | ((args: CopilotFailedToModifyContextDataType) => string)) {
+    super('internal_server_error', 'copilot_failed_to_modify_context', message, args);
+  }
+}
+@ObjectType()
+class CopilotFailedToMatchContextDataType {
+  @Field() contextId!: string
+  @Field() content!: string
+  @Field() message!: string
+}
+
+export class CopilotFailedToMatchContext extends UserFriendlyError {
+  constructor(args: CopilotFailedToMatchContextDataType, message?: string | ((args: CopilotFailedToMatchContextDataType) => string)) {
+    super('internal_server_error', 'copilot_failed_to_match_context', message, args);
+  }
+}
 
 export class BlobQuotaExceeded extends UserFriendlyError {
   constructor(message?: string) {
@@ -726,6 +776,7 @@ export enum ErrorNames {
   INTERNAL_SERVER_ERROR,
   TOO_MANY_REQUEST,
   NOT_FOUND,
+  BAD_REQUEST,
   QUERY_TOO_LONG,
   USER_NOT_FOUND,
   USER_AVATAR_NOT_FOUND,
@@ -801,6 +852,10 @@ export enum ErrorNames {
   COPILOT_PROMPT_NOT_FOUND,
   COPILOT_PROMPT_INVALID,
   COPILOT_PROVIDER_SIDE_ERROR,
+  COPILOT_INVALID_CONTEXT,
+  COPILOT_CONTEXT_FILE_NOT_SUPPORTED,
+  COPILOT_FAILED_TO_MODIFY_CONTEXT,
+  COPILOT_FAILED_TO_MATCH_CONTEXT,
   BLOB_QUOTA_EXCEEDED,
   MEMBER_QUOTA_EXCEEDED,
   COPILOT_QUOTA_EXCEEDED,
@@ -825,5 +880,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [QueryTooLongDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, MissingOauthQueryParameterDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocAccessDeniedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseUpdateParamsDataType, WorkspaceMembersExceedLimitToDowngradeDataType] as const,
+    [QueryTooLongDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, MissingOauthQueryParameterDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocAccessDeniedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseUpdateParamsDataType, WorkspaceMembersExceedLimitToDowngradeDataType] as const,
 });

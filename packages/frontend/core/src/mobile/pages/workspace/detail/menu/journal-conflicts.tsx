@@ -5,6 +5,7 @@ import {
   MobileMenuSub,
   useConfirmModal,
 } from '@affine/component';
+import { DocPermissionGuard } from '@affine/core/components/guard/doc-guard';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import {
   type DocRecord,
@@ -58,16 +59,28 @@ export const ResolveConflictOperations = ({
 
   return (
     <>
-      <MobileMenuItem
-        prefixIcon={<CalendarXmarkIcon />}
-        onClick={() => {
-          handleRemoveJournalMark(docRecord.id);
-        }}
-        data-testid="journal-conflict-remove-mark"
-      >
-        {t['com.affine.page-properties.property.journal-remove']()}
-      </MobileMenuItem>
-      <MoveToTrash onSelect={() => handleOpenTrashModal(docRecord)} />
+      <DocPermissionGuard docId={docRecord.id} permission="Doc_Update">
+        {canEdit => (
+          <MobileMenuItem
+            prefixIcon={<CalendarXmarkIcon />}
+            onClick={() => {
+              handleRemoveJournalMark(docRecord.id);
+            }}
+            data-testid="journal-conflict-remove-mark"
+            disabled={!canEdit}
+          >
+            {t['com.affine.page-properties.property.journal-remove']()}
+          </MobileMenuItem>
+        )}
+      </DocPermissionGuard>
+      <DocPermissionGuard docId={docRecord.id} permission="Doc_Trash">
+        {canTrash => (
+          <MoveToTrash
+            onSelect={() => handleOpenTrashModal(docRecord)}
+            disabled={!canTrash}
+          />
+        )}
+      </DocPermissionGuard>
     </>
   );
 };
@@ -81,9 +94,7 @@ const DocItem = ({ docRecord }: { docRecord: DocRecord }) => {
   const docId = docRecord.id;
   const i18n = useI18n();
   const docDisplayMetaService = useService(DocDisplayMetaService);
-  const Icon = useLiveData(
-    docDisplayMetaService.icon$(docId, { compareDate: new Date() })
-  );
+  const Icon = useLiveData(docDisplayMetaService.icon$(docId));
   const title = useLiveData(docDisplayMetaService.title$(docId));
   return (
     <WorkbenchLink aria-label={title} to={`/${docId}`}>

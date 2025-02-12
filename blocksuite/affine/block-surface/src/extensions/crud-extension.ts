@@ -1,6 +1,12 @@
+import type { SurfaceElementModelMap } from '@blocksuite/affine-model';
 import { EditPropsStore } from '@blocksuite/affine-shared/services';
 import { type BlockStdScope, StdIdentifier } from '@blocksuite/block-std';
-import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
+import {
+  GfxBlockElementModel,
+  GfxControllerIdentifier,
+  type GfxModel,
+  isGfxGroupCompatibleModel,
+} from '@blocksuite/block-std/gfx';
 import { type Container, createIdentifier } from '@blocksuite/global/di';
 import { type BlockModel, Extension } from '@blocksuite/store';
 
@@ -30,7 +36,7 @@ export class EdgelessCRUDExtension extends Extension {
     return this._gfx.surface as SurfaceBlockModel | null;
   }
 
-  deleteElements = (elements: BlockSuite.EdgelessModel[]) => {
+  deleteElements = (elements: GfxModel[]) => {
     const surface = this._surface;
     if (!surface) {
       console.error('surface is not initialized');
@@ -59,13 +65,13 @@ export class EdgelessCRUDExtension extends Extension {
   };
 
   addBlock = (
-    flavour: BlockSuite.EdgelessModelKeys | string,
+    flavour: string,
     props: Record<string, unknown>,
     parentId?: string | BlockModel,
     parentIndex?: number
   ) => {
     const gfx = this.std.get(GfxControllerIdentifier);
-    const key = getLastPropsKey(flavour as BlockSuite.EdgelessModelKeys, props);
+    const key = getLastPropsKey(flavour, props);
     if (key) {
       props = this.std.get(EditPropsStore).applyLastProps(key, props);
     }
@@ -91,7 +97,7 @@ export class EdgelessCRUDExtension extends Extension {
     }
 
     const gfx = this.std.get(GfxControllerIdentifier);
-    const key = getLastPropsKey(type as BlockSuite.EdgelessModelKeys, props);
+    const key = getLastPropsKey(type, props);
     if (key) {
       props = this.std.get(EditPropsStore).applyLastProps(key, props) as T;
     }
@@ -114,10 +120,10 @@ export class EdgelessCRUDExtension extends Extension {
 
     const element = this._surface.getElementById(id);
     if (element) {
-      const key = getLastPropsKey(
-        element.type as BlockSuite.EdgelessModelKeys,
-        { ...element.yMap.toJSON(), ...props }
-      );
+      const key = getLastPropsKey(element.type, {
+        ...element.yMap.toJSON(),
+        ...props,
+      });
       key && this.std.get(EditPropsStore).recordLastProps(key, props);
       this._surface.updateElement(id, props);
       return;
@@ -125,34 +131,51 @@ export class EdgelessCRUDExtension extends Extension {
 
     const block = this.std.store.getBlockById(id);
     if (block) {
-      const key = getLastPropsKey(
-        block.flavour as BlockSuite.EdgelessModelKeys,
-        { ...block.yBlock.toJSON(), ...props }
-      );
+      const key = getLastPropsKey(block.flavour, {
+        ...block.yBlock.toJSON(),
+        ...props,
+      });
       key && this.std.get(EditPropsStore).recordLastProps(key, props);
       this.std.store.updateBlock(block, props);
     }
   };
 
-  getElementById(id: string): BlockSuite.EdgelessModel | null {
+  getElementById(id: string): GfxModel | null {
     const surface = this._surface;
     if (!surface) {
       return null;
     }
-    const el =
-      surface.getElementById(id) ??
-      (this.std.store.getBlockById(
-        id
-      ) as BlockSuite.EdgelessBlockModelType | null);
-    return el;
+    const el = surface.getElementById(id) ?? this.std.store.getBlockById(id);
+    return el as GfxModel | null;
   }
 
-  getElementsByType<K extends keyof BlockSuite.SurfaceElementModelMap>(
+  getElementsByType<K extends keyof SurfaceElementModelMap>(
     type: K
-  ): BlockSuite.SurfaceElementModelMap[K][] {
+  ): SurfaceElementModelMap[K][] {
     if (!this._surface) {
       return [];
     }
     return this._surface.getElementsByType(type);
+  }
+
+  removeElement(id: string | GfxModel) {
+    id = typeof id === 'string' ? id : id.id;
+
+    const el = this.getElementById(id);
+    if (isGfxGroupCompatibleModel(el)) {
+      el.childIds.forEach(childId => {
+        this.removeElement(childId);
+      });
+    }
+
+    if (el instanceof GfxBlockElementModel) {
+      this.std.store.deleteBlock(el);
+      return;
+    }
+
+    if (this._surface?.hasElementById(id)) {
+      this._surface.deleteElement(id);
+      return;
+    }
   }
 }

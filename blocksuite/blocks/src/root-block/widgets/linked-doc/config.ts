@@ -35,7 +35,7 @@ export interface LinkedWidgetConfig {
    * [[ -> @
    */
   convertTriggerKey: boolean;
-  ignoreBlockTypes: (keyof BlockSuite.BlockModels)[];
+  ignoreBlockTypes: string[];
   ignoreSelector: string;
   getMenus: (
     query: string,
@@ -44,6 +44,23 @@ export interface LinkedWidgetConfig {
     inlineEditor: AffineInlineEditor,
     abortSignal: AbortSignal
   ) => Promise<LinkedMenuGroup[]> | LinkedMenuGroup[];
+
+  /**
+   * Auto focused item
+   *
+   * Will be called when the menu is
+   * - opened
+   * - query changed
+   * - menu group or its items changed
+   *
+   * If the return value is not null, no action will be taken.
+   */
+  autoFocusedItem?: (
+    menus: LinkedMenuGroup[],
+    query: string,
+    editorHost: EditorHost,
+    inlineEditor: AffineInlineEditor
+  ) => LinkedMenuItem | null;
 
   mobile: {
     useScreenHeight?: boolean;

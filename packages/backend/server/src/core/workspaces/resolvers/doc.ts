@@ -31,7 +31,7 @@ import { Models } from '../../../models';
 import { CurrentUser } from '../../auth';
 import {
   DOC_ACTIONS,
-  type DocActionPermissions,
+  DocAction,
   DocRole,
   fixupDocRole,
   mapDocRoleToPermissions,
@@ -41,6 +41,7 @@ import {
 import { PublicUserType } from '../../user';
 import { DocID } from '../../utils/doc';
 import { WorkspaceType } from '../types';
+import { DotToUnderline, mapPermissionToGraphqlPermissions } from './workspace';
 
 registerEnumType(PublicDocMode, {
   name: 'PublicDocMode',
@@ -60,6 +61,9 @@ class DocType implements Partial<PrismaWorkspaceDoc> {
 
   @Field()
   public!: boolean;
+
+  @Field(() => DocRole)
+  defaultRole!: DocRole;
 }
 
 @InputType()
@@ -128,10 +132,12 @@ class GrantedDocUserType {
 @ObjectType()
 class PaginatedGrantedDocUserType extends Paginated(GrantedDocUserType) {}
 
-const DocPermissions = registerObjectType<DocActionPermissions>(
+const DocPermissions = registerObjectType<
+  Record<DotToUnderline<DocAction>, boolean>
+>(
   Object.fromEntries(
     DOC_ACTIONS.map(action => [
-      action,
+      action.replaceAll('.', '_'),
       {
         type: () => Boolean,
         options: {
@@ -142,15 +148,6 @@ const DocPermissions = registerObjectType<DocActionPermissions>(
   ),
   { name: 'DocPermissions' }
 );
-
-@ObjectType()
-export class DocRolePermissions {
-  @Field(() => DocRole)
-  role!: DocRole;
-
-  @Field(() => DocPermissions)
-  permissions!: DocActionPermissions;
-}
 
 @Resolver(() => WorkspaceType)
 export class WorkspaceDocResolver {
@@ -186,31 +183,13 @@ export class WorkspaceDocResolver {
     description: 'Get public page of a workspace by page id.',
     complexity: 2,
     nullable: true,
-    deprecationReason: 'use [WorkspaceType.publicDoc] instead',
+    deprecationReason: 'use [WorkspaceType.doc] instead',
   })
   async publicPage(
     @Parent() workspace: WorkspaceType,
     @Args('pageId') pageId: string
   ) {
-    return this.publicDoc(workspace, pageId);
-  }
-
-  @ResolveField(() => DocType, {
-    description: 'Get public page of a workspace by page id.',
-    complexity: 2,
-    nullable: true,
-  })
-  async publicDoc(
-    @Parent() workspace: WorkspaceType,
-    @Args('docId') docId: string
-  ) {
-    return this.prisma.workspaceDoc.findFirst({
-      where: {
-        workspaceId: workspace.id,
-        docId,
-        public: true,
-      },
-    });
+    return this.doc(workspace, pageId);
   }
 
   @ResolveField(() => DocType, {
@@ -221,21 +200,26 @@ export class WorkspaceDocResolver {
     @Parent() workspace: WorkspaceType,
     @Args('docId') docId: string
   ): Promise<DocType> {
-    const doc = await this.prisma.workspaceDoc.findFirst({
+    const doc = await this.prisma.workspaceDoc.findUnique({
       where: {
-        workspaceId: workspace.id,
-        docId,
+        workspaceId_docId: {
+          workspaceId: workspace.id,
+          docId,
+        },
       },
     });
 
-    return (
-      doc ?? {
+    if (!doc) {
+      return {
         docId,
         workspaceId: workspace.id,
-        public: false,
         mode: PublicDocMode.Page,
-      }
-    );
+        public: false,
+        defaultRole: DocRole.Manager,
+      };
+    }
+
+    return doc;
   }
 
   @Mutation(() => DocType, {
@@ -286,11 +270,9 @@ export class WorkspaceDocResolver {
       user.id
     );
 
-    this.logger.log('Publish page', {
-      workspaceId,
-      docId: rawDocId,
-      mode,
-    });
+    this.logger.log(
+      `Publish page ${rawDocId} with mode ${mode} in workspace ${workspaceId}`
+    );
 
     return this.permission.publishPage(docId.workspace, docId.guid, mode);
   }
@@ -334,18 +316,18 @@ export class WorkspaceDocResolver {
       docId.guid
     );
 
+    const info = {
+      workspaceId,
+      docId: rawDocId,
+    };
     if (!isPublic) {
-      this.logger.log('Expect to revoke public doc, but it is not public', {
-        workspaceId,
-        docId: rawDocId,
-      });
+      this.logger.log(
+        `Expect to revoke public doc, but it is not public (${JSON.stringify(info)})`
+      );
       throw new DocIsNotPublic('Doc is not public');
     }
 
-    this.logger.log('Revoke public doc', {
-      workspaceId,
-      docId: rawDocId,
-    });
+    this.logger.log(`Revoke public doc (${JSON.stringify(info)})`);
 
     return this.permission.revokePublicPage(docId.workspace, docId.guid);
   }
@@ -365,7 +347,7 @@ export class DocResolver {
   async permissions(
     @CurrentUser() user: CurrentUser,
     @Parent() doc: DocType
-  ): Promise<DocRolePermissions> {
+  ): Promise<InstanceType<typeof DocPermissions>> {
     const [permission, workspacePermission] = await this.prisma.$transaction(
       tx =>
         Promise.all([
@@ -385,12 +367,11 @@ export class DocResolver {
         ])
     );
 
-    return {
-      role: permission?.type ?? DocRole.External,
-      permissions: mapDocRoleToPermissions(
+    return mapPermissionToGraphqlPermissions(
+      mapDocRoleToPermissions(
         fixupDocRole(workspacePermission?.type, permission?.type)
-      ),
-    };
+      )
+    );
   }
 
   @ResolveField(() => PaginatedGrantedDocUserType, {
@@ -496,11 +477,12 @@ export class DocResolver {
       input.userIds,
       input.role
     );
-    this.logger.log('Grant doc user roles', {
+    const info = {
       ...pairs,
       userIds: input.userIds,
       role: input.role,
-    });
+    };
+    this.logger.log(`Grant doc user roles (${JSON.stringify(info)})`);
     return true;
   }
 
@@ -531,10 +513,11 @@ export class DocResolver {
       user.id
     );
     await this.permission.revokePage(doc.workspace, doc.guid, input.userId);
-    this.logger.log('Revoke doc user roles', {
+    const info = {
       ...pairs,
       userId: input.userId,
-    });
+    };
+    this.logger.log(`Revoke doc user roles (${JSON.stringify(info)})`);
     return true;
   }
 
@@ -573,18 +556,15 @@ export class DocResolver {
       input.role
     );
 
+    const info = {
+      ...pairs,
+      userId: input.userId,
+      role: input.role,
+    };
     if (input.role === DocRole.Owner) {
-      this.logger.log('Transfer doc owner', {
-        ...pairs,
-        userId: input.userId,
-        role: input.role,
-      });
+      this.logger.log(`Transfer doc owner (${JSON.stringify(info)})`);
     } else {
-      this.logger.log('Update doc user role', {
-        ...pairs,
-        userId: input.userId,
-        role: input.role,
-      });
+      this.logger.log(`Update doc user role (${JSON.stringify(info)})`);
     }
 
     return true;
@@ -596,7 +576,9 @@ export class DocResolver {
     @Args('input') input: UpdateDocDefaultRoleInput
   ) {
     if (input.role === DocRole.Owner) {
-      this.logger.log('Doc default role can not be owner', input);
+      this.logger.log(
+        `Doc default role can not be owner (${JSON.stringify(input)})`
+      );
       throw new DocDefaultRoleCanNotBeOwner();
     }
     const doc = new DocID(input.docId, input.workspaceId);
@@ -624,11 +606,12 @@ export class DocResolver {
     } catch (error) {
       if (error instanceof DocAccessDenied) {
         this.logger.log(
-          'User does not have permission to update page default role',
-          {
-            ...pairs,
-            userId: user.id,
-          }
+          `User does not have permission to update page default role (${JSON.stringify(
+            {
+              ...pairs,
+              userId: user.id,
+            }
+          )})`
         );
       }
       throw error;

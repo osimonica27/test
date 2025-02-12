@@ -4,18 +4,20 @@ import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { AppThemeService } from '@affine/core/modules/theme';
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import {
+  BlockServiceIdentifier,
   BlockStdScope,
   LifeCycleWatcher,
   StdIdentifier,
 } from '@blocksuite/affine/block-std';
-import type { GfxPrimitiveElementModel } from '@blocksuite/affine/block-std/gfx';
-import type {
-  EdgelessRootService,
-  ThemeExtension,
-} from '@blocksuite/affine/blocks';
+import {
+  GfxControllerIdentifier,
+  type GfxPrimitiveElementModel,
+} from '@blocksuite/affine/block-std/gfx';
+import type { ThemeExtension } from '@blocksuite/affine/blocks';
 import {
   ColorScheme,
   createSignalFromObservable,
+  EdgelessCRUDIdentifier,
   SpecProvider,
   ThemeExtensionIdentifier,
 } from '@blocksuite/affine/blocks';
@@ -72,14 +74,12 @@ export const EdgelessSnapshot = (props: Props) => {
     const editorHost = editorHostRef.current;
     const doc = docRef.current;
     if (!editorHost || !doc) return;
-    const edgelessService = editorHost.std.getService(
-      'affine:page'
-    ) as EdgelessRootService;
+    const crud = editorHost.std.get(EdgelessCRUDIdentifier);
     const elements = getElements(doc);
     const props = editorSetting.get(keyName) as any;
     doc.readonly = false;
     elements.forEach(element => {
-      edgelessService.crud.updateElement(element.id, props);
+      crud.updateElement(element.id, props);
     });
     doc.readonly = true;
   }, [editorSetting, getElements, keyName]);
@@ -107,20 +107,22 @@ export const EdgelessSnapshot = (props: Props) => {
     }
 
     // refresh viewport
-    const edgelessService = editorHost.std.getService(
-      'affine:page'
-    ) as EdgelessRootService;
+    const edgelessService = editorHost.std.get(
+      BlockServiceIdentifier('affine:page')
+    );
+    const gfx = editorHost.std.get(GfxControllerIdentifier);
     edgelessService.specSlots.viewConnected.once(({ component }) => {
       const edgelessBlock = component as any;
       doc.readonly = false;
       edgelessBlock.editorViewportSelector = 'ref-viewport';
       const frame = getFrameBlock(doc);
-      if (frame) {
+      if (frame && docName !== 'frame') {
+        // docName with value 'frame' shouldn't be deleted, it is a part of frame settings
         boundMap.set(docName, Bound.deserialize(frame.xywh));
         doc.deleteBlock(frame);
       }
       const bound = boundMap.get(docName);
-      bound && edgelessService.viewport.setViewportByBound(bound);
+      bound && gfx.viewport.setViewportByBound(bound);
       doc.readonly = true;
     });
 

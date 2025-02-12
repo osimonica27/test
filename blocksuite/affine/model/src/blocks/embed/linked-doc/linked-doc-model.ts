@@ -20,14 +20,3 @@ export type EmbedLinkedDocBlockProps = {
 export class EmbedLinkedDocModel extends defineEmbedModel<EmbedLinkedDocBlockProps>(
   BlockModel
 ) {}
-
-declare global {
-  namespace BlockSuite {
-    interface EdgelessBlockModelMap {
-      'affine:embed-linked-doc': EmbedLinkedDocModel;
-    }
-    interface BlockModels {
-      'affine:embed-linked-doc': EmbedLinkedDocModel;
-    }
-  }
-}

@@ -1,7 +1,8 @@
+import { ParagraphBlockModel } from '@blocksuite/affine-model';
 import type { IndentContext } from '@blocksuite/affine-shared/types';
 import {
   calculateCollapsedSiblings,
-  matchFlavours,
+  matchModels,
 } from '@blocksuite/affine-shared/utils';
 import { type Command, TextSelection } from '@blocksuite/block-std';
 
@@ -34,7 +35,7 @@ export const canDedentParagraphCommand: Command<
   }
 
   const model = store.getBlock(blockId)?.model;
-  if (!model || !matchFlavours(model, ['affine:paragraph'])) {
+  if (!model || !matchModels(model, [ParagraphBlockModel])) {
     return;
   }
 
@@ -88,7 +89,7 @@ export const dedentParagraphCommand: Command<{
   store.captureSync();
 
   if (
-    matchFlavours(model, ['affine:paragraph']) &&
+    matchModels(model, [ParagraphBlockModel]) &&
     model.type.startsWith('h') &&
     model.collapsed
   ) {

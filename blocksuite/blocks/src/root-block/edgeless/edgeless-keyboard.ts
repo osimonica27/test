@@ -9,6 +9,7 @@ import {
   GroupElementModel,
   LayoutType,
   MindmapElementModel,
+  NoteBlockModel,
   NoteDisplayMode,
   type ShapeElementModel,
 } from '@blocksuite/affine-model';
@@ -18,10 +19,11 @@ import {
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
 import { LassoMode } from '@blocksuite/affine-shared/types';
-import { matchFlavours } from '@blocksuite/affine-shared/utils';
+import { matchModels } from '@blocksuite/affine-shared/utils';
 import { SurfaceSelection, TextSelection } from '@blocksuite/block-std';
 import {
   GfxBlockElementModel,
+  type GfxPrimitiveElementModel,
   type GfxToolsMap,
   type GfxToolsOption,
   isGfxGroupCompatibleModel,
@@ -133,8 +135,8 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
           if (
             selection.selectedElements.length === 1 &&
             selection.firstElement instanceof GfxBlockElementModel &&
-            matchFlavours(selection.firstElement as GfxBlockElementModel, [
-              'affine:note',
+            matchModels(selection.firstElement as GfxBlockElementModel, [
+              NoteBlockModel,
             ])
           ) {
             rootComponent.slots.toggleNoteSlicer.emit();
@@ -259,7 +261,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
                   block =>
                     block.group === null &&
                     !(
-                      matchFlavours(block, ['affine:note']) &&
+                      matchModels(block, [NoteBlockModel]) &&
                       block.displayMode === NoteDisplayMode.DocOnly
                     )
                 )
@@ -572,7 +574,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
       const node = mindmapNodes[0];
       const mindmap = node.group as MindmapElementModel;
       const nodeDirection = mindmap.getLayoutDir(node.id);
-      let targetNode: BlockSuite.SurfaceElementModel | null = null;
+      let targetNode: GfxPrimitiveElementModel | null = null;
 
       switch (key) {
         case 'ArrowUp':

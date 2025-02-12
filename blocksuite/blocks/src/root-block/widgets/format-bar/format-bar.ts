@@ -11,11 +11,17 @@ import {
   type MenuItemGroup,
 } from '@blocksuite/affine-components/toolbar';
 import {
+  CodeBlockModel,
+  ImageBlockModel,
+  ListBlockModel,
+  ParagraphBlockModel,
+} from '@blocksuite/affine-model';
+import {
   getSelectedBlocksCommand,
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
-import { matchFlavours } from '@blocksuite/affine-shared/utils';
+import { matchModels } from '@blocksuite/affine-shared/utils';
 import {
   type BlockComponent,
   BlockSelection,
@@ -354,11 +360,11 @@ export class AffineFormatBarWidget extends WidgetComponent {
     if (this.displayType === 'block' && this._selectedBlocks.length === 1) {
       const selectedBlock = this._selectedBlocks[0];
       if (
-        !matchFlavours(selectedBlock.model, [
-          'affine:paragraph',
-          'affine:list',
-          'affine:code',
-          'affine:image',
+        !matchModels(selectedBlock.model, [
+          ParagraphBlockModel,
+          ListBlockModel,
+          CodeBlockModel,
+          ImageBlockModel,
         ])
       ) {
         return false;
@@ -415,7 +421,7 @@ export class AffineFormatBarWidget extends WidgetComponent {
   }
 
   addBlockTypeSwitch(config: {
-    flavour: BlockSuite.Flavour;
+    flavour: string;
     icon: ParagraphActionConfigItem['icon'];
     type?: string;
     name?: string;

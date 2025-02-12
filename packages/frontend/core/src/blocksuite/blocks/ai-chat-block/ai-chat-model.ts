@@ -34,15 +34,3 @@ export const AIChatBlockSchema = defineBlockSchema({
 });
 
 export class AIChatBlockModel extends GfxCompatible<AIChatProps>(BlockModel) {}
-
-declare global {
-  // oxlint-disable-next-line @typescript-eslint/no-namespace
-  namespace BlockSuite {
-    interface EdgelessBlockModelMap {
-      'affine:embed-ai-chat': AIChatBlockModel;
-    }
-    interface BlockModels {
-      'affine:embed-ai-chat': AIChatBlockModel;
-    }
-  }
-}
