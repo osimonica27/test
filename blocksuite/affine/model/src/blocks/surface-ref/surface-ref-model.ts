@@ -1,4 +1,4 @@
-import { defineBlockSchema, type SchemaToModel } from '@blocksuite/store';
+import { BlockModel, defineBlockSchema } from '@blocksuite/store';
 
 export type SurfaceRefProps = {
   reference: string;
@@ -18,14 +18,7 @@ export const SurfaceRefBlockSchema = defineBlockSchema({
     role: 'content',
     parent: ['affine:note', 'affine:paragraph', 'affine:list'],
   },
+  toModel: () => new SurfaceRefBlockModel(),
 });
 
-export type SurfaceRefBlockModel = SchemaToModel<typeof SurfaceRefBlockSchema>;
-
-declare global {
-  namespace BlockSuite {
-    interface BlockModels {
-      'affine:surface-ref': SurfaceRefBlockModel;
-    }
-  }
-}
+export class SurfaceRefBlockModel extends BlockModel<SurfaceRefProps> {}

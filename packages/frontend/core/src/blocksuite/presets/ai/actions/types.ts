@@ -1,5 +1,12 @@
-import type { getCopilotHistoriesQuery, RequestOptions } from '@affine/graphql';
+import type {
+  ChatHistoryOrder,
+  CopilotContextDoc,
+  CopilotContextFile,
+  getCopilotHistoriesQuery,
+  RequestOptions,
+} from '@affine/graphql';
 import type { EditorHost } from '@blocksuite/affine/block-std';
+import type { GfxModel } from '@blocksuite/affine/block-std/gfx';
 import type { BlockModel } from '@blocksuite/affine/store';
 
 import type { DocContext } from '../chat-panel/chat-context';
@@ -72,7 +79,7 @@ declare global {
 
       // internal context
       host: EditorHost;
-      models?: (BlockModel | BlockSuite.SurfaceElementModel)[];
+      models?: (BlockModel | GfxModel)[];
       control: TrackerControl;
       where: TrackerWhere;
     }
@@ -104,10 +111,9 @@ declare global {
       T['stream'] extends true ? TextStream : Promise<string>;
 
     interface ChatOptions extends AITextActionOptions {
-      // related documents
-      docs?: DocContext[];
       sessionId?: string;
       isRootSession?: boolean;
+      docs?: DocContext[];
     }
 
     interface TranslateOptions extends AITextActionOptions {
@@ -231,6 +237,40 @@ declare global {
       ): AIActionTextResponse<T>;
     }
 
+    interface AIContextService {
+      createContext: (
+        workspaceId: string,
+        sessionId: string
+      ) => Promise<string>;
+      getContextId: (
+        workspaceId: string,
+        sessionId: string
+      ) => Promise<string | undefined>;
+      addContextDoc: (options: {
+        contextId: string;
+        docId: string;
+      }) => Promise<Array<{ id: string }>>;
+      removeContextDoc: (options: {
+        contextId: string;
+        docId: string;
+      }) => Promise<boolean>;
+      addContextFile: (options: {
+        contextId: string;
+        fileId: string;
+      }) => Promise<void>;
+      removeContextFile: (options: {
+        contextId: string;
+        fileId: string;
+      }) => Promise<void>;
+      getContextDocsAndFiles: (
+        workspaceId: string,
+        sessionId: string,
+        contextId: string
+      ) => Promise<
+        { docs: CopilotContextDoc[]; files: CopilotContextFile[] } | undefined
+      >;
+    }
+
     // TODO(@Peng): should be refactored to get rid of implement details (like messages, action, role, etc.)
     interface AIHistory {
       sessionId: string;
@@ -255,6 +295,15 @@ declare global {
       >[];
     };
 
+    interface AISessionService {
+      createSession: (
+        workspaceId: string,
+        docId: string,
+        promptName?: string
+      ) => Promise<string>;
+      updateSession: (sessionId: string, promptName: string) => Promise<string>;
+    }
+
     interface AIHistoryService {
       // non chat histories
       actions: (
@@ -264,9 +313,10 @@ declare global {
       chats: (
         workspaceId: string,
         docId?: string,
-        options?: RequestOptions<
-          typeof getCopilotHistoriesQuery
-        >['variables']['options']
+        options?: {
+          sessionId?: string;
+          messageOrder?: ChatHistoryOrder;
+        }
       ) => Promise<AIHistory[] | undefined>;
       cleanup: (
         workspaceId: string,

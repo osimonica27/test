@@ -1,3 +1,4 @@
+import { RootBlockModel } from '@blocksuite/affine-model';
 import {
   type BlockStdScope,
   type EditorHost,
@@ -11,7 +12,7 @@ import type {
   TransformerSlots,
 } from '@blocksuite/store';
 
-import { matchFlavours } from '../../utils';
+import { matchModels } from '../../utils';
 
 const handlePoint = (
   point: TextRangePoint,
@@ -19,7 +20,7 @@ const handlePoint = (
   model: DraftModel
 ) => {
   const { index, length } = point;
-  if (matchFlavours(model, ['affine:page'])) {
+  if (matchModels(model, [RootBlockModel])) {
     if (length === 0) return;
     (snapshot.props.title as Record<string, unknown>).delta =
       model.title.sliceToDelta(index, length + index);

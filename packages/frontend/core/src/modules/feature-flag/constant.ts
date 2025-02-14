@@ -22,8 +22,9 @@ export const AFFINE_FLAGS = {
       'com.affine.settings.workspace.experimental-features.enable-ai-network-search.name',
     description:
       'com.affine.settings.workspace.experimental-features.enable-ai-network-search.description',
-    configurable: true,
-    defaultState: false,
+    hide: true,
+    configurable: false,
+    defaultState: true,
   },
   enable_database_full_width: {
     category: 'blocksuite',
@@ -257,6 +258,13 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-editor-rtl.description',
     configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_ios_ai_button: {
+    category: 'affine',
+    displayName: 'Enable AI Button',
+    description: 'Enable AI Button on iOS',
+    configurable: BUILD_CONFIG.isIOS,
     defaultState: false,
   },
 } satisfies { [key in string]: FlagInfo };

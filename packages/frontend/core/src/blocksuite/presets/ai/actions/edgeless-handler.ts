@@ -1,5 +1,8 @@
 import type { EditorHost } from '@blocksuite/affine/block-std';
-import { GfxControllerIdentifier } from '@blocksuite/affine/block-std/gfx';
+import {
+  GfxControllerIdentifier,
+  type GfxModel,
+} from '@blocksuite/affine/block-std/gfx';
 import type {
   AffineAIPanelWidget,
   AIError,
@@ -7,6 +10,7 @@ import type {
 } from '@blocksuite/affine/blocks';
 import {
   BlocksUtils,
+  CodeBlockModel,
   EdgelessTextBlockModel,
   EmbedSyncedDocModel,
   ImageBlockModel,
@@ -71,7 +75,7 @@ async function getContentFromHubBlockModel(
 
 export async function getContentFromSelected(
   host: EditorHost,
-  selected: BlockSuite.EdgelessModel[]
+  selected: GfxModel[]
 ) {
   type RemoveUndefinedKey<T, K extends keyof T> = T & {
     [P in K]-?: Exclude<T[P], undefined>;
@@ -485,7 +489,7 @@ export function noteWithCodeBlockShowWen(
   return (
     selected[0] instanceof NoteBlockModel &&
     selected[0].children.length === 1 &&
-    BlocksUtils.matchFlavours(selected[0].children[0], ['affine:code'])
+    BlocksUtils.matchModels(selected[0].children[0], [CodeBlockModel])
   );
 }
 

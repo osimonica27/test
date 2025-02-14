@@ -3,7 +3,11 @@ import {
   type EdgelessNoteBlockComponent,
 } from '@blocksuite/affine-block-note';
 import { ParagraphBlockComponent } from '@blocksuite/affine-block-paragraph';
-import type { ParagraphBlockModel } from '@blocksuite/affine-model';
+import {
+  DatabaseBlockModel,
+  ListBlockModel,
+  type ParagraphBlockModel,
+} from '@blocksuite/affine-model';
 import { DocModeProvider } from '@blocksuite/affine-shared/services';
 import {
   calcDropTarget,
@@ -11,10 +15,15 @@ import {
   findClosestBlockComponent,
   getBlockProps,
   getClosestBlockComponentByPoint,
-  matchFlavours,
+  matchModels,
 } from '@blocksuite/affine-shared/utils';
 import type { BlockComponent, EditorHost } from '@blocksuite/block-std';
-import { Point, Rect } from '@blocksuite/global/utils';
+import {
+  Bound,
+  Point,
+  Rect,
+  type SerializedXYWH,
+} from '@blocksuite/global/utils';
 import type {
   BaseSelection,
   BlockModel,
@@ -147,7 +156,7 @@ export const isOutOfNoteBlock = (
 };
 
 export const getParentNoteBlock = (blockComponent: BlockComponent) => {
-  return blockComponent.closest('affine-note') ?? null;
+  return blockComponent.closest('affine-note, affine-edgeless-note') ?? null;
 };
 
 export const getClosestNoteBlock = (
@@ -216,7 +225,7 @@ export const getDropResult = (
 
   const model = closestBlock.model;
 
-  const isDatabase = matchFlavours(model, ['affine:database']);
+  const isDatabase = matchModels(model, [DatabaseBlockModel]);
   if (isDatabase) {
     return dropIndicator;
   }
@@ -232,7 +241,7 @@ export const getDropResult = (
 export function getDragHandleLeftPadding(blocks: BlockComponent[]) {
   const hasToggleList = blocks.some(
     block =>
-      (matchFlavours(block.model, ['affine:list']) &&
+      (matchModels(block.model, [ListBlockModel]) &&
         block.model.children.length > 0) ||
       (block instanceof ParagraphBlockComponent &&
         block.model.type.startsWith('h') &&
@@ -272,4 +281,34 @@ function getHoveringNote(point: Point) {
           e.tagName.toLowerCase() === AFFINE_EDGELESS_NOTE
       ) || null
   );
+}
+
+export function getSnapshotRect(snapshot: SliceSnapshot): Bound | null {
+  let bound: Bound | null = null;
+
+  const getBound = (block: BlockSnapshot) => {
+    if (block.flavour === 'affine:surface') {
+      if (block.props.elements) {
+        Object.values(
+          block.props.elements as Record<string, { xywh: SerializedXYWH }>
+        ).forEach(elem => {
+          if (elem.xywh) {
+            bound = bound
+              ? bound.unite(Bound.deserialize(elem.xywh))
+              : Bound.deserialize(elem.xywh);
+          }
+        });
+      }
+
+      block.children.forEach(getBound);
+    } else if (block.props.xywh) {
+      bound = bound
+        ? bound.unite(Bound.deserialize(block.props.xywh as SerializedXYWH))
+        : Bound.deserialize(block.props.xywh as SerializedXYWH);
+    }
+  };
+
+  snapshot.content.forEach(getBound);
+
+  return bound;
 }

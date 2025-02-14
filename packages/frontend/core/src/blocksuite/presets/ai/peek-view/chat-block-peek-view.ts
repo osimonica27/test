@@ -4,8 +4,10 @@ import {
   CanvasElementType,
   ConnectorMode,
   DocModeProvider,
-  type EdgelessRootService,
+  EdgelessCRUDIdentifier,
+  getSurfaceBlock,
   NotificationProvider,
+  type SpecBuilder,
   TelemetryProvider,
 } from '@blocksuite/affine/blocks';
 import { html, LitElement, nothing } from 'lit';
@@ -18,6 +20,7 @@ import {
   type ChatMessage,
   ChatMessagesSchema,
 } from '../../../blocks';
+import type { TextRendererOptions } from '../../_common/components/text-renderer';
 import {
   ChatBlockPeekViewActions,
   constructUserInfoWithMessages,
@@ -32,10 +35,6 @@ import { calcChildBound } from './utils';
 
 export class AIChatBlockPeekView extends LitElement {
   static override styles = PeekViewStyles;
-
-  private get _rootService() {
-    return this.host.std.getService('affine:page');
-  }
 
   private get _modeService() {
     return this.host.std.get(DocModeProvider);
@@ -172,10 +171,11 @@ export class AIChatBlockPeekView extends LitElement {
       return;
     }
 
-    const edgelessService = this._rootService as EdgelessRootService;
-    const bound = calcChildBound(this.parentModel, edgelessService);
-    const aiChatBlockId = edgelessService.crud.addBlock(
-      'affine:embed-ai-chat' as keyof BlockSuite.BlockModels,
+    const bound = calcChildBound(this.parentModel, this.host.std);
+
+    const crud = this.host.std.get(EdgelessCRUDIdentifier);
+    const aiChatBlockId = crud.addBlock(
+      'affine:embed-ai-chat',
       {
         xywh: bound.serialize(),
         messages: JSON.stringify(messages),
@@ -193,7 +193,7 @@ export class AIChatBlockPeekView extends LitElement {
     this.updateContext({ currentChatBlockId: aiChatBlockId });
 
     // Connect the parent chat block to the AI chat block
-    edgelessService.crud.addElement(CanvasElementType.CONNECTOR, {
+    crud.addElement(CanvasElementType.CONNECTOR, {
       mode: ConnectorMode.Curve,
       controllers: [],
       source: { id: this.parentChatBlockId },
@@ -249,7 +249,6 @@ export class AIChatBlockPeekView extends LitElement {
    * Clean current chat messages and delete the newly created AI chat block
    */
   cleanCurrentChatHistories = async () => {
-    if (!this._rootService) return;
     const notificationService = this.host.std.getOptional(NotificationProvider);
     if (!notificationService) return;
 
@@ -275,18 +274,17 @@ export class AIChatBlockPeekView extends LitElement {
       }
 
       if (currentChatBlockId) {
-        const edgelessService = this._rootService as EdgelessRootService;
+        const surface = getSurfaceBlock(doc);
+        const crud = this.host.std.get(EdgelessCRUDIdentifier);
         const chatBlock = doc.getBlock(currentChatBlockId)?.model;
         if (chatBlock) {
-          const connectors = edgelessService.getConnectors(
-            chatBlock as AIChatBlockModel
-          );
+          const connectors = surface?.getConnectors(chatBlock.id);
           doc.transact(() => {
             // Delete the AI chat block
-            edgelessService.removeElement(currentChatBlockId);
+            crud.removeElement(currentChatBlockId);
             // Delete the connectors
-            connectors.forEach(connector => {
-              edgelessService.removeElement(connector.id);
+            connectors?.forEach(connector => {
+              crud.removeElement(connector.id);
             });
           });
         }
@@ -388,6 +386,9 @@ export class AIChatBlockPeekView extends LitElement {
         userName: message.userName,
         avatarUrl: message.avatarUrl,
       };
+      const textRendererOptions: TextRendererOptions = {
+        extensions: this.previewSpecBuilder.value,
+      };
 
       return html`<div class=${messageClasses}>
         <ai-chat-message
@@ -397,6 +398,7 @@ export class AIChatBlockPeekView extends LitElement {
           .attachments=${attachments}
           .messageRole=${role}
           .userInfo=${userInfo}
+          .textRendererOptions=${textRendererOptions}
         ></ai-chat-message>
         ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
         ${shouldRenderCopyMore
@@ -477,12 +479,16 @@ export class AIChatBlockPeekView extends LitElement {
     } = this;
 
     const { messages: currentChatMessages } = chatContext;
+    const textRendererOptions: TextRendererOptions = {
+      extensions: this.previewSpecBuilder.value,
+    };
 
     return html`<div class="ai-chat-block-peek-view-container">
       <div class="ai-chat-messages-container">
         <ai-chat-messages
           .host=${host}
           .messages=${_historyMessages}
+          .textRendererOptions=${textRendererOptions}
         ></ai-chat-messages>
         <date-time .date=${latestMessageCreatedAt}></date-time>
         <div class="new-chat-messages-container">
@@ -515,6 +521,9 @@ export class AIChatBlockPeekView extends LitElement {
   @property({ attribute: false })
   accessor host!: EditorHost;
 
+  @property({ attribute: false })
+  accessor previewSpecBuilder!: SpecBuilder;
+
   @state()
   accessor _historyMessages: ChatMessage[] = [];
 
@@ -538,10 +547,12 @@ declare global {
 
 export const AIChatBlockPeekViewTemplate = (
   parentModel: AIChatBlockModel,
-  host: EditorHost
+  host: EditorHost,
+  previewSpecBuilder: SpecBuilder
 ) => {
   return html`<ai-chat-block-peek-view
     .parentModel=${parentModel}
     .host=${host}
+    .previewSpecBuilder=${previewSpecBuilder}
   ></ai-chat-block-peek-view>`;
 };

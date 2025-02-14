@@ -1,4 +1,5 @@
-import { matchFlavours } from '@blocksuite/affine-shared/utils';
+import { NoteBlockModel } from '@blocksuite/affine-model';
+import { matchModels } from '@blocksuite/affine-shared/utils';
 import { type Command, TextSelection } from '@blocksuite/block-std';
 
 import { dedentBlockToRoot } from './dedent-block-to-root';
@@ -30,7 +31,7 @@ export const dedentBlocksToRoot: Command<{
   for (let i = blockIds.length - 1; i >= 0; i--) {
     const model = blockIds[i];
     const parent = store.getParent(model);
-    if (parent && !matchFlavours(parent, ['affine:note'])) {
+    if (parent && !matchModels(parent, [NoteBlockModel])) {
       std.command.exec(dedentBlockToRoot, {
         blockId: model,
         stopCapture: false,

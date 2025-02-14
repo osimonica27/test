@@ -1,7 +1,7 @@
-import type { ListBlockModel } from '@blocksuite/affine-model';
+import { ListBlockModel } from '@blocksuite/affine-model';
 import {
   getNextContinuousNumberedLists,
-  matchFlavours,
+  matchModels,
 } from '@blocksuite/affine-shared/utils';
 import type { BlockModel, Store } from '@blocksuite/store';
 
@@ -22,7 +22,7 @@ export function correctNumberedListsOrderToPrev(
   if (!model) return;
 
   if (
-    !matchFlavours(model, ['affine:list']) ||
+    !matchModels(model, [ListBlockModel]) ||
     model.type$.value !== 'numbered'
   ) {
     return;
@@ -33,7 +33,7 @@ export function correctNumberedListsOrderToPrev(
     const previousSibling = doc.getPrev(model);
     if (
       previousSibling &&
-      matchFlavours(previousSibling, ['affine:list']) &&
+      matchModels(previousSibling, [ListBlockModel]) &&
       previousSibling.type === 'numbered'
     ) {
       if (!previousSibling.order) previousSibling.order = 1;

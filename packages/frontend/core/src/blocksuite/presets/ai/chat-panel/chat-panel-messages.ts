@@ -6,6 +6,7 @@ import {
   FeatureFlagService,
   isInsidePageEditor,
   PaymentRequiredError,
+  type SpecBuilder,
   UnauthorizedError,
 } from '@blocksuite/affine/blocks';
 import { WithDisposable } from '@blocksuite/affine/global/utils';
@@ -70,6 +71,12 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       user-select: none;
     }
 
+    .message-info {
+      color: var(--affine-placeholder-color);
+      font-size: 12px;
+      font-weight: 400;
+    }
+
     .avatar-container {
       width: 24px;
       height: 24px;
@@ -127,7 +134,13 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   accessor chatContextValue!: ChatContextValue;
 
   @property({ attribute: false })
+  accessor chatSessionId!: string | undefined;
+
+  @property({ attribute: false })
   accessor updateContext!: (context: Partial<ChatContextValue>) => void;
+
+  @property({ attribute: false })
+  accessor previewSpecBuilder!: SpecBuilder;
 
   @query('.chat-panel-messages')
   accessor messagesContainer: HTMLDivElement | null = null;
@@ -316,6 +329,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
           .attachments=${item.attachments}
           .text=${item.content}
           .state=${state}
+          .previewSpecBuilder=${this.previewSpecBuilder}
         ></chat-text>
         ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
         ${this.renderEditorActions(item, isLast)}`;
@@ -362,6 +376,12 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
 
   renderAvatar(item: ChatItem) {
     const isUser = 'role' in item && item.role === 'user';
+    const isAssistant = 'role' in item && item.role === 'assistant';
+    const isWithDocs =
+      isAssistant &&
+      item.content &&
+      item.content.includes('[^') &&
+      /\[\^\d+\]:{"type":"doc","docId":"[^"]+"}/.test(item.content);
 
     return html`<div class="user-info">
       ${isUser
@@ -372,6 +392,9 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
           </div>`
         : AffineAvatarIcon}
       ${isUser ? 'You' : 'AFFiNE AI'}
+      ${isWithDocs
+        ? html`<span class="message-info">with your docs</span>`
+        : nothing}
     </div>`;
   }
 
@@ -392,8 +415,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   retry = async () => {
     const { doc } = this.host;
     try {
-      const { chatSessionId } = this.chatContextValue;
-      if (!chatSessionId) return;
+      if (!this.chatSessionId) return;
 
       const abortController = new AbortController();
       const items = [...this.chatContextValue.items];
@@ -405,7 +427,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       this.updateContext({ items, status: 'loading', error: null });
 
       const stream = AIProvider.actions.chat?.({
-        sessionId: chatSessionId,
+        sessionId: this.chatSessionId,
         retry: true,
         docId: doc.id,
         workspaceId: doc.workspace.id,
@@ -436,7 +458,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   };
 
   renderEditorActions(item: ChatMessage, isLast: boolean) {
-    const { status, chatSessionId } = this.chatContextValue;
+    const { status } = this.chatContextValue;
 
     if (item.role !== 'assistant') return nothing;
 
@@ -460,7 +482,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         .actions=${actions}
         .content=${content}
         .isLast=${isLast}
-        .chatSessionId=${chatSessionId ?? undefined}
+        .chatSessionId=${this.chatSessionId}
         .messageId=${messageId}
         .withMargin=${true}
         .retry=${() => this.retry()}
@@ -470,7 +492,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
             .actions=${actions}
             .host=${host}
             .content=${content}
-            .chatSessionId=${chatSessionId ?? undefined}
+            .chatSessionId=${this.chatSessionId}
             .messageId=${messageId ?? undefined}
             .withMargin=${true}
           ></chat-action-list>`

@@ -19,6 +19,7 @@ import {
   UserFriendlyError,
 } from '../error';
 import { metrics } from '../metrics';
+import { getRequestIdFromHost } from '../utils';
 
 export function mapAnyError(error: any): UserFriendlyError {
   if (error instanceof UserFriendlyError) {
@@ -45,7 +46,9 @@ export class GlobalExceptionFilter extends BaseExceptionFilter {
       // see '../graphql/logger-plugin.ts'
       throw error;
     } else {
-      error.log('HTTP');
+      error.log('HTTP', {
+        requestId: error.requestId ?? getRequestIdFromHost(host),
+      });
       metrics.controllers
         .counter('error')
         .add(1, { status: error.status, type: error.type, error: error.name });
@@ -131,9 +134,9 @@ export const GatewayErrorWrapper = (event: string): MethodDecorator => {
   };
 };
 
-export function mapSseError(originalError: any) {
+export function mapSseError(originalError: any, info: object) {
   const error = mapAnyError(originalError);
-  error.log('Sse');
+  error.log('Sse', info);
   metrics.sse.counter('error').add(1, { status: error.status });
   return of({
     type: 'error' as const,

@@ -35,7 +35,7 @@ export interface LinkedWidgetConfig {
    * [[ -> @
    */
   convertTriggerKey: boolean;
-  ignoreBlockTypes: (keyof BlockSuite.BlockModels)[];
+  ignoreBlockTypes: string[];
   ignoreSelector: string;
   getMenus: (
     query: string,
@@ -259,3 +259,5 @@ export const LinkedWidgetUtils = {
   createNewDocMenuGroup,
   insertLinkedNode,
 };
+
+export const AFFINE_LINKED_DOC_WIDGET = 'affine-linked-doc-widget';

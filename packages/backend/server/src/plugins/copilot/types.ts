@@ -149,6 +149,7 @@ export type ListHistoriesOptions = {
   sessionOrder: 'asc' | 'desc' | undefined;
   messageOrder: 'asc' | 'desc' | undefined;
   sessionId: string | undefined;
+  withPrompt: boolean | undefined;
 };
 
 // ======== Provider Interface ========
@@ -197,6 +198,13 @@ const CopilotImageOptionsSchema = CopilotProviderOptionsSchema.merge(
   .optional();
 
 export type CopilotImageOptions = z.infer<typeof CopilotImageOptionsSchema>;
+
+export type CopilotContextFile = {
+  id: string; // fileId
+  created_at: number;
+  // embedding status
+  status: 'in_progress' | 'completed' | 'failed';
+};
 
 export interface CopilotProvider {
   readonly type: CopilotProviderType;

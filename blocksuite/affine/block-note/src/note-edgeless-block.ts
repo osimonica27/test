@@ -3,11 +3,7 @@ import type { DocTitle } from '@blocksuite/affine-components/doc-title';
 import { MoreIndicatorIcon } from '@blocksuite/affine-components/icons';
 import { NoteDisplayMode } from '@blocksuite/affine-model';
 import { EDGELESS_BLOCK_CHILD_PADDING } from '@blocksuite/affine-shared/consts';
-import { FeatureFlagService } from '@blocksuite/affine-shared/services';
-import {
-  matchFlavours,
-  stopPropagation,
-} from '@blocksuite/affine-shared/utils';
+import { stopPropagation } from '@blocksuite/affine-shared/utils';
 import { toGfxBlockComponent } from '@blocksuite/block-std';
 import { Bound } from '@blocksuite/global/utils';
 import { html, nothing } from 'lit';
@@ -19,33 +15,24 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { NoteBlockComponent } from './note-block';
 import { ACTIVE_NOTE_EXTRA_PADDING } from './note-edgeless-block.css';
 import * as styles from './note-edgeless-block.css';
+import { isPageBlock } from './utils';
 
 export const AFFINE_EDGELESS_NOTE = 'affine-edgeless-note';
 
 export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
   NoteBlockComponent
 ) {
-  private get _isPageBlock() {
-    return (
-      this.std.get(FeatureFlagService).getFlag('enable_page_block') &&
-      this._isFirstVisibleNote()
-    );
-  }
-
   private get _isShowCollapsedContent() {
     return (
       this.model.edgeless.collapse &&
       this.gfx.selection.has(this.model.id) &&
+      !this._dragging &&
       (this._isResizing || this._isHover)
     );
   }
 
-  get _zoom() {
-    return this.gfx.viewport.zoom;
-  }
-
-  get rootService() {
-    return this.std.getService('affine:page');
+  private get _dragging() {
+    return this._isHover && this.gfx.tool.dragging$.value;
   }
 
   private _collapsedContent() {
@@ -63,7 +50,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     const width = bound.w / scale + extraPadding * 2 + extraBorder;
     const height = bound.h / scale;
 
-    const rect = this._notePageContent?.getBoundingClientRect();
+    const rect = this._noteContent?.getBoundingClientRect();
     if (!rect) return nothing;
 
     const zoom = this.gfx.viewport.zoom;
@@ -88,7 +75,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
   }
 
   private _handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'ArrowUp' && this._isPageBlock) {
+    if (e.key === 'ArrowUp') {
       this._docTitle?.inlineEditor?.focusEnd();
     }
   }
@@ -101,16 +88,6 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     ) {
       this._isHover = true;
     }
-  }
-
-  private _isFirstVisibleNote() {
-    return (
-      this.model.parent?.children.find(
-        child =>
-          matchFlavours(child, ['affine:note']) &&
-          child.displayMode !== NoteDisplayMode.EdgelessOnly
-      ) === this.model
-    );
   }
 
   private _leaved() {
@@ -183,14 +160,14 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     );
 
     const observer = new MutationObserver(() => {
-      const rect = this._notePageContent?.getBoundingClientRect();
+      const rect = this._noteContent?.getBoundingClientRect();
       if (!rect) return;
       const zoom = this.gfx.viewport.zoom;
       const scale = this.model.edgeless.scale ?? 1;
       this._noteFullHeight =
         rect.height / scale / zoom + 2 * EDGELESS_BLOCK_CHILD_PADDING;
     });
-    if (this._notePageContent) {
+    if (this._noteContent) {
       observer.observe(this, { childList: true, subtree: true });
       _disposables.add(() => observer.disconnect());
     }
@@ -208,7 +185,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
       x: bound.x,
       y: bound.y,
       w: width,
-      h: collapse ? height : 'inherit',
+      h: collapse ? height : 'unset',
       zIndex: this.toZIndex(),
     };
   }
@@ -259,22 +236,21 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
           .note=${this.model}
         ></edgeless-note-background>
 
-        ${this._isPageBlock && !collapse
-          ? html`<doc-title
-              .doc=${this.doc}
-              .wrapText=${!collapse}
-            ></doc-title>`
-          : nothing}
-
         <div
-          class="edgeless-note-page-content"
+          data-testid="edgeless-note-clip-container"
+          class=${styles.clipContainer}
           style=${styleMap({
-            width: '100%',
-            height: '100%',
             'overflow-y': this._isShowCollapsedContent ? 'initial' : 'clip',
           })}
         >
-          ${this.renderPageContent()}
+          <div>
+            <edgeless-page-block-title
+              .note=${this.model}
+            ></edgeless-page-block-title>
+            <div class="edgeless-note-page-content">
+              ${this.renderPageContent()}
+            </div>
+          </div>
         </div>
 
         <edgeless-note-mask
@@ -284,7 +260,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
           .editing=${this._editing}
         ></edgeless-note-mask>
 
-        ${isCollapsable && !this._isPageBlock
+        ${isCollapsable && !isPageBlock(this.std, this.model)
           ? html`<div
               class="${classMap({
                 [styles.collapseButton]: true,
@@ -318,8 +294,8 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
   @state()
   private accessor _noteFullHeight = 0;
 
-  @query('.edgeless-note-page-content .affine-note-block-container')
-  private accessor _notePageContent: HTMLElement | null = null;
+  @query(`.${styles.clipContainer} > div`)
+  private accessor _noteContent: HTMLElement | null = null;
 
   @query('doc-title')
   private accessor _docTitle: DocTitle | null = null;

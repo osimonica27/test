@@ -1,22 +1,21 @@
 import { ChatHistoryOrder } from '@affine/graphql';
 import {
   BlockSelection,
+  type BlockStdScope,
   type EditorHost,
   TextSelection,
 } from '@blocksuite/affine/block-std';
-import type {
-  DocMode,
-  EdgelessRootService,
-  ImageSelection,
-  RootService,
-} from '@blocksuite/affine/blocks';
+import { GfxControllerIdentifier } from '@blocksuite/affine/block-std/gfx';
+import type { DocMode, ImageSelection } from '@blocksuite/affine/blocks';
 import {
   BlocksUtils,
   DocModeProvider,
+  EdgelessCRUDIdentifier,
   EditPropsStore,
   getSelectedBlocksCommand,
   NoteDisplayMode,
   NotificationProvider,
+  ParagraphBlockModel,
   RefNodeSlotsProvider,
   TelemetryProvider,
 } from '@blocksuite/affine/blocks';
@@ -35,7 +34,7 @@ import { reportResponse } from '../utils/action-reporter';
 import { insertBelow, replace } from '../utils/editor-actions';
 import { BlockIcon, CreateIcon, InsertBelowIcon, ReplaceIcon } from './icons';
 
-const { matchFlavours } = BlocksUtils;
+const { matchModels } = BlocksUtils;
 
 type Selections = {
   text?: TextSelection;
@@ -115,10 +114,10 @@ export async function constructRootChatBlockMessages(
   return constructUserInfoWithMessages(forkMessages, userInfo);
 }
 
-function getViewportCenter(mode: DocMode, rootService: RootService) {
+function getViewportCenter(mode: DocMode, std: BlockStdScope) {
   const center = { x: 400, y: 50 };
   if (mode === 'page') {
-    const viewport = rootService.std.get(EditPropsStore).getStorage('viewport');
+    const viewport = std.get(EditPropsStore).getStorage('viewport');
     if (viewport) {
       if ('xywh' in viewport) {
         const bound = Bound.deserialize(viewport.xywh);
@@ -131,9 +130,9 @@ function getViewportCenter(mode: DocMode, rootService: RootService) {
     }
   } else {
     // Else we should get latest viewport center from the edgeless root service
-    const edgelessService = rootService as EdgelessRootService;
-    center.x = edgelessService.viewport.centerX;
-    center.y = edgelessService.viewport.centerY;
+    const viewport = std.get(GfxControllerIdentifier).viewport;
+    center.x = viewport.centerX;
+    center.y = viewport.centerY;
   }
 
   return center;
@@ -166,7 +165,7 @@ function addAIChatBlock(
   const y = viewportCenter.y - height / 2;
   const bound = new Bound(x, y, width, height);
   const aiChatBlockId = doc.addBlock(
-    'affine:embed-ai-chat' as keyof BlockSuite.BlockModels,
+    'affine:embed-ai-chat',
     {
       xywh: bound.serialize(),
       messages: JSON.stringify(messages),
@@ -231,7 +230,7 @@ const REPLACE_SELECTION = {
     if (currentTextSelection) {
       const { doc } = host;
       const block = doc.getBlock(currentTextSelection.blockId);
-      if (matchFlavours(block?.model ?? null, ['affine:paragraph'])) {
+      if (matchModels(block?.model ?? null, [ParagraphBlockModel])) {
         block?.model.text?.replace(
           currentTextSelection.from.index,
           currentTextSelection.from.length,
@@ -309,18 +308,11 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
       return false;
     }
 
-    const rootService = host.std.getService('affine:page');
-    const surfaceService = host.std.getService('affine:surface');
-    if (!rootService || !surfaceService) return false;
-
     const notificationService = host.std.getOptional(NotificationProvider);
     const docModeService = host.std.get(DocModeProvider);
-    const { layer } = surfaceService;
+    const layer = host.std.get(GfxControllerIdentifier).layer;
     const curMode = docModeService.getEditorMode() || 'page';
-    const viewportCenter = getViewportCenter(
-      curMode,
-      rootService as RootService
-    );
+    const viewportCenter = getViewportCenter(curMode, host.std);
     const newBlockIndex = layer.generateIndex();
     // If current mode is not edgeless, switch to edgeless mode first
     if (curMode !== 'edgeless') {
@@ -401,11 +393,9 @@ const ADD_TO_EDGELESS_AS_NOTE = {
   handler: async (host: EditorHost, content: string) => {
     reportResponse('result:add-note');
     const { doc } = host;
-    const service = host.std.getService<EdgelessRootService>('affine:page');
-    if (!service) return;
 
-    const elements = service.selection.selectedElements;
-
+    const gfx = host.std.get(GfxControllerIdentifier);
+    const elements = gfx.selection.selectedElements;
     const props: { displayMode: NoteDisplayMode; xywh?: SerializedXYWH } = {
       displayMode: NoteDisplayMode.EdgelessOnly,
     };
@@ -422,7 +412,7 @@ const ADD_TO_EDGELESS_AS_NOTE = {
 
     await insertFromMarkdown(host, content, doc, id, 0);
 
-    service.selection.set({
+    gfx.selection.set({
       elements: [id],
       editing: false,
     });
@@ -487,10 +477,6 @@ const CREATE_AS_LINKED_DOC = {
       return false;
     }
 
-    const service = host.std.getService<EdgelessRootService>('affine:page');
-    if (!service) {
-      return false;
-    }
     const docModeService = host.std.get(DocModeProvider);
     const mode = docModeService.getEditorMode();
     if (mode !== 'edgeless') {
@@ -505,8 +491,9 @@ const CREATE_AS_LINKED_DOC = {
     const noteId = newDoc.addBlock('affine:note', {}, rootId);
     await insertFromMarkdown(host, content, newDoc, noteId, 0);
 
+    const gfx = host.std.get(GfxControllerIdentifier);
     // Add a linked doc card to link to the new doc
-    const elements = service.selection.selectedElements;
+    const elements = gfx.selection.selectedElements;
     const width = 364;
     const height = 390;
     let x = 0;
@@ -522,12 +509,12 @@ const CREATE_AS_LINKED_DOC = {
 
     // If the selected elements are not in the viewport, center the linked doc card
     if (x === Number.POSITIVE_INFINITY || y === Number.POSITIVE_INFINITY) {
-      const viewportCenter = getViewportCenter(mode, service);
+      const viewportCenter = getViewportCenter(mode, host.std);
       x = viewportCenter.x - width / 2;
       y = viewportCenter.y - height / 2;
     }
 
-    service.crud.addBlock(
+    host.std.get(EdgelessCRUDIdentifier).addBlock(
       'affine:embed-linked-doc',
       {
         xywh: `[${x}, ${y}, ${width}, ${height}]`,

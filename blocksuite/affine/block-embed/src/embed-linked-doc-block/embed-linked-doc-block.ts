@@ -1,3 +1,4 @@
+import { SurfaceBlockModel } from '@blocksuite/affine-block-surface';
 import { isPeekable, Peekable } from '@blocksuite/affine-components/peek';
 import { RefNodeSlotsProvider } from '@blocksuite/affine-components/rich-text';
 import type {
@@ -23,7 +24,7 @@ import {
   cloneReferenceInfoWithoutAliases,
   isNewTabTrigger,
   isNewViewTrigger,
-  matchFlavours,
+  matchModels,
   referenceToNode,
 } from '@blocksuite/affine-shared/utils';
 import { BlockSelection } from '@blocksuite/block-std';
@@ -373,7 +374,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     const isLoading = this._loading;
     const isError = this.isError;
     const isEmpty = this._isDocEmpty() && this.isBannerEmpty;
-    const inCanvas = matchFlavours(this.model.parent, ['affine:surface']);
+    const inCanvas = matchModels(this.model.parent, [SurfaceBlockModel]);
 
     const cardClassMap = classMap({
       loading: isLoading,

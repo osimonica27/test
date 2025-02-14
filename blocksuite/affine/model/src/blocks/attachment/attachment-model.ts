@@ -81,21 +81,11 @@ export const AttachmentBlockSchema = defineBlockSchema({
       'affine:list',
     ],
   },
-  transformer: () => new AttachmentBlockTransformer(),
+  transformer: transformerConfigs =>
+    new AttachmentBlockTransformer(transformerConfigs),
   toModel: () => new AttachmentBlockModel(),
 });
 
 export class AttachmentBlockModel
   extends GfxCompatible<AttachmentBlockProps>(BlockModel)
   implements GfxElementGeometry {}
-
-declare global {
-  namespace BlockSuite {
-    interface EdgelessBlockModelMap {
-      'affine:attachment': AttachmentBlockModel;
-    }
-    interface BlockModels {
-      'affine:attachment': AttachmentBlockModel;
-    }
-  }
-}

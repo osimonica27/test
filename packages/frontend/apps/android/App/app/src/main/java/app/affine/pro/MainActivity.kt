@@ -3,6 +3,8 @@ package app.affine.pro
 import android.os.Build
 import android.os.Bundle
 import androidx.annotation.RequiresApi
+import com.capacitorjs.plugins.keyboard.KeyboardPlugin
+import com.capacitorjs.plugins.statusbar.StatusBarPlugin
 import com.getcapacitor.BridgeActivity
 import com.getcapacitor.plugin.CapacitorCookies
 import com.getcapacitor.plugin.CapacitorHttp
@@ -17,7 +19,9 @@ class MainActivity : BridgeActivity() {
             listOf(
                 CapacitorHttp::class.java,
                 CapacitorCookies::class.java,
-                InAppBrowserPlugin::class.java
+                InAppBrowserPlugin::class.java,
+                KeyboardPlugin::class.java,
+                StatusBarPlugin::class.java,
             )
         )
     }

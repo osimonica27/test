@@ -48,6 +48,7 @@ export const TableBlockSchema = defineBlockSchema({
     cells: {},
   }),
   metadata: {
+    isFlatData: true,
     role: 'content',
     version: 1,
     parent: ['affine:note'],
@@ -55,11 +56,3 @@ export const TableBlockSchema = defineBlockSchema({
   },
   toModel: () => new TableBlockModel(),
 });
-
-declare global {
-  namespace BlockSuite {
-    interface BlockModels {
-      [TableModelFlavour]: TableBlockModel;
-    }
-  }
-}

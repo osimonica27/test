@@ -40,7 +40,7 @@ export const BlockSchema = z.object({
   }),
   transformer: z
     .function()
-    .args()
+    .args(z.custom<Map<string, unknown>>())
     .returns(z.custom<BaseBlockTransformer>())
     .optional(),
 });
@@ -50,18 +50,6 @@ export type BlockSchemaType = z.infer<typeof BlockSchema>;
 export type PropsGetter<Props> = (
   internalPrimitives: InternalPrimitives
 ) => Props;
-
-export type SchemaToModel<
-  Schema extends {
-    model: {
-      props: PropsGetter<object>;
-      flavour: string;
-    };
-  },
-> = BlockModel<ReturnType<Schema['model']['props']>> &
-  ReturnType<Schema['model']['props']> & {
-    flavour: Schema['model']['flavour'];
-  };
 
 export function defineBlockSchema<
   Flavour extends string,
@@ -81,14 +69,14 @@ export function defineBlockSchema<
   metadata: Metadata;
   props?: (internalPrimitives: InternalPrimitives) => Props;
   toModel?: () => Model;
-  transformer?: () => Transformer;
+  transformer?: (transformerConfig: Map<string, unknown>) => Transformer;
 }): {
   version: number;
   model: {
     props: PropsGetter<Props>;
     flavour: Flavour;
   } & Metadata;
-  transformer?: () => Transformer;
+  transformer?: (transformerConfig: Map<string, unknown>) => Transformer;
 };
 
 export function defineBlockSchema({
@@ -108,7 +96,9 @@ export function defineBlockSchema({
   };
   props?: (internalPrimitives: InternalPrimitives) => Record<string, unknown>;
   toModel?: () => BlockModel;
-  transformer?: () => BaseBlockTransformer;
+  transformer?: (
+    transformerConfig: Map<string, unknown>
+  ) => BaseBlockTransformer;
 }): BlockSchemaType {
   const schema = {
     version: metadata.version,

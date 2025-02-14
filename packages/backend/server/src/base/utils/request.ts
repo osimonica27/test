@@ -5,6 +5,7 @@ import type { ArgumentsHost, ExecutionContext } from '@nestjs/common';
 import type { GqlContextType } from '@nestjs/graphql';
 import { GqlArgumentsHost } from '@nestjs/graphql';
 import type { Request, Response } from 'express';
+import { ClsServiceManager } from 'nestjs-cls';
 import type { Socket } from 'socket.io';
 
 export function getRequestResponseFromHost(host: ArgumentsHost) {
@@ -83,13 +84,34 @@ export function parseCookies(
  * Request type
  *
  * @description
- * - `req`: http request
+ * - `graphql`: graphql request
+ * - `http`: http request
  * - `ws`: websocket request
  * - `se`: server event
  * - `job`: cron job
+ * - `rpc`: rpc request
  */
-export type RequestType = 'req' | 'ws' | 'se' | 'job';
+export type RequestType = GqlContextType | 'se' | 'job';
 
 export function genRequestId(type: RequestType) {
-  return `${AFFiNE.flavor.type}:${type}-${randomUUID()}`;
+  return `${AFFiNE.flavor.type}:${type}/${randomUUID()}`;
+}
+
+export function getOrGenRequestId(type: RequestType) {
+  // The request id must exist in a cls context,
+  // but it can be lost in unexpected scenarios, such as unit tests, where it is automatically generated.
+  return ClsServiceManager.getClsService()?.getId() ?? genRequestId(type);
+}
+
+export function getRequestIdFromRequest(req: Request, type: RequestType) {
+  const traceContext = req.headers['x-cloud-trace-context'] as string;
+  const traceId = traceContext ? traceContext.split('/', 1)[0] : undefined;
+  if (traceId) return traceId;
+  return genRequestId(type);
+}
+
+export function getRequestIdFromHost(host: ArgumentsHost) {
+  const type = host.getType<GqlContextType>();
+  const req = getRequestFromHost(host);
+  return getRequestIdFromRequest(req, type);
 }

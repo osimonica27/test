@@ -1,10 +1,20 @@
+import {
+  AttachmentBlockModel,
+  BookmarkBlockModel,
+  CodeBlockModel,
+  DatabaseBlockModel,
+  ImageBlockModel,
+  SurfaceRefBlockModel,
+} from '@blocksuite/affine-model';
 import { getSelectionRectsCommand } from '@blocksuite/affine-shared/commands';
-import { matchFlavours } from '@blocksuite/affine-shared/utils';
+import { EMBED_BLOCK_MODEL_LIST } from '@blocksuite/affine-shared/consts';
+import { matchModels } from '@blocksuite/affine-shared/utils';
 import {
   BlockSelection,
   TextSelection,
   WidgetComponent,
 } from '@blocksuite/block-std';
+import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { throttle } from '@blocksuite/global/utils';
 import type { BaseSelection, UserInfo } from '@blocksuite/store';
 import { computed, effect } from '@preact/signals-core';
@@ -67,16 +77,15 @@ export class AffineDocRemoteSelectionWidget extends WidgetComponent {
   private get _config(): DocRemoteSelectionConfig {
     return {
       blockSelectionBackgroundTransparent: block => {
-        return (
-          matchFlavours(block, [
-            'affine:code',
-            'affine:database',
-            'affine:image',
-            'affine:attachment',
-            'affine:bookmark',
-            'affine:surface-ref',
-          ]) || /affine:embed-*/.test(block.flavour)
-        );
+        return matchModels(block, [
+          CodeBlockModel,
+          DatabaseBlockModel,
+          ImageBlockModel,
+          AttachmentBlockModel,
+          BookmarkBlockModel,
+          SurfaceRefBlockModel,
+          ...EMBED_BLOCK_MODEL_LIST,
+        ]);
       },
     };
   }
@@ -260,24 +269,28 @@ export class AffineDocRemoteSelectionWidget extends WidgetComponent {
     this._abortController.abort();
   }
 
-  private readonly _updateSelections = throttle(
-    (selections: typeof this._remoteSelections.value) => {
-      const remoteUsers = new Set<number>();
-      this._selections = selections.flatMap(({ selections, id, user }) => {
-        if (remoteUsers.has(id)) {
-          return [];
-        } else {
-          remoteUsers.add(id);
-        }
+  private readonly _updateSelections = (
+    selections: typeof this._remoteSelections.value
+  ) => {
+    const remoteUsers = new Set<number>();
+    this._selections = selections.flatMap(({ selections, id, user }) => {
+      if (remoteUsers.has(id)) {
+        return [];
+      } else {
+        remoteUsers.add(id);
+      }
 
-        return {
-          id,
-          selections,
-          rects: this._getSelectionRect(selections),
-          user,
-        };
-      });
-    },
+      return {
+        id,
+        selections,
+        rects: this._getSelectionRect(selections),
+        user,
+      };
+    });
+  };
+
+  private readonly _updateSelectionsThrottled = throttle(
+    this._updateSelections,
     60
   );
 
@@ -285,13 +298,21 @@ export class AffineDocRemoteSelectionWidget extends WidgetComponent {
     this.disposables.add(
       effect(() => {
         const selections = this._remoteSelections.value;
-        this._updateSelections(selections);
+        this._updateSelectionsThrottled(selections);
       })
     );
 
     this.disposables.add(
       this.std.store.slots.blockUpdated.on(() => {
-        this._updateSelections(this._remoteSelections.peek());
+        this._updateSelectionsThrottled(this._remoteSelections.peek());
+      })
+    );
+
+    const gfx = this.std.get(GfxControllerIdentifier);
+    this.disposables.add(
+      gfx.viewport.viewportUpdated.on(() => {
+        const selections = this._remoteSelections.peek();
+        this._updateSelections(selections);
       })
     );
   }

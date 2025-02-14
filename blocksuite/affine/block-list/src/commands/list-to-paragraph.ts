@@ -1,5 +1,6 @@
 import { focusTextModel } from '@blocksuite/affine-components/rich-text';
-import { matchFlavours } from '@blocksuite/affine-shared/utils';
+import { ListBlockModel } from '@blocksuite/affine-model';
+import { matchModels } from '@blocksuite/affine-shared/utils';
 import type { Command } from '@blocksuite/block-std';
 
 export const listToParagraphCommand: Command<
@@ -16,7 +17,7 @@ export const listToParagraphCommand: Command<
   const doc = std.store;
   const model = doc.getBlock(id)?.model;
 
-  if (!model || !matchFlavours(model, ['affine:list'])) return false;
+  if (!model || !matchModels(model, [ListBlockModel])) return false;
 
   const parent = doc.getParent(model);
   if (!parent) return false;

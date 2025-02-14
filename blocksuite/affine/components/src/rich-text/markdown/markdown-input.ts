@@ -1,6 +1,8 @@
+import { CodeBlockModel, ParagraphBlockModel } from '@blocksuite/affine-model';
 import {
+  isHorizontalRuleMarkdown,
   isMarkdownPrefix,
-  matchFlavours,
+  matchModels,
 } from '@blocksuite/affine-shared/utils';
 import { type BlockStdScope, TextSelection } from '@blocksuite/block-std';
 
@@ -31,10 +33,10 @@ export function markdownInput(
   const prefixText = getPrefixText(inline);
   if (!isMarkdownPrefix(prefixText)) return;
 
-  const isParagraph = matchFlavours(model, ['affine:paragraph']);
+  const isParagraph = matchModels(model, [ParagraphBlockModel]);
   const isHeading = isParagraph && model.type.startsWith('h');
   const isParagraphQuoteBlock = isParagraph && model.type === 'quote';
-  const isCodeBlock = matchFlavours(model, ['affine:code']);
+  const isCodeBlock = matchModels(model, [CodeBlockModel]);
   if (isHeading || isParagraphQuoteBlock || isCodeBlock) return;
 
   const lineInfo = inline.getLine(range.index);
@@ -47,6 +49,10 @@ export function markdownInput(
   const codeMatch = prefixText.match(/^```([a-zA-Z0-9]*)$/g);
   if (codeMatch) {
     return toCode(std, model, prefixText, codeMatch[0].slice(3));
+  }
+
+  if (isHorizontalRuleMarkdown(prefixText.trim())) {
+    return toDivider(std, model, prefixText);
   }
 
   switch (prefixText.trim()) {
@@ -62,9 +68,6 @@ export function markdownInput(
     case '-':
     case '*':
       return toList(std, model, 'bulleted', prefixText);
-    case '***':
-    case '---':
-      return toDivider(std, model, prefixText);
     case '#':
       return toParagraph(std, model, 'h1', prefixText);
     case '##':

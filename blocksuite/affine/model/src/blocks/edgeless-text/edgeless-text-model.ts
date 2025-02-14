@@ -79,19 +79,3 @@ export const EdgelessTextBlockSchema = defineBlockSchema({
 export class EdgelessTextBlockModel
   extends GfxCompatible<EdgelessTextProps>(BlockModel)
   implements GfxElementGeometry {}
-
-declare global {
-  namespace BlockSuite {
-    interface BlockModels {
-      'affine:edgeless-text': EdgelessTextBlockModel;
-    }
-
-    interface EdgelessBlockModelMap {
-      'affine:edgeless-text': EdgelessTextBlockModel;
-    }
-
-    interface EdgelessTextModelMap {
-      'edgeless-text': EdgelessTextBlockModel;
-    }
-  }
-}

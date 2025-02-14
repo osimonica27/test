@@ -29,6 +29,7 @@ import {
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { requestConnectedFrame } from '@blocksuite/affine-shared/utils';
 import { WidgetComponent } from '@blocksuite/block-std';
+import type { GfxModel } from '@blocksuite/block-std/gfx';
 import {
   atLeastNMatches,
   clamp,
@@ -85,7 +86,7 @@ type CategorizedElements = {
 
 type CustomEntry = {
   render: (edgeless: EdgelessRootBlockComponent) => TemplateResult | null;
-  when: (model: BlockSuite.EdgelessModel[]) => boolean;
+  when: (model: GfxModel[]) => boolean;
 };
 
 export const EDGELESS_ELEMENT_TOOLBAR_WIDGET =
@@ -177,7 +178,7 @@ export class EdgelessElementToolbarWidget extends WidgetComponent<
         return 'edgelessText';
       }
 
-      return (model as BlockSuite.SurfaceElementModel).type;
+      return model.type;
     });
     return result as CategorizedElements;
   }
@@ -461,7 +462,7 @@ export class EdgelessElementToolbarWidget extends WidgetComponent<
   @state()
   private accessor _registeredEntries: {
     render: (edgeless: EdgelessRootBlockComponent) => TemplateResult | null;
-    when: (model: BlockSuite.EdgelessModel[]) => boolean;
+    when: (model: GfxModel[]) => boolean;
   }[] = [];
 
   @property({ attribute: false })

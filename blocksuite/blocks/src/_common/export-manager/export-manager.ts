@@ -3,7 +3,9 @@ import {
   SurfaceElementModel,
 } from '@blocksuite/affine-block-surface';
 import {
+  FrameBlockModel,
   GroupElementModel,
+  ImageBlockModel,
   type RootBlockModel,
 } from '@blocksuite/affine-model';
 import { FetchUtils } from '@blocksuite/affine-shared/adapters';
@@ -13,14 +15,17 @@ import {
 } from '@blocksuite/affine-shared/consts';
 import {
   isInsidePageEditor,
-  matchFlavours,
+  matchModels,
 } from '@blocksuite/affine-shared/utils';
 import {
   type BlockStdScope,
   type EditorHost,
   StdIdentifier,
 } from '@blocksuite/block-std';
-import type { GfxBlockElementModel } from '@blocksuite/block-std/gfx';
+import type {
+  GfxBlockElementModel,
+  GfxPrimitiveElementModel,
+} from '@blocksuite/block-std/gfx';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { IBound } from '@blocksuite/global/utils';
 import { Bound } from '@blocksuite/global/utils';
@@ -408,7 +413,7 @@ export class ExportManager {
     bound: IBound,
     edgeless?: EdgelessRootBlockComponent,
     nodes?: GfxBlockElementModel[],
-    surfaces?: BlockSuite.SurfaceElementModel[],
+    surfaces?: GfxPrimitiveElementModel[],
     edgelessBackground?: {
       zoom: number;
     }
@@ -456,7 +461,7 @@ export class ExportManager {
       edgeless?.service.gfx.getElementsByBound(bound, { type: 'block' }) ??
       [];
     for (const block of blocks) {
-      if (matchFlavours(block, ['affine:image'])) {
+      if (matchModels(block, [ImageBlockModel])) {
         if (!block.sourceId) return;
 
         const blob = await block.doc.blobSync.get(block.sourceId);
@@ -493,7 +498,7 @@ export class ExportManager {
         );
       }
 
-      if (matchFlavours(block, ['affine:frame'])) {
+      if (matchModels(block, [FrameBlockModel])) {
         // TODO(@L-Sun): use children of frame instead of bound
         const blocksInsideFrame = getBlocksInFrameBound(this.doc, block, false);
         const frameBound = Bound.deserialize(block.xywh);

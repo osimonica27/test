@@ -1,17 +1,15 @@
 import {
   DefaultTheme,
+  ListBlockModel,
   NoteBlockModel,
-  NoteDisplayMode,
+  ParagraphBlockModel,
   StrokeStyle,
 } from '@blocksuite/affine-model';
-import {
-  FeatureFlagService,
-  ThemeProvider,
-} from '@blocksuite/affine-shared/services';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import {
   getClosestBlockComponentByPoint,
   handleNativeRangeAtPoint,
-  matchFlavours,
+  matchModels,
   stopPropagation,
 } from '@blocksuite/affine-shared/utils';
 import {
@@ -37,6 +35,8 @@ import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { NoteConfigExtension } from '../config';
+import { isPageBlock } from '../utils';
 import * as styles from './edgeless-note-background.css';
 
 @requiredProperties({
@@ -74,18 +74,6 @@ export class EdgelessNoteBackground extends SignalWatcher(
     return this.std.host.doc;
   }
 
-  private get _isPageBlock() {
-    return (
-      this.std.get(FeatureFlagService).getFlag('enable_page_block') &&
-      // is the first page visible note
-      this.note.parent?.children.find(
-        child =>
-          matchFlavours(child, ['affine:note']) &&
-          child.displayMode !== NoteDisplayMode.EdgelessOnly
-      ) === this.note
-    );
-  }
-
   private _tryAddParagraph(x: number, y: number) {
     const nearest = getClosestBlockComponentByPoint(
       new Point(x, y)
@@ -113,10 +101,10 @@ export class EdgelessNoteBackground extends SignalWatcher(
 
     if (
       (!nearestModel.text ||
-        !matchFlavours(nearestModel, ['affine:paragraph', 'affine:list'])) &&
+        !matchModels(nearestModel, [ParagraphBlockModel, ListBlockModel])) &&
       (!siblingModel ||
         !siblingModel.text ||
-        !matchFlavours(siblingModel, ['affine:paragraph', 'affine:list']))
+        !matchModels(siblingModel, [ParagraphBlockModel, ListBlockModel]))
     ) {
       const [pId] = this.doc.addSiblingBlocks(
         nearestModel,
@@ -161,7 +149,7 @@ export class EdgelessNoteBackground extends SignalWatcher(
 
   private _renderHeader() {
     const header = this.std
-      .getConfig('affine:note')
+      .getOptional(NoteConfigExtension.identifier)
       ?.edgelessNoteHeader({ note: this.note, std: this.std });
 
     return header;
@@ -174,7 +162,7 @@ export class EdgelessNoteBackground extends SignalWatcher(
       @pointerdown=${stopPropagation}
       @click=${this._handleClickAtBackground}
     >
-      ${this._isPageBlock ? this._renderHeader() : nothing}
+      ${isPageBlock(this.std, this.note) ? this._renderHeader() : nothing}
     </div>`;
   }
 

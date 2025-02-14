@@ -7,7 +7,11 @@ import {
   type LocalConnectorElementModel,
 } from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
-import type { GfxController, GfxModel } from '@blocksuite/block-std/gfx';
+import type {
+  GfxController,
+  GfxLocalElementModel,
+  GfxModel,
+} from '@blocksuite/block-std/gfx';
 import type { IBound, IVec, IVec3 } from '@blocksuite/global/utils';
 import {
   almostEqual,
@@ -37,7 +41,7 @@ import { Overlay } from '../renderer/overlay.js';
 import { AStarRunner } from '../utils/a-star.js';
 
 export type Connectable = Exclude<
-  BlockSuite.EdgelessModel,
+  GfxModel,
   ConnectorElementModel | BrushElementModel | GroupElementModel
 >;
 
@@ -70,9 +74,7 @@ export const ConnectorEndpointLocationsOnTriangle: IVec[] = [
   [0.25, 0.5],
 ];
 
-export function isConnectorWithLabel(
-  model: GfxModel | BlockSuite.SurfaceLocalModel
-) {
+export function isConnectorWithLabel(model: GfxModel | GfxLocalElementModel) {
   return model instanceof ConnectorElementModel && model.hasLabel();
 }
 

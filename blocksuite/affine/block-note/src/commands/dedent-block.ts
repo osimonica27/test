@@ -1,6 +1,7 @@
+import { ParagraphBlockModel } from '@blocksuite/affine-model';
 import {
   calculateCollapsedSiblings,
-  matchFlavours,
+  matchModels,
 } from '@blocksuite/affine-shared/utils';
 import type { Command } from '@blocksuite/block-std';
 
@@ -45,7 +46,7 @@ export const dedentBlock: Command<{
   if (stopCapture) store.captureSync();
 
   if (
-    matchFlavours(model, ['affine:paragraph']) &&
+    matchModels(model, [ParagraphBlockModel]) &&
     model.type.startsWith('h') &&
     model.collapsed
   ) {

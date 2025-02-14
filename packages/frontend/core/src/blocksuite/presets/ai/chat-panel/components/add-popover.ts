@@ -7,7 +7,7 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/utils';
 import { SearchIcon } from '@blocksuite/icons/lit';
 import type { DocMeta } from '@blocksuite/store';
 import { css, html } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { property, query, state } from 'lit/decorators.js';
 
 import type { DocSearchMenuConfig } from '../chat-config';
 import type { ChatChip } from '../chat-context';
@@ -93,9 +93,18 @@ export class ChatPanelAddPopover extends SignalWatcher(
   @property({ attribute: false })
   accessor abortController!: AbortController;
 
+  @query('.search-input')
+  accessor searchInput!: HTMLInputElement;
+
   override connectedCallback() {
     super.connectedCallback();
     this._updateDocGroup();
+  }
+
+  override firstUpdated() {
+    requestAnimationFrame(() => {
+      this.searchInput.focus();
+    });
   }
 
   override render() {
@@ -150,7 +159,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
   private readonly _addDocChip = (meta: DocMeta) => {
     this.addChip({
       docId: meta.id,
-      state: 'embedding',
+      state: 'processing',
     });
     this.abortController.abort();
   };

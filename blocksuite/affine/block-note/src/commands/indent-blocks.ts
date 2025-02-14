@@ -1,7 +1,8 @@
+import { ParagraphBlockModel } from '@blocksuite/affine-model';
 import {
   calculateCollapsedSiblings,
   getNearestHeadingBefore,
-  matchFlavours,
+  matchModels,
 } from '@blocksuite/affine-shared/utils';
 import { type Command, TextSelection } from '@blocksuite/block-std';
 
@@ -58,7 +59,7 @@ export const indentBlocks: Command<{
     const model = store.getBlock(id)?.model;
     if (!model) return;
     if (
-      matchFlavours(model, ['affine:paragraph']) &&
+      matchModels(model, [ParagraphBlockModel]) &&
       model.type.startsWith('h') &&
       model.collapsed
     ) {
@@ -83,12 +84,10 @@ export const indentBlocks: Command<{
     const nearestHeading = getNearestHeadingBefore(firstModel);
     if (
       nearestHeading &&
-      matchFlavours(nearestHeading, ['affine:paragraph']) &&
+      matchModels(nearestHeading, [ParagraphBlockModel]) &&
       nearestHeading.collapsed
     ) {
-      store.updateBlock(nearestHeading, {
-        collapsed: false,
-      });
+      store.updateBlock(nearestHeading, { collapsed: false });
     }
   }
 
@@ -106,12 +105,10 @@ export const indentBlocks: Command<{
     const nearestHeading = getNearestHeadingBefore(firstModel);
     if (
       nearestHeading &&
-      matchFlavours(nearestHeading, ['affine:paragraph']) &&
+      matchModels(nearestHeading, [ParagraphBlockModel]) &&
       nearestHeading.collapsed
     ) {
-      store.updateBlock(nearestHeading, {
-        collapsed: false,
-      });
+      store.updateBlock(nearestHeading, { collapsed: false });
     }
   }
 

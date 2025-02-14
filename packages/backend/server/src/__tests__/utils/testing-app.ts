@@ -1,20 +1,18 @@
-import {
-  ConsoleLogger,
-  INestApplication,
-  ModuleMetadata,
-} from '@nestjs/common';
+import { INestApplication, ModuleMetadata } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { TestingModuleBuilder } from '@nestjs/testing';
 import { User } from '@prisma/client';
 import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import supertest from 'supertest';
 
-import { ApplyType, GlobalExceptionFilter } from '../../base';
+import { AFFiNELogger, ApplyType, GlobalExceptionFilter } from '../../base';
 import { AuthService } from '../../core/auth';
 import { UserModel } from '../../models';
 import { createTestingModule } from './testing-module';
 import { initTestingDB, TEST_LOG_LEVEL } from './utils';
-interface TestingAppMeatdata extends ModuleMetadata {
+
+interface TestingAppMetadata extends ModuleMetadata {
   tapModule?(m: TestingModuleBuilder): void;
   tapApp?(app: INestApplication): void;
 }
@@ -22,16 +20,19 @@ interface TestingAppMeatdata extends ModuleMetadata {
 export type TestUser = Omit<User, 'password'> & { password: string };
 
 export async function createTestingApp(
-  moduleDef: TestingAppMeatdata = {}
+  moduleDef: TestingAppMetadata = {}
 ): Promise<TestingApp> {
   const module = await createTestingModule(moduleDef, false);
 
-  const app = module.createNestApplication({
+  const app = module.createNestApplication<NestExpressApplication>({
     cors: true,
     bodyParser: true,
     rawBody: true,
   });
-  const logger = new ConsoleLogger();
+  if (AFFiNE.flavor.doc) {
+    app.useBodyParser('raw');
+  }
+  const logger = new AFFiNELogger();
 
   logger.setLogLevels([TEST_LOG_LEVEL]);
   app.useLogger(logger);
@@ -95,7 +96,7 @@ export class TestingApp extends ApplyType<INestApplication>() {
   }
 
   request(
-    method: 'get' | 'post' | 'put' | 'delete' | 'patch',
+    method: 'options' | 'get' | 'post' | 'put' | 'delete' | 'patch',
     path: string
   ): supertest.Test {
     return supertest(this.getHttpServer())
@@ -104,6 +105,10 @@ export class TestingApp extends ApplyType<INestApplication>() {
         `${AuthService.sessionCookieName}=${this.sessionCookie ?? ''}`,
         `${AuthService.userCookieName}=${this.currentUserCookie ?? ''}`,
       ]);
+  }
+
+  OPTIONS(path: string): supertest.Test {
+    return this.request('options', path);
   }
 
   GET(path: string): supertest.Test {
@@ -152,8 +157,15 @@ export class TestingApp extends ApplyType<INestApplication>() {
       .send({
         query,
         variables,
-      })
-      .expect(200);
+      });
+
+    if (res.status !== 200) {
+      throw new Error(
+        `Failed to execute gql: ${query}, status: ${res.status}, body: ${JSON.stringify(
+          res.body
+        )}`
+      );
+    }
 
     if (res.body.errors?.length) {
       throw new Error(res.body.errors[0].message);

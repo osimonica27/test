@@ -2,8 +2,8 @@ import { expect, test } from 'vitest';
 import * as Y from 'yjs';
 
 import { MemoryBlobCRUD } from '../adapter/index.js';
-import type { BlockModel } from '../model/block/block-model.js';
-import { defineBlockSchema, type SchemaToModel } from '../model/block/zod.js';
+import { BlockModel } from '../model/block/block-model.js';
+import { defineBlockSchema } from '../model/block/zod.js';
 import { Text } from '../reactive/index.js';
 import { Schema } from '../schema/index.js';
 import { createAutoIncrementIdGenerator } from '../test/index.js';
@@ -39,7 +39,9 @@ const docSchema = defineBlockSchema({
   },
 });
 
-type RootBlockModel = SchemaToModel<typeof docSchema>;
+class RootBlockModel extends BlockModel<
+  ReturnType<(typeof docSchema)['model']['props']>
+> {}
 
 function createTestOptions() {
   const idGenerator = createAutoIncrementIdGenerator();
@@ -48,7 +50,7 @@ function createTestOptions() {
   return { id: 'test-collection', idGenerator, schema };
 }
 
-const transformer = new BaseBlockTransformer();
+const transformer = new BaseBlockTransformer(new Map());
 const blobCRUD = new MemoryBlobCRUD();
 const assets = new AssetsManager({ blob: blobCRUD });
 
@@ -131,11 +133,3 @@ test('snapshot to model', async () => {
     expect(item.content.toString()).toBe(`item ${index + 1}`);
   });
 });
-
-declare global {
-  namespace BlockSuite {
-    interface BlockModels {
-      page: BlockModel;
-    }
-  }
-}
