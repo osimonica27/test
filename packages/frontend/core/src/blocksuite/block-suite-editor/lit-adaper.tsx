@@ -160,15 +160,15 @@ const usePatchSpecs = (mode: DocMode) => {
     return builder.value;
   }, [
     mode,
+    framework,
+    reactToLit,
+    referenceRenderer,
     confirmModal,
+    peekViewService,
     docService,
     docsService,
     editorService,
-    framework,
-    peekViewService,
-    reactToLit,
-    referenceRenderer,
-    featureFlagService,
+    featureFlagService.flags.enable_pdf_embed_preview.value,
   ]);
 
   return [

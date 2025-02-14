@@ -1,5 +1,7 @@
+import { ServerService } from '@affine/core/modules/cloud';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import { useService } from '@toeverything/infra';
+import { ServerDeploymentType } from '@affine/graphql';
+import { useLiveData, useService } from '@toeverything/infra';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 
 import { AIOnboardingEdgeless } from './edgeless.dialog';
@@ -29,7 +31,13 @@ const useDismiss = (key: AIOnboardingType) => {
 export const WorkspaceAIOnboarding = () => {
   const [dismissLocal] = useDismiss(AIOnboardingType.LOCAL);
   const featureFlagService = useService(FeatureFlagService);
-  const enableAI = featureFlagService.flags.enable_ai.value;
+  const serverService = useService(ServerService);
+  const isSelfhosted = useLiveData(
+    serverService.server.config$.selector(
+      c => c.type === ServerDeploymentType.Selfhosted
+    )
+  );
+  const enableAI = featureFlagService.flags.enable_ai.value && !isSelfhosted;
 
   return (
     <Suspense>
@@ -41,7 +49,13 @@ export const WorkspaceAIOnboarding = () => {
 export const PageAIOnboarding = () => {
   const [dismissEdgeless] = useDismiss(AIOnboardingType.EDGELESS);
   const featureFlagService = useService(FeatureFlagService);
-  const enableAI = featureFlagService.flags.enable_ai.value;
+  const serverService = useService(ServerService);
+  const isSelfhosted = useLiveData(
+    serverService.server.config$.selector(
+      c => c.type === ServerDeploymentType.Selfhosted
+    )
+  );
+  const enableAI = featureFlagService.flags.enable_ai.value && !isSelfhosted;
 
   return (
     <Suspense>

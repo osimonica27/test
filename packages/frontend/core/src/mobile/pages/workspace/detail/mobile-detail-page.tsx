@@ -21,6 +21,7 @@ import { GuardService } from '@affine/core/modules/permissions';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { WorkspaceService } from '@affine/core/modules/workspace';
+import { ServerDeploymentType } from '@affine/graphql';
 import { i18nTime } from '@affine/i18n';
 import {
   customImageProxyMiddleware,
@@ -57,6 +58,7 @@ const DetailPageImpl = () => {
     featureFlagService,
     aIButtonService,
     guardService,
+    serverService,
   } = useServices({
     WorkbenchService,
     ViewService,
@@ -67,6 +69,7 @@ const DetailPageImpl = () => {
     FeatureFlagService,
     AIButtonService,
     GuardService,
+    ServerService,
   });
   const editor = editorService.editor;
   const workspace = workspaceService.workspace;
@@ -86,9 +89,15 @@ const DetailPageImpl = () => {
     featureFlagService.flags.enable_mobile_keyboard_toolbar.value;
   const enableEdgelessEditing =
     featureFlagService.flags.enable_mobile_edgeless_editing.value;
-  const enableAIButton = useLiveData(
-    featureFlagService.flags.enable_mobile_ai_button.$
+
+  const isSelfhosted = useLiveData(
+    serverService.server.config$.selector(
+      c => c.type === ServerDeploymentType.Selfhosted
+    )
   );
+  const enableAIButton =
+    useLiveData(featureFlagService.flags.enable_mobile_ai_button.$) &&
+    !isSelfhosted;
 
   // TODO(@eyhn): remove jotai here
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();

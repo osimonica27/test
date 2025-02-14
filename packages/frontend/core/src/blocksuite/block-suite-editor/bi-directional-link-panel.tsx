@@ -1,4 +1,5 @@
 import { Button, Divider, useLitPortalFactory } from '@affine/component';
+import { ServerService } from '@affine/core/modules/cloud';
 import { DocService } from '@affine/core/modules/doc';
 import {
   type Backlink,
@@ -147,7 +148,7 @@ const usePreviewExtensions = () => {
     const specs = enableEditorExtension(framework, 'page');
     specs.extend([patchReferenceRenderer(reactToLit, referenceRenderer)]);
     return specs.value;
-  }, [reactToLit, referenceRenderer, framework]);
+  }, [framework, reactToLit, referenceRenderer]);
 
   return [extensions, portals] as const;
 };

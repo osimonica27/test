@@ -7,6 +7,7 @@ import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { DocPropertySidebar } from '@affine/core/components/doc-properties/sidebar';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
+import { ServerService } from '@affine/core/modules/cloud';
 import { DocService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
@@ -17,6 +18,7 @@ import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { isNewTabTrigger } from '@affine/core/utils';
+import { ServerDeploymentType } from '@affine/graphql';
 import track from '@affine/track';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/blocks';
 import {
@@ -74,6 +76,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     globalContextService,
     featureFlagService,
     guardService,
+    serverService,
   } = useServices({
     WorkbenchService,
     ViewService,
@@ -83,6 +86,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     GlobalContextService,
     FeatureFlagService,
     GuardService,
+    ServerService,
   });
   const workbench = workbenchService.workbench;
   const editor = editorService.editor;
@@ -107,7 +111,13 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   // TODO(@eyhn): remove jotai here
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();
 
-  const enableAI = featureFlagService.flags.enable_ai.value;
+  const isSelfhosted = useLiveData(
+    serverService.server.config$.selector(
+      c => c.type === ServerDeploymentType.Selfhosted
+    )
+  );
+
+  const enableAI = featureFlagService.flags.enable_ai.value && !isSelfhosted;
 
   useEffect(() => {
     if (isActiveView) {

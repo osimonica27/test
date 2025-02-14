@@ -2,11 +2,13 @@ import {
   handleInlineAskAIAction,
   pageAIGroups,
 } from '@affine/core/blocksuite/ai';
+import { ServerService } from '@affine/core/modules/cloud';
 import { DocsService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { TemplateDocService } from '@affine/core/modules/template-doc';
 import { TemplateListMenu } from '@affine/core/modules/template-doc/view/template-list-menu';
+import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import { PageRootBlockComponent } from '@blocksuite/affine/blocks';
@@ -56,6 +58,7 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
 
   const templateDocService = useService(TemplateDocService);
   const featureFlagService = useService(FeatureFlagService);
+  const serverService = useService(ServerService);
   const docsService = useService(DocsService);
   const editorService = useService(EditorService);
 
@@ -67,7 +70,13 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
       [doc.id, templateDocService.list]
     )
   );
-  const enableAI = useLiveData(featureFlagService.flags.enable_ai.$);
+  const isSelfhosted = useLiveData(
+    serverService.server.config$.selector(
+      c => c.type === ServerDeploymentType.Selfhosted
+    )
+  );
+  const enableAI =
+    useLiveData(featureFlagService.flags.enable_ai.$) && !isSelfhosted;
 
   const handleSelectTemplate = useAsyncCallback(
     async (templateId: string) => {
