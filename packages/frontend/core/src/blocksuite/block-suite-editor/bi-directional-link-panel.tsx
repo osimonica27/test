@@ -116,8 +116,9 @@ const usePreviewExtensions = () => {
   const [reactToLit, portals] = useLitPortalFactory();
   const framework = useFramework();
 
-  const { workspaceService } = useServices({
+  const { workspaceService, serverService } = useServices({
     WorkspaceService,
+    ServerService,
   });
 
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
@@ -145,10 +146,10 @@ const usePreviewExtensions = () => {
   }, [workspaceService]);
 
   const extensions = useMemo(() => {
-    const specs = enableEditorExtension(framework, 'page');
+    const specs = enableEditorExtension(framework, 'page', serverService);
     specs.extend([patchReferenceRenderer(reactToLit, referenceRenderer)]);
     return specs.value;
-  }, [framework, reactToLit, referenceRenderer]);
+  }, [framework, reactToLit, referenceRenderer, serverService]);
 
   return [extensions, portals] as const;
 };

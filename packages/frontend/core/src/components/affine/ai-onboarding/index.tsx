@@ -1,6 +1,5 @@
 import { ServerService } from '@affine/core/modules/cloud';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import { ServerDeploymentType } from '@affine/graphql';
 import { useLiveData, useService } from '@toeverything/infra';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 
@@ -32,12 +31,9 @@ export const WorkspaceAIOnboarding = () => {
   const [dismissLocal] = useDismiss(AIOnboardingType.LOCAL);
   const featureFlagService = useService(FeatureFlagService);
   const serverService = useService(ServerService);
-  const isSelfhosted = useLiveData(
-    serverService.server.config$.selector(
-      c => c.type === ServerDeploymentType.Selfhosted
-    )
-  );
-  const enableAI = featureFlagService.flags.enable_ai.value && !isSelfhosted;
+  const serverFeatures = useLiveData(serverService.server.features$);
+  const enableAI =
+    featureFlagService.flags.enable_ai.value && serverFeatures.copilot;
 
   return (
     <Suspense>
@@ -50,12 +46,9 @@ export const PageAIOnboarding = () => {
   const [dismissEdgeless] = useDismiss(AIOnboardingType.EDGELESS);
   const featureFlagService = useService(FeatureFlagService);
   const serverService = useService(ServerService);
-  const isSelfhosted = useLiveData(
-    serverService.server.config$.selector(
-      c => c.type === ServerDeploymentType.Selfhosted
-    )
-  );
-  const enableAI = featureFlagService.flags.enable_ai.value && !isSelfhosted;
+  const serverFeatures = useLiveData(serverService.server.features$);
+  const enableAI =
+    featureFlagService.flags.enable_ai.value && serverFeatures.copilot;
 
   return (
     <Suspense>

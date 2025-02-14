@@ -18,7 +18,6 @@ import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { isNewTabTrigger } from '@affine/core/utils';
-import { ServerDeploymentType } from '@affine/graphql';
 import track from '@affine/track';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/blocks';
 import {
@@ -111,13 +110,10 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   // TODO(@eyhn): remove jotai here
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();
 
-  const isSelfhosted = useLiveData(
-    serverService.server.config$.selector(
-      c => c.type === ServerDeploymentType.Selfhosted
-    )
-  );
+  const serverFeatures = useLiveData(serverService.server.features$);
 
-  const enableAI = featureFlagService.flags.enable_ai.value && !isSelfhosted;
+  const enableAI =
+    featureFlagService.flags.enable_ai.value && serverFeatures.copilot;
 
   useEffect(() => {
     if (isActiveView) {

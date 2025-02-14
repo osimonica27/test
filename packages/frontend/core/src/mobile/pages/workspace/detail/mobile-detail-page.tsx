@@ -21,7 +21,6 @@ import { GuardService } from '@affine/core/modules/permissions';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { WorkspaceService } from '@affine/core/modules/workspace';
-import { ServerDeploymentType } from '@affine/graphql';
 import { i18nTime } from '@affine/i18n';
 import {
   customImageProxyMiddleware,
@@ -90,14 +89,10 @@ const DetailPageImpl = () => {
   const enableEdgelessEditing =
     featureFlagService.flags.enable_mobile_edgeless_editing.value;
 
-  const isSelfhosted = useLiveData(
-    serverService.server.config$.selector(
-      c => c.type === ServerDeploymentType.Selfhosted
-    )
-  );
+  const serverFeatures = useLiveData(serverService.server.features$);
   const enableAIButton =
     useLiveData(featureFlagService.flags.enable_mobile_ai_button.$) &&
-    !isSelfhosted;
+    serverFeatures.copilot;
 
   // TODO(@eyhn): remove jotai here
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();

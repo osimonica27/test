@@ -31,7 +31,6 @@ import {
   type FontData,
   SystemFontFamilyService,
 } from '@affine/core/modules/system-font-family';
-import { ServerDeploymentType } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import { DoneIcon, SearchIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, useServices } from '@toeverything/infra';
@@ -388,11 +387,6 @@ const AISettings = () => {
     ServerService,
   });
   const serverFeatures = useLiveData(serverService.server.features$);
-  const isSelfhosted = useLiveData(
-    serverService.server.config$.selector(
-      c => c.type === ServerDeploymentType.Selfhosted
-    )
-  );
   const enableAI = useLiveData(featureFlagService.flags.enable_ai.$);
 
   const onAIChange = useCallback(
@@ -429,7 +423,7 @@ const AISettings = () => {
     [openConfirmModal, t, onAIChange]
   );
 
-  if (!serverFeatures?.copilot || isSelfhosted) {
+  if (!serverFeatures?.copilot) {
     return null;
   }
 

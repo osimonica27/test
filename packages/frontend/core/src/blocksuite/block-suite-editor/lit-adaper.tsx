@@ -6,6 +6,7 @@ import {
   LitEdgelessEditor,
   type PageEditor,
 } from '@affine/core/blocksuite/editors';
+import { ServerService } from '@affine/core/modules/cloud';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
 import { DocService, DocsService } from '@affine/core/modules/doc';
 import type {
@@ -85,6 +86,7 @@ const usePatchSpecs = (mode: DocMode) => {
     editorService,
     workspaceService,
     featureFlagService,
+    serverService,
   } = useServices({
     PeekViewService,
     DocService,
@@ -92,6 +94,7 @@ const usePatchSpecs = (mode: DocMode) => {
     WorkspaceService,
     EditorService,
     FeatureFlagService,
+    ServerService,
   });
   const framework = useFramework();
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
@@ -130,7 +133,7 @@ const usePatchSpecs = (mode: DocMode) => {
   const confirmModal = useConfirmModal();
 
   const patchedSpecs = useMemo(() => {
-    const builder = enableEditorExtension(framework, mode);
+    const builder = enableEditorExtension(framework, mode, serverService);
 
     builder.extend(
       [
@@ -161,6 +164,7 @@ const usePatchSpecs = (mode: DocMode) => {
   }, [
     mode,
     framework,
+    serverService,
     reactToLit,
     referenceRenderer,
     confirmModal,

@@ -8,7 +8,6 @@ import { EditorService } from '@affine/core/modules/editor';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { TemplateDocService } from '@affine/core/modules/template-doc';
 import { TemplateListMenu } from '@affine/core/modules/template-doc/view/template-list-menu';
-import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import { PageRootBlockComponent } from '@blocksuite/affine/blocks';
@@ -70,13 +69,10 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
       [doc.id, templateDocService.list]
     )
   );
-  const isSelfhosted = useLiveData(
-    serverService.server.config$.selector(
-      c => c.type === ServerDeploymentType.Selfhosted
-    )
-  );
+
+  const serverEnableAi = useLiveData(serverService.server.features$).copilot;
   const enableAI =
-    useLiveData(featureFlagService.flags.enable_ai.$) && !isSelfhosted;
+    useLiveData(featureFlagService.flags.enable_ai.$) && serverEnableAi;
 
   const handleSelectTemplate = useAsyncCallback(
     async (templateId: string) => {

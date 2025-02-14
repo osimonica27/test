@@ -7,7 +7,6 @@ import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hoo
 import { ServerService } from '@affine/core/modules/cloud';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceShareSettingService } from '@affine/core/modules/share-setting';
-import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 
@@ -15,11 +14,6 @@ export const AiSetting = () => {
   const t = useI18n();
   const shareSetting = useService(WorkspaceShareSettingService).sharePreview;
   const serverService = useService(ServerService);
-  const isSelfhosted = useLiveData(
-    serverService.server.config$.selector(
-      c => c.type === ServerDeploymentType.Selfhosted
-    )
-  );
   const serverEnableAi = useLiveData(
     serverService.server.features$.map(f => f?.copilot)
   );
@@ -35,7 +29,7 @@ export const AiSetting = () => {
     [shareSetting]
   );
 
-  if (!isOwner || !serverEnableAi || isSelfhosted) {
+  if (!isOwner || !serverEnableAi) {
     return null;
   }
 

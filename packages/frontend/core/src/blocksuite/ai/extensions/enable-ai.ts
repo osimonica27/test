@@ -1,3 +1,4 @@
+import type { ServerService } from '@affine/core/modules/cloud';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import {
   CodeBlockSpec,
@@ -18,11 +19,14 @@ import { AIParagraphBlockSpec } from './ai-paragraph';
 
 export function enableAIExtension(
   specBuilder: SpecBuilder,
-  framework: FrameworkProvider
+  framework: FrameworkProvider,
+  serverService: ServerService
 ) {
   const featureFlagService = framework.get(FeatureFlagService);
-  const enableAI = featureFlagService.flags.enable_ai.value;
-  if (!enableAI) {
+
+  const enableServerAI = serverService.server.features$.value.copilot;
+  const enableClientAI = featureFlagService.flags.enable_ai.value;
+  if (!enableServerAI || !enableClientAI) {
     return;
   }
 
