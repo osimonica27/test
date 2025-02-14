@@ -222,11 +222,8 @@ export class LicenseService implements OnModuleInit {
     await this.fetchAffinePro(`/api/team/licenses/${license.key}/seats`, {
       method: 'POST',
       body: JSON.stringify({
-        quantity: count,
+        seats: count,
       }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     // stripe payment is async, we can't directly the charge result in update calling
@@ -330,18 +327,17 @@ export class LicenseService implements OnModuleInit {
     path: string,
     init?: RequestInit
   ): Promise<T & { res: Response }> {
+    const endpoint =
+      process.env.AFFINE_PRO_SERVER_ENDPOINT ?? 'https://app.affine.pro';
+
     try {
-      const res = await fetch(
-        process.env.AFFINE_PRO_SERVER_ENDPOINT ??
-          'https://app.affine.pro' + path,
-        {
-          ...init,
-          headers: {
-            'Content-Type': 'application/json',
-            ...init?.headers,
-          },
-        }
-      );
+      const res = await fetch(endpoint + path, {
+        ...init,
+        headers: {
+          'Content-Type': 'application/json',
+          ...init?.headers,
+        },
+      });
 
       if (!res.ok) {
         const body = (await res.json()) as UserFriendlyError;

@@ -136,7 +136,7 @@ export class UserFriendlyError extends Error {
     ].join('\n');
   }
 
-  log(context: string) {
+  log(context: string, debugInfo?: object) {
     // ignore all user behavior error log
     if (
       this.type !== 'internal_server_error' &&
@@ -148,11 +148,11 @@ export class UserFriendlyError extends Error {
     const logger = new Logger(context);
     const fn = this.status >= 500 ? logger.error : logger.log;
 
-    fn.call(
-      logger,
-      this.name,
-      this.cause ? ((this.cause as any).stack ?? this.cause) : this.stack
-    );
+    let message = this.name;
+    if (debugInfo) {
+      message += ` (${JSON.stringify(debugInfo)})`;
+    }
+    fn.call(logger, message, this);
   }
 }
 

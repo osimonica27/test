@@ -7,6 +7,7 @@ import { FeatureFlagService } from '@blocksuite/affine-shared/services';
 import { getViewportElement } from '@blocksuite/affine-shared/utils';
 import type { BlockComponent } from '@blocksuite/block-std';
 import { BLOCK_ID_ATTR, WidgetComponent } from '@blocksuite/block-std';
+import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import {
   INLINE_ROOT_ATTR,
@@ -15,13 +16,16 @@ import {
 } from '@blocksuite/inline';
 import { signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
-import { state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import type { PageRootBlockComponent } from '../../index.js';
 import {
+  type PageRootBlockComponent,
+  RootBlockConfigExtension,
+} from '../../index.js';
+import {
+  type AFFINE_LINKED_DOC_WIDGET,
   getMenus,
   type LinkedDocContext,
   type LinkedWidgetConfig,
@@ -29,13 +33,45 @@ import {
 import { linkedDocWidgetStyles } from './styles.js';
 export { type LinkedWidgetConfig } from './config.js';
 
-export const AFFINE_LINKED_DOC_WIDGET = 'affine-linked-doc-widget';
-
 export class AffineLinkedDocWidget extends WidgetComponent<
   RootBlockModel,
   PageRootBlockComponent
 > {
   static override styles = linkedDocWidgetStyles;
+
+  private _context: LinkedDocContext | null = null;
+
+  private readonly _inputRects$ = signal<SelectionRect[]>([]);
+
+  private readonly _mode$ = signal<'desktop' | 'mobile' | 'none'>('none');
+
+  private _updateInputRects() {
+    if (!this._context) return;
+    const { inlineEditor, startRange, triggerKey } = this._context;
+
+    const currentInlineRange = inlineEditor.getInlineRange();
+    if (!currentInlineRange) return;
+
+    const startIndex = startRange.index - triggerKey.length;
+    const range = inlineEditor.toDomRange({
+      index: startIndex,
+      length: currentInlineRange.index - startIndex,
+    });
+    if (!range) return;
+
+    this._inputRects$.value = getRangeRects(
+      range,
+      getViewportElement(this.host)
+    );
+  }
+
+  private get _isCursorAtEnd() {
+    if (!this._context) return false;
+    const { inlineEditor } = this._context;
+    const currentInlineRange = inlineEditor.getInlineRange();
+    if (!currentInlineRange) return false;
+    return currentInlineRange.index === inlineEditor.yTextLength;
+  }
 
   private readonly _renderLinkedDocMenu = () => {
     if (!this.block.rootComponent) return nothing;
@@ -52,13 +88,13 @@ export class AffineLinkedDocWidget extends WidgetComponent<
     ></affine-linked-doc-popover>`;
   };
 
-  @state()
-  private accessor _inputRects: SelectionRect[] = [];
   private _renderInputMask() {
     return html`${repeat(
-      this._inputRects,
+      this._inputRects$.value,
       ({ top, left, width, height }, index) => {
-        const last = index === this._inputRects.length - 1;
+        const last =
+          index === this._inputRects$.value.length - 1 && this._isCursorAtEnd;
+
         const padding = 2;
         return html`<div
           class="input-mask"
@@ -73,29 +109,7 @@ export class AffineLinkedDocWidget extends WidgetComponent<
     )}`;
   }
 
-  private readonly _mode$ = signal<'desktop' | 'mobile' | 'none'>('none');
-
-  get config(): LinkedWidgetConfig {
-    return {
-      triggerKeys: ['@', '[[', '【【'],
-      ignoreBlockTypes: ['affine:code'],
-      ignoreSelector:
-        'edgeless-text-editor, edgeless-shape-text-editor, edgeless-group-title-editor, edgeless-frame-title-editor, edgeless-connector-label-editor',
-      convertTriggerKey: true,
-      getMenus,
-      mobile: {
-        useScreenHeight: false,
-        scrollContainer: getViewportElement(this.std.host) ?? window,
-        scrollTopOffset: 46,
-      },
-      ...this.std.getConfig('affine:page')?.linkedWidget,
-    };
-  }
-
-  private _context: LinkedDocContext | null = null;
-  override connectedCallback() {
-    super.connectedCallback();
-
+  private _watchInput() {
     this.handleEvent('beforeInput', ctx => {
       if (this._mode$.peek() !== 'none') return;
 
@@ -184,6 +198,40 @@ export class AffineLinkedDocWidget extends WidgetComponent<
     });
   }
 
+  private _watchViewportChange() {
+    const gfx = this.std.get(GfxControllerIdentifier);
+    this.disposables.add(
+      gfx.viewport.viewportUpdated.on(() => {
+        this._updateInputRects();
+      })
+    );
+  }
+
+  get config(): LinkedWidgetConfig {
+    return {
+      triggerKeys: ['@', '[[', '【【'],
+      ignoreBlockTypes: ['affine:code'],
+      ignoreSelector:
+        'edgeless-text-editor, edgeless-shape-text-editor, edgeless-group-title-editor, edgeless-frame-title-editor, edgeless-connector-label-editor',
+      convertTriggerKey: true,
+      getMenus,
+      mobile: {
+        useScreenHeight: false,
+        scrollContainer: getViewportElement(this.std.host) ?? window,
+        scrollTopOffset: 46,
+      },
+      ...this.std.getOptional(RootBlockConfigExtension.identifier)
+        ?.linkedWidget,
+    };
+  }
+
+  override connectedCallback() {
+    super.connectedCallback();
+
+    this._watchInput();
+    this._watchViewportChange();
+  }
+
   show(props?: {
     inlineEditor?: InlineEditor;
     primaryTriggerKey?: string;
@@ -229,14 +277,7 @@ export class AffineLinkedDocWidget extends WidgetComponent<
     }
 
     const disposable = inlineEditor.slots.renderComplete.on(() => {
-      const currentInlineRange = inlineEditor.getInlineRange();
-      if (!currentInlineRange) return;
-      const range = inlineEditor.toDomRange({
-        index: inlineRange.index,
-        length: currentInlineRange.index - inlineRange.index,
-      });
-      if (!range) return;
-      this._inputRects = getRangeRects(range, getViewportElement(host));
+      this._updateInputRects();
     });
     this._context = {
       std: this.std,
@@ -246,11 +287,13 @@ export class AffineLinkedDocWidget extends WidgetComponent<
       config: this.config,
       close: () => {
         disposable.dispose();
-        this._inputRects = [];
+        this._inputRects$.value = [];
         this._mode$.value = 'none';
         this._context = null;
       },
     };
+
+    this._updateInputRects();
 
     const enableMobile = this.doc
       .get(FeatureFlagService)

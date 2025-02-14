@@ -42,11 +42,6 @@ export interface AddContextDocInput {
   docId: Scalars['String']['input'];
 }
 
-export interface RemoveContextDocInput {
-  contextId: Scalars['String']['input'];
-  docId: Scalars['String']['input'];
-}
-
 export interface AlreadyInSpaceDataType {
   __typename?: 'AlreadyInSpaceDataType';
   spaceId: Scalars['String']['output'];
@@ -1303,6 +1298,7 @@ export interface QueryChatHistoriesInput {
   sessionId?: InputMaybe<Scalars['String']['input']>;
   sessionOrder?: InputMaybe<ChatHistoryOrder>;
   skip?: InputMaybe<Scalars['Int']['input']>;
+  withPrompt?: InputMaybe<Scalars['Boolean']['input']>;
 }
 
 export interface QueryTooLongDataType {
@@ -1313,6 +1309,11 @@ export interface QueryTooLongDataType {
 export interface RemoveAvatar {
   __typename?: 'RemoveAvatar';
   success: Scalars['Boolean']['output'];
+}
+
+export interface RemoveContextDocInput {
+  contextId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
 }
 
 export interface RevokeDocUserRoleInput {
@@ -1952,17 +1953,18 @@ export type AddContextDocMutationVariables = Exact<{
   options: AddContextDocInput;
 }>;
 
-export type RemoveContextDocMutationVariables = Exact<{
-  options: RemoveContextDocInput;
-}>;
-
 export type AddContextDocMutation = {
   __typename?: 'Mutation';
   addContextDoc: Array<{
     __typename?: 'CopilotContextListItem';
     id: string;
+    createdAt: number;
   }>;
 };
+
+export type RemoveContextDocMutationVariables = Exact<{
+  options: RemoveContextDocInput;
+}>;
 
 export type RemoveContextDocMutation = {
   __typename?: 'Mutation';
