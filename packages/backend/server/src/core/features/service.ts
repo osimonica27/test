@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { Runtime } from '../../base';
+import { Runtime } from '../../core/runtime';
 import { Models } from '../../models';
 
 const STAFF = ['@toeverything.info', '@affine.pro'];

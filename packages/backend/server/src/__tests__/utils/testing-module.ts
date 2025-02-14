@@ -8,9 +8,10 @@ import {
 } from '@nestjs/testing';
 
 import { AppModule, FunctionalityModules } from '../../app.module';
-import { AFFiNELogger, Runtime } from '../../base';
+import { AFFiNELogger } from '../../base';
 import { GqlModule } from '../../base/graphql';
 import { AuthGuard, AuthModule } from '../../core/auth';
+import { Runtime } from '../../core/runtime';
 import { ModelsModule } from '../../models';
 import { initTestingDB, TEST_LOG_LEVEL } from './utils';
 

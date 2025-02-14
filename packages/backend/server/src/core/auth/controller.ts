@@ -23,13 +23,13 @@ import {
   InternalServerError,
   InvalidEmail,
   InvalidEmailToken,
-  Runtime,
   SignUpForbidden,
   Throttle,
   URLHelper,
   UseNamedGuard,
 } from '../../base';
 import { Models, TokenType } from '../../models';
+import { Runtime } from '../runtime';
 import { validators } from '../utils/validators';
 import { Public } from './guard';
 import { AuthService } from './service';

@@ -12,7 +12,8 @@ import {
 import { RuntimeConfig, RuntimeConfigType } from '@prisma/client';
 import { GraphQLJSON, GraphQLJSONObject } from 'graphql-scalars';
 
-import { Config, Runtime, URLHelper } from '../../base';
+import { Config, URLHelper } from '../../base';
+import { Runtime } from '../../core/runtime';
 import { Feature } from '../../models';
 import { Public } from '../auth';
 import { Admin } from '../common';

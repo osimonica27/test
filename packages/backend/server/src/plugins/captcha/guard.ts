@@ -5,11 +5,8 @@ import type {
 } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 
-import {
-  getRequestResponseFromContext,
-  GuardProvider,
-  Runtime,
-} from '../../base';
+import { getRequestResponseFromContext, GuardProvider } from '../../base';
+import { Runtime } from '../../core/runtime';
 import { CaptchaService } from './service';
 
 @Injectable()

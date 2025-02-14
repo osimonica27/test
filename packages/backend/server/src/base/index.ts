@@ -30,7 +30,6 @@ export { CallMetric, metrics } from './metrics';
 export { Lock, Locker, Mutex, RequestMutex } from './mutex';
 export * from './nestjs';
 export { type PrismaTransaction } from './prisma';
-export { Runtime } from './runtime';
 export * from './storage';
 export { type StorageProvider, StorageProviderFactory } from './storage';
 export { CloudThrottlerGuard, SkipThrottle, Throttle } from './throttler';

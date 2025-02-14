@@ -6,11 +6,11 @@ import {
   InternalServerError,
   Mutex,
   PasswordRequired,
-  Runtime,
 } from '../../base';
 import { Models } from '../../models';
 import { AuthService, Public } from '../auth';
 import { ServerService } from '../config';
+import { Runtime } from '../runtime';
 import { validators } from '../utils/validators';
 
 interface CreateUserInput {

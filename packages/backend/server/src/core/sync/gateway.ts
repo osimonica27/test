@@ -17,7 +17,6 @@ import {
   GatewayErrorWrapper,
   metrics,
   NotInSpace,
-  Runtime,
   SpaceAccessDenied,
   VersionRejected,
 } from '../../base';
@@ -29,6 +28,7 @@ import {
   PgWorkspaceDocStorageAdapter,
 } from '../doc';
 import { PermissionService, WorkspaceRole } from '../permission';
+import { Runtime } from '../runtime';
 import { DocID } from '../utils/doc';
 
 const SubscribeMessage = (event: string) =>
