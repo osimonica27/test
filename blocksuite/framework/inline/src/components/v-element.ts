@@ -76,16 +76,25 @@ export class VElement<
         data-v-embed="true"
         data-v-element="true"
         contenteditable="false"
-        style=${styleMap({ userSelect: 'none' })}
-        >${attributeRenderer(renderProps)}</span
-      >`;
+        style=${styleMap({
+          userSelect: 'none',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        })}
+      >${attributeRenderer(renderProps)}</span>`;
     }
 
-    // we need to avoid \n appearing before and after the span element, which will
-    // cause the unexpected space
-    return html`<span data-v-element="true"
-      >${attributeRenderer(renderProps)}</span
-    >`;
+    // Regular inline span render with overflow handling added.
+    return html`<span
+      data-v-element="true"
+      style=${styleMap({
+        userSelect: 'none',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap'
+      })}
+    >${attributeRenderer(renderProps)}</span>`;
   }
 
   @property({ type: Object })
