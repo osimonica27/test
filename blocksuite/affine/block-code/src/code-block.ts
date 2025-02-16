@@ -3,6 +3,7 @@ import {
   focusTextModel,
   type RichText,
 } from '@blocksuite/affine-components/rich-text';
+import mermaid from 'mermaid';
 import type { CodeBlockModel } from '@blocksuite/affine-model';
 import { BRACKET_PAIRS, NOTE_SELECTOR } from '@blocksuite/affine-shared/consts';
 import {
@@ -11,12 +12,8 @@ import {
 } from '@blocksuite/affine-shared/services';
 import { getViewportElement } from '@blocksuite/affine-shared/utils';
 import type { BlockComponent } from '@blocksuite/block-std';
-import {
-  BlockSelection,
-  getInlineRangeProvider,
-  TextSelection,
-} from '@blocksuite/block-std';
-import { IS_MAC, IS_MOBILE } from '@blocksuite/global/env';
+import { getInlineRangeProvider } from '@blocksuite/block-std';
+import { IS_MAC } from '@blocksuite/global/env';
 import { noop } from '@blocksuite/global/utils';
 import {
   INLINE_ROOT_ATTR,
@@ -32,7 +29,6 @@ import { classMap } from 'lit/directives/class-map.js';
 import type { ThemedToken } from 'shiki';
 
 import { CodeClipboardController } from './clipboard/index.js';
-import { CodeBlockConfigExtension } from './code-block-config.js';
 import { CodeBlockInlineManagerExtension } from './code-block-inline.js';
 import type { CodeBlockService } from './code-block-service.js';
 import { codeBlockStyles } from './styles.js';
@@ -44,7 +40,9 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
   static override styles = codeBlockStyles;
 
   private _inlineRangeProvider: InlineRangeProvider | null = null;
-
+  private _renderQueue: Promise<void> = Promise.resolve();
+  private _isRendering = false;
+  private _mermaidContainer: HTMLElement | null = null;
   clipboardController = new CodeClipboardController(this);
 
   highlightTokens$: Signal<ThemedToken[][]> = signal([]);
@@ -85,8 +83,62 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
     return this.rootComponent;
   }
 
+      // 新增渲染方法
+private async _renderMermaid() {
+ // 加入渲染队列
+ this._renderQueue = this._renderQueue
+ .then(async () => {
+   if (this._isRendering) return;
+   this._isRendering = true;
+   
+   if (!this._mermaidContainer) {
+    this._mermaidContainer = this.querySelector('.mermaid-container');
+    if (!this._mermaidContainer) return;
+  }
+
+  // 生成唯一ID（使用时间戳 + 随机数）
+  const chartId = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+  
+  try {
+    const code = this.model.text.toString();
+    
+    // 使用唯一ID渲染
+    const { svg } = await mermaid.render(chartId, code); 
+    
+    // 清理旧内容
+    this._mermaidContainer.innerHTML = '';
+    
+    // 创建独立容器
+    const container = document.createElement('div');
+    container.className = 'mermaid-chart';
+    container.innerHTML = svg;
+    
+    // 动态主题适配
+    const theme = this.service.themeKey === 'dark' ? 'dark' : 'neutral';
+    container.querySelector('svg')?.setAttribute('data-theme', theme);
+    
+    // 追加新内容（非覆盖）
+    this._mermaidContainer.appendChild(container);
+
+  } catch (err) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'mermaid-error';
+    errorDiv.textContent = `Mermaid Error: ${err}`;
+    this._mermaidContainer.replaceChildren(errorDiv);
+  }
+   
+ })
+ .finally(() => {
+   this._isRendering = false;
+ });
+}
+
   private _updateHighlightTokens() {
     const modelLang = this.model.language$.value;
+    if(modelLang==="mermaid"){
+      this._renderMermaid();
+    }
+
     if (modelLang === null) {
       this.highlightTokens$.value = [];
       return;
@@ -141,6 +193,23 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
   override connectedCallback() {
     super.connectedCallback();
 
+    // Mermaid 初始化
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    theme: this.service.themeKey === 'dark' ? 'dark' : 'neutral',
+    fontFamily: 'var(--affine-font-family)'
+  });
+
+  // 主题变化监听
+  this.disposables.add(
+    effect(() => {
+      const theme = this.service.themeKey === 'dark' ? 'dark' : 'neutral';
+      mermaid.initialize({ theme });
+      this._renderMermaid();
+    })
+  );
+
     // set highlight options getter used by "exportToHtml"
     this.clipboardController.hostConnected();
 
@@ -183,7 +252,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
     this.bindHotKey({
       Backspace: ctx => {
         const state = ctx.get('keyboardState');
-        const textSelection = selectionManager.find(TextSelection);
+        const textSelection = selectionManager.find('text');
         if (!textSelection) {
           state.raw.preventDefault();
           return;
@@ -194,7 +263,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
         if (from.index === 0 && from.length === 0) {
           state.raw.preventDefault();
           selectionManager.setGroup('note', [
-            selectionManager.create(BlockSelection, { blockId: this.blockId }),
+            selectionManager.create('block', { blockId: this.blockId }),
           ]);
           return true;
         }
@@ -372,6 +441,11 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
   }
 
   override disconnectedCallback() {
+  // 清理所有Mermaid实例
+  this._mermaidContainer?.querySelectorAll('.mermaid-chart').forEach(el => {
+    el.remove();
+  });
+  super.disconnectedCallback();
     super.disconnectedCallback();
     this.clipboardController.hostDisconnected();
   }
@@ -384,17 +458,17 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
 
   override renderBlock(): TemplateResult<1> {
     const showLineNumbers =
-      this.std.getOptional(CodeBlockConfigExtension.identifier)
-        ?.showLineNumbers ?? true;
-
+      this.std.getConfig('affine:code')?.showLineNumbers ?? true;
+      const isMermaid = this.model.language$.value === 'mermaid';
     return html`
       <div
         class=${classMap({
           'affine-code-block-container': true,
-          mobile: IS_MOBILE,
           wrap: this.model.wrap,
+          'mermaid-mode': isMermaid // 新增样式标识
         })}
       >
+        <div class="${isMermaid?"mermaid-container":"mermaid-container-none"}"></div>
         <rich-text
           .yText=${this.model.text.yText}
           .inlineEventSource=${this.topContenteditableElement ?? nothing}
@@ -419,7 +493,6 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
             : undefined}
         >
         </rich-text>
-
         ${this.renderChildren(this.model)} ${Object.values(this.widgets)}
       </div>
     `;

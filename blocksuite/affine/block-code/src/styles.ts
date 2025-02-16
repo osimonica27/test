@@ -1,6 +1,34 @@
 import { css } from 'lit';
 
 export const codeBlockStyles = css`
+
+.mermaid-container {
+  padding: 12px;
+  background: var(--affine-background-primary-color);
+  border-radius: 4px;
+  overflow-x: auto;
+  min-height: 100px;
+}
+.mermaid-container-none {
+}
+
+.mermaid-error {
+  color: var(--affine-error-color);
+  border: 1px solid var(--affine-error-color);
+  padding: 8px;
+  border-radius: 4px;
+  font-family: var(--affine-font-family);
+}
+
+.mermaid-source pre {
+  margin: 8px 0;
+  padding: 8px;
+  background: var(--affine-background-code-block);
+  border-radius: 4px;
+  font-size: var(--affine-font-sm);
+}
+
+
   affine-code {
     position: relative;
   }
@@ -9,14 +37,10 @@ export const codeBlockStyles = css`
     font-size: var(--affine-font-xs);
     line-height: var(--affine-line-height);
     position: relative;
-    padding: 28px 24px;
+    padding: 12px;
     background: var(--affine-background-code-block);
     border-radius: 10px;
     box-sizing: border-box;
-  }
-
-  .affine-code-block-container.mobile {
-    padding: 12px;
   }
 
   .affine-code-block-container .inline-editor {
