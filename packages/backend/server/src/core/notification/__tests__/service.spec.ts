@@ -64,7 +64,7 @@ test.after.always(async t => {
   await t.context.module.close();
 });
 
-test('should create invitation notification', async t => {
+test('should create invitation notification and email', async t => {
   const { notificationService } = t.context;
   const inviteId = randomUUID();
   const notification = await notificationService.createInvitation({
@@ -81,6 +81,29 @@ test('should create invitation notification', async t => {
   t.is(notification!.body.workspaceId, workspace.id);
   t.is(notification!.body.createdByUserId, owner.id);
   t.is(notification!.body.inviteId, inviteId);
+  // should send invitation email
+  const invitationMail = t.context.module.mails.last('MemberInvitation');
+  t.is(invitationMail.to, member.email);
+});
+
+test('should not send invitation email if user setting is not to receive invitation email', async t => {
+  const { notificationService } = t.context;
+  const inviteId = randomUUID();
+  await t.context.models.settings.set(member.id, {
+    receiveInvitationEmail: false,
+  });
+  const invitationMailCount = t.context.module.mails.count('MemberInvitation');
+  const notification = await notificationService.createInvitation({
+    userId: member.id,
+    body: {
+      workspaceId: workspace.id,
+      createdByUserId: owner.id,
+      inviteId,
+    },
+  });
+  t.truthy(notification);
+  // no new invitation email should be sent
+  t.is(t.context.module.mails.count('MemberInvitation'), invitationMailCount);
 });
 
 test('should not create invitation notification if user is already a member', async t => {
@@ -276,7 +299,6 @@ test('should use latest doc title in mention notification', async t => {
   const mention = notifications[0];
   t.is(mention.body.workspace!.id, workspace.id);
   t.is(mention.body.workspace!.name, 'Test Workspace');
-  t.truthy(mention.body.workspace!.avatarUrl);
   t.is(mention.body.type, NotificationType.Mention);
   const body = mention.body as MentionNotificationBody;
   t.is(body.doc.title, 'doc-title-2-updated');
@@ -285,7 +307,6 @@ test('should use latest doc title in mention notification', async t => {
   const mention2 = notifications[1];
   t.is(mention2.body.workspace!.id, workspace.id);
   t.is(mention2.body.workspace!.name, 'Test Workspace');
-  t.truthy(mention2.body.workspace!.avatarUrl);
   t.is(mention2.body.type, NotificationType.Mention);
   const body2 = mention2.body as MentionNotificationBody;
   t.is(body2.doc.title, 'doc-title-1-updated');

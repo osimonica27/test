@@ -615,12 +615,16 @@ test('should be able to invite by link', async t => {
   }
 });
 
-test('should be able to send mails', async t => {
+test('should be able to invite batch and send notifications', async t => {
   const { app } = t.context;
   const { inviteBatch } = await init(app, 5);
 
+  const currentCount = app.queue.count('notification.sendInvitation');
   await inviteBatch(['m3@affine.pro', 'm4@affine.pro'], true);
-  t.is(app.mails.count('MemberInvitation'), 2);
+  t.is(app.queue.count('notification.sendInvitation'), currentCount + 2);
+  const job = app.queue.last('notification.sendInvitation');
+  t.truthy(job.payload.inviteId);
+  t.truthy(job.payload.inviterId);
 });
 
 test('should be able to emit events', async t => {

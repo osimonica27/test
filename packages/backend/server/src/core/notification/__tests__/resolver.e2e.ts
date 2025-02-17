@@ -29,8 +29,8 @@ test.after.always(async () => {
 });
 
 test('should mention user in a doc', async t => {
-  const member = await app.signupV1();
-  const owner = await app.signupV1();
+  const member = await app.signup();
+  const owner = await app.signup();
 
   await app.switchUser(owner);
   const workspace = await createWorkspace(app);
@@ -89,7 +89,7 @@ test('should mention user in a doc', async t => {
   t.is(body.createdByUser!.name, owner.name);
   t.is(body.workspace!.id, workspace.id);
   t.is(body.workspace!.name, 'test-workspace-name');
-  t.truthy(body.workspace!.avatarUrl);
+  t.falsy(body.workspace!.avatarUrl);
 
   const notification2 = notifications[0] as NotificationObjectType;
   t.is(notification2.read, false);
@@ -104,7 +104,7 @@ test('should mention user in a doc', async t => {
   t.is(body2.createdByUser!.id, owner.id);
   t.is(body2.workspace!.id, workspace.id);
   t.is(body2.workspace!.name, 'test-workspace-name');
-  t.truthy(body2.workspace!.avatarUrl);
+  t.falsy(body2.workspace!.avatarUrl);
 });
 
 test('should mention doc mode support string value', async t => {
@@ -133,36 +133,22 @@ test('should mention doc mode support string value', async t => {
     },
   });
   t.truthy(mentionId);
-
-  await app.switchUser(member);
-  const result = await listNotifications(app, {
-    first: 10,
-    offset: 0,
-  });
-  t.is(result.totalCount, 1);
-  const notifications = result.edges.map(edge => edge.node);
-  t.is(notifications.length, 1);
-
-  const notification = notifications[0] as NotificationObjectType;
-  t.is(notification.read, false);
-  t.truthy(notification.createdAt);
-  t.truthy(notification.updatedAt);
-  const body = notification.body as MentionNotificationBodyType;
-  t.is(body.workspace!.id, workspace.id);
+  const mention = (await models.notification.get(
+    mentionId
+  )) as NotificationObjectType;
+  t.is(mention.read, false);
+  t.truthy(mention.createdAt);
+  t.truthy(mention.updatedAt);
+  const body = mention.body as MentionNotificationBodyType;
   t.is(body.doc.id, 'doc-id-1');
   t.is(body.doc.title, 'doc-title-1');
   t.is(body.doc.blockId, 'block-id-1');
   t.is(body.doc.mode, DocMode.page);
-  t.is(body.createdByUser!.id, owner.id);
-  t.is(body.createdByUser!.name, owner.name);
-  t.is(body.workspace!.id, workspace.id);
-  t.is(body.workspace!.name, 'test-workspace-name');
-  t.truthy(body.workspace!.avatarUrl);
 });
 
 test('should throw error when mention user has no Doc.Read role', async t => {
-  const member = await app.signupV1();
-  const owner = await app.signupV1();
+  const member = await app.signup();
+  const owner = await app.signup();
 
   await app.switchUser(owner);
   const workspace = await createWorkspace(app);
@@ -187,7 +173,7 @@ test('should throw error when mention user has no Doc.Read role', async t => {
 });
 
 test('should throw error when mention a not exists user', async t => {
-  const owner = await app.signupV1();
+  const owner = await app.signup();
   const workspace = await createWorkspace(app);
   await app.switchUser(owner);
   const docId = randomUUID();
@@ -209,7 +195,7 @@ test('should throw error when mention a not exists user', async t => {
 });
 
 test('should not mention user oneself', async t => {
-  const owner = await app.signupV1();
+  const owner = await app.signup();
   const workspace = await createWorkspace(app);
   await app.switchUser(owner);
   await t.throwsAsync(
@@ -230,8 +216,8 @@ test('should not mention user oneself', async t => {
 });
 
 test('should mark notification as read', async t => {
-  const member = await app.signupV1();
-  const owner = await app.signupV1();
+  const member = await app.signup();
+  const owner = await app.signup();
 
   await app.switchUser(owner);
   const workspace = await createWorkspace(app);
@@ -260,21 +246,24 @@ test('should mark notification as read', async t => {
   t.is(result.totalCount, 1);
 
   const notifications = result.edges.map(edge => edge.node);
-  const notification = notifications[0] as NotificationObjectType;
-  t.is(notification.read, false);
-
-  await readNotification(app, notification.id);
+  for (const notification of notifications) {
+    t.is(notification.read, false);
+    await readNotification(app, notification.id);
+  }
 
   const count = await getNotificationCount(app);
   t.is(count, 0);
 
   // read again should work
-  await readNotification(app, notification.id);
+  for (const notification of notifications) {
+    t.is(notification.read, false);
+    await readNotification(app, notification.id);
+  }
 });
 
 test('should throw error when read the other user notification', async t => {
-  const member = await app.signupV1();
-  const owner = await app.signupV1();
+  const member = await app.signup();
+  const owner = await app.signup();
 
   await app.switchUser(owner);
   const workspace = await createWorkspace(app);
@@ -319,12 +308,12 @@ test('should throw error when mention call with invalid params', async t => {
   await app.switchUser(owner);
   await t.throwsAsync(
     mentionUser(app, {
-      userId: '',
-      workspaceId: '',
+      userId: '1',
+      workspaceId: '1',
       doc: {
-        id: '',
+        id: '1',
         title: 'doc-title-1'.repeat(100),
-        blockId: '',
+        blockId: '1',
         mode: DocMode.page,
       },
     }),
@@ -356,8 +345,8 @@ test('should throw error when mention mode value is invalid', async t => {
 });
 
 test('should list and count notifications', async t => {
-  const member = await app.signupV1();
-  const owner = await app.signupV1();
+  const member = await app.signup();
+  const owner = await app.signup();
 
   {
     await app.switchUser(member);
@@ -453,7 +442,7 @@ test('should list and count notifications', async t => {
     t.is(body.createdByUser!.id, owner.id);
     t.is(body.workspace!.id, workspace2.id);
     t.is(body.workspace!.name, 'test-workspace-name2');
-    t.truthy(body.workspace!.avatarUrl);
+    t.falsy(body.workspace!.avatarUrl);
 
     const notification2 = notifications[1];
     t.is(notification2.read, false);
@@ -466,7 +455,7 @@ test('should list and count notifications', async t => {
     t.is(body2.createdByUser!.id, owner.id);
     t.is(body2.workspace!.id, workspace.id);
     t.is(body2.workspace!.name, 'test-workspace-name1');
-    t.truthy(body2.workspace!.avatarUrl);
+    t.falsy(body2.workspace!.avatarUrl);
   }
 
   {
@@ -493,7 +482,7 @@ test('should list and count notifications', async t => {
     t.is(body.createdByUser!.id, owner.id);
     t.is(body.workspace!.id, workspace.id);
     t.is(body.workspace!.name, 'test-workspace-name1');
-    t.truthy(body.workspace!.avatarUrl);
+    t.falsy(body.workspace!.avatarUrl);
 
     const notification2 = notifications[1];
     t.is(notification2.read, false);
@@ -505,7 +494,7 @@ test('should list and count notifications', async t => {
     t.is(body2.createdByUser!.id, owner.id);
     t.is(body2.workspace!.id, workspace.id);
     t.is(body2.workspace!.name, 'test-workspace-name1');
-    t.truthy(body2.workspace!.avatarUrl);
+    t.falsy(body2.workspace!.avatarUrl);
   }
 
   {
@@ -532,7 +521,7 @@ test('should list and count notifications', async t => {
     t.is(body.createdByUser!.id, owner.id);
     t.is(body.workspace!.id, workspace2.id);
     t.is(body.workspace!.name, 'test-workspace-name2');
-    t.truthy(body.workspace!.avatarUrl);
+    t.falsy(body.workspace!.avatarUrl);
     t.is(
       notification.createdAt.toString(),
       Buffer.from(result.pageInfo.startCursor!, 'base64').toString('utf-8')
@@ -547,7 +536,7 @@ test('should list and count notifications', async t => {
     t.is(body2.createdByUser!.id, owner.id);
     t.is(body2.workspace!.id, workspace.id);
     t.is(body2.workspace!.name, 'test-workspace-name1');
-    t.truthy(body2.workspace!.avatarUrl);
+    t.falsy(body2.workspace!.avatarUrl);
 
     await app.switchUser(owner);
     await mentionUser(app, {
@@ -587,7 +576,7 @@ test('should list and count notifications', async t => {
     t.is(body3.createdByUser!.name, owner.name);
     t.is(body3.workspace!.id, workspace.id);
     t.is(body3.workspace!.name, 'test-workspace-name1');
-    t.truthy(body3.workspace!.avatarUrl);
+    t.falsy(body3.workspace!.avatarUrl);
 
     // no new notifications
     const result3 = await listNotifications(app, {

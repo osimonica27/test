@@ -117,18 +117,17 @@ test('should invite a user by link', async t => {
   t.is(currMember?.inviteId, invite, 'failed to check invite id');
 });
 
-test('should send email', async t => {
+test('should send invitation notification', async t => {
   const { app } = t.context;
-  const u2 = await app.signupV1('u2@affine.pro');
-  const u1 = await app.signupV1('u1@affine.pro');
+  const u2 = await app.signup();
+  const u1 = await app.signup();
 
   const workspace = await createWorkspace(app);
   const invite = await inviteUser(app, workspace.id, u2.email, true);
 
-  const invitationMail = app.mails.last('MemberInvitation');
-
-  t.is(invitationMail.name, 'MemberInvitation');
-  t.is(invitationMail.to, u2.email);
+  const invitationNotification = app.queue.last('notification.sendInvitation');
+  t.is(invitationNotification.payload.inviterId, u1.id);
+  t.is(invitationNotification.payload.inviteId, invite);
 
   app.switchUser(u2.id);
   await acceptInviteById(app, workspace.id, invite, true);
