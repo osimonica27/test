@@ -94,6 +94,16 @@ export const ExplorerDocNode = ({
       [docsSearchService, docId, collapsed]
     )
   );
+
+  const uniqueChildren = useMemo(() => {
+    if (!children) return children;
+    const unique = children.filter(
+      (child, index, self) =>
+        index === self.findIndex(c => c.docId === child.docId)
+    );
+    return unique;
+  }, [children]);
+
   const searching = children === null;
 
   const indexerLoading = useLiveData(
@@ -267,7 +277,7 @@ export const ExplorerDocNode = ({
       dropEffect={handleDropEffectOnDoc}
       data-testid={`explorer-doc-${docId}`}
     >
-      {children?.map(child => (
+      {uniqueChildren?.map(child => (
         <ExplorerDocNode
           key={child.docId}
           docId={child.docId}
