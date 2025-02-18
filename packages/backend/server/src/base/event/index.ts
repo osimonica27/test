@@ -1,14 +1,20 @@
 import { Global, Module } from '@nestjs/common';
-import { EventEmitterModule } from '@nestjs/event-emitter';
+import EventEmitter2 from 'eventemitter2';
 
-import { EventBus, OnEvent } from './eventbus';
+import { EventBus } from './eventbus';
+import { EventHandlerScanner } from './scanner';
+
+const EmitProvider = {
+  provide: EventEmitter2,
+  useFactory: () => new EventEmitter2(),
+};
 
 @Global()
 @Module({
-  imports: [EventEmitterModule.forRoot({ global: false })],
-  providers: [EventBus],
+  providers: [EventBus, EventHandlerScanner, EmitProvider],
   exports: [EventBus],
 })
 export class EventModule {}
 
-export { EventBus, OnEvent };
+export { EventBus };
+export { OnEvent } from './def';

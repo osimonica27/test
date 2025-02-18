@@ -28,6 +28,17 @@ export class BadRequest extends UserFriendlyError {
   }
 }
 @ObjectType()
+class GraphqlBadRequestDataType {
+  @Field() code!: string
+  @Field() message!: string
+}
+
+export class GraphqlBadRequest extends UserFriendlyError {
+  constructor(args: GraphqlBadRequestDataType, message?: string | ((args: GraphqlBadRequestDataType) => string)) {
+    super('bad_request', 'graphql_bad_request', message, args);
+  }
+}
+@ObjectType()
 class QueryTooLongDataType {
   @Field() max!: number
 }
@@ -577,6 +588,16 @@ export class CopilotActionTaken extends UserFriendlyError {
   }
 }
 @ObjectType()
+class CopilotDocNotFoundDataType {
+  @Field() docId!: string
+}
+
+export class CopilotDocNotFound extends UserFriendlyError {
+  constructor(args: CopilotDocNotFoundDataType, message?: string | ((args: CopilotDocNotFoundDataType) => string)) {
+    super('resource_not_found', 'copilot_doc_not_found', message, args);
+  }
+}
+@ObjectType()
 class CopilotMessageNotFoundDataType {
   @Field() messageId!: string
 }
@@ -777,6 +798,7 @@ export enum ErrorNames {
   TOO_MANY_REQUEST,
   NOT_FOUND,
   BAD_REQUEST,
+  GRAPHQL_BAD_REQUEST,
   QUERY_TOO_LONG,
   USER_NOT_FOUND,
   USER_AVATAR_NOT_FOUND,
@@ -848,6 +870,7 @@ export enum ErrorNames {
   COPILOT_FAILED_TO_CREATE_MESSAGE,
   UNSPLASH_IS_NOT_CONFIGURED,
   COPILOT_ACTION_TAKEN,
+  COPILOT_DOC_NOT_FOUND,
   COPILOT_MESSAGE_NOT_FOUND,
   COPILOT_PROMPT_NOT_FOUND,
   COPILOT_PROMPT_INVALID,
@@ -880,5 +903,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [QueryTooLongDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, MissingOauthQueryParameterDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocAccessDeniedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseUpdateParamsDataType, WorkspaceMembersExceedLimitToDowngradeDataType] as const,
+    [GraphqlBadRequestDataType, QueryTooLongDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, MissingOauthQueryParameterDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocAccessDeniedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseUpdateParamsDataType, WorkspaceMembersExceedLimitToDowngradeDataType] as const,
 });

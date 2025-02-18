@@ -18,6 +18,14 @@ export type ChatAction = {
 
 export type ChatItem = ChatMessage | ChatAction;
 
+export function isChatAction(item: ChatItem): item is ChatAction {
+  return 'action' in item;
+}
+
+export function isChatMessage(item: ChatItem): item is ChatMessage {
+  return 'role' in item;
+}
+
 export type ChatStatus =
   | 'loading'
   | 'success'
@@ -70,6 +78,7 @@ export interface BaseChip {
 export interface DocChip extends BaseChip {
   docId: string;
   markdown?: Signal<string>;
+  tokenCount?: number;
 }
 
 export interface FileChip extends BaseChip {

@@ -369,7 +369,10 @@ export class DocResolver {
 
     return mapPermissionToGraphqlPermissions(
       mapDocRoleToPermissions(
-        fixupDocRole(workspacePermission?.type, permission?.type)
+        fixupDocRole(
+          workspacePermission?.type,
+          permission?.type ?? doc.defaultRole
+        )
       )
     );
   }
@@ -381,7 +384,7 @@ export class DocResolver {
   async grantedUsersList(
     @CurrentUser() user: CurrentUser,
     @Parent() doc: DocType,
-    @Args('pagination') pagination: PaginationInput
+    @Args('pagination', PaginationInput.decode) pagination: PaginationInput
   ): Promise<PaginatedGrantedDocUserType> {
     await this.permission.checkPagePermission(
       doc.workspaceId,

@@ -24,7 +24,12 @@ import {
 import { AffineAvatarIcon, AffineIcon, DownArrowIcon } from '../_common/icons';
 import { AIChatErrorRenderer } from '../messages/error';
 import { AIProvider } from '../provider';
-import type { ChatContextValue, ChatItem, ChatMessage } from './chat-context';
+import {
+  type ChatContextValue,
+  type ChatItem,
+  type ChatMessage,
+  isChatMessage,
+} from './chat-context';
 import { HISTORY_IMAGE_ACTIONS } from './const';
 import { AIPreloadConfig } from './preload-config';
 
@@ -134,7 +139,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   accessor chatContextValue!: ChatContextValue;
 
   @property({ attribute: false })
-  accessor chatSessionId!: string | undefined;
+  accessor getSessionId!: () => Promise<string | undefined>;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<ChatContextValue>) => void;
@@ -207,7 +212,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
     const { isLoading } = this;
     const filteredItems = items.filter(item => {
       return (
-        'role' in item ||
+        isChatMessage(item) ||
         item.messages?.length === 3 ||
         (HISTORY_IMAGE_ACTIONS.includes(item.action) &&
           item.messages?.length === 2)
@@ -244,7 +249,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
             </div> `
           : repeat(
               filteredItems,
-              item => ('role' in item ? item.id : item.sessionId),
+              item => (isChatMessage(item) ? item.id : item.sessionId),
               (item, index) => {
                 const isLast = index === filteredItems.length - 1;
                 return html`<div class="message">
@@ -317,7 +322,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       return AIChatErrorRenderer(host, error);
     }
 
-    if ('role' in item) {
+    if (isChatMessage(item)) {
       const state = isLast
         ? status !== 'loading' && status !== 'transmitting'
           ? 'finished'
@@ -375,8 +380,8 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   }
 
   renderAvatar(item: ChatItem) {
-    const isUser = 'role' in item && item.role === 'user';
-    const isAssistant = 'role' in item && item.role === 'assistant';
+    const isUser = isChatMessage(item) && item.role === 'user';
+    const isAssistant = isChatMessage(item) && item.role === 'assistant';
     const isWithDocs =
       isAssistant &&
       item.content &&
@@ -415,7 +420,8 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   retry = async () => {
     const { doc } = this.host;
     try {
-      if (!this.chatSessionId) return;
+      const sessionId = await this.getSessionId();
+      if (!sessionId) return;
 
       const abortController = new AbortController();
       const items = [...this.chatContextValue.items];
@@ -427,7 +433,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       this.updateContext({ items, status: 'loading', error: null });
 
       const stream = AIProvider.actions.chat?.({
-        sessionId: this.chatSessionId,
+        sessionId,
         retry: true,
         docId: doc.id,
         workspaceId: doc.workspace.id,
@@ -482,7 +488,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         .actions=${actions}
         .content=${content}
         .isLast=${isLast}
-        .chatSessionId=${this.chatSessionId}
+        .getSessionId=${this.getSessionId}
         .messageId=${messageId}
         .withMargin=${true}
         .retry=${() => this.retry()}
@@ -492,7 +498,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
             .actions=${actions}
             .host=${host}
             .content=${content}
-            .chatSessionId=${this.chatSessionId}
+            .getSessionId=${this.getSessionId}
             .messageId=${messageId ?? undefined}
             .withMargin=${true}
           ></chat-action-list>`

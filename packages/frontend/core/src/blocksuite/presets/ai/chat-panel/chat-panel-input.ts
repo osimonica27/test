@@ -27,6 +27,7 @@ import { readBlobAsURL } from '../utils/image';
 import type { AINetworkSearchConfig } from './chat-config';
 import type { ChatContextValue, ChatMessage, DocContext } from './chat-context';
 import { isDocChip } from './components/utils';
+import { PROMPT_NAME_AFFINE_AI, PROMPT_NAME_NETWORK_SEARCH } from './const';
 
 const MaximumImageCount = 32;
 
@@ -259,7 +260,7 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
   accessor chatContextValue!: ChatContextValue;
 
   @property({ attribute: false })
-  accessor chatSessionId!: string | undefined;
+  accessor getSessionId!: () => Promise<string | undefined>;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<ChatContextValue>) => void;
@@ -287,23 +288,21 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
     );
   }
 
-  private get _promptName() {
+  private _getPromptName() {
     if (this._isNetworkDisabled) {
-      return 'Chat With AFFiNE AI';
+      return PROMPT_NAME_AFFINE_AI;
     }
     return this._isNetworkActive
-      ? 'Search With AFFiNE AI'
-      : 'Chat With AFFiNE AI';
+      ? PROMPT_NAME_NETWORK_SEARCH
+      : PROMPT_NAME_AFFINE_AI;
   }
 
-  private async _updatePromptName() {
-    if (this._lastPromptName !== this._promptName) {
-      this._lastPromptName = this._promptName;
-      if (this.chatSessionId) {
-        await AIProvider.session?.updateSession(
-          this.chatSessionId,
-          this._promptName
-        );
+  private async _updatePromptName(promptName: string) {
+    if (this._lastPromptName !== promptName) {
+      const sessionId = await this.getSessionId();
+      if (sessionId && AIProvider.session) {
+        await AIProvider.session.updateSession(sessionId, promptName);
+        this._lastPromptName = promptName;
       }
     }
   }
@@ -458,7 +457,7 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
           }}
           @keydown=${async (evt: KeyboardEvent) => {
             if (evt.key === 'Enter' && !evt.shiftKey && !evt.isComposing) {
-              this._onTextareaSend(evt);
+              await this._onTextareaSend(evt);
             }
           }}
           @focus=${() => {
@@ -539,7 +538,7 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
       </div>`;
   }
 
-  private readonly _onTextareaSend = (e: MouseEvent | KeyboardEvent) => {
+  private readonly _onTextareaSend = async (e: MouseEvent | KeyboardEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -550,53 +549,56 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
     this.isInputEmpty = true;
     this.textarea.style.height = 'unset';
 
-    this.send(value).catch(console.error);
+    await this.send(value);
   };
 
   send = async (text: string) => {
-    const { status, markdown, chips } = this.chatContextValue;
+    const { status, markdown, chips, images } = this.chatContextValue;
     if (status === 'loading' || status === 'transmitting') return;
     if (!text) return;
 
-    const { images } = this.chatContextValue;
-    const { doc } = this.host;
-
-    this.updateContext({
-      images: [],
-      status: 'loading',
-      error: null,
-      quote: '',
-      markdown: '',
-    });
-
-    await this._updatePromptName();
-
-    const attachments = await Promise.all(
-      images?.map(image => readBlobAsURL(image))
-    );
-
-    const userInput = (markdown ? `${markdown}\n` : '') + text;
-    this.updateContext({
-      items: [
-        ...this.chatContextValue.items,
-        {
-          id: '',
-          role: 'user',
-          content: userInput,
-          createdAt: new Date().toISOString(),
-          attachments,
-        },
-        {
-          id: '',
-          role: 'assistant',
-          content: '',
-          createdAt: new Date().toISOString(),
-        },
-      ],
-    });
-
     try {
+      const { doc } = this.host;
+      const promptName = this._getPromptName();
+
+      this.updateContext({
+        images: [],
+        status: 'loading',
+        error: null,
+        quote: '',
+        markdown: '',
+      });
+
+      const attachments = await Promise.all(
+        images?.map(image => readBlobAsURL(image))
+      );
+
+      const userInput = (markdown ? `${markdown}\n` : '') + text;
+      this.updateContext({
+        items: [
+          ...this.chatContextValue.items,
+          {
+            id: '',
+            role: 'user',
+            content: userInput,
+            createdAt: new Date().toISOString(),
+            attachments,
+          },
+          {
+            id: '',
+            role: 'assistant',
+            content: '',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      });
+
+      // must update prompt name after local chat message is updated
+      // otherwise, the unauthorized error can not be rendered properly
+      await this._updatePromptName(promptName);
+
       const abortController = new AbortController();
+      const sessionId = await this.getSessionId();
       const docs: DocContext[] = chips
         .filter(isDocChip)
         .filter(chip => !!chip.markdown?.value && chip.state === 'success')
@@ -605,7 +607,7 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
           markdown: chip.markdown?.value || '',
         }));
       const stream = AIProvider.actions.chat?.({
-        sessionId: this.chatSessionId,
+        sessionId,
         input: userInput,
         docs: docs,
         docId: doc.id,
@@ -637,7 +639,7 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
           const historyIds = await AIProvider.histories?.ids(
             doc.workspace.id,
             doc.id,
-            { sessionId: this.chatSessionId }
+            { sessionId }
           );
           if (!historyIds || !historyIds[0]) return;
           last.id = historyIds[0].messages.at(-1)?.id ?? '';

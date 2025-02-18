@@ -80,10 +80,12 @@ export {
   addNote,
   addNoteAtPoint,
   generateElementId,
+  getBgGridGap,
   getLastPropsKey,
   getSurfaceBlock,
   normalizeWheelDeltaY,
 } from './utils';
+export * from './utils/mindmap/style-svg';
 export type { Options } from './utils/rough/core';
 export { sortIndex } from './utils/sort';
 export { updateXYWH } from './utils/update-xywh.js';

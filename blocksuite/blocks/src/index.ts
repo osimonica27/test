@@ -8,11 +8,6 @@ import { isCanvasElement } from './root-block/edgeless/utils/query.js';
 
 export * from './_common/adapters/index.js';
 export { type NavigatorMode } from './_common/edgeless/frame/consts.js';
-export {
-  ExportManager,
-  ExportManagerExtension,
-} from './_common/export-manager/export-manager.js';
-export * from './_common/test-utils/test-utils.js';
 export * from './_common/transformers/index.js';
 export { type AbstractEditor } from './_common/types.js';
 export * from './_specs/index.js';
@@ -74,7 +69,6 @@ export {
   DocIcon,
   DualLinkIcon16,
   LinkedDocIcon,
-  PlusIcon,
   TagsIcon,
 } from '@blocksuite/affine-components/icons';
 export * from '@blocksuite/affine-components/icons';

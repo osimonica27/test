@@ -1,5 +1,11 @@
 import type { EditorHost } from '@blocksuite/affine/block-std';
-import { type AIError, openFileOrFiles } from '@blocksuite/affine/blocks';
+import {
+  type AIError,
+  openFileOrFiles,
+  unsafeCSSVarV2,
+} from '@blocksuite/affine/blocks';
+import { SignalWatcher } from '@blocksuite/affine/global/utils';
+import { ImageIcon, PublishIcon } from '@blocksuite/icons/lit';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -11,16 +17,21 @@ import {
   ChatClearIcon,
   ChatSendIcon,
   CloseIcon,
-  ImageIcon,
 } from '../_common/icons';
+import type { AINetworkSearchConfig } from '../chat-panel/chat-config';
+import {
+  PROMPT_NAME_AFFINE_AI,
+  PROMPT_NAME_NETWORK_SEARCH,
+} from '../chat-panel/const';
 import { AIProvider } from '../provider';
 import { reportResponse } from '../utils/action-reporter';
 import { readBlobAsURL } from '../utils/image';
+import { stopPropagation } from '../utils/selection-utils';
 import type { ChatContext } from './types';
 
 const MaximumImageCount = 8;
 
-export class ChatBlockInput extends LitElement {
+export class ChatBlockInput extends SignalWatcher(LitElement) {
   static override styles = css`
     :host {
       width: 100%;
@@ -126,6 +137,7 @@ export class ChatBlockInput extends LitElement {
       display: flex;
       gap: 8px;
       align-items: center;
+
       div {
         width: 24px;
         height: 24px;
@@ -133,6 +145,28 @@ export class ChatBlockInput extends LitElement {
       }
       div:nth-child(2) {
         margin-left: auto;
+      }
+
+      .image-upload,
+      .chat-network-search {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        svg {
+          width: 20px;
+          height: 20px;
+          color: ${unsafeCSSVarV2('icon/primary')};
+        }
+      }
+      .chat-network-search[data-active='true'] svg {
+        color: ${unsafeCSSVarV2('icon/activated')};
+      }
+
+      .chat-network-search[aria-disabled='true'] {
+        cursor: not-allowed;
+      }
+      .chat-network-search[aria-disabled='true'] svg {
+        color: var(--affine-text-disable-color) !important;
       }
     }
 
@@ -168,81 +202,46 @@ export class ChatBlockInput extends LitElement {
         <textarea
           rows="1"
           placeholder="What are your thoughts?"
-          @keydown=${async (evt: KeyboardEvent) => {
-            if (evt.key === 'Enter' && !evt.shiftKey && !evt.isComposing) {
-              evt.preventDefault();
-              await this._send();
-            }
-          }}
-          @input=${() => {
-            const { textarea } = this;
-            this._isInputEmpty = !textarea.value.trim();
-            textarea.style.height = 'auto';
-            textarea.style.height = textarea.scrollHeight + 'px';
-            if (this.scrollHeight >= 202) {
-              textarea.style.height = '168px';
-              textarea.style.overflowY = 'scroll';
-            }
-          }}
+          @keydown=${this._handleKeyDown}
+          @input=${this._handleInput}
           @focus=${() => {
             this._focused = true;
           }}
           @blur=${() => {
             this._focused = false;
           }}
-          @paste=${(event: ClipboardEvent) => {
-            const items = event.clipboardData?.items;
-            if (!items) return;
-            for (const index in items) {
-              const item = items[index];
-              if (item.kind === 'file' && item.type.indexOf('image') >= 0) {
-                const blob = item.getAsFile();
-                if (!blob) continue;
-                this._addImages([blob]);
-              }
-            }
-          }}
+          @paste=${this._handlePaste}
           data-testid="chat-block-input"
         ></textarea>
         <div class="chat-panel-input-actions">
-          <div
-            class=${cleanButtonClasses}
-            @click=${async () => {
-              if (disableCleanUp) {
-                return;
-              }
-              await this.cleanupHistories();
-            }}
-          >
+          <div class=${cleanButtonClasses} @click=${this._handleCleanup}>
             ${ChatClearIcon}
           </div>
+          ${this.networkSearchConfig.visible.value
+            ? html`
+                <div
+                  class="chat-network-search"
+                  data-testid="chat-network-search"
+                  aria-disabled=${this._isNetworkDisabled}
+                  data-active=${this._isNetworkActive}
+                  @click=${this._isNetworkDisabled
+                    ? undefined
+                    : this._toggleNetworkSearch}
+                  @pointerdown=${stopPropagation}
+                >
+                  ${PublishIcon()}
+                </div>
+              `
+            : nothing}
           ${images.length < MaximumImageCount
-            ? html`<div
-                class="image-upload"
-                @click=${async () => {
-                  const images = await openFileOrFiles({
-                    acceptType: 'Images',
-                    multiple: true,
-                  });
-                  if (!images) return;
-                  this._addImages(images);
-                }}
-              >
-                ${ImageIcon}
+            ? html`<div class="image-upload" @click=${this._handleImageUpload}>
+                ${ImageIcon()}
               </div>`
             : nothing}
           ${status === 'transmitting'
-            ? html`<div
-                @click=${() => {
-                  this.chatContext.abortController?.abort();
-                  this.updateContext({ status: 'success' });
-                  reportResponse('aborted:stop');
-                }}
-              >
-                ${ChatAbortIcon}
-              </div>`
+            ? html`<div @click=${this._handleAbort}>${ChatAbortIcon}</div>`
             : html`<div
-                @click="${this._send}"
+                @click=${this._onTextareaSend}
                 class="chat-panel-send"
                 aria-disabled=${this._isInputEmpty}
               >
@@ -260,6 +259,9 @@ export class ChatBlockInput extends LitElement {
 
   @property({ attribute: false })
   accessor host!: EditorHost;
+
+  @property({ attribute: false })
+  accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
   accessor updateChatBlock!: () => Promise<void>;
@@ -291,11 +293,108 @@ export class ChatBlockInput extends LitElement {
   @state()
   accessor _curIndex = -1;
 
+  private _lastPromptName: string | null = null;
+
+  private get _isNetworkActive() {
+    return (
+      !!this.networkSearchConfig.visible.value &&
+      !!this.networkSearchConfig.enabled.value
+    );
+  }
+
+  private get _isNetworkDisabled() {
+    return !!this.chatContext.images.length;
+  }
+
+  private _getPromptName() {
+    if (this._isNetworkDisabled) {
+      return PROMPT_NAME_AFFINE_AI;
+    }
+    return this._isNetworkActive
+      ? PROMPT_NAME_NETWORK_SEARCH
+      : PROMPT_NAME_AFFINE_AI;
+  }
+
+  private async _updatePromptName(promptName: string) {
+    if (this._lastPromptName !== promptName) {
+      const { currentSessionId } = this.chatContext;
+      if (currentSessionId && AIProvider.session) {
+        await AIProvider.session.updateSession(currentSessionId, promptName);
+        this._lastPromptName = promptName;
+      }
+    }
+  }
+
   private readonly _addImages = (images: File[]) => {
     const oldImages = this.chatContext.images;
     this.updateContext({
       images: [...oldImages, ...images].slice(0, MaximumImageCount),
     });
+  };
+
+  private readonly _toggleNetworkSearch = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const enable = this.networkSearchConfig.enabled.value;
+    this.networkSearchConfig.setEnabled(!enable);
+  };
+
+  private readonly _handleKeyDown = async (evt: KeyboardEvent) => {
+    if (evt.key === 'Enter' && !evt.shiftKey && !evt.isComposing) {
+      evt.preventDefault();
+      await this._onTextareaSend(evt);
+    }
+  };
+
+  private readonly _handleInput = () => {
+    const { textarea } = this;
+    this._isInputEmpty = !textarea.value.trim();
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+    if (this.scrollHeight >= 202) {
+      textarea.style.height = '168px';
+      textarea.style.overflowY = 'scroll';
+    }
+  };
+
+  private readonly _handlePaste = (event: ClipboardEvent) => {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    for (const index in items) {
+      const item = items[index];
+      if (item.kind === 'file' && item.type.indexOf('image') >= 0) {
+        const blob = item.getAsFile();
+        if (!blob) continue;
+        this._addImages([blob]);
+      }
+    }
+  };
+
+  private readonly _handleCleanup = async () => {
+    if (
+      this.chatContext.status === 'loading' ||
+      this.chatContext.status === 'transmitting' ||
+      !this.chatContext.messages.length
+    ) {
+      return;
+    }
+    await this.cleanupHistories();
+  };
+
+  private readonly _handleImageUpload = async () => {
+    const images = await openFileOrFiles({
+      acceptType: 'Images',
+      multiple: true,
+    });
+    if (!images) return;
+    this._addImages(images);
+  };
+
+  private readonly _handleAbort = () => {
+    this.chatContext.abortController?.abort();
+    this.updateContext({ status: 'success' });
+    reportResponse('aborted:stop');
   };
 
   private _renderImages(images: File[]) {
@@ -350,56 +449,70 @@ export class ChatBlockInput extends LitElement {
     `;
   }
 
-  private readonly _send = async () => {
-    const { images, status } = this.chatContext;
-    if (status === 'loading' || status === 'transmitting') return;
+  private readonly _onTextareaSend = async (e: MouseEvent | KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-    const text = this.textarea.value;
-    if (!text && !images.length) {
-      return;
-    }
+    const value = this.textarea.value.trim();
+    if (value.length === 0) return;
 
-    const { doc } = this.host;
     this.textarea.value = '';
     this._isInputEmpty = true;
     this.textarea.style.height = 'unset';
-    this.updateContext({
-      images: [],
-      status: 'loading',
-      error: null,
-    });
 
-    const attachments = await Promise.all(
-      images?.map(image => readBlobAsURL(image))
-    );
+    await this._send(value);
+  };
 
-    const userInfo = await AIProvider.userInfo;
-    this.updateContext({
-      messages: [
-        ...this.chatContext.messages,
-        {
-          id: '',
-          content: text,
-          role: 'user',
-          createdAt: new Date().toISOString(),
-          attachments,
-          userId: userInfo?.id,
-          userName: userInfo?.name,
-          avatarUrl: userInfo?.avatarUrl ?? undefined,
-        },
-        {
-          id: '',
-          content: '',
-          role: 'assistant',
-          createdAt: new Date().toISOString(),
-        },
-      ],
-    });
-
-    const { currentChatBlockId, currentSessionId } = this.chatContext;
-    let content = '';
+  private readonly _send = async (text: string) => {
+    const { images, status, currentChatBlockId, currentSessionId } =
+      this.chatContext;
     const chatBlockExists = !!currentChatBlockId;
+    let content = '';
+
+    if (status === 'loading' || status === 'transmitting') return;
+    if (!text) return;
+
     try {
+      const { doc } = this.host;
+      const promptName = this._getPromptName();
+
+      this.updateContext({
+        images: [],
+        status: 'loading',
+        error: null,
+      });
+
+      const attachments = await Promise.all(
+        images?.map(image => readBlobAsURL(image))
+      );
+
+      const userInfo = await AIProvider.userInfo;
+      this.updateContext({
+        messages: [
+          ...this.chatContext.messages,
+          {
+            id: '',
+            content: text,
+            role: 'user',
+            createdAt: new Date().toISOString(),
+            attachments,
+            userId: userInfo?.id,
+            userName: userInfo?.name,
+            avatarUrl: userInfo?.avatarUrl ?? undefined,
+          },
+          {
+            id: '',
+            content: '',
+            role: 'assistant',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      });
+
+      // must update prompt name after local chat message is updated
+      // otherwise, the unauthorized error can not be rendered properly
+      await this._updatePromptName(promptName);
+
       // If has not forked a chat session, fork a new one
       let chatSessionId = currentSessionId;
       if (!chatSessionId) {

@@ -1,6 +1,7 @@
-import type {
-  SurfaceBlockComponent,
-  SurfaceBlockModel,
+import {
+  getBgGridGap,
+  type SurfaceBlockComponent,
+  type SurfaceBlockModel,
 } from '@blocksuite/affine-block-surface';
 import type { EdgelessPreviewer } from '@blocksuite/affine-block-surface-ref';
 import type { RootBlockModel } from '@blocksuite/affine-model';
@@ -19,10 +20,11 @@ import type { GfxViewportElement } from '@blocksuite/block-std/gfx';
 import { assertExists } from '@blocksuite/global/utils';
 import { css, html } from 'lit';
 import { query, state } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
 import type { EdgelessRootBlockWidgetName } from '../types.js';
 import type { EdgelessRootService } from './edgeless-root-service.js';
-import { getBackgroundGrid, isCanvasElement } from './utils/query.js';
+import { isCanvasElement } from './utils/query.js';
 
 export class EdgelessRootPreviewBlockComponent
   extends BlockComponent<
@@ -72,7 +74,7 @@ export class EdgelessRootPreviewBlockComponent
   private readonly _refreshLayerViewport = requestThrottledConnectedFrame(
     () => {
       const { zoom, translateX, translateY } = this.service.viewport;
-      const { gap } = getBackgroundGrid(zoom, true);
+      const gap = getBgGridGap(zoom);
 
       this.background.style.setProperty(
         'background-position',
@@ -229,8 +231,12 @@ export class EdgelessRootPreviewBlockComponent
   }
 
   override renderBlock() {
+    const background = styleMap({
+      background: this.overrideBackground,
+    });
+
     return html`
-      <div class="edgeless-background edgeless-container">
+      <div class="edgeless-background edgeless-container" style=${background}>
         <gfx-viewport
           .enableChildrenSchedule=${!this._disableScheduleUpdate}
           .viewport=${this.service.viewport}
@@ -259,6 +265,9 @@ export class EdgelessRootPreviewBlockComponent
       this._initResizeEffect();
     }
   }
+
+  @state()
+  accessor overrideBackground: string | undefined = undefined;
 
   @state()
   accessor editorViewportSelector = '.affine-edgeless-viewport';

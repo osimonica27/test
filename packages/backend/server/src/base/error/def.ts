@@ -251,6 +251,12 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'bad_request',
     message: 'Bad request.',
   },
+  graphql_bad_request: {
+    type: 'bad_request',
+    args: { code: 'string', message: 'string' },
+    message: ({ code, message }) =>
+      `GraphQL bad request, code: ${code}, ${message}`,
+  },
 
   // Input errors
   query_too_long: {
@@ -589,6 +595,11 @@ export const USER_FRIENDLY_ERRORS = {
   copilot_action_taken: {
     type: 'action_forbidden',
     message: `Action has been taken, no more messages allowed.`,
+  },
+  copilot_doc_not_found: {
+    type: 'resource_not_found',
+    args: { docId: 'string' },
+    message: ({ docId }) => `Doc ${docId} not found.`,
   },
   copilot_message_not_found: {
     type: 'resource_not_found',

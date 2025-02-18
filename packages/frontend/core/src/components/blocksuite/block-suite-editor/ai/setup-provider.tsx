@@ -11,14 +11,7 @@ import { z } from 'zod';
 
 import type { CopilotClient } from './copilot-client';
 import type { PromptKey } from './prompt';
-import {
-  cleanupSessions,
-  createChatSession,
-  forkCopilotSession,
-  textToText,
-  toImage,
-  updateChatSession,
-} from './request';
+import { textToText, toImage } from './request';
 import { setupTracker } from './tracker';
 
 const filterStyleToPromptName = new Map(
@@ -44,13 +37,6 @@ export function setupAIProvider(
 ) {
   //#region actions
   AIProvider.provide('chat', options => {
-    const sessionId =
-      options.sessionId ??
-      createChatSession({
-        client,
-        workspaceId: options.workspaceId,
-        docId: options.docId,
-      });
     const { input, docs, ...rest } = options;
     const params = docs?.length
       ? {
@@ -65,7 +51,6 @@ export function setupAIProvider(
       ...rest,
       client,
       content: input,
-      sessionId,
       params,
     });
   });
@@ -415,18 +400,23 @@ Could you make a new website based on these notes and send back just the html fi
     createSession: async (
       workspaceId: string,
       docId: string,
-      promptName?: string
+      promptName = 'Chat With AFFiNE AI'
     ) => {
-      return createChatSession({
-        client,
+      return client.createSession({
         workspaceId,
         docId,
         promptName,
       });
     },
+    getSessionIds: async (
+      workspaceId: string,
+      docId?: string,
+      options?: { action?: boolean }
+    ) => {
+      return client.getSessionIds(workspaceId, docId, options);
+    },
     updateSession: async (sessionId: string, promptName: string) => {
-      return updateChatSession({
-        client,
+      return client.updateSession({
         sessionId,
         promptName,
       });
@@ -490,7 +480,7 @@ Could you make a new website based on these notes and send back just the html fi
       docId: string,
       sessionIds: string[]
     ) => {
-      await cleanupSessions({ workspaceId, docId, sessionIds, client });
+      await client.cleanupSessions({ workspaceId, docId, sessionIds });
     },
     ids: async (
       workspaceId: string,
@@ -533,7 +523,7 @@ Could you make a new website based on these notes and send back just the html fi
   AIProvider.provide('onboarding', toggleGeneralAIOnboarding);
 
   AIProvider.provide('forkChat', options => {
-    return forkCopilotSession(client, options);
+    return client.forkSession(options);
   });
 
   const disposeRequestLoginHandler = AIProvider.slots.requestLogin.on(() => {

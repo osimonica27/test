@@ -104,12 +104,14 @@ const clearChat = async (page: Page) => {
 };
 
 const collectChat = async (page: Page) => {
+  await page.waitForTimeout(ONE_SECOND);
   const chatPanel = await page.waitForSelector('.chat-panel-messages');
   if (await chatPanel.$('.chat-panel-messages-placeholder')) {
     return [];
   }
   // wait ai response
   await page.waitForSelector('.chat-panel-messages .message chat-copy-more');
+  await page.waitForTimeout(ONE_SECOND);
   const lastMessage = await chatPanel.$$('.message').then(m => m[m.length - 1]);
   await lastMessage.waitForSelector('chat-copy-more');
   await page.waitForTimeout(ONE_SECOND);
@@ -489,7 +491,6 @@ test.describe('chat panel', () => {
     await page.getByTestId('chat-network-search').click();
     await typeChatSequentially(page, 'What is the weather in Shanghai today?');
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(3000);
     let history = await collectChat(page);
     expect(history[0]).toEqual({
       name: 'You',
@@ -505,13 +506,51 @@ test.describe('chat panel', () => {
     await page.getByTestId('chat-network-search').click();
     await typeChatSequentially(page, 'What is the weather in Shanghai today?');
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(3000);
     history = await collectChat(page);
     expect(history[0]).toEqual({
       name: 'You',
       content: 'What is the weather in Shanghai today?',
     });
     expect(history[1].name).toBe('AFFiNE AI');
+    expect(await page.locator('chat-panel affine-footnote-node').count()).toBe(
+      0
+    );
+  });
+
+  test('can identify shape color, even if network search is active', async ({
+    page,
+  }) => {
+    await page.reload();
+    await clickSideBarAllPageButton(page);
+    await page.waitForTimeout(200);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await clickNewPageButton(page);
+
+    await openChat(page);
+    await page.getByTestId('chat-network-search').click();
+
+    await switchToEdgelessMode(page);
+
+    const shapeButton = await page.waitForSelector(
+      'edgeless-shape-tool-button'
+    );
+    await shapeButton.click();
+    await page.mouse.click(400, 400);
+
+    const askAIButton = await page.waitForSelector('.copilot-icon-button');
+    await askAIButton.click();
+
+    await page.waitForTimeout(1000);
+    await page.keyboard.type('What color is this shape?');
+    await page.keyboard.press('Enter');
+
+    const history = await collectChat(page);
+    expect(history[0]).toEqual({
+      name: 'You',
+      content: 'What color is this shape?',
+    });
+    expect(history[1].name).toBe('AFFiNE AI');
+    expect(history[1].content).toContain('yellow');
     expect(await page.locator('chat-panel affine-footnote-node').count()).toBe(
       0
     );
@@ -859,7 +898,6 @@ test.describe('chat with doc', () => {
 
     await typeChatSequentially(page, 'What is AFFiNE AI?');
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(3000);
     const history = await collectChat(page);
     expect(history[0]).toEqual({
       name: 'You',

@@ -18,6 +18,7 @@ import {
   EMBED_CARD_WIDTH,
 } from '@blocksuite/affine-shared/consts';
 import {
+  DndApiExtensionIdentifier,
   DocModeProvider,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
@@ -349,11 +350,12 @@ export class DragEventWatcher {
 
       return selectedElements;
     };
-    const toSnapshotRequiredBlocks = (models: string[]) => {
+    const toSnapshotRequiredBlocks = (selectedModels: string[]) => {
       let surfaceAdded = false;
       const blocks: BlockModel[] = [];
+      const blocksUnderSurface: BlockModel[] = [];
 
-      models.forEach(id => {
+      selectedModels.forEach(id => {
         const model = this.gfx.getElementById(id);
 
         if (!model) {
@@ -368,16 +370,19 @@ export class DragEventWatcher {
           const parentModel = this.std.store.getParent(model);
 
           if (matchModels(parentModel, [SurfaceBlockModel])) {
-            if (surfaceAdded) return;
-            surfaceAdded = true;
-            blocks.push(this.gfx.surface!);
+            blocksUnderSurface.push(model);
           } else {
             blocks.push(model);
           }
         }
       });
 
-      return blocks;
+      if (surfaceAdded) {
+        // surface children are included, so no need to add the blocksUnderSurface
+        return blocks;
+      } else {
+        return blocks.concat(blocksUnderSurface);
+      }
     };
 
     const selectedElements = getElementsInContainer(
@@ -953,11 +958,17 @@ export class DragEventWatcher {
           block.flavour === 'affine:attachment' ||
           block.flavour.startsWith('affine:embed-')
         ) {
-          const style = (block.props.style ?? 'vertical') as EmbedCardStyle;
+          const style = 'vertical' as EmbedCardStyle;
           block.props.style = style;
 
           blockBound.w = EMBED_CARD_WIDTH[style];
           blockBound.h = EMBED_CARD_HEIGHT[style];
+        }
+
+        if (block.flavour === 'affine:image') {
+          assertType<{ width: number; height: number }>(block.props);
+          blockBound.w = blockBound.w || block.props.width || 100;
+          blockBound.h = blockBound.h || block.props.height || 100;
         }
 
         if (ignoreOriginalPos) {
@@ -975,6 +986,16 @@ export class DragEventWatcher {
     snapshot.content.forEach(rewrite);
   };
 
+  get dndExtension() {
+    return this.std.getOptional(DndApiExtensionIdentifier);
+  }
+
+  /**
+   * This method will try to drop the snapshot as gfx block directly if all blocks can be dropped as gfx block.
+   * Otherwise, it will create a linked doc to reference the original doc.
+   * @param snapshot
+   * @param point
+   */
   private readonly _dropAsGfxBlock = (
     snapshot: SliceSnapshot,
     point: Point
@@ -1013,8 +1034,10 @@ export class DragEventWatcher {
           .then(slices => {
             slices?.content.forEach((block, idx) => {
               if (
-                block.flavour === 'affine:attachment' ||
-                block.flavour.startsWith('affine:embed-')
+                block.id === content[idx].id &&
+                (block.flavour === 'affine:image' ||
+                  block.flavour === 'affine:attachment' ||
+                  block.flavour.startsWith('affine:embed-'))
               ) {
                 store.updateBlock(block as BlockModel, {
                   xywh: content[idx].props.xywh,
@@ -1051,34 +1074,61 @@ export class DragEventWatcher {
           .catch(console.error);
       }
     } else {
+      const dndExtApi = this.dndExtension;
       const content = snapshot.content.filter(block =>
         schema.safeValidate(block.flavour, 'affine:note')
       );
-      // create note to wrap the snapshot
-      const pos = this.gfx.viewport.toModelCoordFromClientCoord([
-        point.x,
-        point.y,
-      ]);
-      const noteId = store.addBlock(
-        'affine:note',
-        {
-          xywh: new Bound(
-            pos[0],
-            pos[1],
-            DEFAULT_NOTE_WIDTH,
-            DEFAULT_NOTE_HEIGHT
-          ).serialize(),
-        },
-        this.widget.doc.root!
-      );
+      const sourceDocId = snapshot.pageId;
 
-      this._dropToModel(
-        {
-          ...snapshot,
-          content,
-        },
-        noteId
-      ).catch(console.error);
+      if (
+        dndExtApi &&
+        this.std.store.workspace.docs.has(sourceDocId) &&
+        this.gfx.surface &&
+        snapshot.pageId !== this.std.store.doc.id
+      ) {
+        const style = 'vertical' as EmbedCardStyle;
+        const linkedDocSnapshot = dndExtApi.fromEntity({
+          docId: sourceDocId,
+          props: {
+            blockIds: content.map(block => block.id),
+            style: 'vertical',
+            xywh: new Bound(
+              point.x,
+              point.y,
+              EMBED_CARD_WIDTH[style],
+              EMBED_CARD_HEIGHT[style]
+            ).serialize(),
+          },
+        });
+
+        if (linkedDocSnapshot) {
+          this._dropToModel(linkedDocSnapshot, this.gfx.surface.id).catch(
+            console.error
+          );
+        }
+      } else {
+        // create note to wrap the snapshot
+        const noteId = store.addBlock(
+          'affine:note',
+          {
+            xywh: new Bound(
+              point.x,
+              point.y,
+              DEFAULT_NOTE_WIDTH,
+              DEFAULT_NOTE_HEIGHT
+            ).serialize(),
+          },
+          this.widget.doc.root!
+        );
+
+        this._dropToModel(
+          {
+            ...snapshot,
+            content,
+          },
+          noteId
+        ).catch(console.error);
+      }
     }
   };
 
@@ -1251,13 +1301,13 @@ export class DragEventWatcher {
           return;
         }
 
-        const { snapshot } = source.data.bsEntity;
+        const { snapshot, fromMode } = source.data.bsEntity;
 
         this.previewHelper.renderDragPreview({
           blockIds: source.data?.bsEntity?.modelIds,
           snapshot,
           container,
-          mode: this.mode ?? 'page',
+          mode: fromMode ?? 'block',
         });
 
         setOffset({ x: 0, y: 0 });
@@ -1279,6 +1329,7 @@ export class DragEventWatcher {
 
   private _makeDropTarget(view: BlockComponent) {
     const isUnderNote = this._isUnderNoteBlock(view.model);
+    const isNote = matchModels(view.model, [NoteBlockModel]);
 
     if (
       // affine:surface block can't be drop target in any modes
@@ -1322,6 +1373,16 @@ export class DragEventWatcher {
           }
 
           return false;
+        },
+        onDragEnter: () => {
+          if (isNote && 'hideMask' in view) {
+            view.hideMask = true;
+          }
+        },
+        onDragLeave: () => {
+          if (isNote && 'hideMask' in view) {
+            view.hideMask = false;
+          }
         },
         setDropData: () => {
           return {

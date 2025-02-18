@@ -1216,6 +1216,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.sign.in.sent.email.subtitle"](): string;
     /**
+      * `Self-Hosted`
+      */
+    ["com.affine.auth.sign.add-selfhosted.title"](): string;
+    /**
       * `Connect to a Self-Hosted Instance`
       */
     ["com.affine.auth.sign.add-selfhosted"](): string;
@@ -3587,6 +3591,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.cloud.pro.benefit.g1-8"](): string;
     /**
+      * `Granular edit access to docs.`
+      */
+    ["com.affine.payment.cloud.pro.benefit.g1-9"](): string;
+    /**
       * `For family and small teams.`
       */
     ["com.affine.payment.cloud.pro.description"](): string;
@@ -4297,6 +4305,14 @@ export function useAFFiNEI18N(): {
       * `Click or drag`
       */
     ["com.affine.split-view-drag-handle.tooltip"](): string;
+    /**
+      * `Split view does not support folders.`
+      */
+    ["com.affine.split-view-folder-warning.description"](): string;
+    /**
+      * `Do not show this again`
+      */
+    ["do-not-show-this-again"](): string;
     /**
       * `New`
       */
@@ -5326,14 +5342,6 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-mind-map-import.description"](): string;
     /**
-      * `Split View`
-      */
-    ["com.affine.settings.workspace.experimental-features.enable-multi-view.name"](): string;
-    /**
-      * `The Split View feature enables you to divide your tab into multiple sections for simultaneous viewing and editing of different documents.`
-      */
-    ["com.affine.settings.workspace.experimental-features.enable-multi-view.description"](): string;
-    /**
       * `Emoji Folder Icon`
       */
     ["com.affine.settings.workspace.experimental-features.enable-emoji-folder-icon.name"](): string;
@@ -5357,14 +5365,6 @@ export function useAFFiNEI18N(): {
       * `Enables editor settings.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-editor-settings.description"](): string;
-    /**
-      * `Offline Mode`
-      */
-    ["com.affine.settings.workspace.experimental-features.enable-offline-mode.name"](): string;
-    /**
-      * `Stop Connecting to the Internet. Even with AFFiNE Cloud, enabling this toggle stops internet connection and keeps everything local, but syncing will be disabled.`
-      */
-    ["com.affine.settings.workspace.experimental-features.enable-offline-mode.description"](): string;
     /**
       * `Theme Editor`
       */
@@ -5437,14 +5437,6 @@ export function useAFFiNEI18N(): {
       * `Once enabled, you can preview PDF in embed view.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-pdf-embed-preview.description"](): string;
-    /**
-      * `Page Block Header`
-      */
-    ["com.affine.settings.workspace.experimental-features.enable-page-block-header.name"](): string;
-    /**
-      * `Once enabled, the header of page block will be displayed.`
-      */
-    ["com.affine.settings.workspace.experimental-features.enable-page-block-header.description"](): string;
     /**
       * `Editor RTL`
       */
@@ -5895,6 +5887,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.share-menu.option.permission.label"](): string;
     /**
+      * `Workspace admins and owner automatically have Can manage permissions.`
+      */
+    ["com.affine.share-menu.option.permission.tips"](): string;
+    /**
       * `Publish to web`
       */
     ["com.affine.share-menu.publish-to-web"](): string;
@@ -5941,6 +5937,22 @@ export function useAFFiNEI18N(): {
       * `Set as owner`
       */
     ["com.affine.share-menu.member-management.set-as-owner"](): string;
+    /**
+      * `Make this person the owner?`
+      */
+    ["com.affine.share-menu.member-management.set-as-owner.confirm.title"](): string;
+    /**
+      * `The new owner will be effective immediately, and you might lose access to this doc if other users remove you, please confirm.`
+      */
+    ["com.affine.share-menu.member-management.set-as-owner.confirm.description"](): string;
+    /**
+      * `Permission updated`
+      */
+    ["com.affine.share-menu.member-management.update-success"](): string;
+    /**
+      * `Failed to update permission`
+      */
+    ["com.affine.share-menu.member-management.update-fail"](): string;
     /**
       * `{{memberCount}} collaborators in the doc`
       */
@@ -6914,6 +6926,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.page-starter-bar.edgeless"](): string;
     /**
+      * `Tips`
+      */
+    tips(): string;
+    /**
       * `Template`
       */
     Template(): string;
@@ -7009,6 +7025,17 @@ export function useAFFiNEI18N(): {
       * `Resource not found.`
       */
     ["error.NOT_FOUND"](): string;
+    /**
+      * `Bad request.`
+      */
+    ["error.BAD_REQUEST"](): string;
+    /**
+      * `GraphQL bad request, code: {{code}}, {{message}}`
+      */
+    ["error.GRAPHQL_BAD_REQUEST"](options: Readonly<{
+        code: string;
+        message: string;
+    }>): string;
     /**
       * `Query is too long, max length is {{max}}.`
       */
@@ -7354,6 +7381,12 @@ export function useAFFiNEI18N(): {
       */
     ["error.COPILOT_ACTION_TAKEN"](): string;
     /**
+      * `Doc {{docId}} not found.`
+      */
+    ["error.COPILOT_DOC_NOT_FOUND"](options: {
+        readonly docId: string;
+    }): string;
+    /**
       * `Copilot message {{messageId}} not found.`
       */
     ["error.COPILOT_MESSAGE_NOT_FOUND"](options: {
@@ -7375,6 +7408,33 @@ export function useAFFiNEI18N(): {
     ["error.COPILOT_PROVIDER_SIDE_ERROR"](options: Readonly<{
         provider: string;
         kind: string;
+        message: string;
+    }>): string;
+    /**
+      * `Invalid copilot context {{contextId}}.`
+      */
+    ["error.COPILOT_INVALID_CONTEXT"](options: {
+        readonly contextId: string;
+    }): string;
+    /**
+      * `File {{fileName}} is not supported to use as context: {{message}}`
+      */
+    ["error.COPILOT_CONTEXT_FILE_NOT_SUPPORTED"](options: Readonly<{
+        fileName: string;
+        message: string;
+    }>): string;
+    /**
+      * `Failed to modify context {{contextId}}: {{message}}`
+      */
+    ["error.COPILOT_FAILED_TO_MODIFY_CONTEXT"](options: Readonly<{
+        contextId: string;
+        message: string;
+    }>): string;
+    /**
+      * `Failed to match context {{contextId}} with "%7B%7Bcontent%7D%7D": {{message}}`
+      */
+    ["error.COPILOT_FAILED_TO_MATCH_CONTEXT"](options: Readonly<{
+        contextId: string;
         message: string;
     }>): string;
     /**

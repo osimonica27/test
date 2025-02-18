@@ -1,5 +1,4 @@
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
-import type { ForkChatSessionInput } from '@affine/graphql';
 import { assertExists } from '@blocksuite/affine/global/utils';
 import { partition } from 'lodash-es';
 
@@ -30,53 +29,6 @@ export type TextToTextOptions = {
 export type ToImageOptions = TextToTextOptions & {
   seed?: string;
 };
-
-export async function createChatSession({
-  client,
-  workspaceId,
-  docId,
-  promptName = 'Chat With AFFiNE AI',
-}: {
-  client: CopilotClient;
-  workspaceId: string;
-  docId: string;
-  promptName?: string;
-}) {
-  const sessionId = await client.createSession({
-    workspaceId,
-    docId,
-    promptName,
-  });
-  // always update the prompt name
-  await updateChatSession({
-    sessionId,
-    client,
-    promptName,
-  });
-  return sessionId;
-}
-
-export function updateChatSession({
-  client,
-  sessionId,
-  promptName,
-}: {
-  client: CopilotClient;
-  sessionId: string;
-  promptName: string;
-}) {
-  return client.updateSession({
-    sessionId,
-    promptName,
-  });
-}
-
-export function forkCopilotSession(
-  client: CopilotClient,
-  forkChatSessionInput: ForkChatSessionInput
-) {
-  return client.forkSession(forkChatSessionInput);
-}
 
 async function resizeImage(blob: Blob | File): Promise<Blob | null> {
   let src = '';
@@ -114,7 +66,7 @@ async function createSessionMessage({
   client,
   docId,
   workspaceId,
-  promptName,
+  promptName = 'Chat With AFFiNE AI',
   content,
   sessionId: providedSessionId,
   attachments,
@@ -126,11 +78,10 @@ async function createSessionMessage({
   }
   const hasAttachments = attachments && attachments.length > 0;
   const sessionId = await (providedSessionId ??
-    createChatSession({
-      client,
+    client.createSession({
       workspaceId,
       docId,
-      promptName: promptName as string,
+      promptName,
     }));
 
   const options: Parameters<CopilotClient['createMessage']>[0] = {
@@ -359,18 +310,4 @@ export function toImage({
       }
     },
   };
-}
-
-export function cleanupSessions({
-  workspaceId,
-  docId,
-  sessionIds,
-  client,
-}: {
-  workspaceId: string;
-  docId: string;
-  sessionIds: string[];
-  client: CopilotClient;
-}) {
-  return client.cleanupSessions({ workspaceId, docId, sessionIds });
 }

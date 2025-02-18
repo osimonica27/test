@@ -7,14 +7,15 @@ import {
   createButtonPopper,
   NotificationProvider,
   Tooltip,
+  unsafeCSSVarV2,
 } from '@blocksuite/affine/blocks';
 import { noop, WithDisposable } from '@blocksuite/affine/global/utils';
+import { CopyIcon, MoreHorizontalIcon, ResetIcon } from '@blocksuite/icons/lit';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { type ChatAction } from '../../_common/chat-actions-handle';
-import { CopyIcon, MoreIcon, RetryIcon } from '../../_common/icons';
 import { copyText } from '../../utils/editor-actions';
 
 noop(Tooltip);
@@ -39,8 +40,14 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
         background-color: var(--affine-hover-color);
       }
 
-      svg {
-        color: var(--affine-icon-color);
+      .button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+          color: ${unsafeCSSVarV2('icon/primary')};
+        }
       }
     }
 
@@ -89,7 +96,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   @state()
   private accessor _showMoreMenu = false;
 
-  @query('.more-button')
+  @query('.button.more')
   private accessor _moreButton!: HTMLDivElement;
 
   @query('.more-menu')
@@ -107,7 +114,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   accessor content!: string;
 
   @property({ attribute: false })
-  accessor chatSessionId: string | undefined = undefined;
+  accessor getSessionId!: () => Promise<string | undefined>;
 
   @property({ attribute: false })
   accessor messageId: string | undefined = undefined;
@@ -154,7 +161,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   }
 
   override render() {
-    const { host, content, isLast, messageId, chatSessionId, actions } = this;
+    const { host, content, isLast, messageId, actions } = this;
     return html`<style>
         .copy-more {
           margin-top: ${this.withMargin ? '8px' : '0px'};
@@ -167,6 +174,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
       <div class="copy-more">
         ${content
           ? html`<div
+              class="button copy"
               @click=${async () => {
                 const success = await copyText(host, content);
                 if (success) {
@@ -175,23 +183,24 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
               }}
               data-testid="action-copy-button"
             >
-              ${CopyIcon}
+              ${CopyIcon({ width: '20px', height: '20px' })}
               <affine-tooltip>Copy</affine-tooltip>
             </div>`
           : nothing}
         ${isLast
           ? html`<div
+              class="button retry"
               @click=${() => this.retry()}
               data-testid="action-retry-button"
             >
-              ${RetryIcon}
-              <affine-tooltip>Retry</affine-tooltip>
+              ${ResetIcon({ width: '20px', height: '20px' })}
+              <affine-tooltip .autoShift=${true}>Retry</affine-tooltip>
             </div>`
           : nothing}
         ${isLast
           ? nothing
-          : html`<div class="more-button" @click=${this._toggle}>
-              ${MoreIcon}
+          : html`<div class="button more" @click=${this._toggle}>
+              ${MoreHorizontalIcon({ width: '20px', height: '20px' })}
             </div> `}
       </div>
 
@@ -207,11 +216,12 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
                 };
                 return html`<div
                   @click=${async () => {
+                    const sessionId = await this.getSessionId();
                     const success = await action.handler(
                       host,
                       content,
                       currentSelections,
-                      chatSessionId,
+                      sessionId,
                       messageId
                     );
 

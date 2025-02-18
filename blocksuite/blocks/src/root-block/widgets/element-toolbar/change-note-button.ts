@@ -1,6 +1,6 @@
 import {
   changeNoteDisplayMode,
-  isPageBlock,
+  NoteConfigExtension,
 } from '@blocksuite/affine-block-note';
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
 import type {
@@ -11,15 +11,6 @@ import {
   packColor,
   packColorsWithColorScheme,
 } from '@blocksuite/affine-components/color-picker';
-import {
-  ExpandIcon,
-  LineStyleIcon,
-  NoteCornerIcon,
-  NoteShadowIcon,
-  ScissorsIcon,
-  ShrinkIcon,
-  SmallArrowDownIcon,
-} from '@blocksuite/affine-components/icons';
 import {
   type EditorMenuButton,
   renderToolbarSeparator,
@@ -36,6 +27,7 @@ import {
   FeatureFlagService,
   NotificationProvider,
   SidebarExtensionIdentifier,
+  TelemetryProvider,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
 import {
@@ -44,7 +36,15 @@ import {
   maxBy,
   WithDisposable,
 } from '@blocksuite/global/utils';
-import { LinkedPageIcon } from '@blocksuite/icons/lit';
+import {
+  AutoHeightIcon,
+  CornerIcon,
+  CustomizedHeightIcon,
+  LineStyleIcon,
+  LinkedPageIcon,
+  NoteShadowDuotoneIcon,
+  ScissorsIcon,
+} from '@blocksuite/icons/lit';
 import { html, LitElement, nothing, type TemplateResult } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { join } from 'lit/directives/join.js';
@@ -57,6 +57,7 @@ import {
 } from '../../edgeless/components/panel/line-styles-panel.js';
 import { getTooltipWithShortcut } from '../../edgeless/components/utils.js';
 import type { EdgelessRootBlockComponent } from '../../edgeless/edgeless-root-block.js';
+import { SmallArrowDownIcon } from './icons.js';
 import * as styles from './styles.css';
 
 const SIZE_LIST = [
@@ -148,10 +149,6 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
       .getFlag('enable_advanced_block_visibility');
   }
 
-  private get _pageBlockEnabled() {
-    return this.doc.get(FeatureFlagService).getFlag('enable_page_block');
-  }
-
   private get doc() {
     return this.edgeless.doc;
   }
@@ -190,6 +187,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
   }
 
   private _setDisplayMode(note: NoteBlockModel, newMode: NoteDisplayMode) {
+    const oldMode = note.displayMode;
     this.edgeless.std.command.exec(changeNoteDisplayMode, {
       noteId: note.id,
       mode: newMode,
@@ -263,6 +261,17 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
         clear();
       },
     });
+
+    this.edgeless.std
+      .getOptional(TelemetryProvider)
+      ?.track('NoteDisplayModeChanged', {
+        page: 'whiteboard editor',
+        segment: 'element toolbar',
+        module: 'element toolbar',
+        control: 'display mode',
+        type: 'note',
+        other: `from ${oldMode} to ${newMode}`,
+      });
   }
 
   private _setShadowType(shadowType: string) {
@@ -335,7 +344,12 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     const onlyOne = len === 1;
     const isDocOnly = displayMode === NoteDisplayMode.DocOnly;
 
+    const hasPageBlockHeader = !!this.edgeless.std.getOptional(
+      NoteConfigExtension.identifier
+    )?.edgelessNoteHeader;
+
     const theme = this.edgeless.std.get(ThemeProvider).theme;
+    const buttonIconSize = { width: '20px', height: '20px' };
     const buttons = [
       onlyOne && this._advancedVisibilityEnabled
         ? html`
@@ -364,10 +378,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
           `
         : nothing,
 
-      onlyOne &&
-      !isPageBlock(this.edgeless.std, note) &&
-      this._pageBlockEnabled &&
-      !this._advancedVisibilityEnabled
+      onlyOne && !note.isPageBlock() && !this._advancedVisibilityEnabled
         ? html`<editor-icon-button
             aria-label="Display In Page"
             .showTooltip=${displayMode === NoteDisplayMode.DocAndEdgeless}
@@ -381,7 +392,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
                   : NoteDisplayMode.EdgelessOnly
               )}
           >
-            ${LinkedPageIcon({ width: '20px', height: '20px' })}
+            ${LinkedPageIcon(buttonIconSize)}
             <span class="label"
               >${displayMode === NoteDisplayMode.EdgelessOnly
                 ? 'Display In Page'
@@ -454,7 +465,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
                   aria-label="Shadow style"
                   .tooltip=${'Shadow style'}
                 >
-                  ${NoteShadowIcon}${SmallArrowDownIcon}
+                  ${NoteShadowDuotoneIcon(buttonIconSize)}${SmallArrowDownIcon}
                 </editor-icon-button>
               `}
             >
@@ -473,7 +484,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
                   aria-label="Border style"
                   .tooltip=${'Border style'}
                 >
-                  ${LineStyleIcon}${SmallArrowDownIcon}
+                  ${LineStyleIcon(buttonIconSize)}${SmallArrowDownIcon}
                 </editor-icon-button>
               `}
             >
@@ -491,7 +502,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
               .contentPadding=${'8px'}
               .button=${html`
                 <editor-icon-button aria-label="Corners" .tooltip=${'Corners'}>
-                  ${NoteCornerIcon}${SmallArrowDownIcon}
+                  ${CornerIcon(buttonIconSize)}${SmallArrowDownIcon}
                 </editor-icon-button>
               `}
             >
@@ -512,23 +523,25 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
               aria-label="Slicer"
               .tooltip=${getTooltipWithShortcut('Cutting mode', '-')}
               .active=${this.enableNoteSlicer}
+              .iconSize=${'20px'}
               @click=${() => this._handleNoteSlicerButtonClick()}
             >
-              ${ScissorsIcon}
+              ${ScissorsIcon()}
             </editor-icon-button>
           `
         : nothing,
 
       onlyOne ? this.quickConnectButton : nothing,
 
-      !isPageBlock(this.edgeless.std, this.notes[0])
+      !this.notes[0].isPageBlock() || !hasPageBlockHeader
         ? html`<editor-icon-button
             aria-label="Size"
             data-testid="edgeless-note-auto-height"
             .tooltip=${collapse ? 'Auto height' : 'Customized height'}
+            .iconSize=${'20px'}
             @click=${() => this._setCollapse()}
           >
-            ${collapse ? ExpandIcon : ShrinkIcon}
+            ${collapse ? AutoHeightIcon() : CustomizedHeightIcon()}
           </editor-icon-button>`
         : nothing,
 

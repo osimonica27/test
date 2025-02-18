@@ -34,7 +34,7 @@ import { DocID } from '../utils/doc';
 const SubscribeMessage = (event: string) =>
   applyDecorators(
     GatewayErrorWrapper(event),
-    CallMetric('socketio', 'event_duration', undefined, { event }),
+    CallMetric('socketio', 'event_duration', { event }),
     RawSubscribeMessage(event)
   );
 
@@ -152,13 +152,13 @@ export class SpaceSyncGateway
   handleConnection() {
     this.connectionCount++;
     this.logger.log(`New connection, total: ${this.connectionCount}`);
-    metrics.socketio.gauge('realtime_connections').record(this.connectionCount);
+    metrics.socketio.gauge('connections').record(1);
   }
 
   handleDisconnect() {
     this.connectionCount--;
     this.logger.log(`Connection disconnected, total: ${this.connectionCount}`);
-    metrics.socketio.gauge('realtime_connections').record(this.connectionCount);
+    metrics.socketio.gauge('connections').record(-1);
   }
 
   selectAdapter(client: Socket, spaceType: SpaceType): SyncSocketAdapter {

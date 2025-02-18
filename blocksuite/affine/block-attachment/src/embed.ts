@@ -71,10 +71,11 @@ export class AttachmentEmbedService extends Extension {
     return this.configs.values();
   }
 
-  constructor(
-    private readonly std: BlockStdScope,
-    private readonly configs: Map<string, AttachmentEmbedConfig>
-  ) {
+  get configs(): Map<string, AttachmentEmbedConfig> {
+    return this.std.get(AttachmentEmbedConfigMapIdentifier);
+  }
+
+  constructor(private readonly std: BlockStdScope) {
     super();
   }
 
@@ -82,10 +83,7 @@ export class AttachmentEmbedService extends Extension {
     di.addImpl(AttachmentEmbedConfigMapIdentifier, provider =>
       provider.getAll(AttachmentEmbedConfigIdentifier)
     );
-    di.addImpl(AttachmentEmbedProvider, AttachmentEmbedService, [
-      StdIdentifier,
-      AttachmentEmbedConfigMapIdentifier,
-    ]);
+    di.addImpl(AttachmentEmbedProvider, this, [StdIdentifier]);
   }
 
   // Converts to embed view.
@@ -153,7 +151,13 @@ const embedConfig: AttachmentEmbedConfig[] = [
     check: (model, maxFileSize) =>
       model.type.startsWith('video/') && model.size <= maxFileSize,
     template: (_, blobUrl) =>
-      html`<video width="100%;" height="480" controls src=${blobUrl}></video>`,
+      html`<video
+        style="max-height: max-content;"
+        width="100%;"
+        height="480"
+        controls
+        src=${blobUrl}
+      ></video>`,
   },
   {
     name: 'audio',

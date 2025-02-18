@@ -4,6 +4,7 @@ import type {
 } from '@blocksuite/affine-block-surface';
 import {
   EdgelessLegacySlotIdentifier,
+  getBgGridGap,
   normalizeWheelDeltaY,
 } from '@blocksuite/affine-block-surface';
 import {
@@ -17,7 +18,6 @@ import {
   DocModeProvider,
   EditorSettingProvider,
   EditPropsStore,
-  FeatureFlagService,
   FontLoaderService,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
@@ -51,7 +51,7 @@ import { EdgelessClipboardController } from './clipboard/clipboard.js';
 import type { EdgelessSelectedRectWidget } from './components/rects/edgeless-selected-rect.js';
 import { EdgelessPageKeyboardManager } from './edgeless-keyboard.js';
 import type { EdgelessRootService } from './edgeless-root-service.js';
-import { getBackgroundGrid, isCanvasElement } from './utils/query.js';
+import { isCanvasElement } from './utils/query.js';
 import { mountShapeTextEditor } from './utils/text.js';
 
 export class EdgelessRootBlockComponent extends BlockComponent<
@@ -106,7 +106,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
   private readonly _refreshLayerViewport = requestThrottledConnectedFrame(
     () => {
       const { zoom, translateX, translateY } = this.gfx.viewport;
-      const { gap } = getBackgroundGrid(zoom, true);
+      const gap = getBgGridGap(zoom);
 
       if (this.backgroundElm) {
         this.backgroundElm.style.setProperty(
@@ -398,11 +398,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     const run = () => {
       const storedViewport = std.get(EditPropsStore).getStorage('viewport');
       if (!storedViewport) {
-        const enablePageBlock = this.std
-          .get(FeatureFlagService)
-          .getFlag('enable_page_block');
-
-        if (!(enablePageBlock && pageBlockViewportFitAnimation())) {
+        if (!pageBlockViewportFitAnimation()) {
           this.gfx.fitToScreen();
         }
         return;

@@ -1,12 +1,10 @@
 import { Tabs, Tooltip, useConfirmModal } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
 import { Menu } from '@affine/component/ui/menu';
-import {
-  ServerService,
-  WorkspaceSubscriptionService,
-} from '@affine/core/modules/cloud';
+import { ServerService } from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
+import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { ShareInfoService } from '@affine/core/modules/share-doc';
 import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
 import { ServerDeploymentType, SubscriptionPlan } from '@affine/graphql';
@@ -20,6 +18,7 @@ import {
   type Ref,
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 
@@ -55,14 +54,18 @@ export const ShareMenuContent = (props: ShareMenuProps) => {
       c => c.type === ServerDeploymentType.Selfhosted
     )
   );
-
-  const workspaceSubscriptionService = useService(WorkspaceSubscriptionService);
-  const subscription = useLiveData(
-    workspaceSubscriptionService.subscription.subscription$
-  );
-  const hittingPaywall =
-    (!subscription && !isSelfhosted) ||
-    (subscription && subscription.plan === SubscriptionPlan.Free);
+  const workspaceQuotaService = useService(WorkspaceQuotaService);
+  const quota = useLiveData(workspaceQuotaService.quota.quota$);
+  const hittingPaywall = useMemo(() => {
+    if (isSelfhosted) {
+      return false;
+    }
+    if (quota) {
+      const { name } = quota;
+      return name.toLowerCase() === SubscriptionPlan.Free.toLowerCase();
+    }
+    return true;
+  }, [isSelfhosted, quota]);
 
   const permissionService = useService(WorkspacePermissionService);
   const isOwner = useLiveData(permissionService.permission.isOwner$);
@@ -74,8 +77,8 @@ export const ShareMenuContent = (props: ShareMenuProps) => {
   }, []);
 
   useEffect(() => {
-    workspaceSubscriptionService.subscription.revalidate();
-  }, [workspaceSubscriptionService]);
+    workspaceQuotaService.quota.revalidate();
+  }, [workspaceQuotaService]);
 
   const { openConfirmModal } = useConfirmModal();
 
@@ -149,12 +152,13 @@ export const ShareMenuContent = (props: ShareMenuProps) => {
         value={currentTab}
         onValueChange={onValueChange}
       >
-        <Tabs.List>
-          <Tabs.Trigger value={ShareMenuTab.Share}>
+        <Tabs.List className={styles.tabList}>
+          <Tabs.Trigger value={ShareMenuTab.Share} className={styles.tab}>
             {t['com.affine.share-menu.shareButton']()}
           </Tabs.Trigger>
           <Tabs.Trigger
             value={ShareMenuTab.Export}
+            className={styles.tab}
             style={{
               display: BUILD_CONFIG.isMobileEdition ? 'none' : undefined,
             }}
