@@ -344,7 +344,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       });
 
       if (updatedSnapshot) {
-        this.event.broadcast('doc.snapshot.updated', {
+        await this.queue.add('doc.markDocContentCacheStale', {
           workspaceId: snapshot.spaceId,
           docId: snapshot.docId,
         });
