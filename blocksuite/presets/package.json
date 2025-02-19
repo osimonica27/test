@@ -3,7 +3,7 @@
   "description": "Prebuilt BlockSuite editors and opt-in additional UI components.",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
+    "dev": "vite",
     "build": "tsc",
     "test:unit": "vitest --browser.headless --run",
     "test:debug": "PWDEBUG=1 npx vitest"
