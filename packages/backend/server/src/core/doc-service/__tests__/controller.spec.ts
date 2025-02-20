@@ -116,7 +116,7 @@ test('should return doc when found', async t => {
     .set('x-access-token', t.context.crypto.sign(docId))
     .set('x-cloud-trace-context', 'test-trace-id/span-id')
     .expect(200)
-    .expect('x-request-id', 'test-trace-id')
+    .expect('x-request-id', 'test-trace-id/span-id')
     .expect('Content-Type', 'application/octet-stream');
   const bin = res.body as Buffer;
   t.is(bin.toString(), 'blob1 data');

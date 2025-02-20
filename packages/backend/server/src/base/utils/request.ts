@@ -104,8 +104,7 @@ export function getOrGenRequestId(type: RequestType) {
 }
 
 export function getRequestIdFromRequest(req: Request, type: RequestType) {
-  const traceContext = req.headers['x-cloud-trace-context'] as string;
-  const traceId = traceContext ? traceContext.split('/', 1)[0] : undefined;
+  const traceId = req.headers['x-cloud-trace-context'] as string | undefined;
   if (traceId) return traceId;
   return genRequestId(type);
 }
