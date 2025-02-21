@@ -5,21 +5,13 @@ import {
   openSettingModal,
   openWorkspaceSettingPanel,
 } from '@affine-test/kit/utils/setting';
-import { clickSideBarCurrentWorkspaceBanner } from '@affine-test/kit/utils/sidebar';
+import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
 test('Create new workspace, then delete it', async ({ page, workspace }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
-  await clickSideBarCurrentWorkspaceBanner(page);
-  await page.getByTestId('new-workspace').click();
-  await page.waitForTimeout(1000);
-  await page
-    .getByTestId('create-workspace-input')
-    .pressSequentially('Test Workspace', { delay: 50 });
-  const createButton = page.getByTestId('create-workspace-create-button');
-  await createButton.click();
-  await createButton.waitFor({ state: 'hidden' });
+  await createLocalWorkspace({ name: 'Test Workspace' }, page);
 
   await page.waitForSelector('[data-testid="workspace-name"]');
   expect(await page.getByTestId('workspace-name').textContent()).toBe(

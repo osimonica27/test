@@ -7,6 +7,7 @@ import {
   clickNewPageButton,
   clickSideBarCurrentWorkspaceBanner,
 } from '@affine-test/kit/utils/sidebar';
+import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 import fs from 'fs-extra';
 
@@ -109,9 +110,7 @@ test('delete workspace and then restore it from backup', async ({ page }) => {
   await clickSideBarCurrentWorkspaceBanner(page);
   const newWorkspaceName = 'new-test-name';
 
-  await page.getByTestId('new-workspace').click();
-  await page.getByTestId('create-workspace-input').fill(newWorkspaceName);
-  await page.getByTestId('create-workspace-create-button').click();
+  await createLocalWorkspace({ name: newWorkspaceName }, page);
   //#endregion
 
   //#region 2. create a page in the new workspace (will verify later if it is successfully recovered)
