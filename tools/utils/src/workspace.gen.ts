@@ -686,6 +686,11 @@ export const PackageList = [
     workspaceDependencies: [],
   },
   {
+    location: 'packages/frontend/routes',
+    name: '@affine/routes',
+    workspaceDependencies: ['tools/cli', 'tools/utils'],
+  },
+  {
     location: 'packages/frontend/templates',
     name: '@affine/templates',
     workspaceDependencies: [],
@@ -831,6 +836,7 @@ export type PackageName =
   | '@affine/graphql'
   | '@affine/i18n'
   | '@affine/native'
+  | '@affine/routes'
   | '@affine/templates'
   | '@affine/track'
   | '@affine-test/affine-cloud'
