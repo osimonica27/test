@@ -1,3 +1,4 @@
+import type { Viewport } from '../../viewport.js';
 import { getSentenceRects, segmentSentences } from './text-utils.js';
 import type { ParagraphLayout, ViewportLayout } from './types.js';
 
