@@ -1,4 +1,4 @@
-import { ViewportTurboRendererExtension } from '@blocksuite/affine-shared/viewport-renderer';
+import { ViewportTurboRendererExtension } from '@blocksuite/block-std/gfx';
 
 import { addSampleNotes } from './doc-generator.js';
 import { setupEditor } from './setup.js';

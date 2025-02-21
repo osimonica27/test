@@ -1,4 +1,4 @@
-import { GfxViewportElement } from './gfx/viewport-element.js';
+import { GfxViewportElement } from './gfx/viewport/viewport-element.js';
 import { EditorHost } from './view/index.js';
 
 export function effects() {

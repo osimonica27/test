@@ -1,19 +1,14 @@
-import {
-  type BlockStdScope,
-  LifeCycleWatcher,
-  LifeCycleWatcherIdentifier,
-  StdIdentifier,
-} from '@blocksuite/block-std';
-import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { type Container, type ServiceIdentifier } from '@blocksuite/global/di';
 import { debounce, DisposableGroup } from '@blocksuite/global/utils';
-import { type Pane } from 'tweakpane';
 
+import { LifeCycleWatcher } from '../../../extension/lifecycle-watcher.js';
 import {
-  getViewportLayout,
-  initTweakpane,
-  syncCanvasSize,
-} from './dom-utils.js';
+  LifeCycleWatcherIdentifier,
+  StdIdentifier,
+} from '../../../identifier.js';
+import type { BlockStdScope } from '../../../scope/index.js';
+import { GfxControllerIdentifier } from '../../identifiers.js';
+import { getViewportLayout, syncCanvasSize } from './dom-utils.js';
 import { type ViewportLayout } from './types.js';
 
 export const ViewportTurboRendererIdentifier = LifeCycleWatcherIdentifier(
@@ -40,7 +35,6 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
   private readonly worker: Worker;
   private layoutCache: ViewportLayout | null = null;
   private tile: Tile | null = null;
-  private debugPane: Pane | null = null;
 
   constructor(std: BlockStdScope) {
     super(std);
@@ -49,12 +43,13 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
     });
   }
 
-  override mounted() {
-    const viewportElement = document.querySelector('.affine-edgeless-viewport');
-    if (viewportElement) {
-      viewportElement.append(this.canvas);
-      initTweakpane(this, viewportElement as HTMLElement);
+  setMountPoint(mountPoint: HTMLElement) {
+    if (this.canvas.parentElement !== mountPoint) {
+      mountPoint.append(this.canvas);
     }
+  }
+
+  override mounted() {
     syncCanvasSize(this.canvas, this.std.host);
     this.viewport.viewportUpdated.on(() => {
       this.refresh().catch(console.error);
@@ -81,10 +76,6 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
 
   override unmounted() {
     this.clearTile();
-    if (this.debugPane) {
-      this.debugPane.dispose();
-      this.debugPane = null;
-    }
     this.worker.terminate();
     this.canvas.remove();
     this.disposables.dispose();
@@ -194,5 +185,9 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
       layout.rect.w * window.devicePixelRatio * this.viewport.zoom,
       layout.rect.h * window.devicePixelRatio * this.viewport.zoom
     );
+  }
+
+  isUsingCanvasRenderer() {
+    return this.state === 'monitoring' && this.viewport.zoom <= zoomThreshold;
   }
 }

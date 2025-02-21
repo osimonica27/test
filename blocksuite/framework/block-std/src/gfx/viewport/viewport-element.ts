@@ -2,14 +2,17 @@ import { WithDisposable } from '@blocksuite/global/utils';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import { PropTypes, requiredProperties } from '../view/decorators/required.js';
+import {
+  PropTypes,
+  requiredProperties,
+} from '../../view/decorators/required.js';
 import {
   type BlockComponent,
   type EditorHost,
   ShadowlessElement,
-} from '../view/index.js';
-import type { GfxBlockElementModel } from './model/gfx-block-model.js';
-import { Viewport } from './viewport.js';
+} from '../../view/index.js';
+import type { GfxBlockElementModel } from '../model/gfx-block-model.js';
+import { Viewport } from '../viewport.js';
 
 /**
  * A wrapper around `requestConnectedFrame` that only calls at most once in one frame
@@ -61,6 +64,9 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
     if (this.getModelsInViewport && this.host) {
       const host = this.host;
       const modelsInViewport = this.getModelsInViewport();
+
+      // const turboRenderer = host.std.get(ViewportTurboRendererIdentifier);
+      // const isUsingCanvas = turboRenderer?.isUsingCanvasRenderer() ?? false;
 
       modelsInViewport.forEach(model => {
         const view = host.std.view.getBlock(model.id);

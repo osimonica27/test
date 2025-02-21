@@ -37,6 +37,7 @@ import {
 import {
   GfxControllerIdentifier,
   type GfxViewportElement,
+  ViewportTurboRendererIdentifier,
 } from '@blocksuite/block-std/gfx';
 import { IS_WINDOWS } from '@blocksuite/global/env';
 import { assertExists, Bound, Point, Vec } from '@blocksuite/global/utils';
@@ -564,6 +565,8 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     );
 
     this._refreshLayerViewport();
+    const renderer = this.std.get(ViewportTurboRendererIdentifier);
+    renderer.setMountPoint(this);
   }
 
   override renderBlock() {

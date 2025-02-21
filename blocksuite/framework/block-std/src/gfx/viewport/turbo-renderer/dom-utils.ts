@@ -1,12 +1,5 @@
-import {
-  GfxControllerIdentifier,
-  type Viewport,
-} from '@blocksuite/block-std/gfx';
-import { Pane } from 'tweakpane';
-
 import { getSentenceRects, segmentSentences } from './text-utils.js';
 import type { ParagraphLayout, ViewportLayout } from './types.js';
-import type { ViewportTurboRendererExtension } from './viewport-renderer.js';
 
 export function syncCanvasSize(canvas: HTMLCanvasElement, host: HTMLElement) {
   const hostRect = host.getBoundingClientRect();
@@ -88,43 +81,4 @@ export function getViewportLayout(
     },
   };
   return layout;
-}
-
-export function initTweakpane(
-  renderer: ViewportTurboRendererExtension,
-  viewportElement: HTMLElement
-) {
-  const debugPane = new Pane({ container: viewportElement });
-  const paneElement = debugPane.element;
-  paneElement.style.position = 'absolute';
-  paneElement.style.top = '10px';
-  paneElement.style.right = '10px';
-  paneElement.style.width = '250px';
-  debugPane.title = 'Viewport Turbo Renderer';
-
-  debugPane
-    .addBinding({ paused: true }, 'paused', {
-      label: 'Paused',
-    })
-    .on('change', ({ value }) => {
-      renderer.state = value ? 'paused' : 'monitoring';
-    });
-
-  debugPane
-    .addBinding({ keepDOM: true }, 'keepDOM', {
-      label: 'Keep DOM',
-    })
-    .on('change', ({ value }) => {
-      const container = viewportElement.querySelector('gfx-viewport')!;
-      (container as HTMLElement).style.display = value ? 'block' : 'none';
-    });
-
-  debugPane.addButton({ title: 'Fit Viewport' }).on('click', () => {
-    const gfx = renderer.std.get(GfxControllerIdentifier);
-    gfx.fitToScreen();
-  });
-
-  debugPane.addButton({ title: 'Force Refresh' }).on('click', () => {
-    renderer.refresh(true).catch(console.error);
-  });
 }

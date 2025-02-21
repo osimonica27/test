@@ -82,5 +82,9 @@ export {
 } from './view/view.js';
 export { ViewManager } from './view/view-manager.js';
 export * from './viewport.js';
-export { GfxViewportElement } from './viewport-element.js';
+export {
+  ViewportTurboRendererExtension,
+  ViewportTurboRendererIdentifier,
+} from './viewport/turbo-renderer/turbo-renderer.js';
+export { GfxViewportElement } from './viewport/viewport-element.js';
 export { generateKeyBetween, generateNKeysBetween } from 'fractional-indexing';
