@@ -362,6 +362,7 @@ const SortableWorkspaceItem = ({
   return (
     <WorkspaceCard
       className={styles.workspaceCard}
+      infoClassName={styles.workspaceCardInfoContainer}
       workspaceMetadata={workspaceMetadata}
       onClick={handleClick}
       avatarSize={22}

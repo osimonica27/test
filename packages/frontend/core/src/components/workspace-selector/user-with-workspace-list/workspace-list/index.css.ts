@@ -62,6 +62,8 @@ export const workspaceServerSpacer = style({
 export const workspaceCard = style({
   height: 36,
   padding: '7px 12px',
+});
+export const workspaceCardInfoContainer = style({
   gap: 12,
 });
 
