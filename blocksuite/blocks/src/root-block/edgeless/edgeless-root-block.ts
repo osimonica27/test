@@ -565,8 +565,10 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     );
 
     this._refreshLayerViewport();
-    const renderer = this.std.get(ViewportTurboRendererIdentifier);
-    renderer.setMountPoint(this);
+    const renderer = this.std.getOptional(ViewportTurboRendererIdentifier);
+    if (renderer) {
+      renderer.setMountPoint(this);
+    }
   }
 
   override renderBlock() {
