@@ -107,9 +107,7 @@ test('export then add', async ({ page, appInfo, workspace }) => {
 
 test('delete workspace and then restore it from backup', async ({ page }) => {
   //#region 1. create a new workspace
-  await clickSideBarCurrentWorkspaceBanner(page);
   const newWorkspaceName = 'new-test-name';
-
   await createLocalWorkspace({ name: newWorkspaceName }, page);
   //#endregion
 

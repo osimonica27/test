@@ -15,9 +15,12 @@ export async function openWorkspaceListModal(page: Page) {
 
 export async function createLocalWorkspace(
   params: CreateWorkspaceParams,
-  page: Page
+  page: Page,
+  skipOpenWorkspaceListModal = false
 ) {
-  await openWorkspaceListModal(page);
+  if (!skipOpenWorkspaceListModal) {
+    await openWorkspaceListModal(page);
+  }
 
   // open create workspace modal
   await page.getByTestId('new-workspace').click();

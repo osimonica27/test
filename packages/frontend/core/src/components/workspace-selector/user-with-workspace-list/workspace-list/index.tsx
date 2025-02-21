@@ -301,7 +301,10 @@ export const AFFiNEWorkspaceList = ({
           onClickWorkspace={handleClickWorkspace}
         />
       </FrameworkScope>
-      <Divider size="thinner" className={styles.serverDivider} />
+      {localWorkspaces.length > 0 ||
+        (selfhostServers.length > 0 && (
+          <Divider size="thinner" className={styles.serverDivider} />
+        ))}
 
       {/* 2. local */}
       <LocalWorkspaces
