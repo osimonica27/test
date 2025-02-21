@@ -69,7 +69,7 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
     );
 
     document.fonts.load('15px Inter').then(() => {
-      // this.state = 'monitoring';
+      this.state = 'monitoring';
       this.refresh().catch(console.error);
     });
   }
