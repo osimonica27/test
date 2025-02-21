@@ -64,7 +64,7 @@ export const ServerSelector = ({
         },
       }}
       items={
-        <ul className={styles.list}>
+        <ul className={styles.list} data-testid="server-selector-list">
           <LocalSelectorItem
             onSelect={onChange}
             active={selectedId === 'local'}
@@ -80,7 +80,11 @@ export const ServerSelector = ({
         </ul>
       }
     >
-      <div className={clsx(styles.trigger, className)} {...props}>
+      <div
+        data-testid="server-selector-trigger"
+        className={clsx(styles.trigger, className)}
+        {...props}
+      >
         {selectedServerName ?? placeholder}
         <ArrowDownSmallIcon className={clsx(styles.arrow, { open })} />
       </div>
@@ -101,6 +105,7 @@ const LocalSelectorItem = ({
   }, [onSelect]);
   return (
     <MenuItem
+      data-testid="local"
       className={styles.item}
       prefixIcon={<LocalWorkspaceIcon />}
       onClick={handleSelect}
@@ -130,6 +135,7 @@ const ServerSelectorItem = ({
 
   return (
     <MenuItem
+      data-testid={server.id}
       className={styles.item}
       prefixIcon={<Icon />}
       onClick={handleSelect}

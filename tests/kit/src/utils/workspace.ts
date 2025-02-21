@@ -30,6 +30,11 @@ export async function createLocalWorkspace(
   await page.getByPlaceholder('Set a Workspace name').click();
   await page.getByPlaceholder('Set a Workspace name').fill(params.name);
 
+  // select local server
+  await page.getByTestId('server-selector-trigger').click();
+  const serverSelectorList = page.getByTestId('server-selector-list');
+  await serverSelectorList.getByTestId('local').click();
+
   // click create button
   await page.getByTestId('create-workspace-create-button').click({
     delay: 500,

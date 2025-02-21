@@ -164,11 +164,11 @@ const CustomConfirmButton = ({
   }, [loading, onCreated, server, workspaceName, workspacesService]);
 
   const handleCheckSessionAndConfirm = useCallback(() => {
-    if (loginStatus !== 'authenticated') {
+    if (server && loginStatus !== 'authenticated') {
       return openSignInModal();
     }
     handleConfirm();
-  }, [handleConfirm, loginStatus, openSignInModal]);
+  }, [handleConfirm, loginStatus, openSignInModal, server]);
 
   return (
     <Button
