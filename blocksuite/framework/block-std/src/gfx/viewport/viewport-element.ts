@@ -65,9 +65,6 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
       const host = this.host;
       const modelsInViewport = this.getModelsInViewport();
 
-      // const turboRenderer = host.std.get(ViewportTurboRendererIdentifier);
-      // const isUsingCanvas = turboRenderer?.isUsingCanvasRenderer() ?? false;
-
       modelsInViewport.forEach(model => {
         const view = host.std.view.getBlock(model.id);
         setDisplay(view, 'block');
