@@ -74,7 +74,7 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
     );
     this.disposables.add(
       this.std.store.slots.blockUpdated.on(() => {
-        this.clearTile();
+        this.invalidate();
         debouncedLayoutUpdate();
       })
     );
@@ -107,15 +107,25 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
       if (!this.layoutCache) {
         this.updateLayoutCache();
       }
-
-      await this.paintLayout(this.layoutCache!);
-      this.drawCachedBitmap(this.layoutCache!);
+      const layout = this.layoutCache!;
+      await this.paintLayout(layout);
+      this.drawCachedBitmap(layout);
     }
+  }
+
+  invalidate() {
+    this.clearCache();
+    this.clearCanvas();
   }
 
   private updateLayoutCache() {
     const layout = getViewportLayout(this.std.host, this.viewport);
     this.layoutCache = layout;
+  }
+
+  private clearCache() {
+    this.layoutCache = null;
+    this.clearTile();
   }
 
   private clearTile() {
