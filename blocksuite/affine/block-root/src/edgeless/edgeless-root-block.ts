@@ -553,7 +553,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
       this.gfx.tool.setTool('default');
     }
 
-    this.gfx.viewport.setElement(this.gfxViewportElm);
+    this.gfx.viewport.elementReady.emit(this.gfxViewportElm);
 
     requestConnectedFrame(() => {
       this.requestUpdate();

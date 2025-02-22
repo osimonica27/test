@@ -58,6 +58,7 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
 
     this.viewport.elementReady.once(() => {
       syncCanvasSize(this.canvas, this.std.host);
+      this.state = 'monitoring';
       this.disposables.add(
         this.viewport.viewportUpdated.on(() => {
           this.refresh().catch(console.error);
@@ -77,11 +78,6 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
         debouncedLayoutUpdate();
       })
     );
-
-    document.fonts.load('15px Inter').then(() => {
-      // this.state = 'monitoring';
-      this.refresh().catch(console.error);
-    });
   }
 
   override unmounted() {

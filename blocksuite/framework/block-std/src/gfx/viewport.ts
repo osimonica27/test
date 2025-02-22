@@ -49,7 +49,7 @@ export class Viewport {
 
   protected _zoom: number = 1.0;
 
-  elementReady = new Slot<void>();
+  elementReady = new Slot<GfxViewportElement>();
 
   sizeUpdated = new Slot<{
     width: number;
@@ -65,6 +65,10 @@ export class Viewport {
   ZOOM_MAX = ZOOM_MAX;
 
   ZOOM_MIN = ZOOM_MIN;
+
+  constructor() {
+    this.elementReady.once(el => (this._element = el));
+  }
 
   get boundingClientRect() {
     if (!this._shell) return new DOMRect(0, 0, 0, 0);
@@ -356,11 +360,6 @@ export class Viewport {
       this.onResize();
     });
     this._resizeObserver.observe(el);
-  }
-
-  setElement(el: GfxViewportElement) {
-    this._element = el;
-    this.elementReady.emit();
   }
 
   setZoom(zoom: number, focusPoint?: IPoint) {
