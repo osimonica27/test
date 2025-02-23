@@ -1120,13 +1120,10 @@ test('markdown shortcut using keyboard util', async ({ page }) => {
       insert: 'aaa',
     },
     {
-      insert: 'bbb',
+      insert: 'bbbccc',
       attributes: {
         bold: true,
       },
-    },
-    {
-      insert: 'ccc',
     },
   ]);
 });

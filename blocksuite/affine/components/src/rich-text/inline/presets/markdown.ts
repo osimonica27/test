@@ -1,3 +1,4 @@
+import type { BlockComponent } from '@blocksuite/block-std';
 import type { ExtensionType } from '@blocksuite/store';
 
 import { InlineMarkdownExtension } from '../../extension/markdown-matcher.js';
@@ -11,12 +12,12 @@ import { InlineMarkdownExtension } from '../../extension/markdown-matcher.js';
 
 export const BoldItalicMarkdown = InlineMarkdownExtension({
   name: 'bolditalic',
-  pattern: /.*\*{3}([^\s][^\*]*[^\s])\*{3}$/,
+  pattern: /.*\*{3}([^\s*][^*]*[^\s*])\*{3}$|.*\*{3}([^\s*])\*{3}$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
 
-    const targetText = match[1];
+    const targetText = match[1] ?? match[2];
     const annotatedText = match[0].slice(-targetText.length - 3 * 2);
     const startIndex = inlineRange.index - annotatedText.length;
 
@@ -67,12 +68,12 @@ export const BoldItalicMarkdown = InlineMarkdownExtension({
 
 export const BoldMarkdown = InlineMarkdownExtension({
   name: 'bold',
-  pattern: /.*\*{2}([^\s][^\*]*[^\s\*])\*{2}$/,
+  pattern: /.*\*{2}([^\s][^*]*[^\s*])\*{2}$|.*\*{2}([^\s*])\*{2}$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
 
-    const targetText = match[1];
+    const targetText = match[1] ?? match[2];
     const annotatedText = match[0].slice(-targetText.length - 2 * 2);
     const startIndex = inlineRange.index - annotatedText.length;
 
@@ -122,12 +123,12 @@ export const BoldMarkdown = InlineMarkdownExtension({
 
 export const ItalicExtension = InlineMarkdownExtension({
   name: 'italic',
-  pattern: /.*\*{1}([^\s][^\*]*[^\s\*])\*{1}$/,
+  pattern: /.*\*{1}([^\s][^*]*[^\s*])\*{1}$|.*\*{1}([^\s*])\*{1}$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
 
-    const targetText = match[1];
+    const targetText = match[1] ?? match[2];
     const annotatedText = match[0].slice(-targetText.length - 1 * 2);
     const startIndex = inlineRange.index - annotatedText.length;
 
@@ -177,12 +178,12 @@ export const ItalicExtension = InlineMarkdownExtension({
 
 export const StrikethroughExtension = InlineMarkdownExtension({
   name: 'strikethrough',
-  pattern: /.*\~{2}([^\s][^\~]*[^\s])\~{2}$/,
+  pattern: /.*~{2}([^\s][^~]*[^\s])~{2}$|.*~{2}([^\s*])~{2}$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
 
-    const targetText = match[1];
+    const targetText = match[1] ?? match[2];
     const annotatedText = match[0].slice(-targetText.length - 2 * 2);
     const startIndex = inlineRange.index - annotatedText.length;
 
@@ -232,12 +233,12 @@ export const StrikethroughExtension = InlineMarkdownExtension({
 
 export const UnderthroughExtension = InlineMarkdownExtension({
   name: 'underthrough',
-  pattern: /.*\~{1}([^\s][^\~]*[^\s\~])\~{1}$/,
+  pattern: /.*~{1}([^\s][^~]*[^\s~])~{1}$|.*~{1}([^\s~])~{1}$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
 
-    const targetText = match[1];
+    const targetText = match[1] ?? match[2];
     const annotatedText = match[0].slice(-targetText.length - 1 * 2);
     const startIndex = inlineRange.index - annotatedText.length;
 
@@ -287,12 +288,12 @@ export const UnderthroughExtension = InlineMarkdownExtension({
 
 export const CodeExtension = InlineMarkdownExtension({
   name: 'code',
-  pattern: /.*\`([^\s][^\`]*[^\s])\`$/,
+  pattern: /.*`([^\s][^`]*[^\s])`$|.*`([^\s*])`$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
 
-    const targetText = match[1];
+    const targetText = match[1] ?? match[2];
     const annotatedText = match[0].slice(-targetText.length - 1 * 2);
     const startIndex = inlineRange.index - annotatedText.length;
 
@@ -403,14 +404,129 @@ export const LinkExtension = InlineMarkdownExtension({
 export const LatexExtension = InlineMarkdownExtension({
   name: 'latex',
 
-  pattern: /.*\${2}([^\s][^\$]*[^\s])\${2}$/,
+  pattern:
+    /(?:\$\$)(?<content>[^$]+)(?:\$\$)$|(?<blockPrefix>\$\$\$\$)|(?<inlinePrefix>\$\$)$/g,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
-    const match = prefixText.match(pattern);
-    if (!match) return;
+    const match = pattern.exec(prefixText);
+    if (!match || !match.groups) return;
+    const content = match.groups['content'];
+    const inlinePrefix = match.groups['inlinePrefix'];
+    const blockPrefix = match.groups['blockPrefix'];
 
-    const targetText = match[1];
-    const annotatedText = match[0].slice(-targetText.length - 2 * 2);
-    const startIndex = inlineRange.index - annotatedText.length;
+    if (blockPrefix === '$$$$') {
+      inlineEditor.insertText(
+        {
+          index: inlineRange.index,
+          length: 0,
+        },
+        ' '
+      );
+      inlineEditor.setInlineRange({
+        index: inlineRange.index + 1,
+        length: 0,
+      });
+
+      undoManager.stopCapturing();
+
+      if (!inlineEditor.rootElement) return;
+      const blockComponent =
+        inlineEditor.rootElement.closest<BlockComponent>('[data-block-id]');
+      if (!blockComponent) return;
+
+      const doc = blockComponent.doc;
+      const parentComponent = blockComponent.parentComponent;
+      if (!parentComponent) return;
+
+      const index = parentComponent.model.children.indexOf(
+        blockComponent.model
+      );
+      if (index === -1) return;
+
+      inlineEditor.deleteText({
+        index: inlineRange.index - 4,
+        length: 5,
+      });
+
+      const id = doc.addBlock(
+        'affine:latex',
+        {
+          latex: '',
+        },
+        parentComponent.model,
+        index + 1
+      );
+      blockComponent.host.updateComplete
+        .then(() => {
+          const latexBlock = blockComponent.std.view.getBlock(id);
+          if (!latexBlock || latexBlock.flavour !== 'affine:latex') return;
+
+          //FIXME(@Flrande): wait for refactor
+          // @ts-expect-error BS-2241
+          latexBlock.toggleEditor();
+        })
+        .catch(console.error);
+
+      return;
+    }
+
+    if (inlinePrefix === '$$') {
+      inlineEditor.insertText(
+        {
+          index: inlineRange.index,
+          length: 0,
+        },
+        ' '
+      );
+      inlineEditor.setInlineRange({
+        index: inlineRange.index + 1,
+        length: 0,
+      });
+
+      undoManager.stopCapturing();
+
+      inlineEditor.deleteText({
+        index: inlineRange.index - 2,
+        length: 3,
+      });
+      inlineEditor.insertText(
+        {
+          index: inlineRange.index - 2,
+          length: 0,
+        },
+        ' '
+      );
+      inlineEditor.formatText(
+        {
+          index: inlineRange.index - 2,
+          length: 1,
+        },
+        {
+          latex: '',
+        }
+      );
+
+      inlineEditor
+        .waitForUpdate()
+        .then(async () => {
+          await inlineEditor.waitForUpdate();
+
+          const textPoint = inlineEditor.getTextPoint(
+            inlineRange.index - 2 + 1
+          );
+          if (!textPoint) return;
+
+          const [text] = textPoint;
+          const latexNode = text.parentElement?.closest('affine-latex-node');
+          if (!latexNode) return;
+
+          latexNode.toggleEditor();
+        })
+        .catch(console.error);
+
+      return;
+    }
+
+    if (!content || content.length === 0) return;
 
     inlineEditor.insertText(
       {
@@ -426,9 +542,10 @@ export const LatexExtension = InlineMarkdownExtension({
 
     undoManager.stopCapturing();
 
+    const startIndex = inlineRange.index - 2 - content.length - 2;
     inlineEditor.deleteText({
       index: startIndex,
-      length: annotatedText.length,
+      length: 2 + content.length + 2 + 1,
     });
     inlineEditor.insertText(
       {
@@ -443,7 +560,7 @@ export const LatexExtension = InlineMarkdownExtension({
         length: 1,
       },
       {
-        latex: String.raw`${targetText}`,
+        latex: String.raw`${content}`,
       }
     );
 
