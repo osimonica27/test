@@ -201,7 +201,7 @@ export class RichText extends WithDisposable(ShadowlessElement) {
 
           for (const match of markdownMatches) {
             const { pattern, action } = match;
-            if (pattern.test(prefixText)) {
+            if (prefixText.match(pattern)) {
               action({
                 inlineEditor,
                 prefixText,
@@ -209,6 +209,7 @@ export class RichText extends WithDisposable(ShadowlessElement) {
                 pattern,
                 undoManager: this.undoManager,
               });
+              e.preventDefault();
               break;
             }
           }

@@ -4,6 +4,7 @@ import {
   getCursorBlockIdAndHeight,
   initEmptyParagraphState,
   pressArrowLeft,
+  pressArrowRight,
   pressBackspace,
   pressEnter,
   pressSpace,
@@ -538,6 +539,40 @@ test.describe('markdown inline-text', () => {
     await assertRichTexts(page, ['` test` ']);
     await undoByKeyboard(page);
     await assertRichTexts(page, ['']);
+
+    // https://github.com/toeverything/AFFiNE/issues/9410
+    await waitNextFrame(page);
+    await type(page, 'test**bold** ');
+    await assertRichTextInlineDeltas(page, [
+      {
+        insert: 'test',
+      },
+      {
+        insert: 'bold',
+        attributes: {
+          bold: true,
+        },
+      },
+    ]);
+    await pressArrowLeft(page, 8);
+    await type(page, '`');
+    await pressArrowRight(page, 8);
+    await type(page, '` ');
+    await assertRichTextInlineDeltas(page, [
+      {
+        insert: 'test',
+        attributes: {
+          code: true,
+        },
+      },
+      {
+        insert: 'bold',
+        attributes: {
+          bold: true,
+          code: true,
+        },
+      },
+    ]);
   });
 });
 
