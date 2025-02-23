@@ -178,7 +178,7 @@ export const ItalicExtension = InlineMarkdownExtension({
 
 export const StrikethroughExtension = InlineMarkdownExtension({
   name: 'strikethrough',
-  pattern: /.*~{2}([^\s][^~]*[^\s])~{2}$|.*~{2}([^\s*])~{2}$/,
+  pattern: /.*~{2}([^\s][^~]*[^\s])~{2}$|.*~{2}([^\s~])~{2}$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
@@ -288,7 +288,7 @@ export const UnderthroughExtension = InlineMarkdownExtension({
 
 export const CodeExtension = InlineMarkdownExtension({
   name: 'code',
-  pattern: /.*`([^\s][^`]*[^\s])`$|.*`([^\s*])`$/,
+  pattern: /.*`([^\s][^`]*[^\s])`$|.*`([^\s`])`$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
