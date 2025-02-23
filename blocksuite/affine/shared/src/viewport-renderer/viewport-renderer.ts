@@ -66,13 +66,12 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
       );
     });
 
-    const debounceOptions = { leading: false, trailing: true };
     const debouncedRefresh = debounce(
       () => {
         this.refresh().catch(console.error);
       },
       1000, // During this period, fallback to DOM
-      debounceOptions
+      { leading: false, trailing: true }
     );
     this.disposables.add(
       this.std.store.slots.blockUpdated.on(() => {
@@ -97,8 +96,8 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
     return this.std.get(GfxControllerIdentifier).viewport;
   }
 
-  async refresh(force = false) {
-    if (this.state === 'paused' && !force) return;
+  async refresh() {
+    if (this.state === 'paused') return;
 
     if (this.viewport.zoom > zoomThreshold) {
       this.clearCanvas();
