@@ -50,33 +50,36 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
   }
 
   override mounted() {
-    const viewportElement = document.querySelector('.affine-edgeless-viewport');
-    if (viewportElement) {
-      viewportElement.append(this.canvas);
-      initTweakpane(this, viewportElement as HTMLElement);
+    const mountPoint = document.querySelector('.affine-edgeless-viewport');
+    if (mountPoint) {
+      mountPoint.append(this.canvas);
+      initTweakpane(this, mountPoint as HTMLElement);
     }
-    syncCanvasSize(this.canvas, this.std.host);
-    this.viewport.viewportUpdated.on(() => {
-      this.refresh().catch(console.error);
+
+    this.viewport.elementReady.once(() => {
+      syncCanvasSize(this.canvas, this.std.host);
+      this.state = 'monitoring';
+      this.disposables.add(
+        this.viewport.viewportUpdated.on(() => {
+          this.refresh().catch(console.error);
+        })
+      );
     });
 
     const debounceOptions = { leading: false, trailing: true };
-    const debouncedLayoutUpdate = debounce(
-      () => this.updateLayoutCache(),
-      500,
+    const debouncedRefresh = debounce(
+      () => {
+        this.refresh().catch(console.error);
+      },
+      1000, // During this period, fallback to DOM
       debounceOptions
     );
     this.disposables.add(
       this.std.store.slots.blockUpdated.on(() => {
-        this.clearTile();
-        debouncedLayoutUpdate();
+        this.invalidate();
+        debouncedRefresh();
       })
     );
-
-    document.fonts.load('15px Inter').then(() => {
-      // this.state = 'monitoring';
-      this.refresh().catch(console.error);
-    });
   }
 
   override unmounted() {
@@ -102,19 +105,28 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
     } else if (this.canUseBitmapCache()) {
       this.drawCachedBitmap(this.layoutCache!);
     } else {
-      // Unneeded most of the time, the DOM query is debounced after block update
       if (!this.layoutCache) {
         this.updateLayoutCache();
       }
-
-      await this.paintLayout(this.layoutCache!);
-      this.drawCachedBitmap(this.layoutCache!);
+      const layout = this.layoutCache!;
+      await this.paintLayout(layout);
+      this.drawCachedBitmap(layout);
     }
+  }
+
+  invalidate() {
+    this.clearCache();
+    this.clearCanvas();
   }
 
   private updateLayoutCache() {
     const layout = getViewportLayout(this.std.host, this.viewport);
     this.layoutCache = layout;
+  }
+
+  private clearCache() {
+    this.layoutCache = null;
+    this.clearTile();
   }
 
   private clearTile() {

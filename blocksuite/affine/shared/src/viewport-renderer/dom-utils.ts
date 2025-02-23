@@ -1,7 +1,4 @@
-import {
-  GfxControllerIdentifier,
-  type Viewport,
-} from '@blocksuite/block-std/gfx';
+import { type Viewport } from '@blocksuite/block-std/gfx';
 import { Pane } from 'tweakpane';
 
 import { getSentenceRects, segmentSentences } from './text-utils.js';
@@ -103,28 +100,13 @@ export function initTweakpane(
   debugPane.title = 'Viewport Turbo Renderer';
 
   debugPane
-    .addBinding({ paused: true }, 'paused', {
+    .addBinding({ paused: false }, 'paused', {
       label: 'Paused',
     })
     .on('change', ({ value }) => {
       renderer.state = value ? 'paused' : 'monitoring';
     });
-
-  debugPane
-    .addBinding({ keepDOM: true }, 'keepDOM', {
-      label: 'Keep DOM',
-    })
-    .on('change', ({ value }) => {
-      const container = viewportElement.querySelector('gfx-viewport')!;
-      (container as HTMLElement).style.display = value ? 'block' : 'none';
-    });
-
-  debugPane.addButton({ title: 'Fit Viewport' }).on('click', () => {
-    const gfx = renderer.std.get(GfxControllerIdentifier);
-    gfx.fitToScreen();
-  });
-
-  debugPane.addButton({ title: 'Force Refresh' }).on('click', () => {
-    renderer.refresh(true).catch(console.error);
+  debugPane.addButton({ title: 'Invalidate' }).on('click', () => {
+    renderer.invalidate();
   });
 }

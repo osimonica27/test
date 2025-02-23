@@ -1,25 +1,5 @@
-/* oxlint-disable @typescript-eslint/triple-slash-reference */
-/// <reference path="./effects.ts" />
-import { matchModels } from '@blocksuite/affine-shared/utils';
-import { deserializeXYWH, Point } from '@blocksuite/global/utils';
-
-import { splitElements } from './root-block/edgeless/utils/clipboard-utils.js';
-import { isCanvasElement } from './root-block/edgeless/utils/query.js';
-
-export * from './_common/adapters/index.js';
-export * from './_common/transformers/index.js';
-export * from './_specs/index.js';
-export { EdgelessTemplatePanel } from './root-block/edgeless/components/toolbar/template/template-panel.js';
-export type {
-  Template,
-  TemplateCategory,
-  TemplateManager,
-} from './root-block/edgeless/components/toolbar/template/template-type.js';
-export { CopilotTool } from './root-block/edgeless/gfx-tool/copilot-tool.js';
-export * from './root-block/edgeless/gfx-tool/index.js';
-export { EditPropsMiddlewareBuilder } from './root-block/edgeless/middlewares/base.js';
-export { EdgelessSnapManager } from './root-block/edgeless/utils/snap-manager.js';
-export * from './root-block/index.js';
+export * from './adapters/index.js';
+export * from './extensions/index.js';
 export * from './schemas.js';
 export * from '@blocksuite/affine-block-attachment';
 export * from '@blocksuite/affine-block-bookmark';
@@ -35,19 +15,10 @@ export * from '@blocksuite/affine-block-latex';
 export * from '@blocksuite/affine-block-list';
 export * from '@blocksuite/affine-block-note';
 export * from '@blocksuite/affine-block-paragraph';
+export * from '@blocksuite/affine-block-root';
 export * from '@blocksuite/affine-block-surface';
 export * from '@blocksuite/affine-block-surface-ref';
 export * from '@blocksuite/affine-block-table';
-export {
-  type AIError,
-  type AIItemConfig,
-  type AIItemGroupConfig,
-  AIItemList,
-  type AISubItemConfig,
-  GeneralNetworkError,
-  PaymentRequiredError,
-  UnauthorizedError,
-} from '@blocksuite/affine-components/ai-item';
 export {
   menu,
   type MenuOptions,
@@ -93,31 +64,7 @@ export {
 export * from '@blocksuite/affine-fragment-frame-panel';
 export * from '@blocksuite/affine-fragment-outline';
 export * from '@blocksuite/affine-model';
-export {
-  AttachmentAdapter,
-  AttachmentAdapterFactoryExtension,
-  AttachmentAdapterFactoryIdentifier,
-  codeBlockWrapMiddleware,
-  FetchUtils,
-  HtmlAdapter,
-  HtmlAdapterFactoryExtension,
-  HtmlAdapterFactoryIdentifier,
-  ImageAdapter,
-  ImageAdapterFactoryExtension,
-  ImageAdapterFactoryIdentifier,
-  MarkdownAdapter,
-  MarkdownAdapterFactoryExtension,
-  MarkdownAdapterFactoryIdentifier,
-  MixTextAdapter,
-  MixTextAdapterFactoryExtension,
-  MixTextAdapterFactoryIdentifier,
-  NotionTextAdapter,
-  NotionTextAdapterFactoryExtension,
-  NotionTextAdapterFactoryIdentifier,
-  PlainTextAdapter,
-  PlainTextAdapterFactoryExtension,
-  PlainTextAdapterFactoryIdentifier,
-} from '@blocksuite/affine-shared/adapters';
+export * from '@blocksuite/affine-shared/adapters';
 export * from '@blocksuite/affine-shared/commands';
 export { HighlightSelection } from '@blocksuite/affine-shared/selection';
 export * from '@blocksuite/affine-shared/services';
@@ -127,6 +74,7 @@ export {
   FontFamilyVariables,
   SizeVariables,
   StyleVariables,
+  unsafeCSSVar,
   unsafeCSSVarV2,
 } from '@blocksuite/affine-shared/theme';
 export { type AffineTextAttributes } from '@blocksuite/affine-shared/types';
@@ -136,26 +84,23 @@ export {
   createSignalFromObservable,
   findNoteBlockModel,
   getLastNoteBlock,
+  getPageRootByElement,
   isInsideEdgelessEditor,
   isInsidePageEditor,
   matchModels,
+  MOUSE_BUTTON,
   on,
   once,
   openFileOrFiles,
   printToPdf,
   referenceToNode,
+  requestConnectedFrame,
   type Signal,
+  SpecBuilder,
   SpecProvider,
+  stopPropagation,
 } from '@blocksuite/affine-shared/utils';
 export type { DragBlockPayload } from '@blocksuite/affine-widget-drag-handle';
-
-export const BlocksUtils = {
-  splitElements,
-  matchModels,
-  deserializeXYWH,
-  isCanvasElement,
-  Point,
-};
 
 const env: Record<string, unknown> =
   typeof globalThis !== 'undefined'
