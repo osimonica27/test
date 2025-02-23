@@ -114,8 +114,10 @@ export class ViewportTurboRendererExtension extends LifeCycleWatcher {
   async refresh() {
     if (this.state === 'paused') return;
 
+    this.clearCanvas();
+
     if (this.viewport.zoom > zoomThreshold) {
-      this.clearCanvas();
+      return;
     } else if (this.canUseBitmapCache()) {
       this.drawCachedBitmap(this.layoutCache!.layout);
     } else {
