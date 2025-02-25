@@ -1,7 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
+import Sinon from 'sinon';
 
+import { EventBus } from '../base';
 import { AuthService } from '../core/auth/service';
 import { Models } from '../models';
 import {
@@ -20,14 +22,22 @@ const test = ava as TestFn<{
   client: PrismaClient;
   auth: AuthService;
   models: Models;
+  event: Sinon.SinonStubbedInstance<EventBus>;
 }>;
 
 test.before(async t => {
-  const app = await createTestingApp();
+  const app = await createTestingApp({
+    tapModule: module => {
+      module
+        .overrideProvider(EventBus)
+        .useValue(Sinon.createStubInstance(EventBus));
+    },
+  });
   t.context.app = app;
   t.context.client = app.get(PrismaClient);
   t.context.auth = app.get(AuthService);
   t.context.models = app.get(Models);
+  t.context.event = app.get(EventBus);
 });
 
 test.beforeEach(async t => {
@@ -40,13 +50,17 @@ test.after.always(async t => {
 
 test('should invite a user', async t => {
   const { app } = t.context;
-  const u2 = await app.signupV1('u2@affine.pro');
-  await app.signupV1('u1@affine.pro');
+  const u2 = await app.signup();
+  const owner = await app.signup();
 
   const workspace = await createWorkspace(app);
 
-  const invite = await inviteUser(app, workspace.id, u2.email);
-  t.truthy(invite, 'failed to invite user');
+  const inviteId = await inviteUser(app, workspace.id, u2.email);
+  t.truthy(inviteId, 'failed to invite user');
+  // add invitation notification job
+  const invitationJob = app.queue.last('notification.sendInvitation');
+  t.is(invitationJob.payload.inviterId, owner.id);
+  t.is(invitationJob.payload.inviteId, inviteId);
 });
 
 test('should leave a workspace', async t => {
@@ -78,6 +92,34 @@ test('should revoke a user', async t => {
 
   const revoke = await revokeUser(app, workspace.id, u2.id);
   t.true(revoke, 'failed to revoke user');
+});
+
+test('should revoke a user on under review', async t => {
+  const { app, event, models } = t.context;
+  const user = await app.signup();
+  const owner = await app.signup();
+
+  await app.switchUser(owner);
+  const workspace = await createWorkspace(app);
+  await inviteUser(app, workspace.id, user.email);
+  // set user to under review
+  await models.workspaceUser.setStatus(
+    workspace.id,
+    user.id,
+    WorkspaceMemberStatus.UnderReview
+  );
+
+  const revoke = await revokeUser(app, workspace.id, user.id);
+  t.true(revoke, 'failed to revoke user');
+  t.truthy(event.emit.lastCall);
+  t.deepEqual(
+    event.emit.lastCall.args,
+    [
+      'workspace.members.requestDeclined',
+      { userId: user.id, workspaceId: workspace.id, reviewerId: owner.id },
+    ],
+    'should emit request declined event'
+  );
 });
 
 test('should create user if not exist', async t => {
@@ -117,7 +159,7 @@ test('should invite a user by link', async t => {
   t.is(currMember?.inviteId, invite, 'failed to check invite id');
 });
 
-test('should send invitation notification', async t => {
+test('should send email and notification', async t => {
   const { app } = t.context;
   const u2 = await app.signup();
   const u1 = await app.signup();

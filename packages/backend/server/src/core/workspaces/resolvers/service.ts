@@ -148,7 +148,7 @@ export class WorkspaceService {
     );
   }
 
-  async sendReviewRequestedEmail(inviteId: string) {
+  async sendReviewRequestedNotification(inviteId: string) {
     const { workspaceId, inviteeUserId } = await this.getInviteInfo(inviteId);
     if (!inviteeUserId) {
       this.logger.error(`Invitee user not found for inviteId: ${inviteId}`);
@@ -159,59 +159,31 @@ export class WorkspaceService {
     const admins = await this.models.workspaceUser.getAdmins(workspaceId);
 
     await Promise.allSettled(
-      [owner, ...admins].map(async receiver => {
-        await this.mailer.send({
-          name: 'LinkInvitationReviewRequest',
-          to: receiver.email,
-          props: {
-            user: {
-              $$userId: inviteeUserId,
-            },
-            workspace: {
-              $$workspaceId: workspaceId,
-            },
-            url: this.url.link(`/workspace/${workspaceId}`),
-          },
+      [owner, ...admins].map(async reviewer => {
+        await this.queue.add('notification.sendInvitationReviewRequested', {
+          reviewerId: reviewer.id,
+          inviteId,
         });
       })
     );
   }
 
-  async sendReviewApproveEmail(inviteId: string) {
-    const invitation = await this.models.workspaceUser.getById(inviteId);
-    if (!invitation) {
-      this.logger.warn(`Invitation not found for inviteId: ${inviteId}`);
-      return;
-    }
-
-    const user = await this.models.user.getWorkspaceUser(invitation.userId);
-
-    if (!user) {
-      this.logger.warn(`Invitee user not found for inviteId: ${inviteId}`);
-      return;
-    }
-
-    await this.mailer.send({
-      name: 'LinkInvitationApprove',
-      to: user.email,
-      props: {
-        workspace: {
-          $$workspaceId: invitation.workspaceId,
-        },
-        url: this.url.link(`/workspace/${invitation.workspaceId}`),
-      },
+  async sendReviewApprovedNotification(inviteId: string, reviewerId: string) {
+    await this.queue.add('notification.sendInvitationReviewApproved', {
+      reviewerId,
+      inviteId,
     });
   }
 
-  async sendReviewDeclinedEmail(email: string, workspaceId: string) {
-    await this.mailer.send({
-      name: 'LinkInvitationDecline',
-      to: email,
-      props: {
-        workspace: {
-          $$workspaceId: workspaceId,
-        },
-      },
+  async sendReviewDeclinedNotification(
+    userId: string,
+    workspaceId: string,
+    reviewerId: string
+  ) {
+    await this.queue.add('notification.sendInvitationReviewDeclined', {
+      reviewerId,
+      userId,
+      workspaceId,
     });
   }
 

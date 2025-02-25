@@ -224,6 +224,141 @@ test('should create invitation rejected notification', async t => {
   t.is(notification!.body.inviteId, inviteId);
 });
 
+test('should create invitation review requested notification if user is not an active member', async t => {
+  const { notificationService, models } = t.context;
+  const inviteId = randomUUID();
+  mock.method(models.workspaceUser, 'getActive', async () => null);
+  const notification =
+    await notificationService.createInvitationReviewRequested({
+      userId: owner.id,
+      body: {
+        workspaceId: workspace.id,
+        createdByUserId: member.id,
+        inviteId,
+      },
+    });
+  t.truthy(notification);
+  t.is(notification!.type, NotificationType.InvitationReviewRequested);
+  t.is(notification!.userId, owner.id);
+  t.is(notification!.body.workspaceId, workspace.id);
+  t.is(notification!.body.createdByUserId, member.id);
+  t.is(notification!.body.inviteId, inviteId);
+
+  // should send email
+  const invitationReviewRequestedMail = t.context.module.mails.last(
+    'LinkInvitationReviewRequest'
+  );
+  t.is(invitationReviewRequestedMail.to, owner.email);
+});
+
+test('should not create invitation review requested notification if user is an active member', async t => {
+  const { notificationService, models } = t.context;
+  const inviteId = randomUUID();
+  mock.method(models.workspaceUser, 'getActive', async () => ({
+    id: inviteId,
+  }));
+  const notification =
+    await notificationService.createInvitationReviewRequested({
+      userId: owner.id,
+      body: {
+        workspaceId: workspace.id,
+        createdByUserId: member.id,
+        inviteId,
+      },
+    });
+  t.is(notification, undefined);
+});
+
+test('should create invitation review approved notification if user is an active member', async t => {
+  const { notificationService, models } = t.context;
+  const inviteId = randomUUID();
+  mock.method(models.workspaceUser, 'getActive', async () => ({
+    id: inviteId,
+  }));
+  const notification = await notificationService.createInvitationReviewApproved(
+    {
+      userId: member.id,
+      body: {
+        workspaceId: workspace.id,
+        createdByUserId: owner.id,
+        inviteId,
+      },
+    }
+  );
+  t.truthy(notification);
+  t.is(notification!.type, NotificationType.InvitationReviewApproved);
+  t.is(notification!.userId, member.id);
+  t.is(notification!.body.workspaceId, workspace.id);
+  t.is(notification!.body.createdByUserId, owner.id);
+  t.is(notification!.body.inviteId, inviteId);
+
+  // should send email
+  const invitationReviewApprovedMail = t.context.module.mails.last(
+    'LinkInvitationApprove'
+  );
+  t.is(invitationReviewApprovedMail.to, member.email);
+});
+
+test('should not create invitation review approved notification if user is not an active member', async t => {
+  const { notificationService, models } = t.context;
+  const inviteId = randomUUID();
+  mock.method(models.workspaceUser, 'getActive', async () => null);
+  const notification = await notificationService.createInvitationReviewApproved(
+    {
+      userId: owner.id,
+      body: {
+        workspaceId: workspace.id,
+        createdByUserId: member.id,
+        inviteId,
+      },
+    }
+  );
+  t.is(notification, undefined);
+});
+
+test('should create invitation review declined notification if user is not an active member', async t => {
+  const { notificationService, models } = t.context;
+  mock.method(models.workspaceUser, 'getActive', async () => null);
+  const notification = await notificationService.createInvitationReviewDeclined(
+    {
+      userId: member.id,
+      body: {
+        workspaceId: workspace.id,
+        createdByUserId: owner.id,
+      },
+    }
+  );
+  t.truthy(notification);
+  t.is(notification!.type, NotificationType.InvitationReviewDeclined);
+  t.is(notification!.userId, member.id);
+  t.is(notification!.body.workspaceId, workspace.id);
+  t.is(notification!.body.createdByUserId, owner.id);
+
+  // should send email
+  const invitationReviewDeclinedMail = t.context.module.mails.last(
+    'LinkInvitationDecline'
+  );
+  t.is(invitationReviewDeclinedMail.to, member.email);
+});
+
+test('should not create invitation review declined notification if user is an active member', async t => {
+  const { notificationService, models } = t.context;
+  const inviteId = randomUUID();
+  mock.method(models.workspaceUser, 'getActive', async () => ({
+    id: inviteId,
+  }));
+  const notification = await notificationService.createInvitationReviewDeclined(
+    {
+      userId: owner.id,
+      body: {
+        workspaceId: workspace.id,
+        createdByUserId: member.id,
+      },
+    }
+  );
+  t.is(notification, undefined);
+});
+
 test('should clean expired notifications', async t => {
   const { notificationService } = t.context;
   await notificationService.createInvitation({
