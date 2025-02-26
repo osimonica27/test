@@ -167,13 +167,10 @@ export async function insertFromMarkdown(
   return models;
 }
 
-export async function markDownToDoc(
-  provider: ServiceProvider,
+export function createTransformer(
   schema: Schema,
-  answer: string,
   middlewares?: TransformerMiddleware[]
 ) {
-  // Should not create a new doc in the original collection
   const collection = new WorkspaceImpl({
     schema,
   });
@@ -188,13 +185,24 @@ export async function markDownToDoc(
     },
     middlewares,
   });
+  return transformer;
+}
+
+export async function markDownToDoc(
+  provider: ServiceProvider,
+  schema: Schema,
+  answer: string,
+  middlewares?: TransformerMiddleware[]
+) {
+  // Should not create a new doc in the original collection
+  const transformer = createTransformer(schema, middlewares);
   const mdAdapter = new MarkdownAdapter(transformer, provider);
   const doc = await mdAdapter.toDoc({
     file: answer,
     assets: transformer.assetsManager,
   });
   if (!doc) {
-    console.error('Failed to convert markdown to doc');
+    throw new Error('Failed to convert markdown to doc');
   }
-  return doc as Store;
+  return doc;
 }

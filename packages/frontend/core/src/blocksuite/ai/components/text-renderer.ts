@@ -13,6 +13,7 @@ import {
   DividerBlockComponent,
   InlineDeltaToMarkdownAdapterExtensions,
   ListBlockComponent,
+  MarkdownAdapter,
   MarkdownInlineToDeltaAdapterExtensions,
   PageEditorBlockSpecs,
   ParagraphBlockComponent,
@@ -20,10 +21,12 @@ import {
 import { Container, type ServiceProvider } from '@blocksuite/affine/global/di';
 import { WithDisposable } from '@blocksuite/affine/global/utils';
 import type {
+  BlockSnapshot,
   ExtensionType,
   Query,
   Schema,
   Store,
+  Transformer,
   TransformerMiddleware,
 } from '@blocksuite/affine/store';
 import { css, html, nothing, type PropertyValues } from 'lit';
@@ -33,7 +36,7 @@ import { keyed } from 'lit/directives/keyed.js';
 import { literal } from 'lit/static-html.js';
 import React from 'react';
 
-import { markDownToDoc } from '../../utils';
+import { createTransformer } from '../../utils';
 import type {
   AffineAIPanelState,
   AffineAIPanelWidgetConfig,
@@ -192,7 +195,9 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
     }
   };
 
-  private _doc: Store | null = null;
+  private _doc: Store | undefined | null = null;
+
+  private _std: BlockStdScope | null = null;
 
   private readonly _query: Query = {
     mode: 'strict',
@@ -210,67 +215,154 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
 
   private _timer?: ReturnType<typeof setInterval> | null = null;
 
-  private readonly _updateDoc = () => {
-    if (this._answers.length > 0) {
-      const latestAnswer = this._answers.pop();
-      this._answers = [];
-      const schema = this.schema ?? this.host?.std.store.workspace.schema;
-      let provider: ServiceProvider;
-      if (this.host) {
-        provider = this.host.std.provider;
-      } else {
-        const container = new Container();
-        [
-          ...MarkdownInlineToDeltaAdapterExtensions,
-          ...defaultBlockMarkdownAdapterMatchers,
-          ...InlineDeltaToMarkdownAdapterExtensions,
-        ].forEach(ext => {
-          ext.setup(container);
-        });
+  private _transformer: Transformer | null = null;
 
-        provider = container.provider();
-      }
-      if (latestAnswer && schema) {
-        const middlewares = [
-          defaultImageProxyMiddleware,
-          codeBlockWrapMiddleware(true),
-          ...(this.options.additionalMiddlewares ?? []),
-        ];
-        markDownToDoc(provider, schema, latestAnswer, middlewares)
-          .then(doc => {
-            this.disposeDoc();
-            this._doc = doc.doc.getStore({
-              query: this._query,
-            });
-            this.disposables.add(() => {
-              doc.doc.clearQuery(this._query);
-            });
-            this._doc.readonly = true;
-            this.requestUpdate();
-            if (this.state !== 'generating') {
-              this._clearTimer();
-            }
-          })
-          .catch(console.error);
-      }
+  private _adapter: MarkdownAdapter | null = null;
+
+  private _rootBlocks: BlockSnapshot[] = [];
+
+  private _host: EditorHost | null = null;
+
+  private get transformer() {
+    if (!this._transformer) {
+      this._transformer = this._createTransformer();
     }
+    return this._transformer;
+  }
+
+  private get adapter() {
+    if (!this._adapter) {
+      this._adapter = this._createMarkdownAdapter();
+    }
+    return this._adapter;
+  }
+
+  private _createTransformer() {
+    const schema = this.schema ?? this.host?.std.store.workspace.schema;
+    if (!schema) {
+      return null;
+    }
+    const middlewares = [
+      defaultImageProxyMiddleware,
+      codeBlockWrapMiddleware(true),
+      ...(this.options.additionalMiddlewares ?? []),
+    ];
+    const transformer = createTransformer(schema, middlewares);
+    return transformer;
+  }
+
+  private _createMarkdownAdapter() {
+    if (!this.transformer) {
+      return null;
+    }
+    let provider: ServiceProvider;
+    if (this.host) {
+      provider = this.host.std.provider;
+    } else {
+      const container = new Container();
+      [
+        ...MarkdownInlineToDeltaAdapterExtensions,
+        ...defaultBlockMarkdownAdapterMatchers,
+        ...InlineDeltaToMarkdownAdapterExtensions,
+      ].forEach(ext => {
+        ext.setup(container);
+      });
+
+      provider = container.provider();
+    }
+    const adapter = new MarkdownAdapter(this.transformer, provider);
+    return adapter;
+  }
+
+  private readonly _initDoc = async () => {
+    if (!this.transformer || !this.adapter) {
+      return;
+    }
+    this._doc = await this.adapter.toDoc({
+      file: '',
+      assets: this.transformer.assetsManager,
+    });
+    if (this._doc) {
+      this._doc.readonly = true;
+      this._std = new BlockStdScope({
+        store: this._doc,
+        extensions: this.options.extensions ?? CustomPageEditorBlockSpecs,
+      });
+      this._host = this._std.render();
+    }
+
+    // TODO
+    // const doc = this._doc.doc.getStore({
+    //   query: this._query,
+    // });
+    // this.disposables.add(() => {
+    //   this._doc?.doc.clearQuery(this._query);
+    // });
   };
 
-  private _onWheel(e: MouseEvent) {
-    e.stopPropagation();
-    if (this.state === 'generating') {
-      e.preventDefault();
+  private readonly _updateDoc = () => {
+    const latestAnswer = this._answers.pop();
+    this._answers = [];
+    if (!latestAnswer) {
+      return;
     }
-  }
+    if (!this.transformer || !this.adapter) {
+      return;
+    }
+    if (this.state !== 'generating') {
+      this._clearTimer();
+    }
+    this.adapter
+      .toSliceSnapshot({
+        file: latestAnswer,
+        assets: this.transformer.assetsManager,
+        workspaceId: '',
+        pageId: '',
+      })
+      .then(slice => {
+        const content = slice?.content;
+        const blocks = content?.[0]?.children || [];
+        const doc = this._doc;
+        if (doc && blocks.length >= this._rootBlocks.length) {
+          doc.readonly = false;
+          const lastBlockId = this._rootBlocks.at(-1)?.id;
+          const lastBlock = lastBlockId && doc.getBlock(lastBlockId);
+          if (lastBlock) {
+            doc.deleteBlock(lastBlock.model);
+          }
+          const newBlocks =
+            this._rootBlocks.length > 0
+              ? blocks.slice(this._rootBlocks.length - 1)
+              : blocks;
+          const parent = doc.getBlocksByFlavour('affine:note').at(-1);
+          const processBlocks = async () => {
+            for (const block of newBlocks) {
+              await this.transformer?.snapshotToBlock(block, doc, parent?.id);
+            }
+            this.requestUpdate();
+          };
+          this._rootBlocks = blocks;
+          processBlocks()
+            .then(() => {
+              doc.readonly = true;
+            })
+            .catch(console.error);
+        }
+      })
+      .catch(console.error);
+  };
 
   override connectedCallback() {
     super.connectedCallback();
     this._answers.push(this.answer);
-
-    this._updateDoc();
-    if (this.state === 'generating') {
-      this._timer = setInterval(this._updateDoc, 600);
-    }
+    this._initDoc()
+      .then(() => {
+        this._updateDoc();
+        if (this.state === 'generating') {
+          this._timer = setInterval(this._updateDoc, 600);
+        }
+      })
+      .catch(console.error);
   }
 
   private disposeDoc() {
@@ -301,14 +393,11 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
           max-height: ${maxHeight ? Math.max(maxHeight, 200) + 'px' : ''};
         }
       </style>
-      <div class=${classes} @wheel=${this._onWheel}>
+      <div class=${classes}>
         ${keyed(
           this._doc,
           html`<div class="ai-answer-text-editor affine-page-viewport">
-            ${new BlockStdScope({
-              store: this._doc,
-              extensions: this.options.extensions ?? CustomPageEditorBlockSpecs,
-            }).render()}
+            ${this._std?.render()}
           </div>`
         )}
       </div>
