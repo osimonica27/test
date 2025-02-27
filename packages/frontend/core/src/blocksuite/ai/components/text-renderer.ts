@@ -32,6 +32,7 @@ import type {
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { guard } from 'lit/directives/guard.js';
 import { keyed } from 'lit/directives/keyed.js';
 import { literal } from 'lit/static-html.js';
 import React from 'react';
@@ -380,6 +381,10 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
     if (!this._doc) {
       return nothing;
     }
+    const std = this._std;
+    if (!std) {
+      return nothing;
+    }
 
     const { maxHeight, customHeading } = this.options;
     const classes = classMap({
@@ -394,12 +399,9 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
         }
       </style>
       <div class=${classes}>
-        ${keyed(
-          this._doc,
-          html`<div class="ai-answer-text-editor affine-page-viewport">
-            ${this._std?.render()}
-          </div>`
-        )}
+        <div class="ai-answer-text-editor affine-page-viewport">
+          ${guard([std], () => std.render())}
+        </div>
       </div>
     `;
   }
