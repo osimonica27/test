@@ -33,7 +33,6 @@ import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { guard } from 'lit/directives/guard.js';
-import { keyed } from 'lit/directives/keyed.js';
 import { literal } from 'lit/static-html.js';
 import React from 'react';
 
