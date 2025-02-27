@@ -195,7 +195,7 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
     }
   };
 
-  private _doc: Store | undefined | null = null;
+  private _store: Store | undefined | null = null;
 
   private _std: BlockStdScope | null = null;
 
@@ -220,8 +220,6 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
   private _adapter: MarkdownAdapter | null = null;
 
   private _rootBlocks: BlockSnapshot[] = [];
-
-  private _host: EditorHost | null = null;
 
   private get transformer() {
     if (!this._transformer) {
@@ -278,26 +276,26 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
     if (!this.transformer || !this.adapter) {
       return;
     }
-    this._doc = await this.adapter.toDoc({
+
+    const store = await this.adapter.toDoc({
       file: '',
       assets: this.transformer.assetsManager,
     });
-    if (this._doc) {
-      this._doc.readonly = true;
-      this._std = new BlockStdScope({
-        store: this._doc,
+    const doc = store?.doc;
+
+    if (doc) {
+      this._store = doc.getStore({
+        query: this._query,
         extensions: this.options.extensions ?? CustomPageEditorBlockSpecs,
       });
-      this._host = this._std.render();
+      this.disposables.add(() => {
+        doc.clearQuery(this._query);
+      });
+      this._std = new BlockStdScope({
+        store: this._store,
+        extensions: this.options.extensions ?? CustomPageEditorBlockSpecs,
+      });
     }
-
-    // TODO
-    // const doc = this._doc.doc.getStore({
-    //   query: this._query,
-    // });
-    // this.disposables.add(() => {
-    //   this._doc?.doc.clearQuery(this._query);
-    // });
   };
 
   private readonly _updateDoc = () => {
@@ -322,7 +320,7 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
       .then(slice => {
         const content = slice?.content;
         const blocks = content?.[0]?.children || [];
-        const doc = this._doc;
+        const doc = this._store;
         if (doc && blocks.length >= this._rootBlocks.length) {
           doc.readonly = false;
           const lastBlockId = this._rootBlocks.at(-1)?.id;
@@ -366,8 +364,8 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
   }
 
   private disposeDoc() {
-    this._doc?.dispose();
-    this._doc?.workspace.dispose();
+    this._store?.dispose();
+    this._store?.workspace.dispose();
   }
 
   override disconnectedCallback() {
@@ -377,7 +375,7 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
   }
 
   override render() {
-    if (!this._doc) {
+    if (!this._store) {
       return nothing;
     }
     const std = this._std;
