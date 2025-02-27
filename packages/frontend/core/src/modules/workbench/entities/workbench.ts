@@ -169,6 +169,9 @@ export class Workbench extends Entity {
     if (!isString) {
       const search = toURLSearchParams(omit(id, ['docId']));
       if (search?.size) {
+        if (!search.has('refreshKey')) {
+          search.append('refreshKey', nanoid());
+        }
         query = `?${search.toString()}`;
       }
     }
