@@ -10,14 +10,13 @@ import {
 } from '@floating-ui/dom';
 
 export function listenClickAway(
-  element: HTMLElement,
-  onClickAway: () => void
+  element: Element,
+  onClickAway: (event: MouseEvent) => void
 ): Disposable {
   const callback = (event: MouseEvent) => {
     const inside = event.composedPath().includes(element);
-    if (!inside) {
-      onClickAway();
-    }
+    if (inside) return;
+    onClickAway(event);
   };
 
   document.addEventListener('click', callback);

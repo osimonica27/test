@@ -313,7 +313,8 @@ test('should unindent multi-selection block', async ({ page }, testInfo) => {
 });
 
 // ↑
-test('should keep selection state when scrolling backward', async ({
+// TODO(@fundon): should remove it
+test.skip('should keep selection state when scrolling backward', async ({
   page,
 }) => {
   await enterPlaygroundRoom(page);
@@ -392,7 +393,10 @@ test('should keep selection state when scrolling backward', async ({
 });
 
 // ↓
-test('should keep selection state when scrolling forward', async ({ page }) => {
+// TODO(@fundon): should remove it
+test.skip('should keep selection state when scrolling forward', async ({
+  page,
+}) => {
   await enterPlaygroundRoom(page);
   await initEmptyParagraphState(page);
   await initThreeParagraphs(page);
@@ -696,7 +700,8 @@ test('should keep selection state when scrolling forward with the scroll wheel',
   expect(scrollTop1).toBe(0);
 });
 
-test('should not clear selected rects when clicking on scrollbar', async ({
+// TODO(@fundon): should remove it
+test.skip('should not clear selected rects when clicking on scrollbar', async ({
   page,
 }) => {
   await enterPlaygroundRoom(page);

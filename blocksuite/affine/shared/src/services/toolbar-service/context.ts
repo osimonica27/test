@@ -61,7 +61,14 @@ abstract class ToolbarContextBase {
     if (this.flags.accept()) return true;
     if (this.host.event.active) return true;
     // Selects `embed-synced-doc-block`
-    return this.host.contains(document.activeElement);
+    if (this.host.contains(document.activeElement)) return true;
+    // Focuses `doc-title`
+    // Hovers inline links
+    return (
+      this.host
+        .closest('.affine-page-viewport')
+        ?.contains(document.activeElement) ?? false
+    );
   }
 
   get readonly() {
