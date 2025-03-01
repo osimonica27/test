@@ -6,6 +6,7 @@ import {
 import {
   AIProvider,
   CopilotClient,
+  extendCopilotClient,
   setupAIProvider,
 } from '@affine/core/blocksuite/ai';
 import { SyncAwareness } from '@affine/core/components/affine/awareness';
@@ -150,6 +151,9 @@ export const WorkspaceSideEffects = () => {
   const fetchService = useService(FetchService);
 
   useEffect(() => {
+    // Extend CopilotClient with embedding-related methods
+    extendCopilotClient();
+    
     const dispose = setupAIProvider(
       new CopilotClient(
         graphqlService.gql,

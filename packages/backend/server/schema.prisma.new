@@ -1,0 +1,27 @@
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
+  previewFeatures = ["metrics", "relationJoins", "nativeDistinct", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(schema: "public")]
+}
+
+// ... [existing models remain the same] ...
+
+model DocumentEmbedding {
+  docId       String   @map("doc_id") @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  chunkIndex  Int      @map("chunk_index") @db.Integer
+  content     String   @db.Text
+  embedding   String   @db.Text // JSON string representation of the embedding vector
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([docId, chunkIndex])
+  @@index([workspaceId])
+  @@map("document_embeddings")
+}

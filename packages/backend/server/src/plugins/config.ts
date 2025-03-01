@@ -1,6 +1,14 @@
 import { ModuleStartupConfigDescriptions } from '../base/config/types';
 
-export interface PluginsConfig {}
+export interface PluginsConfig {
+  copilot: {
+    apiKey?: string;
+    apiUrl?: string;
+    embeddingModel?: string;
+    enabled?: boolean;
+  };
+}
+
 export type AvailablePlugins = keyof PluginsConfig;
 
 declare module '../base/config' {

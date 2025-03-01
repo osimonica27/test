@@ -1,0 +1,19 @@
+type Query {
+  findSimilarContent(
+    workspaceId: String!
+    query: String!
+    limit: Int
+    threshold: Float
+  ): [SimilarContentResult!]!
+}
+
+type Mutation {
+  generateDocumentEmbedding(workspaceId: String!, docId: String!): Boolean!
+  deleteDocumentEmbedding(docId: String!): Boolean!
+}
+
+type SimilarContentResult {
+  docId: String!
+  content: String!
+  similarity: Float!
+}

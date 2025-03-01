@@ -1,12 +1,32 @@
 generator client {
   provider        = "prisma-client-js"
   binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
-  previewFeatures = ["metrics", "relationJoins", "nativeDistinct"]
+  previewFeatures = ["metrics", "relationJoins", "nativeDistinct", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(schema: "public")]
+}
+
+// ... [existing models remain the same] ...
+
+model DocumentEmbedding {
+  docId       String   @map("doc_id") @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  chunkIndex  Int      @map("chunk_index") @db.Integer
+  content     String   @db.Text
+  embedding   String   @db.Text // JSON string representation of the embedding vector
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([docId, chunkIndex])
+  @@index([workspaceId])
+  @@map("document_embeddings")
+}
+}
+
 }
 
 model User {
@@ -14,9 +34,7 @@ model User {
   name            String    @db.VarChar
   email           String    @unique @db.VarChar
   emailVerifiedAt DateTime? @map("email_verified") @db.Timestamptz(3)
-  avatarUrl       String?   @map("avatar_url") @db.VarChar
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  /// Not available if user signed up through OAuth providers
   password        String?   @db.VarChar
   /// Indicate whether the user finished the signup progress.
   /// for example, the value will be false if user never registered and invited into a workspace by others.
@@ -43,8 +61,6 @@ model User {
 model ConnectedAccount {
   id                String    @id @default(uuid()) @db.VarChar
   userId            String    @map("user_id") @db.VarChar
-  provider          String    @db.VarChar
-  providerAccountId String    @map("provider_account_id") @db.VarChar
   scope             String?   @db.Text
   accessToken       String?   @map("access_token") @db.Text
   refreshToken      String?   @map("refresh_token") @db.Text
@@ -55,7 +71,6 @@ model ConnectedAccount {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([providerAccountId])
   @@map("user_connected_accounts")
 }
 
@@ -100,7 +115,6 @@ model Workspace {
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // workspace level feature flags
   enableAi         Boolean  @default(true) @map("enable_ai")
-  enableUrlPreview Boolean  @default(false) @map("enable_url_preview")
 
   features       WorkspaceFeature[]
   docs           WorkspaceDoc[]
@@ -617,4 +631,18 @@ model Blob {
 
   @@id([workspaceId, key])
   @@map("blobs")
+}
+
+model DocumentEmbedding {
+  docId       String   @map("doc_id") @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  chunkIndex  Int      @map("chunk_index") @db.Integer
+  content     String   @db.Text
+  embedding   String   @db.Text // JSON string representation of the embedding vector
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([docId, chunkIndex])
+  @@index([workspaceId])
+  @@map("document_embeddings")
 }
