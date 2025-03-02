@@ -5,6 +5,7 @@ import {
   type Palette,
   resolveColor,
 } from '@blocksuite/affine/blocks';
+import { DefaultTheme } from '@blocksuite/affine-model';
 import { isEqual } from 'lodash-es';
 import { useTheme } from 'next-themes';
 
@@ -26,8 +27,10 @@ export const usePalettes = (
     if (isDark) {
       if (key === 'Black') {
         key = 'White';
+        value = DefaultTheme.pureWhite;
       } else if (key === 'White') {
         key = 'Black';
+        value = DefaultTheme.pureBlack;
       }
     }
 
