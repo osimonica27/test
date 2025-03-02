@@ -29,8 +29,6 @@ import {
 import { EdgelessConnectorLabelEditor } from './edgeless/components/text/edgeless-connector-label-editor.js';
 import { EdgelessGroupTitleEditor } from './edgeless/components/text/edgeless-group-title-editor.js';
 import { EdgelessShapeTextEditor } from './edgeless/components/text/edgeless-shape-text-editor.js';
-import { EdgelessBrushMenu } from './edgeless/components/toolbar/brush/brush-menu.js';
-import { EdgelessBrushToolButton } from './edgeless/components/toolbar/brush/brush-tool-button.js';
 import { EdgelessSlideMenu } from './edgeless/components/toolbar/common/slide-menu.js';
 import { ToolbarArrowUpIcon } from './edgeless/components/toolbar/common/toolbar-arrow-up-icon.js';
 import { EdgelessConnectorMenu } from './edgeless/components/toolbar/connector/connector-menu.js';
@@ -48,6 +46,8 @@ import { EdgelessMindmapToolButton } from './edgeless/components/toolbar/mindmap
 import { EdgelessNoteMenu } from './edgeless/components/toolbar/note/note-menu.js';
 import { EdgelessNoteSeniorButton } from './edgeless/components/toolbar/note/note-senior-button.js';
 import { EdgelessNoteToolButton } from './edgeless/components/toolbar/note/note-tool-button.js';
+import { EdgelessPenMenu } from './edgeless/components/toolbar/pen/pen-menu.js';
+import { EdgelessPenToolButton } from './edgeless/components/toolbar/pen/pen-tool-button.js';
 import { EdgelessFrameOrderButton } from './edgeless/components/toolbar/present/frame-order-button.js';
 import { EdgelessFrameOrderMenu } from './edgeless/components/toolbar/present/frame-order-menu.js';
 import { EdgelessNavigatorSettingButton } from './edgeless/components/toolbar/present/navigator-setting-button.js';
@@ -150,7 +150,7 @@ function registerWidgets() {
 
 function registerEdgelessToolbarComponents() {
   // Tool buttons
-  customElements.define('edgeless-brush-tool-button', EdgelessBrushToolButton);
+  customElements.define('edgeless-pen-tool-button', EdgelessPenToolButton);
   customElements.define(
     'edgeless-connector-tool-button',
     EdgelessConnectorToolButton
@@ -175,7 +175,7 @@ function registerEdgelessToolbarComponents() {
   customElements.define('edgeless-template-button', EdgelessTemplateButton);
 
   // Menus
-  customElements.define('edgeless-brush-menu', EdgelessBrushMenu);
+  customElements.define('edgeless-pen-menu', EdgelessPenMenu);
   customElements.define('edgeless-connector-menu', EdgelessConnectorMenu);
   customElements.define('edgeless-frame-menu', EdgelessFrameMenu);
   customElements.define('edgeless-mindmap-menu', EdgelessMindmapMenu);
@@ -320,8 +320,8 @@ declare global {
     'edgeless-shape-text-editor': EdgelessShapeTextEditor;
     'edgeless-toolbar-widget': EdgelessToolbarWidget;
     'presentation-toolbar': PresentationToolbar;
-    'edgeless-brush-menu': EdgelessBrushMenu;
-    'edgeless-brush-tool-button': EdgelessBrushToolButton;
+    'edgeless-pen-menu': EdgelessPenMenu;
+    'edgeless-pen-tool-button': EdgelessPenToolButton;
     'edgeless-slide-menu': EdgelessSlideMenu;
     'toolbar-arrow-up-icon': ToolbarArrowUpIcon;
     'edgeless-connector-menu': EdgelessConnectorMenu;

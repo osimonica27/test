@@ -13,6 +13,8 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
 import isEqual from 'lodash-es/isEqual';
 
+import { keepColor } from './utils';
+
 function TransparentIcon(hollowCircle = false) {
   const CircleIcon: TemplateResult | typeof nothing = hollowCircle
     ? svg`<circle cx="10" cy="10" r="8" fill="white" />`
@@ -203,6 +205,12 @@ export class EdgelessColorPanel extends LitElement {
       box-sizing: border-box;
       background: var(--affine-background-overlay-panel-color);
     }
+
+    :host(.one-way.small) {
+      display: flex;
+      gap: 4px;
+      background: unset;
+    }
   `;
 
   select(palette: Palette) {
@@ -217,18 +225,24 @@ export class EdgelessColorPanel extends LitElement {
   }
 
   get resolvedValue() {
-    return this.value && resolveColor(this.value, this.theme);
+    let value = this.value && resolveColor(this.value, this.theme);
+    if (this.shouldKeepColor && value) value = keepColor(value);
+    return value;
   }
 
   override render() {
-    const resolvedValue = this.resolvedValue;
+    const { shouldKeepColor, resolvedValue } = this;
+
     return html`
       ${repeat(
         this.palettes,
         palette => palette.key,
         palette => {
           const resolvedColor = resolveColor(palette.value, this.theme);
-          const activated = isEqual(resolvedColor, resolvedValue);
+          const activated = isEqual(
+            shouldKeepColor ? keepColor(resolvedColor) : resolvedColor,
+            resolvedValue
+          );
           return html`<edgeless-color-button
             class=${classMap({ large: true })}
             .label=${palette.key}
@@ -247,6 +261,9 @@ export class EdgelessColorPanel extends LitElement {
       <slot name="custom"></slot>
     `;
   }
+
+  @property({ attribute: false })
+  accessor shouldKeepColor: boolean = false;
 
   @property({ attribute: false })
   accessor hasTransparent: boolean = true;

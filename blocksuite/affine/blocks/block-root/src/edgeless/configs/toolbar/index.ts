@@ -7,6 +7,7 @@ import { builtinBrushToolbarConfig } from './brush';
 import { builtinConnectorToolbarConfig } from './connector';
 import { builtinEdgelessTextToolbarConfig } from './edgeless-text';
 import { builtinGroupToolbarConfig } from './group';
+import { builtinHighlighterToolbarConfig } from './highlighter';
 import { builtinMindmapToolbarConfig } from './mindmap';
 import { builtinLockedToolbarConfig, builtinMiscToolbarConfig } from './misc';
 import { builtinShapeToolbarConfig } from './shape';
@@ -23,6 +24,11 @@ export const EdgelessElementToolbarExtension: ExtensionType[] = [
   ToolbarModuleExtension({
     id: BlockFlavourIdentifier('affine:surface:brush'),
     config: builtinBrushToolbarConfig,
+  }),
+
+  ToolbarModuleExtension({
+    id: BlockFlavourIdentifier('affine:surface:highlighter'),
+    config: builtinHighlighterToolbarConfig,
   }),
 
   ToolbarModuleExtension({

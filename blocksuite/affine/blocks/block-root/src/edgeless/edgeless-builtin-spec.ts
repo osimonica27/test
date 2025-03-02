@@ -22,6 +22,7 @@ import { ConnectorTool } from './gfx-tool/connector-tool.js';
 import { DefaultTool } from './gfx-tool/default-tool.js';
 import { EmptyTool } from './gfx-tool/empty-tool.js';
 import { EraserTool } from './gfx-tool/eraser-tool.js';
+import { HighlighterTool } from './gfx-tool/highlighter-tool';
 import { LassoTool } from './gfx-tool/lasso-tool.js';
 import { NoteTool } from './gfx-tool/note-tool.js';
 import { PanTool } from './gfx-tool/pan-tool.js';
@@ -44,6 +45,7 @@ export const EdgelessToolExtension: ExtensionType[] = [
   FrameTool,
   LassoTool,
   PresentTool,
+  HighlighterTool,
 ];
 
 export const EdgelessEditExtensions: ExtensionType[] = [

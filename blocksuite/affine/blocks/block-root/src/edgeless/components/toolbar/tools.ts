@@ -125,10 +125,10 @@ export const getSeniorTools = ({
   // Brush / Eraser
   tools.push({
     name: 'Pen',
-    content: html`<div class="brush-and-eraser">
-      <edgeless-brush-tool-button
+    content: html`<div class="pen-and-eraser">
+      <edgeless-pen-tool-button
         .edgeless=${edgeless}
-      ></edgeless-brush-tool-button>
+      ></edgeless-pen-tool-button>
 
       <edgeless-eraser-tool-button
         .edgeless=${edgeless}
