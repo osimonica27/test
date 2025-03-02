@@ -9,11 +9,14 @@ import { App } from './app';
 
 function MainApp() {
   const { appSettings } = useAppSettingHelper();
+
   useEffect(() => {
-    if (
-      (BUILD_CONFIG.debug || window.SENTRY_RELEASE) &&
-      !!appSettings.enableTelemetry
-    ) {
+    const isDebugOrRelease = BUILD_CONFIG.debug || window.SENTRY_RELEASE;
+    const isSelfHosted = environment.isSelfHosted;
+    const isTelemetryEnabled = appSettings.enableTelemetry;
+
+    // Enable disabling Sentry when in self-hosted deployment context
+    if (isDebugOrRelease && (isTelemetryEnabled || !isSelfHosted)) {
       sentry.enable();
     }
   }, [appSettings.enableTelemetry]);
