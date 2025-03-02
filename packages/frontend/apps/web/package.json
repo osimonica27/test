@@ -15,6 +15,7 @@
     "@affine/nbstore": "workspace:*",
     "@emotion/react": "^11.14.0",
     "@sentry/react": "^9.2.0",
+    "@affine/track": "workspace:*",
     "@toeverything/infra": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

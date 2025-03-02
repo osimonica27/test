@@ -1,46 +1,24 @@
 import './setup';
 
-import {
-  init,
-  reactRouterV6BrowserTracingIntegration,
-  setTags,
-} from '@sentry/react';
+import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
+import { sentry } from '@affine/track';
 import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import {
-  createRoutesFromChildren,
-  matchRoutes,
-  useLocation,
-  useNavigationType,
-} from 'react-router-dom';
 
 import { App } from './app';
 
-function main() {
-  // skip bootstrap setup for desktop onboarding
-  if (BUILD_CONFIG.debug || window.SENTRY_RELEASE) {
-    // https://docs.sentry.io/platforms/javascript/guides/react/#configure
-    init({
-      dsn: process.env.SENTRY_DSN,
-      environment: process.env.BUILD_TYPE ?? 'development',
-      integrations: [
-        reactRouterV6BrowserTracingIntegration({
-          useEffect,
-          useLocation,
-          useNavigationType,
-          createRoutesFromChildren,
-          matchRoutes,
-        }),
-      ],
-    });
-    setTags({
-      distribution: BUILD_CONFIG.distribution,
-      appVersion: BUILD_CONFIG.appVersion,
-      editorVersion: BUILD_CONFIG.editorVersion,
-    });
-  }
+function MainApp() {
+  const { appSettings } = useAppSettingHelper();
+  useEffect(() => {
+    if (
+      (BUILD_CONFIG.debug || window.SENTRY_RELEASE) &&
+      !!appSettings.enableTelemetry
+    ) {
+      sentry.enable();
+    }
+  }, [appSettings.enableTelemetry]);
 
-  mountApp();
+  return <App />;
 }
 
 function mountApp() {
@@ -48,13 +26,13 @@ function mountApp() {
   const root = document.getElementById('app')!;
   createRoot(root).render(
     <StrictMode>
-      <App />
+      <MainApp /> {}
     </StrictMode>
   );
 }
 
 try {
-  main();
+  mountApp();
 } catch (err) {
   console.error('Failed to bootstrap app', err);
 }
