@@ -16,6 +16,33 @@ export const fontStyleOptions = [
   value: string;
 }[];
 
+// Define type for keyboard shortcuts
+export type KeyboardShortcut = string[];
+
+// Define OS platform types
+export type Platform = 'win' | 'mac';
+
+// Base keyboard shortcuts schemas for different categories and platforms
+export const KeyboardShortcutsSchema = z.object({
+  // General shortcuts
+  general: z.object({
+    mac: z.record(z.string(), z.array(z.string())).default({}),
+    win: z.record(z.string(), z.array(z.string())).default({}),
+  }).default({}),
+  // Page mode shortcuts
+  page: z.object({
+    mac: z.record(z.string(), z.array(z.string())).default({}),
+    win: z.record(z.string(), z.array(z.string())).default({}),
+  }).default({}),
+  // Edgeless mode shortcuts
+  edgeless: z.object({
+    mac: z.record(z.string(), z.array(z.string())).default({}),
+    win: z.record(z.string(), z.array(z.string())).default({}),
+  }).default({}),
+  // Markdown shortcuts (common for both platforms)
+  markdown: z.record(z.string(), z.array(z.string())).default({}),
+}).default({});
+
 const AffineEditorSettingSchema = z.object({
   fontFamily: z.enum(['Sans', 'Serif', 'Mono', 'Custom']).default('Sans'),
   customFontFamily: z.string().default(''),
@@ -26,6 +53,8 @@ const AffineEditorSettingSchema = z.object({
   edgelessDefaultTheme: z
     .enum(['specified', 'dark', 'light', 'auto'])
     .default('specified'),
+  // Add keyboard shortcuts to editor settings
+  keyboardShortcuts: KeyboardShortcutsSchema.default({}),
 });
 
 export const EditorSettingSchema = BSEditorSettingSchema.merge(

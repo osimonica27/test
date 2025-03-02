@@ -1,5 +1,11 @@
 import { useI18n } from '@affine/i18n';
-import { useCallback, useMemo } from 'react';
+import { IS_MAC } from '@blocksuite/global/env';
+import { 
+  KeyboardShortcutsService,
+  type ShortcutCategory
+} from '@affine/core/modules/editor-setting';
+import { useService } from '@toeverything/infra';
+import { useCallback, useEffect, useMemo } from 'react';
 
 type KeyboardShortcutsI18NKeys =
   | 'cancel'
@@ -71,222 +77,64 @@ export interface ShortcutsInfo {
   shortcuts: ShortcutMap;
 }
 
-export const useWinGeneralKeyboardShortcuts = (): ShortcutMap => {
-  const t = useKeyboardShortcutsI18N();
-  return useMemo(
-    () => ({
-      [t('cancel')]: ['ESC'],
-      [t('quickSearch')]: ['Ctrl', 'K'],
-      [t('newPage')]: ['Ctrl', 'N'],
-      // not implement yet
-      // [t('appendDailyNote')]: 'Ctrl + Alt + A',
-      [t('expandOrCollapseSidebar')]: ['Ctrl', '/'],
-      [t('goBack')]: ['Ctrl', '['],
-      [t('goForward')]: ['Ctrl', ']'],
-      [t('copy-private-link')]: ['⌘', '⇧', 'C'],
-    }),
-    [t]
-  );
+/**
+ * Hook to access keyboard shortcuts from the KeyboardShortcutsService
+ */
+const useCustomizableShortcuts = (category: ShortcutCategory): ShortcutMap => {
+  const shortcutsService = useService(KeyboardShortcutsService);
+  const [shortcuts, setShortcuts] = useMemo(() => {
+    const initialShortcuts = shortcutsService.getShortcuts(category);
+    return [initialShortcuts, {}];
+  }, [shortcutsService, category]);
+
+  // Initialize shortcuts if they don't exist yet
+  useEffect(() => {
+    shortcutsService.initializeShortcuts();
+  }, [shortcutsService]);
+
+  return shortcuts;
 };
+
+// Legacy functions for backward compatibility
+export const useWinGeneralKeyboardShortcuts = (): ShortcutMap => {
+  return useCustomizableShortcuts('general');
+};
+
 export const useMacGeneralKeyboardShortcuts = (): ShortcutMap => {
-  const t = useKeyboardShortcutsI18N();
-  return useMemo(
-    () => ({
-      [t('cancel')]: ['ESC'],
-      [t('quickSearch')]: ['⌘', 'K'],
-      [t('newPage')]: ['⌘', 'N'],
-      // not implement yet
-      // [t('appendDailyNote')]: '⌘ + ⌥ + A',
-      [t('expandOrCollapseSidebar')]: ['⌘', '/'],
-      [t('goBack')]: ['⌘ ', '['],
-      [t('goForward')]: ['⌘ ', ']'],
-      [t('copy-private-link')]: ['⌘', '⇧', 'C'],
-    }),
-    [t]
-  );
+  return useCustomizableShortcuts('general');
 };
 
 export const useMacEdgelessKeyboardShortcuts = (): ShortcutMap => {
-  const t = useKeyboardShortcutsI18N();
-  return useMemo(
-    () => ({
-      [t('selectAll')]: ['⌘', 'A'],
-      [t('undo')]: ['⌘', 'Z'],
-      [t('redo')]: ['⌘', '⇧', 'Z'],
-      [t('zoomIn')]: ['⌘', '+'],
-      [t('zoomOut')]: ['⌘', '-'],
-      [t('zoomTo100')]: ['Alt', '0'],
-      [t('zoomToFit')]: ['Alt', '1'],
-      [t('zoomToSelection')]: ['Alt', '2'],
-      [t('select')]: ['V'],
-      [t('text')]: ['T'],
-      [t('shape')]: ['S'],
-      [t('image')]: ['I'],
-      [t('connector')]: ['C'],
-      [t('pen')]: ['P'],
-      [t('hand')]: ['H'],
-      [t('note')]: ['N'],
-      // not implement yet
-      // [t('group')]: '⌘ + G',
-      // [t('unGroup')]: '⌘ + ⇧ + G',
-    }),
-    [t]
-  );
-};
-export const useWinEdgelessKeyboardShortcuts = (): ShortcutMap => {
-  const t = useKeyboardShortcutsI18N();
-  return useMemo(
-    () => ({
-      [t('selectAll')]: ['Ctrl', 'A'],
-      [t('undo')]: ['Ctrl', 'Z'],
-      [t('redo')]: ['Ctrl', 'Y/Ctrl', 'Shift', 'Z'],
-      [t('zoomIn')]: ['Ctrl', '+'],
-      [t('zoomOut')]: ['Ctrl', '-'],
-      [t('zoomTo100')]: ['Alt', '0'],
-      [t('zoomToFit')]: ['Alt', '1'],
-      [t('zoomToSelection')]: ['Alt', '2'],
-      [t('select')]: ['V'],
-      [t('text')]: ['T'],
-      [t('shape')]: ['S'],
-      [t('image')]: ['I'],
-      [t('connector')]: ['C'],
-      [t('pen')]: ['P'],
-      [t('hand')]: ['H'],
-      [t('note')]: ['N'],
-      [t('switch')]: ['Alt ', ''],
-      // not implement yet
-      // [t('group')]: 'Ctrl + G',
-      // [t('unGroup')]: 'Ctrl + Shift + G',
-    }),
-    [t]
-  );
-};
-export const useMacPageKeyboardShortcuts = (): ShortcutMap => {
-  const t = useKeyboardShortcutsI18N();
-  const tH = useHeadingKeyboardShortcutsI18N();
-  return useMemo(
-    () => ({
-      [t('undo')]: ['⌘', 'Z'],
-      [t('redo')]: ['⌘', '⇧', 'Z'],
-      [t('bold')]: ['⌘', 'B'],
-      [t('italic')]: ['⌘', 'I'],
-      [t('underline')]: ['⌘', 'U'],
-      [t('strikethrough')]: ['⌘', '⇧', 'S'],
-      [t('inlineCode')]: ['⌘', 'E'],
-      [t('codeBlock')]: ['⌘', '⌥', 'C'],
-      [t('link')]: ['⌘', 'K'],
-      [t('quickSearch')]: ['⌘', 'K'],
-      [t('bodyText')]: ['⌘', '⌥', '0'],
-      [tH('1')]: ['⌘', '⌥', '1'],
-      [tH('2')]: ['⌘', '⌥', '2'],
-      [tH('3')]: ['⌘', '⌥', '3'],
-      [tH('4')]: ['⌘', '⌥', '4'],
-      [tH('5')]: ['⌘', '⌥', '5'],
-      [tH('6')]: ['⌘', '⌥', '6'],
-      [t('increaseIndent')]: ['Tab'],
-      [t('reduceIndent')]: ['⇧', 'Tab'],
-      [t('groupDatabase')]: ['⌘', 'G'],
-      [t('switch')]: ['⌥', 'S'],
-      // not implement yet
-      // [t('moveUp')]: '⌘ + ⌥ + ↑',
-      // [t('moveDown')]: '⌘ + ⌥ + ↓',
-    }),
-    [t, tH]
-  );
+  return useCustomizableShortcuts('edgeless');
 };
 
-export const useMacMarkdownShortcuts = (): ShortcutMap => {
-  const t = useKeyboardShortcutsI18N();
-  const tH = useHeadingKeyboardShortcutsI18N();
-  return useMemo(
-    () => ({
-      [t('bold')]: ['**Text**'],
-      [t('italic')]: ['*Text*'],
-      [t('underline')]: ['~Text~'],
-      [t('strikethrough')]: ['~~Text~~'],
-      [t('divider')]: ['***'],
-      [t('inlineCode')]: ['`Text` '],
-      [t('codeBlock')]: ['``` Space'],
-      [tH('1')]: ['# Text'],
-      [tH('2')]: ['## Text'],
-      [tH('3')]: ['### Text'],
-      [tH('4')]: ['#### Text'],
-      [tH('5')]: ['##### Text'],
-      [tH('6')]: ['###### Text'],
-    }),
-    [t, tH]
-  );
+export const useWinEdgelessKeyboardShortcuts = (): ShortcutMap => {
+  return useCustomizableShortcuts('edgeless');
+};
+
+export const useMacPageKeyboardShortcuts = (): ShortcutMap => {
+  return useCustomizableShortcuts('page');
 };
 
 export const useWinPageKeyboardShortcuts = (): ShortcutMap => {
-  const t = useKeyboardShortcutsI18N();
-  const tH = useHeadingKeyboardShortcutsI18N();
-  return useMemo(
-    () => ({
-      [t('undo')]: ['Ctrl', 'Z'],
-      [t('redo')]: ['Ctrl', 'Y'],
-      [t('bold')]: ['Ctrl', 'B'],
-      [t('italic')]: ['Ctrl', 'I'],
-      [t('underline')]: ['Ctrl', 'U'],
-      [t('strikethrough')]: ['Ctrl', 'Shift', 'S'],
-      [t('inlineCode')]: [' Ctrl', 'E'],
-      [t('codeBlock')]: ['Ctrl', 'Alt', 'C'],
-      [t('link')]: ['Ctr', 'K'],
-      [t('quickSearch')]: ['Ctrl', 'K'],
-      [t('bodyText')]: ['Ctrl', 'Shift', '0'],
-      [tH('1')]: ['Ctrl', 'Shift', '1'],
-      [tH('2')]: ['Ctrl', 'Shift', '2'],
-      [tH('3')]: ['Ctrl', 'Shift', '3'],
-      [tH('4')]: ['Ctrl', 'Shift', '4'],
-      [tH('5')]: ['Ctrl', 'Shift', '5'],
-      [tH('6')]: ['Ctrl', 'Shift', '6'],
-      [t('increaseIndent')]: ['Tab'],
-      [t('reduceIndent')]: ['Shift+Tab'],
-      [t('groupDatabase')]: ['Ctrl + G'],
-      ['Switch']: ['Alt + S'],
-      // not implement yet
-      // [t('moveUp')]: 'Ctrl + Alt + ↑',
-      // [t('moveDown')]: 'Ctrl + Alt + ↓',
-    }),
-    [t, tH]
-  );
-};
-export const useWinMarkdownShortcuts = (): ShortcutMap => {
-  const t = useKeyboardShortcutsI18N();
-  const tH = useHeadingKeyboardShortcutsI18N();
-  return useMemo(
-    () => ({
-      [t('bold')]: ['**Text** '],
-      [t('italic')]: ['*Text* '],
-      [t('underline')]: ['~Text~ '],
-      [t('strikethrough')]: ['~~Text~~ '],
-      [t('divider')]: ['***'],
-      [t('inlineCode')]: ['`Text` '],
-      [t('codeBlock')]: ['``` Text'],
-      [tH('1')]: ['# Text'],
-      [tH('2')]: ['## Text'],
-      [tH('3')]: ['### Text'],
-      [tH('4')]: ['#### Text'],
-      [tH('5')]: ['##### Text'],
-      [tH('6')]: ['###### Text'],
-    }),
-    [t, tH]
-  );
+  return useCustomizableShortcuts('page');
 };
 
-const shortcutsMap = environment.isMacOs
-  ? {
-      useMarkdownShortcuts: useMacMarkdownShortcuts,
-      usePageShortcuts: useMacPageKeyboardShortcuts,
-      useEdgelessShortcuts: useMacEdgelessKeyboardShortcuts,
-      useGeneralShortcuts: useMacGeneralKeyboardShortcuts,
-    }
-  : {
-      useMarkdownShortcuts: useWinMarkdownShortcuts,
-      usePageShortcuts: useWinPageKeyboardShortcuts,
-      useEdgelessShortcuts: useWinEdgelessKeyboardShortcuts,
-      useGeneralShortcuts: useWinGeneralKeyboardShortcuts,
-    };
+export const useMacMarkdownShortcuts = (): ShortcutMap => {
+  return useCustomizableShortcuts('markdown');
+};
+
+export const useWinMarkdownShortcuts = (): ShortcutMap => {
+  return useCustomizableShortcuts('markdown');
+};
+
+// Use the appropriate shortcuts based on platform
+const shortcutsMap = {
+  useMarkdownShortcuts: useCustomizableShortcuts.bind(null, 'markdown'),
+  usePageShortcuts: useCustomizableShortcuts.bind(null, 'page'),
+  useEdgelessShortcuts: useCustomizableShortcuts.bind(null, 'edgeless'),
+  useGeneralShortcuts: useCustomizableShortcuts.bind(null, 'general'),
+};
 
 export const useMarkdownShortcuts = (): ShortcutsInfo => {
   const t = useI18n();
