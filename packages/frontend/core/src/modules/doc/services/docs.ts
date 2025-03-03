@@ -242,9 +242,9 @@ export class DocsService extends Service {
     removedProperties.forEach(key => {
       delete properties[key];
     });
+    targetDoc.updateProperties(properties);
     // ensure tags are copied over too
     targetDoc.setTags(sourceDoc.tags$.value);
-    targetDoc.updateProperties(properties);
 
     return targetDocId;
   }
