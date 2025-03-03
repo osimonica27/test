@@ -84,6 +84,12 @@ export class DocRecord extends Entity<{ id: string }> {
     return this.setMeta({ trash: false, trashDate: undefined });
   }
 
+  setTags(tags: string[]) {
+    return this.setMeta({ tags: tags });
+  }
+
+  tags$ = this.meta$.map(meta => meta.tags ?? []);
+
   title$ = this.meta$.map(meta => meta.title ?? '');
 
   trash$ = this.meta$.map(meta => meta.trash ?? false);
