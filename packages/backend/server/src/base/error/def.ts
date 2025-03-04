@@ -413,6 +413,14 @@ export const USER_FRIENDLY_ERRORS = {
     args: { spaceId: 'string' },
     message: 'Space should have only one owner.',
   },
+  owner_can_not_leave_workspace: {
+    type: 'action_forbidden',
+    message: 'Owner can not leave the workspace.',
+  },
+  can_not_revoke_yourself: {
+    type: 'action_forbidden',
+    message: 'You can not revoke your own permission.',
+  },
   doc_not_found: {
     type: 'resource_not_found',
     args: { spaceId: 'string', docId: 'string' },

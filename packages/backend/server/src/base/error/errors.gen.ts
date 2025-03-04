@@ -287,6 +287,18 @@ export class SpaceShouldHaveOnlyOneOwner extends UserFriendlyError {
     super('invalid_input', 'space_should_have_only_one_owner', message, args);
   }
 }
+
+export class OwnerCanNotLeaveWorkspace extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'owner_can_not_leave_workspace', message);
+  }
+}
+
+export class CanNotRevokeYourself extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'can_not_revoke_yourself', message);
+  }
+}
 @ObjectType()
 class DocNotFoundDataType {
   @Field() spaceId!: string
@@ -843,6 +855,8 @@ export enum ErrorNames {
   SPACE_ACCESS_DENIED,
   SPACE_OWNER_NOT_FOUND,
   SPACE_SHOULD_HAVE_ONLY_ONE_OWNER,
+  OWNER_CAN_NOT_LEAVE_WORKSPACE,
+  CAN_NOT_REVOKE_YOURSELF,
   DOC_NOT_FOUND,
   DOC_ACTION_DENIED,
   VERSION_REJECTED,
