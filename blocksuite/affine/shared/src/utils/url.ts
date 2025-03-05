@@ -1,12 +1,5 @@
-export const ALLOWED_SCHEMES = [
-  'http',
-  'https',
-  'ftp',
-  'sftp',
-  'mailto',
-  'tel',
-  // may need support other schemes
-];
+export const ALLOWED_SCHEMES = /^[a-zA-Z][a-zA-Z0-9+-.]*:.*/;
+
 // I guess you don't want to use the regex base the RFC 5322 Official Standard
 // For more detail see https://stackoverflow.com/questions/201323/how-can-i-validate-an-email-address-using-a-regular-expression/1917982#1917982
 const MAIL_REGEX =
@@ -58,9 +51,7 @@ const URL_REGEX = new RegExp(
 );
 
 export function normalizeUrl(url: string) {
-  const includeScheme = ALLOWED_SCHEMES.find(scheme =>
-    url.startsWith(scheme + ':')
-  );
+  const includeScheme = ALLOWED_SCHEMES.test(url);
   if (includeScheme) {
     // Any link include schema is a valid url
     return url;
