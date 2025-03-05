@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { Kind, print, visit } = require('graphql');
+const { Kind, print, visit, TypeInfo, visitWithTypeInfo } = require('graphql');
 const { upperFirst, lowerFirst } = require('lodash');
 
 /**
@@ -17,6 +17,73 @@ function getExportedName(def) {
       ? upperFirst(def.operation)
       : 'Fragment';
   return name.endsWith(suffix) ? name : name + suffix;
+}
+
+/**
+ * Check if a field is deprecated in the schema
+ *
+ * @param {import('graphql').GraphQLSchema} schema
+ * @param {string} typeName
+ * @param {string} fieldName
+ * @returns {boolean}
+ */
+function fieldDeprecation(schema, typeName, fieldName) {
+  const type = schema.getType(typeName);
+  if (!type || !type.getFields) {
+    return false;
+  }
+
+  const fields = type.getFields();
+  const field = fields[fieldName];
+
+  return field?.deprecationReason
+    ? {
+        name: fieldName,
+        reason: field.deprecationReason,
+      }
+    : null;
+}
+
+/**
+ * Check if a query uses deprecated fields
+ *
+ * @param {import('graphql').GraphQLSchema} schema
+ * @param {import('graphql').DocumentNode} document
+ * @returns {boolean}
+ */
+function parseDeprecations(schema, document) {
+  const deprecations = [];
+
+  const typeInfo = new TypeInfo(schema);
+
+  visit(
+    document,
+    visitWithTypeInfo(typeInfo, {
+      Field: {
+        enter(node) {
+          const parentType = typeInfo.getParentType();
+          if (parentType && node.name) {
+            const fieldName = node.name.value;
+            let deprecation;
+            if (
+              parentType.name &&
+              (deprecation = fieldDeprecation(
+                schema,
+                parentType.name,
+                fieldName
+              ))
+            ) {
+              deprecations.push(deprecation);
+            }
+          }
+        },
+      },
+    })
+  );
+
+  return deprecations.map(
+    ({ name, reason }) => `'${name}' is deprecated: ${reason}`
+  );
 }
 
 /**
@@ -116,6 +183,9 @@ module.exports = {
               return varType ? checkContainFile(varType) : false;
             });
 
+            // Check if the query uses deprecated fields
+            const deprecations = parseDeprecations(schema, source.document);
+
             const imports = parseImports(location);
 
             defs.set(exportedName, {
@@ -123,6 +193,7 @@ module.exports = {
               name: exportedName,
               operationName: node.name.value,
               containsFile,
+              deprecations,
               query: `${print(node)}${imports ? `\n${imports}` : ''}`,
             });
 
@@ -157,7 +228,7 @@ module.exports = {
   op: string;
   query: string;
   file?: boolean;
-  deprecated?: boolean;
+  deprecations?: string[];
 }`,
     ];
 
@@ -174,6 +245,9 @@ module.exports = {
 `;
         if (def.containsFile) {
           item += '  file: true,\n';
+        }
+        if (def.deprecations.length) {
+          item += `  deprecations: ${JSON.stringify(def.deprecations)},\n`;
         }
         item += '};\n';
 

@@ -4,7 +4,7 @@ export interface GraphQLQuery {
   op: string;
   query: string;
   file?: boolean;
-  deprecated?: boolean;
+  deprecations?: string[];
 }
 export const credentialsRequirementsFragment = `fragment CredentialsRequirements on CredentialsRequirementType {
   password {
@@ -98,6 +98,7 @@ export const cancelSubscriptionMutation = {
     canceledAt
   }
 }`,
+  deprecations: ["'id' is deprecated: removed"],
 };
 
 export const changeEmailMutation = {
@@ -501,6 +502,9 @@ export const getCurrentUserQuery = {
     }
   }
 }`,
+  deprecations: [
+    "'token' is deprecated: use [/api/auth/sign-in?native=true] instead",
+  ],
 };
 
 export const getDocDefaultRoleQuery = {
@@ -540,6 +544,7 @@ export const getIsAdminQuery = {
   query: `query getIsAdmin($workspaceId: String!) {
   isAdmin(workspaceId: $workspaceId)
 }`,
+  deprecations: ["'isAdmin' is deprecated: use WorkspaceType[role] instead"],
 };
 
 export const getIsOwnerQuery = {
@@ -548,6 +553,7 @@ export const getIsOwnerQuery = {
   query: `query getIsOwner($workspaceId: String!) {
   isOwner(workspaceId: $workspaceId)
 }`,
+  deprecations: ["'isOwner' is deprecated: use WorkspaceType[role] instead"],
 };
 
 export const getLicenseQuery = {
@@ -594,6 +600,7 @@ export const getMembersByWorkspaceIdQuery = {
     }
   }
 }`,
+  deprecations: ["'permission' is deprecated: Use role instead"],
 };
 
 export const oauthProvidersQuery = {
@@ -737,6 +744,10 @@ export const getWorkspaceInfoQuery = {
     team
   }
 }`,
+  deprecations: [
+    "'isAdmin' is deprecated: use WorkspaceType[role] instead",
+    "'isOwner' is deprecated: use WorkspaceType[role] instead",
+  ],
 };
 
 export const getWorkspacePageByIdQuery = {
@@ -816,6 +827,7 @@ export const getWorkspaceSubscriptionQuery = {
     }
   }
 }`,
+  deprecations: ["'id' is deprecated: removed"],
 };
 
 export const getWorkspaceQuery = {
@@ -896,6 +908,7 @@ export const invoicesQuery = {
     }
   }
 }`,
+  deprecations: ["'id' is deprecated: removed"],
 };
 
 export const leaveWorkspaceMutation = {
@@ -973,6 +986,9 @@ export const quotaQuery = {
     }
   }
 }`,
+  deprecations: [
+    "'storageQuota' is deprecated: use `UserQuotaType['usedStorageQuota']` instead",
+  ],
 };
 
 export const recoverDocMutation = {
@@ -1005,6 +1021,7 @@ export const resumeSubscriptionMutation = {
     end
   }
 }`,
+  deprecations: ["'id' is deprecated: removed"],
 };
 
 export const revokeDocUserRolesMutation = {
@@ -1124,6 +1141,7 @@ export const subscriptionQuery = {
     }
   }
 }`,
+  deprecations: ["'id' is deprecated: removed"],
 };
 
 export const updateAccountFeaturesMutation = {
@@ -1188,6 +1206,7 @@ export const updateSubscriptionMutation = {
     nextBillAt
   }
 }`,
+  deprecations: ["'id' is deprecated: removed"],
 };
 
 export const updateUserProfileMutation = {
@@ -1351,6 +1370,7 @@ export const workspaceInvoicesQuery = {
     }
   }
 }`,
+  deprecations: ["'id' is deprecated: removed"],
 };
 
 export const workspaceQuotaQuery = {
@@ -1400,6 +1420,9 @@ export const getWorkspaceRolePermissionsQuery = {
     }
   }
 }`,
+  deprecations: [
+    "'workspaceRolePermissions' is deprecated: use WorkspaceType[permissions] instead",
+  ],
 };
 
 export const approveWorkspaceTeamMemberMutation = {

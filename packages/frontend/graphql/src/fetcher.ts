@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import type { ExecutionResult } from 'graphql';
 import { isNil, isObject, merge } from 'lodash-es';
 
@@ -170,9 +171,19 @@ export const gqlFetcherFactory = (
   endpoint: string,
   fetcher: (input: string, init?: RequestInit) => Promise<Response> = fetch
 ) => {
+  const logger = new DebugLogger('GraphQL');
   const gqlFetch = async <Query extends GraphQLQuery>(
     options: QueryOptions<Query>
   ): Promise<QueryResponse<Query>> => {
+    if (
+      BUILD_CONFIG.appBuildType === 'canary' &&
+      options.query.deprecations?.length
+    ) {
+      options.query.deprecations.forEach(deprecation => {
+        logger.warn(deprecation);
+      });
+    }
+
     const body = formatRequestBody(options);
 
     const isFormData = body instanceof FormData;

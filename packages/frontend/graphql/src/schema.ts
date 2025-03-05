@@ -426,6 +426,7 @@ export type ErrorDataUnion =
   | InvalidEmailDataType
   | InvalidHistoryTimestampDataType
   | InvalidLicenseUpdateParamsDataType
+  | InvalidOauthCallbackCodeDataType
   | InvalidPasswordLengthDataType
   | InvalidRuntimeConfigTypeDataType
   | MemberNotFoundInSpaceDataType
@@ -506,6 +507,7 @@ export enum ErrorNames {
   INVALID_LICENSE_SESSION_ID = 'INVALID_LICENSE_SESSION_ID',
   INVALID_LICENSE_TO_ACTIVATE = 'INVALID_LICENSE_TO_ACTIVATE',
   INVALID_LICENSE_UPDATE_PARAMS = 'INVALID_LICENSE_UPDATE_PARAMS',
+  INVALID_OAUTH_CALLBACK_CODE = 'INVALID_OAUTH_CALLBACK_CODE',
   INVALID_OAUTH_CALLBACK_STATE = 'INVALID_OAUTH_CALLBACK_STATE',
   INVALID_PASSWORD_LENGTH = 'INVALID_PASSWORD_LENGTH',
   INVALID_RUNTIME_CONFIG_TYPE = 'INVALID_RUNTIME_CONFIG_TYPE',
@@ -632,6 +634,12 @@ export interface InvalidHistoryTimestampDataType {
 export interface InvalidLicenseUpdateParamsDataType {
   __typename?: 'InvalidLicenseUpdateParamsDataType';
   reason: Scalars['String']['output'];
+}
+
+export interface InvalidOauthCallbackCodeDataType {
+  __typename?: 'InvalidOauthCallbackCodeDataType';
+  body: Scalars['String']['output'];
+  status: Scalars['Int']['output'];
 }
 
 export interface InvalidPasswordLengthDataType {
