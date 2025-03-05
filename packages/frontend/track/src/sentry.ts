@@ -8,8 +8,9 @@ import {
 } from 'react-router-dom';
 
 function createSentry() {
+  let enabled = true;
   const wrapped = {
-    init(enabled = false) {
+    init() {
       // https://docs.sentry.io/platforms/javascript/guides/react/#configure
       Sentry.init({
         enabled: enabled,
@@ -25,17 +26,21 @@ function createSentry() {
             matchRoutes,
           }),
         ],
+        beforeSend(event) {
+          return enabled ? event : null;
+        },
       });
       Sentry.setTags({
+        distribution: BUILD_CONFIG.distribution,
         appVersion: BUILD_CONFIG.appVersion,
         editorVersion: BUILD_CONFIG.editorVersion,
       });
     },
     enable() {
-      this.init(true);
+      enabled = true;
     },
-    close() {
-      Sentry.getClient()?.close();
+    disable() {
+      enabled = false;
     },
   };
 

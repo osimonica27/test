@@ -7,11 +7,12 @@ export function Telemetry() {
   const settings = useAtomValue(appSettingAtom);
   useLayoutEffect(() => {
     if (settings.enableTelemetry === false) {
-      sentry.close();
+      sentry.disable();
       mixpanel.opt_out_tracking();
       return;
     } else {
       sentry.enable();
+      mixpanel.opt_in_tracking();
       return enableAutoTrack(document.body, mixpanel.track);
     }
   }, [settings.enableTelemetry]);

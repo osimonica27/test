@@ -935,8 +935,11 @@ __metadata:
   resolution: "@affine/track@workspace:packages/frontend/track"
   dependencies:
     "@affine/debug": "workspace:*"
+    "@sentry/react": "npm:^9.2.0"
     "@types/mixpanel-browser": "npm:^2.50.2"
+    "@types/react": "npm:^19.0.1"
     mixpanel-browser: "npm:^2.56.0"
+    react-router-dom: "npm:6.28.0"
     vitest: "npm:^3.0.0"
   languageName: unknown
   linkType: soft
@@ -949,6 +952,7 @@ __metadata:
     "@affine/core": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/nbstore": "workspace:*"
+    "@affine/track": "workspace:*"
     "@emotion/react": "npm:^11.14.0"
     "@sentry/react": "npm:^9.2.0"
     "@toeverything/infra": "workspace:*"
@@ -11221,6 +11225,13 @@ __metadata:
   peerDependencies:
     react: ^18.0 || ^19.0 || ^19.0.0-rc
   checksum: 10/b8018f44e4b8c7797905599a47e9c8b2c29d8445675a0740a45b5e6c3f0bf443aefff55d78637134e60e38cee851c342e58e3241b50dfb5e35d83e3f47ad89a6
+  languageName: node
+  linkType: hard
+
+"@remix-run/router@npm:1.21.0":
+  version: 1.21.0
+  resolution: "@remix-run/router@npm:1.21.0"
+  checksum: 10/cf0fb69d19c1b79095ff67c59cea89086f3982a9a54c8a993818a60fc76e0ebab5a8db647c1a96a662729fad8e806ddd0a96622adf473f5a9f0b99998b2dbad4
   languageName: node
   linkType: hard
 
@@ -28807,6 +28818,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-router-dom@npm:6.28.0":
+  version: 6.28.0
+  resolution: "react-router-dom@npm:6.28.0"
+  dependencies:
+    "@remix-run/router": "npm:1.21.0"
+    react-router: "npm:6.28.0"
+  peerDependencies:
+    react: ">=16.8"
+    react-dom: ">=16.8"
+  checksum: 10/e637825132ea96c3514ef7b8322f9bf0b752a942d6b4ffc4c20e389b5911726adf3dba8208ed4b97bf5b9c3bd465d9d1a1db1a58a610a8d528f18d890e0b143f
+  languageName: node
+  linkType: hard
+
 "react-router-dom@npm:^6.28.0":
   version: 6.30.0
   resolution: "react-router-dom@npm:6.30.0"
@@ -28817,6 +28841,17 @@ __metadata:
     react: ">=16.8"
     react-dom: ">=16.8"
   checksum: 10/e161e39d56ee799553d0bc6c8f19c901ee8cdbae218094f41cbc18f3262cb4d5e9f8381bd47a7e59d30e55c0cdd0a6803aa98537f2f9122efbce5c66a3041a35
+  languageName: node
+  linkType: hard
+
+"react-router@npm:6.28.0":
+  version: 6.28.0
+  resolution: "react-router@npm:6.28.0"
+  dependencies:
+    "@remix-run/router": "npm:1.21.0"
+  peerDependencies:
+    react: ">=16.8"
+  checksum: 10/f021a644513144884a567d9c2dcc432e8e3233f931378c219c5a3b5b842340f0faca86225a708bafca1e9010965afe1a7dada28aef5b7b6138c885c0552d9a7d
   languageName: node
   linkType: hard
 
