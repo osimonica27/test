@@ -156,11 +156,11 @@ function formatRequestBody<Q extends GraphQLQuery>({
       (keepNilVariables ?? true) ? variables : filterEmptyValue(variables),
   };
 
-  if (query.operationName) {
-    body.operationName = query.operationName;
+  if (query.op) {
+    body.operationName = query.op;
   }
 
-  if (query.containsFile) {
+  if (query.file) {
     return transformToForm(body);
   }
   return body;
@@ -177,8 +177,7 @@ export const gqlFetcherFactory = (
 
     const isFormData = body instanceof FormData;
     const headers: Record<string, string> = {
-      'x-operation-name': options.query.operationName,
-      'x-definition-name': options.query.definitionName,
+      'x-operation-name': options.query.op,
     };
     if (!isFormData) {
       headers['content-type'] = 'application/json';
@@ -208,8 +207,7 @@ export const gqlFetcherFactory = (
       }
 
       throw new GraphQLError(
-        'GraphQL query responds unexpected result, query ' +
-          options.query.operationName
+        'GraphQL query responds unexpected result, query ' + options.query.op
       );
     });
 
