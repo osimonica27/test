@@ -12,7 +12,7 @@ import {
   useState,
 } from 'react';
 
-import { useRightPanel } from '../../layout';
+import { useRightPanel } from '../../panel/context';
 import { DiscardChanges } from './discard-changes';
 import { CreateUserForm } from './user-form';
 
@@ -59,19 +59,18 @@ export function DataTableToolbar<TData>({
   const [value, setValue] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const debouncedValue = useDebouncedValue(value, 1000);
-  const { setRightPanelContent, openPanel, closePanel, isOpen } =
-    useRightPanel();
+  const { setPanelContent, openPanel, closePanel, isOpen } = useRightPanel();
   const { result, query } = useSearch();
 
   const handleConfirm = useCallback(() => {
-    setRightPanelContent(<CreateUserForm onComplete={closePanel} />);
+    setPanelContent(<CreateUserForm onComplete={closePanel} />);
     if (dialogOpen) {
       setDialogOpen(false);
     }
     if (!isOpen) {
       openPanel();
     }
-  }, [setRightPanelContent, closePanel, dialogOpen, isOpen, openPanel]);
+  }, [setPanelContent, closePanel, dialogOpen, isOpen, openPanel]);
 
   useEffect(() => {
     query(debouncedValue);

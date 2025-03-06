@@ -18,7 +18,11 @@ import { toast } from 'sonner';
 
 import { useCurrentUser, useRevalidateCurrentUser } from '../common';
 
-export function UserDropdown() {
+interface UserDropdownProps {
+  isCollapsed: boolean;
+}
+
+export function UserDropdown({ isCollapsed }: UserDropdownProps) {
   const currentUser = useCurrentUser();
   const relative = useRevalidateCurrentUser();
 
@@ -33,10 +37,34 @@ export function UserDropdown() {
       });
   }, [relative]);
 
+  if (isCollapsed) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="w-10 h-10" size="icon">
+            <Avatar className="w-5 h-5">
+              <AvatarImage src={currentUser?.avatarUrl ?? undefined} />
+              <AvatarFallback>
+                <CircleUser size={24} />
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" side="right">
+          <DropdownMenuLabel>{currentUser?.name}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={handleLogout}>Logout</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   return (
-    <div className="flex flex-none items-center justify-between px-4 py-3 flex-nowrap">
-      <div className="flex items-center gap-2  font-medium text-ellipsis break-words overflow-hidden">
-        <Avatar className="w-6 h-6">
+    <div
+      className={`flex flex-none items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-1 py-3 flex-nowrap`}
+    >
+      <div className="flex items-center gap-2 font-medium text-ellipsis break-words overflow-hidden">
+        <Avatar className="w-5 h-5">
           <AvatarImage src={currentUser?.avatarUrl ?? undefined} />
           <AvatarFallback>
             <CircleUser size={24} />
@@ -66,7 +94,7 @@ export function UserDropdown() {
             <MoreVertical size={20} />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" side="right">
           <DropdownMenuLabel>{currentUser?.name}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={handleLogout}>Logout</DropdownMenuItem>

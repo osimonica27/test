@@ -15,7 +15,7 @@ import {
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useRightPanel } from '../../layout';
+import { useRightPanel } from '../../panel/context';
 import type { UserType } from '../schema';
 import { DeleteAccountDialog } from './delete-account';
 import { DiscardChanges } from './discard-changes';
@@ -31,8 +31,7 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
-  const { setRightPanelContent, openPanel, isOpen, closePanel } =
-    useRightPanel();
+  const { openPanel, isOpen, closePanel, setPanelContent } = useRightPanel();
 
   const deleteUser = useDeleteUser();
   const { resetPasswordLink, onResetPassword } = useResetUserPassword();
@@ -81,7 +80,7 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
   }, []);
 
   const handleConfirm = useCallback(() => {
-    setRightPanelContent(
+    setPanelContent(
       <UpdateUserForm
         user={user}
         onComplete={closePanel}
@@ -92,7 +91,6 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
     if (discardDialogOpen) {
       handleDiscardChangesCancel();
     }
-
     if (!isOpen) {
       openPanel();
     }
@@ -104,7 +102,7 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
     openDeleteDialog,
     openPanel,
     openResetPasswordDialog,
-    setRightPanelContent,
+    setPanelContent,
     user,
   ]);
 
