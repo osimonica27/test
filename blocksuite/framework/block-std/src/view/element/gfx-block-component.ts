@@ -139,13 +139,14 @@ export function toGfxBlockComponent<
   return class extends CustomBlock {
     [GfxElementSymbol] = true;
 
-    override selected$ = computed(() => {
-      const selection = this.std.selection.value.find(
-        selection => selection.blockId === this.model?.id
-      );
-      if (!selection) return false;
-      return selection.is(SurfaceSelection);
-    });
+    override selected$ = computed(() =>
+      Boolean(
+        this.std.selection.find$(
+          SurfaceSelection,
+          s => s.blockId === this.model.id
+        ).value
+      )
+    );
 
     get gfx() {
       return this.std.get(GfxControllerIdentifier);

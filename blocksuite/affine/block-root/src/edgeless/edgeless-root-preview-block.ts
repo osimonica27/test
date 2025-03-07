@@ -196,9 +196,7 @@ export class EdgelessRootPreviewBlockComponent
     super.connectedCallback();
 
     this.handleEvent('selectionChange', () => {
-      const surface = this.host.selection.value.find(
-        (sel): sel is SurfaceSelection => sel.is(SurfaceSelection)
-      );
+      const surface = this.host.selection.find(SurfaceSelection);
       if (!surface) return;
 
       const el = this.service.crud.getElementById(surface.elements[0]);
