@@ -219,9 +219,7 @@ export class AffinePageDraggingAreaWidget extends WidgetComponent<
             x: state.containerOffset.x,
             y: state.containerOffset.y,
           };
-          return true;
         }
-        return;
       },
       { global: true }
     );

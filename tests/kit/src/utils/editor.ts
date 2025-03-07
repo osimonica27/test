@@ -64,7 +64,7 @@ export async function focusDocTitle(page: Page, editorIndex = 0) {
 }
 
 // ================== Page ==================
-export function locateFormatBar(page: Page, editorIndex = 0) {
+export function locateToolbar(page: Page, editorIndex = 0) {
   return locateEditorContainer(page, editorIndex).locator(
     'affine-toolbar-widget editor-toolbar'
   );
