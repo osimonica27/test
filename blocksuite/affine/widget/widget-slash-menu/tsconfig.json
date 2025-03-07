@@ -1,0 +1,26 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["./src"],
+  "references": [
+    { "path": "../../block/block-attachment" },
+    { "path": "../../block/block-embed" },
+    { "path": "../../block/block-image" },
+    { "path": "../../block/block-latex" },
+    { "path": "../../block/block-note" },
+    { "path": "../../block/block-surface" },
+    { "path": "../../block/block-surface-ref" },
+    { "path": "../../block/block-table" },
+    { "path": "../../components" },
+    { "path": "../../rich-text" },
+    { "path": "../../shared" },
+    { "path": "../../../framework/block-std" },
+    { "path": "../../../framework/global" },
+    { "path": "../../../framework/inline" },
+    { "path": "../../../framework/store" }
+  ]
+}

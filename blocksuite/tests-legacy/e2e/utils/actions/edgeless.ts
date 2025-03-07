@@ -1,6 +1,6 @@
 import '../declare-test-window.js';
 
-import type { NoteBlockModel, NoteDisplayMode } from '@blocksuite/affine-model';
+import type { NoteBlockModel, NoteDisplayMode } from '@blocksuite/blocks';
 import type { IPoint, IVec } from '@blocksuite/global/gfx';
 import { sleep } from '@blocksuite/global/utils';
 import type { Locator, Page } from '@playwright/test';

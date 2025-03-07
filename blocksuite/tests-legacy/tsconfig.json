@@ -7,8 +7,8 @@
   },
   "include": ["./e2e"],
   "references": [
-    { "path": "../blocks" },
     { "path": "../framework/block-std" },
+    { "path": "../blocks" },
     { "path": "../framework/global" },
     { "path": "../framework/inline" },
     { "path": "../integration-test" },
