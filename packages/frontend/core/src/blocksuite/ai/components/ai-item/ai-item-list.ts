@@ -4,7 +4,7 @@ import {
   requiredProperties,
 } from '@blocksuite/affine/block-std';
 import { createLitPortal } from '@blocksuite/affine/blocks';
-import { WithDisposable } from '@blocksuite/affine/global/utils';
+import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { flip, offset } from '@floating-ui/dom';
 import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
@@ -92,7 +92,7 @@ export class AIItemList extends WithDisposable(LitElement) {
         .onClick=${this.onClick}
         .abortController=${this._abortController}
       ></ai-sub-item-list>`,
-      positionStrategy: 'fixed',
+      positionStrategy: 'absolute',
       computePosition: {
         referenceElement: aiItemContainer,
         placement: 'right-start',
@@ -104,6 +104,11 @@ export class AIItemList extends WithDisposable(LitElement) {
     });
   };
 
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this._closeSubMenu();
+  }
+
   override render() {
     return html`${repeat(this.groups, group => {
       return html`
@@ -114,15 +119,14 @@ export class AIItemList extends WithDisposable(LitElement) {
           : nothing}
         ${repeat(
           group.items,
+          item => item.name,
           item =>
             html`<ai-item
               .onClick=${this.onClick}
               .item=${item}
               .host=${this.host}
               class=${this._itemClassName(item)}
-              @mouseover=${() => {
-                this._openSubMenu(item);
-              }}
+              @mouseenter=${() => this._openSubMenu(item)}
             ></ai-item>`
         )}
       `;

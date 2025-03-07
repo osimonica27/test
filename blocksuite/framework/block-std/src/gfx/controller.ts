@@ -4,9 +4,11 @@ import {
   getCommonBoundWithRotation,
   type IBound,
 } from '@blocksuite/global/gfx';
-import { assertType, DisposableGroup, last } from '@blocksuite/global/utils';
+import { DisposableGroup } from '@blocksuite/global/slot';
+import { assertType } from '@blocksuite/global/utils';
 import type { BlockModel } from '@blocksuite/store';
 import { Signal } from '@preact/signals-core';
+import last from 'lodash-es/last';
 
 import { LifeCycleWatcher } from '../extension/lifecycle-watcher.js';
 import type { BlockStdScope } from '../scope/block-std-scope.js';
@@ -36,17 +38,21 @@ export class GfxController extends LifeCycleWatcher {
 
   private readonly _disposables: DisposableGroup = new DisposableGroup();
 
-  private _surface: SurfaceBlockModel | null = null;
+  private readonly _surface$ = new Signal<SurfaceBlockModel | null>(null);
 
   readonly cursor$ = new Signal<CursorType>();
 
-  readonly grid: GridManager;
-
   readonly keyboard: KeyboardController;
 
-  readonly layer: LayerManager;
-
   readonly viewport: Viewport = new Viewport();
+
+  get grid() {
+    return this.std.get(GridManager);
+  }
+
+  get layer() {
+    return this.std.get(LayerManager);
+  }
 
   get doc() {
     return this.std.store;
@@ -60,8 +66,12 @@ export class GfxController extends LifeCycleWatcher {
     return [...this.layer.blocks, ...this.layer.canvasElements];
   }
 
+  get surface$() {
+    return this._surface$;
+  }
+
   get surface() {
-    return this._surface;
+    return this._surface$.peek();
   }
 
   get surfaceComponent(): BlockComponent | null {
@@ -73,22 +83,13 @@ export class GfxController extends LifeCycleWatcher {
   constructor(std: BlockStdScope) {
     super(std);
 
-    this.grid = new GridManager();
-    this.layer = new LayerManager(this.doc, null);
     this.keyboard = new KeyboardController(std);
 
     this._disposables.add(
       onSurfaceAdded(this.doc, surface => {
-        this._surface = surface;
-
-        if (surface) {
-          this._disposables.add(this.grid.watch({ surface }));
-          this.layer.watch({ surface });
-        }
+        this._surface$.value = surface;
       })
     );
-    this._disposables.add(this.grid.watch({ doc: this.doc }));
-    this._disposables.add(this.layer);
     this._disposables.add(this.viewport);
     this._disposables.add(this.keyboard);
 

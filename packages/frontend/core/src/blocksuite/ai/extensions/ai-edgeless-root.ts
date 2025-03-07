@@ -1,20 +1,21 @@
-import { LifeCycleWatcher } from '@blocksuite/affine/block-std';
 import {
-  AffineFormatBarWidget,
-  AffineSlashMenuWidget,
+  BlockFlavourIdentifier,
+  LifeCycleWatcher,
+} from '@blocksuite/affine/block-std';
+import {
   EdgelessElementToolbarWidget,
   EdgelessRootBlockSpec,
+  ToolbarModuleExtension,
 } from '@blocksuite/affine/blocks';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import type { FrameworkProvider } from '@toeverything/infra';
 
 import { buildAIPanelConfig } from '../ai-panel';
+import { toolbarAIEntryConfig } from '../entries';
 import {
   setupEdgelessCopilot,
   setupEdgelessElementToolbarAIEntry,
 } from '../entries/edgeless/index';
-import { setupFormatBarAIEntry } from '../entries/format-bar/setup-format-bar';
-import { setupSlashMenuAIEntry } from '../entries/slash-menu/setup-slash-menu';
 import { setupSpaceAIEntry } from '../entries/space/setup-space';
 import { CopilotTool } from '../tool/copilot-tool';
 import {
@@ -25,6 +26,7 @@ import {
   EdgelessCopilotWidget,
   edgelessCopilotWidget,
 } from '../widgets/edgeless-copilot';
+import { AiSlashMenuConfigExtension } from './ai-slash-menu';
 
 export function createAIEdgelessRootBlockSpec(
   framework: FrameworkProvider
@@ -35,6 +37,11 @@ export function createAIEdgelessRootBlockSpec(
     aiPanelWidget,
     edgelessCopilotWidget,
     getAIEdgelessRootWatcher(framework),
+    ToolbarModuleExtension({
+      id: BlockFlavourIdentifier('custom:affine:note'),
+      config: toolbarAIEntryConfig(),
+    }),
+    AiSlashMenuConfigExtension(),
   ];
 }
 
@@ -62,14 +69,6 @@ function getAIEdgelessRootWatcher(framework: FrameworkProvider) {
 
         if (component instanceof EdgelessElementToolbarWidget) {
           setupEdgelessElementToolbarAIEntry(component);
-        }
-
-        if (component instanceof AffineFormatBarWidget) {
-          setupFormatBarAIEntry(component);
-        }
-
-        if (component instanceof AffineSlashMenuWidget) {
-          setupSlashMenuAIEntry(component);
         }
       });
     }

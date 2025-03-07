@@ -10,6 +10,12 @@ export class InternalServerError extends UserFriendlyError {
   }
 }
 
+export class NetworkError extends UserFriendlyError {
+  constructor(message?: string) {
+    super('network_error', 'network_error', message);
+  }
+}
+
 export class TooManyRequest extends UserFriendlyError {
   constructor(message?: string) {
     super('too_many_requests', 'too_many_request', message);
@@ -46,6 +52,16 @@ class QueryTooLongDataType {
 export class QueryTooLong extends UserFriendlyError {
   constructor(args: QueryTooLongDataType, message?: string | ((args: QueryTooLongDataType) => string)) {
     super('invalid_input', 'query_too_long', message, args);
+  }
+}
+@ObjectType()
+class ValidationErrorDataType {
+  @Field() errors!: string
+}
+
+export class ValidationError extends UserFriendlyError {
+  constructor(args: ValidationErrorDataType, message?: string | ((args: ValidationErrorDataType) => string)) {
+    super('invalid_input', 'validation_error', message, args);
   }
 }
 
@@ -331,6 +347,17 @@ class DocActionDeniedDataType {
 export class DocActionDenied extends UserFriendlyError {
   constructor(args: DocActionDeniedDataType, message?: string | ((args: DocActionDeniedDataType) => string)) {
     super('no_permission', 'doc_action_denied', message, args);
+  }
+}
+@ObjectType()
+class DocUpdateBlockedDataType {
+  @Field() spaceId!: string
+  @Field() docId!: string
+}
+
+export class DocUpdateBlocked extends UserFriendlyError {
+  constructor(args: DocUpdateBlockedDataType, message?: string | ((args: DocUpdateBlockedDataType) => string)) {
+    super('action_forbidden', 'doc_update_blocked', message, args);
   }
 }
 @ObjectType()
@@ -828,13 +855,37 @@ export class UnsupportedClientVersion extends UserFriendlyError {
     super('action_forbidden', 'unsupported_client_version', message, args);
   }
 }
+
+export class NotificationNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'notification_not_found', message);
+  }
+}
+@ObjectType()
+class MentionUserDocAccessDeniedDataType {
+  @Field() docId!: string
+}
+
+export class MentionUserDocAccessDenied extends UserFriendlyError {
+  constructor(args: MentionUserDocAccessDeniedDataType, message?: string | ((args: MentionUserDocAccessDeniedDataType) => string)) {
+    super('no_permission', 'mention_user_doc_access_denied', message, args);
+  }
+}
+
+export class MentionUserOneselfDenied extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'mention_user_oneself_denied', message);
+  }
+}
 export enum ErrorNames {
   INTERNAL_SERVER_ERROR,
+  NETWORK_ERROR,
   TOO_MANY_REQUEST,
   NOT_FOUND,
   BAD_REQUEST,
   GRAPHQL_BAD_REQUEST,
   QUERY_TOO_LONG,
+  VALIDATION_ERROR,
   USER_NOT_FOUND,
   USER_AVATAR_NOT_FOUND,
   EMAIL_ALREADY_USED,
@@ -871,6 +922,7 @@ export enum ErrorNames {
   CAN_NOT_REVOKE_YOURSELF,
   DOC_NOT_FOUND,
   DOC_ACTION_DENIED,
+  DOC_UPDATE_BLOCKED,
   VERSION_REJECTED,
   INVALID_HISTORY_TIMESTAMP,
   DOC_HISTORY_NOT_FOUND,
@@ -933,7 +985,10 @@ export enum ErrorNames {
   INVALID_LICENSE_TO_ACTIVATE,
   INVALID_LICENSE_UPDATE_PARAMS,
   WORKSPACE_MEMBERS_EXCEED_LIMIT_TO_DOWNGRADE,
-  UNSUPPORTED_CLIENT_VERSION
+  UNSUPPORTED_CLIENT_VERSION,
+  NOTIFICATION_NOT_FOUND,
+  MENTION_USER_DOC_ACCESS_DENIED,
+  MENTION_USER_ONESELF_DENIED
 }
 registerEnumType(ErrorNames, {
   name: 'ErrorNames'
@@ -942,5 +997,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [GraphqlBadRequestDataType, QueryTooLongDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseUpdateParamsDataType, WorkspaceMembersExceedLimitToDowngradeDataType, UnsupportedClientVersionDataType] as const,
+    [GraphqlBadRequestDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseUpdateParamsDataType, WorkspaceMembersExceedLimitToDowngradeDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType] as const,
 });

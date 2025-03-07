@@ -1,6 +1,7 @@
 import { Container, type ServiceProvider } from '@blocksuite/global/di';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import { type Disposable, Slot } from '@blocksuite/global/utils';
+import type { Disposable } from '@blocksuite/global/slot';
+import { Slot } from '@blocksuite/global/slot';
 import { computed, signal } from '@preact/signals-core';
 
 import type { ExtensionType } from '../../extension/extension.js';
@@ -593,6 +594,10 @@ export class Store {
   }
 
   dispose() {
+    this._provider.getAll(StoreExtensionIdentifier).forEach(ext => {
+      ext.disposed();
+    });
+
     this._disposeBlockUpdated.dispose();
     this.slots.ready.dispose();
     this.slots.blockUpdated.dispose();
@@ -698,7 +703,9 @@ export class Store {
 
   load(initFn?: () => void) {
     this._doc.load(initFn);
-    this._provider.getAll(StoreExtensionIdentifier);
+    this._provider.getAll(StoreExtensionIdentifier).forEach(ext => {
+      ext.loaded();
+    });
     this.slots.ready.emit();
     return this;
   }

@@ -1,4 +1,4 @@
-import type { Disposable } from '@blocksuite/global/utils';
+import type { Disposable } from '@blocksuite/global/slot';
 
 import type { DataSource } from '../data-source/base.js';
 import type { TypeInstance } from '../logical/type.js';

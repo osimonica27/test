@@ -1,3 +1,4 @@
+import { SlashMenuConfigExtension } from '@blocksuite/affine-widget-slash-menu';
 import {
   BlockViewExtension,
   FlavourExtension,
@@ -6,9 +7,12 @@ import {
 import type { ExtensionType } from '@blocksuite/store';
 import { literal } from 'lit/static-html.js';
 
-import { ImageBlockAdapterExtensions } from './adapters/extension.js';
-import { ImageProxyService } from './image-proxy-service.js';
-import { ImageBlockService, ImageDropOption } from './image-service.js';
+import { ImageBlockAdapterExtensions } from './adapters/extension';
+import { imageSlashMenuConfig } from './configs/slash-menu.js';
+import { ImageProxyService } from './image-proxy-service';
+import { ImageBlockService, ImageDropOption } from './image-service';
+
+const flavour = 'affine:image';
 
 export const imageToolbarWidget = WidgetViewExtension(
   'affine:image',
@@ -17,9 +21,9 @@ export const imageToolbarWidget = WidgetViewExtension(
 );
 
 export const ImageBlockSpec: ExtensionType[] = [
-  FlavourExtension('affine:image'),
+  FlavourExtension(flavour),
   ImageBlockService,
-  BlockViewExtension('affine:image', model => {
+  BlockViewExtension(flavour, model => {
     const parent = model.doc.getParent(model.id);
 
     if (parent?.flavour === 'affine:surface') {
@@ -31,6 +35,7 @@ export const ImageBlockSpec: ExtensionType[] = [
   imageToolbarWidget,
   ImageDropOption,
   ImageBlockAdapterExtensions,
+  SlashMenuConfigExtension('affine:image', imageSlashMenuConfig),
 ].flat();
 
 export const ImageStoreSpec: ExtensionType[] = [ImageProxyService];

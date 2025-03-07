@@ -7,16 +7,14 @@
     "test": "yarn playwright test"
   },
   "dependencies": {
-    "@blocksuite/affine-components": "workspace:*",
-    "@blocksuite/affine-model": "workspace:*",
-    "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/block-std": "workspace:*",
+    "@blocksuite/blocks": "workspace:*",
     "@blocksuite/global": "workspace:*",
     "@blocksuite/inline": "workspace:*",
     "@blocksuite/integration-test": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@playwright/test": "=1.50.1",
-    "@toeverything/theme": "^1.1.7"
+    "@toeverything/theme": "^1.1.12"
   },
   "bsImport": {
     "@atlaskit/pragmatic-drag-and-drop/element/adapter": "@atlaskit/pragmatic-drag-and-drop/dist/cjs/entry-point/element/adapter.js",

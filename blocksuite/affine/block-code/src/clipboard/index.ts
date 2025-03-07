@@ -1,4 +1,4 @@
-import { deleteTextCommand } from '@blocksuite/affine-components/rich-text';
+import { deleteTextCommand } from '@blocksuite/affine-rich-text';
 import {
   HtmlAdapter,
   pasteMiddleware,
@@ -14,7 +14,7 @@ import {
   Clipboard,
   type UIEventHandler,
 } from '@blocksuite/block-std';
-import { DisposableGroup } from '@blocksuite/global/utils';
+import { DisposableGroup } from '@blocksuite/global/slot';
 
 export class CodeClipboardController {
   private _clipboard!: Clipboard;

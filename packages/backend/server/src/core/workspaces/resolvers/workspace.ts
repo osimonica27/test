@@ -256,7 +256,7 @@ export class WorkspaceResolver {
     @Parent() workspace: WorkspaceType,
     @Args('pageId') pageId: string
   ) {
-    const metadata = await this.models.doc.getMeta(workspace.id, pageId);
+    const metadata = await this.models.doc.getAuthors(workspace.id, pageId);
     if (!metadata) {
       throw new DocNotFound({ spaceId: workspace.id, docId: pageId });
     }
@@ -533,7 +533,7 @@ export class WorkspaceResolver {
 
     const inviteeId = inviteeUserId || user?.id;
     if (!inviteeId) throw new UserNotFound();
-    const invitee = await this.models.user.getPublicUser(inviteeId);
+    const invitee = await this.models.user.getWorkspaceUser(inviteeId);
 
     return { workspace, user: owner, invitee };
   }
@@ -559,7 +559,7 @@ export class WorkspaceResolver {
       .workspace(workspaceId)
       .assert(
         role.type === WorkspaceRole.Admin
-          ? 'Workspace.Adminitrators.Manage'
+          ? 'Workspace.Administrators.Manage'
           : 'Workspace.Users.Manage'
       );
 

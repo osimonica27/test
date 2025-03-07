@@ -1,7 +1,7 @@
 import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
 import { createLitPortal } from '@blocksuite/affine-components/portal';
-import { DefaultInlineManagerExtension } from '@blocksuite/affine-components/rich-text';
 import { type CalloutBlockModel } from '@blocksuite/affine-model';
+import { DefaultInlineManagerExtension } from '@blocksuite/affine-rich-text';
 import { NOTE_SELECTOR } from '@blocksuite/affine-shared/consts';
 import {
   DocModeProvider,
@@ -58,7 +58,6 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
         .theme=${theme}
         .onEmojiSelect=${(data: any) => {
           this.model.emoji = data.native;
-          console.log(data);
         }}
       ></affine-emoji-menu>`,
       portalStyles: {

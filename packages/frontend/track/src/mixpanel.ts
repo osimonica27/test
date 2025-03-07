@@ -36,6 +36,7 @@ function createMixpanel() {
         editorVersion: BUILD_CONFIG.editorVersion,
         isDesktop: BUILD_CONFIG.isElectron,
         isSelfHosted: environment.isSelfHosted,
+        distribution: BUILD_CONFIG.distribution,
       });
     },
     reset() {
@@ -93,7 +94,6 @@ function createMixpanel() {
 }
 
 export const mixpanel = createMixpanel();
-mixpanel.init();
 
 function createProxyHandler() {
   const handler = {

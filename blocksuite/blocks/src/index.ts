@@ -24,10 +24,7 @@ export {
   type MenuOptions,
   onMenuOpen,
 } from '@blocksuite/affine-components/context-menu';
-export {
-  DocTitle,
-  getDocTitleByEditorHost,
-} from '@blocksuite/affine-components/doc-title';
+export { toggleEmbedCardEditModal } from '@blocksuite/affine-components/embed-card-modal';
 export {
   HoverController,
   whenHover,
@@ -41,12 +38,16 @@ export {
   TagsIcon,
 } from '@blocksuite/affine-components/icons';
 export * from '@blocksuite/affine-components/icons';
+export {
+  notifyLinkedDocClearedAliases,
+  notifyLinkedDocSwitchedToCard,
+  notifyLinkedDocSwitchedToEmbed,
+} from '@blocksuite/affine-components/notification';
 export * from '@blocksuite/affine-components/peek';
 export {
   createLitPortal,
   createSimplePortal,
 } from '@blocksuite/affine-components/portal';
-export * from '@blocksuite/affine-components/rich-text';
 export { toast } from '@blocksuite/affine-components/toast';
 export {
   type AdvancedMenuItem,
@@ -61,9 +62,14 @@ export {
   ToolbarMoreMenuConfigExtension,
   Tooltip,
 } from '@blocksuite/affine-components/toolbar';
+export {
+  DocTitle,
+  getDocTitleByEditorHost,
+} from '@blocksuite/affine-fragment-doc-title';
 export * from '@blocksuite/affine-fragment-frame-panel';
 export * from '@blocksuite/affine-fragment-outline';
 export * from '@blocksuite/affine-model';
+export * from '@blocksuite/affine-rich-text';
 export * from '@blocksuite/affine-shared/adapters';
 export * from '@blocksuite/affine-shared/commands';
 export { HighlightSelection } from '@blocksuite/affine-shared/selection';
@@ -106,6 +112,10 @@ export {
   ViewportTurboRendererIdentifier,
 } from '@blocksuite/affine-shared/viewport-renderer';
 export type { DragBlockPayload } from '@blocksuite/affine-widget-drag-handle';
+export { toolbarWidget } from '@blocksuite/affine-widget-toolbar';
+
+// TODO(@L-Sun): Narrow the export scope
+export * from '@blocksuite/affine-widget-slash-menu';
 
 const env: Record<string, unknown> =
   typeof globalThis !== 'undefined'

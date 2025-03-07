@@ -1,35 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import type { Update } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
+import { DocIsNotPublic } from '../base/error';
 import { BaseModel } from './base';
-import type { Doc, DocEditor } from './common';
+import { Doc, DocRole, PublicDocMode, publicUserSelect } from './common';
 
-export interface DocRecord extends Doc {}
-
-export interface DocHistorySimple {
-  timestamp: number;
-  editor: DocEditor | null;
-}
-
-export interface DocHistory {
-  blob: Buffer;
-  timestamp: number;
-  editor: DocEditor | null;
-}
-
-export interface DocHistoryFilter {
-  /**
-   * timestamp to filter histories before.
-   */
-  before?: number;
-  /**
-   * limit the number of histories to return.
-   *
-   * Default to `100`.
-   */
-  take?: number;
-}
+export type DocMetaUpsertInput = Omit<
+  Prisma.WorkspaceDocUncheckedCreateInput,
+  'workspaceId' | 'docId'
+>;
 
 /**
  * Workspace Doc Model
@@ -38,12 +19,13 @@ export interface DocHistoryFilter {
  *  - Updates: the changes made to the doc.
  *  - History: the doc history of the doc.
  *  - Doc: the doc itself.
+ *  - DocMeta: the doc meta.
  */
 @Injectable()
 export class DocModel extends BaseModel {
   // #region Update
 
-  private updateToDocRecord(row: Update): DocRecord {
+  private updateToDocRecord(row: Update): Doc {
     return {
       spaceId: row.workspaceId,
       docId: row.id,
@@ -53,7 +35,7 @@ export class DocModel extends BaseModel {
     };
   }
 
-  private docRecordToUpdate(record: DocRecord): Update {
+  private docRecordToUpdate(record: Doc): Update {
     return {
       workspaceId: record.spaceId,
       id: record.docId,
@@ -64,17 +46,7 @@ export class DocModel extends BaseModel {
     };
   }
 
-  private get userSelectFields() {
-    return {
-      select: {
-        id: true,
-        name: true,
-        avatarUrl: true,
-      },
-    };
-  }
-
-  async createUpdates(updates: DocRecord[]) {
+  async createUpdates(updates: Doc[]) {
     return await this.db.update.createMany({
       data: updates.map(r => this.docRecordToUpdate(r)),
     });
@@ -83,7 +55,7 @@ export class DocModel extends BaseModel {
   /**
    * Find updates by workspaceId and docId.
    */
-  async findUpdates(workspaceId: string, docId: string): Promise<DocRecord[]> {
+  async findUpdates(workspaceId: string, docId: string): Promise<Doc[]> {
     const rows = await this.db.update.findMany({
       where: {
         workspaceId,
@@ -136,148 +108,6 @@ export class DocModel extends BaseModel {
     this.logger.log(
       `Deleted ${count} updates for workspace ${workspaceId} doc ${docId}`
     );
-    return count;
-  }
-
-  // #endregion
-
-  // #region History
-
-  /**
-   * Create a doc history with a max age.
-   */
-  async createHistory(
-    snapshot: Doc,
-    maxAge: number
-  ): Promise<DocHistorySimple> {
-    const row = await this.db.snapshotHistory.create({
-      select: {
-        timestamp: true,
-        createdByUser: this.userSelectFields,
-      },
-      data: {
-        workspaceId: snapshot.spaceId,
-        id: snapshot.docId,
-        timestamp: new Date(snapshot.timestamp),
-        blob: snapshot.blob,
-        createdBy: snapshot.editorId,
-        expiredAt: new Date(Date.now() + maxAge),
-      },
-    });
-    return {
-      timestamp: row.timestamp.getTime(),
-      editor: row.createdByUser,
-    };
-  }
-
-  /**
-   * Find doc history by workspaceId and docId.
-   *
-   * Only including timestamp, createdByUser
-   */
-  async findHistories(
-    workspaceId: string,
-    docId: string,
-    filter?: DocHistoryFilter
-  ): Promise<DocHistorySimple[]> {
-    const rows = await this.db.snapshotHistory.findMany({
-      select: {
-        timestamp: true,
-        createdByUser: this.userSelectFields,
-      },
-      where: {
-        workspaceId,
-        id: docId,
-        timestamp: {
-          lt: filter?.before ? new Date(filter.before) : new Date(),
-        },
-      },
-      orderBy: {
-        timestamp: 'desc',
-      },
-      take: filter?.take ?? 100,
-    });
-    return rows.map(r => ({
-      timestamp: r.timestamp.getTime(),
-      editor: r.createdByUser,
-    }));
-  }
-
-  /**
-   * Get the history of a doc at a specific timestamp.
-   *
-   * Including blob and createdByUser
-   */
-  async getHistory(
-    workspaceId: string,
-    docId: string,
-    timestamp: number
-  ): Promise<DocHistory | null> {
-    const row = await this.db.snapshotHistory.findUnique({
-      where: {
-        workspaceId_id_timestamp: {
-          workspaceId,
-          id: docId,
-          timestamp: new Date(timestamp),
-        },
-      },
-      include: {
-        createdByUser: this.userSelectFields,
-      },
-    });
-    if (!row) {
-      return null;
-    }
-    return {
-      blob: row.blob,
-      timestamp: row.timestamp.getTime(),
-      editor: row.createdByUser,
-    };
-  }
-
-  /**
-   * Get the latest history of a doc.
-   *
-   * Only including timestamp, createdByUser
-   */
-  async getLatestHistory(
-    workspaceId: string,
-    docId: string
-  ): Promise<DocHistorySimple | null> {
-    const row = await this.db.snapshotHistory.findFirst({
-      where: {
-        workspaceId,
-        id: docId,
-      },
-      select: {
-        timestamp: true,
-        createdByUser: this.userSelectFields,
-      },
-      orderBy: {
-        timestamp: 'desc',
-      },
-    });
-    if (!row) {
-      return null;
-    }
-    return {
-      timestamp: row.timestamp.getTime(),
-      editor: row.createdByUser,
-    };
-  }
-
-  /**
-   * Delete expired histories.
-   */
-  async deleteExpiredHistories() {
-    const { count } = await this.db.snapshotHistory.deleteMany({
-      where: {
-        expiredAt: {
-          lte: new Date(),
-        },
-      },
-    });
-    this.logger.log(`Deleted ${count} expired histories`);
     return count;
   }
 
@@ -338,7 +168,7 @@ export class DocModel extends BaseModel {
     };
   }
 
-  async getMeta(workspaceId: string, docId: string) {
+  async getAuthors(workspaceId: string, docId: string) {
     return await this.db.snapshot.findUnique({
       where: {
         workspaceId_id: {
@@ -349,8 +179,8 @@ export class DocModel extends BaseModel {
       select: {
         createdAt: true,
         updatedAt: true,
-        createdByUser: this.userSelectFields,
-        updatedByUser: this.userSelectFields,
+        createdByUser: { select: publicUserSelect },
+        updatedByUser: { select: publicUserSelect },
       },
     });
   }
@@ -460,5 +290,146 @@ export class DocModel extends BaseModel {
     return result;
   }
 
+  // #endregion
+
+  // #region DocMeta
+
+  /**
+   * Create or update the doc meta.
+   */
+  async upsertMeta(
+    workspaceId: string,
+    docId: string,
+    data?: DocMetaUpsertInput
+  ) {
+    return await this.db.workspaceDoc.upsert({
+      where: {
+        workspaceId_docId: {
+          workspaceId,
+          docId,
+        },
+      },
+      update: {
+        ...data,
+      },
+      create: {
+        ...data,
+        workspaceId,
+        docId,
+      },
+    });
+  }
+
+  /**
+   * Get the doc meta.
+   */
+  async getMeta<Select extends Prisma.WorkspaceDocSelect>(
+    workspaceId: string,
+    docId: string,
+    options?: {
+      select?: Select;
+    }
+  ) {
+    return (await this.db.workspaceDoc.findUnique({
+      where: {
+        workspaceId_docId: {
+          workspaceId,
+          docId,
+        },
+      },
+      select: options?.select,
+    })) as Prisma.WorkspaceDocGetPayload<{ select: Select }> | null;
+  }
+
+  async setDefaultRole(workspaceId: string, docId: string, role: DocRole) {
+    return await this.upsertMeta(workspaceId, docId, {
+      defaultRole: role,
+    });
+  }
+
+  async findMetas(ids: { workspaceId: string; docId: string }[]) {
+    const rows = await this.db.workspaceDoc.findMany({
+      where: {
+        workspaceId: { in: ids.map(id => id.workspaceId) },
+        docId: { in: ids.map(id => id.docId) },
+      },
+    });
+    const resultMap = new Map(
+      rows.map(row => [`${row.workspaceId}-${row.docId}`, row])
+    );
+    return ids.map(
+      id => resultMap.get(`${id.workspaceId}-${id.docId}`) ?? null
+    );
+  }
+
+  /**
+   * Find the workspace public doc metas.
+   */
+  async findPublics(workspaceId: string) {
+    return await this.db.workspaceDoc.findMany({
+      where: {
+        workspaceId,
+        public: true,
+      },
+    });
+  }
+
+  /**
+   * Get the workspace public docs count.
+   */
+  async getPublicsCount(workspaceId: string) {
+    return await this.db.workspaceDoc.count({
+      where: {
+        workspaceId,
+        public: true,
+      },
+    });
+  }
+
+  /**
+   * Check if the workspace has any public docs.
+   */
+  async hasPublic(workspaceId: string) {
+    const count = await this.getPublicsCount(workspaceId);
+    return count > 0;
+  }
+
+  /**
+   * Publish a doc as public.
+   */
+  async publish(
+    workspaceId: string,
+    docId: string,
+    mode: PublicDocMode = PublicDocMode.Page
+  ) {
+    return await this.upsertMeta(workspaceId, docId, {
+      public: true,
+      mode,
+    });
+  }
+
+  @Transactional()
+  async unpublish(workspaceId: string, docId: string) {
+    const docMeta = await this.getMeta(workspaceId, docId);
+    if (!docMeta?.public) {
+      throw new DocIsNotPublic();
+    }
+
+    return await this.upsertMeta(workspaceId, docId, {
+      public: false,
+    });
+  }
+
+  /**
+   * Check if the doc is public.
+   */
+  async isPublic(workspaceId: string, docId: string) {
+    const docMeta = await this.getMeta(workspaceId, docId, {
+      select: {
+        public: true,
+      },
+    });
+    return docMeta?.public ?? false;
+  }
   // #endregion
 }

@@ -32,6 +32,7 @@ declare global {
     'doc.snapshot.updated': {
       workspaceId: string;
       docId: string;
+      blob: Buffer;
     };
     'doc.created': {
       workspaceId: string;
@@ -171,14 +172,14 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     docId: string,
     query: HistoryFilter
   ) {
-    return await this.models.doc.findHistories(workspaceId, docId, {
+    return await this.models.history.findMany(workspaceId, docId, {
       before: query.before,
       take: query.limit,
     });
   }
 
   async getDocHistory(workspaceId: string, docId: string, timestamp: number) {
-    const history = await this.models.doc.getHistory(
+    const history = await this.models.history.get(
       workspaceId,
       docId,
       timestamp
@@ -282,7 +283,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       }
 
       try {
-        await this.models.doc.createHistory(
+        await this.models.history.create(
           {
             spaceId: snapshot.spaceId,
             docId: snapshot.docId,
@@ -335,10 +336,11 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     }
 
     try {
+      const blob = Buffer.from(snapshot.bin);
       const updatedSnapshot = await this.models.doc.upsert({
         spaceId: snapshot.spaceId,
         docId: snapshot.docId,
-        blob: Buffer.from(snapshot.bin),
+        blob,
         timestamp: snapshot.timestamp,
         editorId: snapshot.editor,
       });
@@ -347,6 +349,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
         this.event.emit('doc.snapshot.updated', {
           workspaceId: snapshot.spaceId,
           docId: snapshot.docId,
+          blob,
         });
       }
 
@@ -372,7 +375,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
   }
 
   protected async lastDocHistory(workspaceId: string, id: string) {
-    return this.models.doc.getLatestHistory(workspaceId, id);
+    return this.models.history.getLatest(workspaceId, id);
   }
 
   // for auto merging

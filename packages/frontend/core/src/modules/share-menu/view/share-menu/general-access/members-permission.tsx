@@ -8,7 +8,8 @@ import {
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { DocGrantedUsersService } from '@affine/core/modules/permissions';
 import { ShareInfoService } from '@affine/core/modules/share-doc';
-import { DocRole, UserFriendlyError } from '@affine/graphql';
+import { UserFriendlyError } from '@affine/error';
+import { DocRole } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { InformationIcon } from '@blocksuite/icons/rc';
@@ -56,11 +57,13 @@ export const MembersPermission = ({
   const changePermission = useAsyncCallback(
     async (docRole: DocRole) => {
       try {
-        track.$.sharePanel.$.modifyDocDefaultRole();
+        track.$.sharePanel.$.modifyDocDefaultRole({
+          control: docRole,
+        });
         await docGrantedUsersService.updateDocDefaultRole(docRole);
         shareInfoService.shareInfo.revalidate();
       } catch (error) {
-        const err = UserFriendlyError.fromAnyError(error);
+        const err = UserFriendlyError.fromAny(error);
         notify.error({
           title: err.name,
           message: err.message,

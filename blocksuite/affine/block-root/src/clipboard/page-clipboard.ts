@@ -1,4 +1,4 @@
-import { deleteTextCommand } from '@blocksuite/affine-components/rich-text';
+import { deleteTextCommand } from '@blocksuite/affine-rich-text';
 import {
   pasteMiddleware,
   replaceIdMiddleware,
@@ -15,7 +15,7 @@ import {
   retainFirstModelCommand,
 } from '@blocksuite/affine-shared/commands';
 import type { UIEventHandler } from '@blocksuite/block-std';
-import { DisposableGroup } from '@blocksuite/global/utils';
+import { DisposableGroup } from '@blocksuite/global/slot';
 import type { BlockSnapshot, Store } from '@blocksuite/store';
 
 import { ReadOnlyClipboard } from './readonly-clipboard';

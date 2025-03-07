@@ -35,7 +35,7 @@ import {
   DocAction,
   DocRole,
 } from '../../permission';
-import { PublicUserType } from '../../user';
+import { WorkspaceUserType } from '../../user';
 import { WorkspaceType } from '../types';
 import {
   DotToUnderline,
@@ -124,8 +124,8 @@ class GrantedDocUserType {
   @Field(() => DocRole, { name: 'role' })
   type!: DocRole;
 
-  @Field(() => PublicUserType)
-  user!: PublicUserType;
+  @Field(() => WorkspaceUserType)
+  user!: WorkspaceUserType;
 }
 
 @ObjectType()
@@ -175,7 +175,7 @@ export class WorkspaceDocResolver {
     complexity: 2,
   })
   async publicDocs(@Parent() workspace: WorkspaceType) {
-    return this.models.workspace.getPublicDocs(workspace.id);
+    return this.models.doc.findPublics(workspace.id);
   }
 
   @ResolveField(() => DocType, {
@@ -199,8 +199,7 @@ export class WorkspaceDocResolver {
     @Parent() workspace: WorkspaceType,
     @Args('docId') docId: string
   ): Promise<DocType> {
-    const doc = await this.models.workspace.getDoc(workspace.id, docId);
-
+    const doc = await this.models.doc.getMeta(workspace.id, docId);
     if (doc) {
       return doc;
     }
@@ -257,11 +256,7 @@ export class WorkspaceDocResolver {
 
     await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
 
-    const doc = await this.models.workspace.publishDoc(
-      workspaceId,
-      docId,
-      mode
-    );
+    const doc = await this.models.doc.publish(workspaceId, docId, mode);
 
     this.logger.log(
       `Publish page ${docId} with mode ${mode} in workspace ${workspaceId}`
@@ -297,7 +292,7 @@ export class WorkspaceDocResolver {
 
     await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
 
-    const doc = await this.models.workspace.revokePublicDoc(workspaceId, docId);
+    const doc = await this.models.doc.unpublish(workspaceId, docId);
 
     this.logger.log(`Revoke public doc ${docId} in workspace ${workspaceId}`);
 
@@ -396,16 +391,16 @@ export class DocResolver {
       pagination
     );
 
-    const publicUsers = await this.models.user.getPublicUsers(
+    const workspaceUsers = await this.models.user.getWorkspaceUsers(
       permissions.map(p => p.userId)
     );
 
-    const publicUsersMap = new Map(publicUsers.map(pu => [pu.id, pu]));
+    const workspaceUsersMap = new Map(workspaceUsers.map(wu => [wu.id, wu]));
 
     return paginate(
       permissions.map(p => ({
         ...p,
-        user: publicUsersMap.get(p.userId) as PublicUserType,
+        user: workspaceUsersMap.get(p.userId) as WorkspaceUserType,
       })),
       'createdAt',
       pagination,
@@ -575,7 +570,7 @@ export class DocResolver {
       }
       throw error;
     }
-    await this.models.workspace.setDocDefaultRole(
+    await this.models.doc.setDefaultRole(
       input.workspaceId,
       input.docId,
       input.role

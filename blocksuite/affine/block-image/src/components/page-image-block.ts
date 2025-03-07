@@ -1,5 +1,6 @@
-import { focusBlockEnd, focusBlockStart } from '@blocksuite/affine-block-note';
 import {
+  focusBlockEnd,
+  focusBlockStart,
   getNextBlockCommand,
   getPrevBlockCommand,
 } from '@blocksuite/affine-shared/commands';
@@ -13,7 +14,7 @@ import {
   ShadowlessElement,
   TextSelection,
 } from '@blocksuite/block-std';
-import { WithDisposable } from '@blocksuite/global/utils';
+import { WithDisposable } from '@blocksuite/global/lit';
 import type { BaseSelection } from '@blocksuite/store';
 import { css, html, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';

@@ -32,8 +32,9 @@ import {
   toRadian,
   Vec,
 } from '@blocksuite/global/gfx';
-import { assertEquals, assertType, last } from '@blocksuite/global/utils';
+import { assertType } from '@blocksuite/global/utils';
 import { effect } from '@preact/signals-core';
+import last from 'lodash-es/last';
 
 import { Overlay } from '../renderer/overlay.js';
 import { AStarRunner } from '../utils/a-star.js';
@@ -602,17 +603,14 @@ function mergePath(points: IVec[] | IVec3[]) {
       continue;
     result.push([cur[0], cur[1]]);
   }
-  result.push(last(points) as IVec);
+  result.push(last(points as IVec[]) as IVec);
   for (let i = 0; i < result.length - 1; i++) {
     const cur = result[i];
     const next = result[i + 1];
-    try {
-      assertEquals(
-        almostEqual(cur[0], next[0], 0.02) ||
-          almostEqual(cur[1], next[1], 0.02),
-        true
-      );
-    } catch {
+    const isAlmostEqual =
+      almostEqual(cur[0], next[0], 0.02) || almostEqual(cur[1], next[1], 0.02);
+    if (!isAlmostEqual) {
+      console.warn('Expected equal points');
       console.warn(points);
       console.warn(result);
     }

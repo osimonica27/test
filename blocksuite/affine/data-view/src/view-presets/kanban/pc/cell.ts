@@ -1,7 +1,7 @@
 // related component
 
 import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { css } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { createRef } from 'lit/directives/ref.js';

@@ -30,8 +30,9 @@ import {
   TelemetryProvider,
   ThemeProvider,
 } from '@blocksuite/affine-shared/services';
+import { EditorLifeCycleExtension } from '@blocksuite/block-std';
 import { Bound } from '@blocksuite/global/gfx';
-import { countBy, maxBy, WithDisposable } from '@blocksuite/global/utils';
+import { WithDisposable } from '@blocksuite/global/lit';
 import {
   AutoHeightIcon,
   CornerIcon,
@@ -46,6 +47,8 @@ import { property, query } from 'lit/decorators.js';
 import { join } from 'lit/directives/join.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { when } from 'lit/directives/when.js';
+import countBy from 'lodash-es/countBy';
+import maxBy from 'lodash-es/maxBy';
 
 import {
   type LineStyleEvent,
@@ -208,7 +211,9 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
 
     const addHandler = this.doc.history.on('stack-item-added', closeNotify);
     const popHandler = this.doc.history.on('stack-item-popped', closeNotify);
-    const disposable = this.edgeless.std.host.slots.unmounted.on(closeNotify);
+    const disposable = this.edgeless.std
+      .get(EditorLifeCycleExtension)
+      .slots.unmounted.on(closeNotify);
 
     const undo = () => {
       this.doc.undo();

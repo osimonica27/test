@@ -1,20 +1,22 @@
-import { LifeCycleWatcher } from '@blocksuite/affine/block-std';
 import {
-  AffineFormatBarWidget,
-  AffineSlashMenuWidget,
+  BlockFlavourIdentifier,
+  LifeCycleWatcher,
+} from '@blocksuite/affine/block-std';
+import {
   PageRootBlockSpec,
+  ToolbarModuleExtension,
 } from '@blocksuite/affine/blocks';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import type { FrameworkProvider } from '@toeverything/infra';
 
 import { buildAIPanelConfig } from '../ai-panel';
-import { setupFormatBarAIEntry } from '../entries/format-bar/setup-format-bar';
-import { setupSlashMenuAIEntry } from '../entries/slash-menu/setup-slash-menu';
+import { toolbarAIEntryConfig } from '../entries';
 import { setupSpaceAIEntry } from '../entries/space/setup-space';
 import {
   AffineAIPanelWidget,
   aiPanelWidget,
 } from '../widgets/ai-panel/ai-panel';
+import { AiSlashMenuConfigExtension } from './ai-slash-menu';
 
 function getAIPageRootWatcher(framework: FrameworkProvider) {
   class AIPageRootWatcher extends LifeCycleWatcher {
@@ -33,14 +35,6 @@ function getAIPageRootWatcher(framework: FrameworkProvider) {
           component.config = buildAIPanelConfig(component, framework);
           setupSpaceAIEntry(component);
         }
-
-        if (component instanceof AffineFormatBarWidget) {
-          setupFormatBarAIEntry(component);
-        }
-
-        if (component instanceof AffineSlashMenuWidget) {
-          setupSlashMenuAIEntry(component);
-        }
       });
     }
   }
@@ -50,5 +44,14 @@ function getAIPageRootWatcher(framework: FrameworkProvider) {
 export function createAIPageRootBlockSpec(
   framework: FrameworkProvider
 ): ExtensionType[] {
-  return [...PageRootBlockSpec, aiPanelWidget, getAIPageRootWatcher(framework)];
+  return [
+    ...PageRootBlockSpec,
+    aiPanelWidget,
+    getAIPageRootWatcher(framework),
+    ToolbarModuleExtension({
+      id: BlockFlavourIdentifier('custom:affine:note'),
+      config: toolbarAIEntryConfig(),
+    }),
+    AiSlashMenuConfigExtension(),
+  ];
 }

@@ -82,6 +82,11 @@ export interface Copilot {
   histories: Array<CopilotHistories>;
   /** Get the quota of the user in the workspace */
   quota: CopilotQuota;
+  /**
+   * Get the session id list in the workspace
+   * @deprecated Use `sessions` instead
+   */
+  sessionIds: Array<Scalars['String']['output']>;
   /** Get the session list in the workspace */
   sessions: Array<CopilotSessionType>;
   workspaceId: Maybe<Scalars['ID']['output']>;
@@ -95,6 +100,11 @@ export interface CopilotContextsArgs {
 export interface CopilotHistoriesArgs {
   docId?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<QueryChatHistoriesInput>;
+}
+
+export interface CopilotSessionIdsArgs {
+  docId?: InputMaybe<Scalars['String']['input']>;
+  options?: InputMaybe<QueryChatSessionsInput>;
 }
 
 export interface CopilotSessionsArgs {
@@ -262,6 +272,7 @@ export interface CopilotQuota {
 export interface CopilotSessionType {
   __typename?: 'CopilotSessionType';
   id: Scalars['ID']['output'];
+  parentSessionId: Maybe<Scalars['ID']['output']>;
   promptName: Scalars['String']['output'];
 }
 
@@ -389,6 +400,12 @@ export interface DocTypeGrantedUsersListArgs {
   pagination: PaginationInput;
 }
 
+export interface DocUpdateBlockedDataType {
+  __typename?: 'DocUpdateBlockedDataType';
+  docId: Scalars['String']['output'];
+  spaceId: Scalars['String']['output'];
+}
+
 export interface EditorType {
   __typename?: 'EditorType';
   avatarUrl: Maybe<Scalars['String']['output']>;
@@ -409,6 +426,7 @@ export type ErrorDataUnion =
   | DocActionDeniedDataType
   | DocHistoryNotFoundDataType
   | DocNotFoundDataType
+  | DocUpdateBlockedDataType
   | ExpectToGrantDocUserRolesDataType
   | ExpectToRevokeDocUserRolesDataType
   | ExpectToUpdateDocUserRoleDataType
@@ -416,9 +434,11 @@ export type ErrorDataUnion =
   | InvalidEmailDataType
   | InvalidHistoryTimestampDataType
   | InvalidLicenseUpdateParamsDataType
+  | InvalidOauthCallbackCodeDataType
   | InvalidPasswordLengthDataType
   | InvalidRuntimeConfigTypeDataType
   | MemberNotFoundInSpaceDataType
+  | MentionUserDocAccessDeniedDataType
   | MissingOauthQueryParameterDataType
   | NotInSpaceDataType
   | QueryTooLongDataType
@@ -434,6 +454,7 @@ export type ErrorDataUnion =
   | UnknownOauthProviderDataType
   | UnsupportedClientVersionDataType
   | UnsupportedSubscriptionPlanDataType
+  | ValidationErrorDataType
   | VersionRejectedDataType
   | WorkspaceMembersExceedLimitToDowngradeDataType
   | WorkspacePermissionNotFoundDataType
@@ -452,6 +473,7 @@ export enum ErrorNames {
   CANNOT_DELETE_OWN_ACCOUNT = 'CANNOT_DELETE_OWN_ACCOUNT',
   CANT_UPDATE_ONETIME_PAYMENT_SUBSCRIPTION = 'CANT_UPDATE_ONETIME_PAYMENT_SUBSCRIPTION',
   CAN_NOT_BATCH_GRANT_DOC_OWNER_PERMISSIONS = 'CAN_NOT_BATCH_GRANT_DOC_OWNER_PERMISSIONS',
+  CAN_NOT_REVOKE_YOURSELF = 'CAN_NOT_REVOKE_YOURSELF',
   CAPTCHA_VERIFICATION_FAILED = 'CAPTCHA_VERIFICATION_FAILED',
   COPILOT_ACTION_TAKEN = 'COPILOT_ACTION_TAKEN',
   COPILOT_CONTEXT_FILE_NOT_SUPPORTED = 'COPILOT_CONTEXT_FILE_NOT_SUPPORTED',
@@ -474,6 +496,7 @@ export enum ErrorNames {
   DOC_HISTORY_NOT_FOUND = 'DOC_HISTORY_NOT_FOUND',
   DOC_IS_NOT_PUBLIC = 'DOC_IS_NOT_PUBLIC',
   DOC_NOT_FOUND = 'DOC_NOT_FOUND',
+  DOC_UPDATE_BLOCKED = 'DOC_UPDATE_BLOCKED',
   EARLY_ACCESS_REQUIRED = 'EARLY_ACCESS_REQUIRED',
   EMAIL_ALREADY_USED = 'EMAIL_ALREADY_USED',
   EMAIL_TOKEN_NOT_FOUND = 'EMAIL_TOKEN_NOT_FOUND',
@@ -495,6 +518,7 @@ export enum ErrorNames {
   INVALID_LICENSE_SESSION_ID = 'INVALID_LICENSE_SESSION_ID',
   INVALID_LICENSE_TO_ACTIVATE = 'INVALID_LICENSE_TO_ACTIVATE',
   INVALID_LICENSE_UPDATE_PARAMS = 'INVALID_LICENSE_UPDATE_PARAMS',
+  INVALID_OAUTH_CALLBACK_CODE = 'INVALID_OAUTH_CALLBACK_CODE',
   INVALID_OAUTH_CALLBACK_STATE = 'INVALID_OAUTH_CALLBACK_STATE',
   INVALID_PASSWORD_LENGTH = 'INVALID_PASSWORD_LENGTH',
   INVALID_RUNTIME_CONFIG_TYPE = 'INVALID_RUNTIME_CONFIG_TYPE',
@@ -505,12 +529,17 @@ export enum ErrorNames {
   MAILER_SERVICE_IS_NOT_CONFIGURED = 'MAILER_SERVICE_IS_NOT_CONFIGURED',
   MEMBER_NOT_FOUND_IN_SPACE = 'MEMBER_NOT_FOUND_IN_SPACE',
   MEMBER_QUOTA_EXCEEDED = 'MEMBER_QUOTA_EXCEEDED',
+  MENTION_USER_DOC_ACCESS_DENIED = 'MENTION_USER_DOC_ACCESS_DENIED',
+  MENTION_USER_ONESELF_DENIED = 'MENTION_USER_ONESELF_DENIED',
   MISSING_OAUTH_QUERY_PARAMETER = 'MISSING_OAUTH_QUERY_PARAMETER',
+  NETWORK_ERROR = 'NETWORK_ERROR',
+  NOTIFICATION_NOT_FOUND = 'NOTIFICATION_NOT_FOUND',
   NOT_FOUND = 'NOT_FOUND',
   NOT_IN_SPACE = 'NOT_IN_SPACE',
   NO_COPILOT_PROVIDER_AVAILABLE = 'NO_COPILOT_PROVIDER_AVAILABLE',
   OAUTH_ACCOUNT_ALREADY_CONNECTED = 'OAUTH_ACCOUNT_ALREADY_CONNECTED',
   OAUTH_STATE_EXPIRED = 'OAUTH_STATE_EXPIRED',
+  OWNER_CAN_NOT_LEAVE_WORKSPACE = 'OWNER_CAN_NOT_LEAVE_WORKSPACE',
   PASSWORD_REQUIRED = 'PASSWORD_REQUIRED',
   QUERY_TOO_LONG = 'QUERY_TOO_LONG',
   RUNTIME_CONFIG_NOT_FOUND = 'RUNTIME_CONFIG_NOT_FOUND',
@@ -534,6 +563,7 @@ export enum ErrorNames {
   UNSUPPORTED_SUBSCRIPTION_PLAN = 'UNSUPPORTED_SUBSCRIPTION_PLAN',
   USER_AVATAR_NOT_FOUND = 'USER_AVATAR_NOT_FOUND',
   USER_NOT_FOUND = 'USER_NOT_FOUND',
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
   VERSION_REJECTED = 'VERSION_REJECTED',
   WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION = 'WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION',
   WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION = 'WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION',
@@ -592,7 +622,7 @@ export interface GrantDocUserRolesInput {
 export interface GrantedDocUserType {
   __typename?: 'GrantedDocUserType';
   role: DocRole;
-  user: PublicUserType;
+  user: WorkspaceUserType;
 }
 
 export interface GrantedDocUserTypeEdge {
@@ -622,6 +652,12 @@ export interface InvalidLicenseUpdateParamsDataType {
   reason: Scalars['String']['output'];
 }
 
+export interface InvalidOauthCallbackCodeDataType {
+  __typename?: 'InvalidOauthCallbackCodeDataType';
+  body: Scalars['String']['output'];
+  status: Scalars['Int']['output'];
+}
+
 export interface InvalidPasswordLengthDataType {
   __typename?: 'InvalidPasswordLengthDataType';
   max: Scalars['Int']['output'];
@@ -633,6 +669,36 @@ export interface InvalidRuntimeConfigTypeDataType {
   get: Scalars['String']['output'];
   key: Scalars['String']['output'];
   want: Scalars['String']['output'];
+}
+
+export interface InvitationAcceptedNotificationBodyType {
+  __typename?: 'InvitationAcceptedNotificationBodyType';
+  /** The user who created the notification, maybe null when user is deleted or sent by system */
+  createdByUser: Maybe<PublicUserType>;
+  inviteId: Scalars['String']['output'];
+  /** The type of the notification */
+  type: NotificationType;
+  workspace: Maybe<NotificationWorkspaceType>;
+}
+
+export interface InvitationBlockedNotificationBodyType {
+  __typename?: 'InvitationBlockedNotificationBodyType';
+  /** The user who created the notification, maybe null when user is deleted or sent by system */
+  createdByUser: Maybe<PublicUserType>;
+  inviteId: Scalars['String']['output'];
+  /** The type of the notification */
+  type: NotificationType;
+  workspace: Maybe<NotificationWorkspaceType>;
+}
+
+export interface InvitationNotificationBodyType {
+  __typename?: 'InvitationNotificationBodyType';
+  /** The user who created the notification, maybe null when user is deleted or sent by system */
+  createdByUser: Maybe<PublicUserType>;
+  inviteId: Scalars['ID']['output'];
+  /** The type of the notification */
+  type: NotificationType;
+  workspace: Maybe<NotificationWorkspaceType>;
 }
 
 export interface InvitationType {
@@ -775,6 +841,44 @@ export interface MemberNotFoundInSpaceDataType {
   spaceId: Scalars['String']['output'];
 }
 
+export interface MentionDocInput {
+  /** The block id in the doc */
+  blockId?: InputMaybe<Scalars['String']['input']>;
+  /** The element id in the doc */
+  elementId?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['String']['input'];
+  title: Scalars['String']['input'];
+}
+
+export interface MentionDocType {
+  __typename?: 'MentionDocType';
+  blockId: Maybe<Scalars['String']['output']>;
+  elementId: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+}
+
+export interface MentionInput {
+  doc: MentionDocInput;
+  userId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MentionNotificationBodyType {
+  __typename?: 'MentionNotificationBodyType';
+  /** The user who created the notification, maybe null when user is deleted or sent by system */
+  createdByUser: Maybe<PublicUserType>;
+  doc: MentionDocType;
+  /** The type of the notification */
+  type: NotificationType;
+  workspace: Maybe<NotificationWorkspaceType>;
+}
+
+export interface MentionUserDocAccessDeniedDataType {
+  __typename?: 'MentionUserDocAccessDeniedDataType';
+  docId: Scalars['String']['output'];
+}
+
 export interface MissingOauthQueryParameterDataType {
   __typename?: 'MissingOauthQueryParameterDataType';
   name: Scalars['String']['output'];
@@ -787,7 +891,7 @@ export interface Mutation {
   /** add a doc to context */
   addContextDoc: Array<CopilotContextListItem>;
   addWorkspaceFeature: Scalars['Boolean']['output'];
-  approveMember: Scalars['String']['output'];
+  approveMember: Scalars['Boolean']['output'];
   cancelSubscription: SubscriptionType;
   changeEmail: UserType;
   changePassword: Scalars['Boolean']['output'];
@@ -823,13 +927,17 @@ export interface Mutation {
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
   grantDocUserRoles: Scalars['Boolean']['output'];
-  grantMember: Scalars['String']['output'];
+  grantMember: Scalars['Boolean']['output'];
   invite: Scalars['String']['output'];
   inviteBatch: Array<InviteResult>;
   leaveWorkspace: Scalars['Boolean']['output'];
+  /** mention user in a doc */
+  mentionUser: Scalars['ID']['output'];
   publishDoc: DocType;
   /** @deprecated use publishDoc instead */
   publishPage: DocType;
+  /** mark notification as read */
+  readNotification: Scalars['Boolean']['output'];
   recoverDoc: Scalars['DateTime']['output'];
   releaseDeletedBlobs: Scalars['Boolean']['output'];
   /** Remove user avatar */
@@ -1018,6 +1126,10 @@ export interface MutationLeaveWorkspaceArgs {
   workspaceName?: InputMaybe<Scalars['String']['input']>;
 }
 
+export interface MutationMentionUserArgs {
+  input: MentionInput;
+}
+
 export interface MutationPublishDocArgs {
   docId: Scalars['String']['input'];
   mode?: InputMaybe<PublicDocMode>;
@@ -1028,6 +1140,10 @@ export interface MutationPublishPageArgs {
   mode?: InputMaybe<PublicDocMode>;
   pageId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationReadNotificationArgs {
+  id: Scalars['String']['input'];
 }
 
 export interface MutationRecoverDocArgs {
@@ -1172,6 +1288,58 @@ export interface NotInSpaceDataType {
   spaceId: Scalars['String']['output'];
 }
 
+/** Notification level */
+export enum NotificationLevel {
+  Default = 'Default',
+  High = 'High',
+  Low = 'Low',
+  Min = 'Min',
+  None = 'None',
+}
+
+export interface NotificationObjectType {
+  __typename?: 'NotificationObjectType';
+  /** Just a placeholder to export UnionNotificationBodyType, don't use it */
+  _placeholderForUnionNotificationBodyType: UnionNotificationBodyType;
+  /** The body of the notification, different types have different fields, see UnionNotificationBodyType */
+  body: Scalars['JSONObject']['output'];
+  /** The created at time of the notification */
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  /** The level of the notification */
+  level: NotificationLevel;
+  /** Whether the notification has been read */
+  read: Scalars['Boolean']['output'];
+  /** The type of the notification */
+  type: NotificationType;
+  /** The updated at time of the notification */
+  updatedAt: Scalars['DateTime']['output'];
+}
+
+export interface NotificationObjectTypeEdge {
+  __typename?: 'NotificationObjectTypeEdge';
+  cursor: Scalars['String']['output'];
+  node: NotificationObjectType;
+}
+
+/** Notification type */
+export enum NotificationType {
+  Invitation = 'Invitation',
+  InvitationAccepted = 'InvitationAccepted',
+  InvitationBlocked = 'InvitationBlocked',
+  InvitationRejected = 'InvitationRejected',
+  Mention = 'Mention',
+}
+
+export interface NotificationWorkspaceType {
+  __typename?: 'NotificationWorkspaceType';
+  /** Workspace avatar url */
+  avatarUrl: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** Workspace name */
+  name: Scalars['String']['output'];
+}
+
 export enum OAuthProviderType {
   GitHub = 'GitHub',
   Google = 'Google',
@@ -1189,6 +1357,13 @@ export interface PageInfo {
 export interface PaginatedGrantedDocUserType {
   __typename?: 'PaginatedGrantedDocUserType';
   edges: Array<GrantedDocUserTypeEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+}
+
+export interface PaginatedNotificationObjectType {
+  __typename?: 'PaginatedNotificationObjectType';
+  edges: Array<NotificationObjectTypeEdge>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
 }
@@ -1225,7 +1400,6 @@ export enum PublicDocMode {
 export interface PublicUserType {
   __typename?: 'PublicUserType';
   avatarUrl: Maybe<Scalars['String']['output']>;
-  email: Scalars['String']['output'];
   id: Scalars['String']['output'];
   name: Scalars['String']['output'];
 }
@@ -1239,18 +1413,21 @@ export interface Query {
   error: ErrorDataUnion;
   /** send workspace invitation */
   getInviteInfo: InvitationType;
-  /** Get is admin of workspace */
-  isAdmin: Scalars['Boolean']['output'];
-  /** Get is owner of workspace */
-  isOwner: Scalars['Boolean']['output'];
   /**
-   * List blobs of workspace
-   * @deprecated use `workspace.blobs` instead
+   * Get is admin of workspace
+   * @deprecated use WorkspaceType[role] instead
    */
-  listBlobs: Array<Scalars['String']['output']>;
+  isAdmin: Scalars['Boolean']['output'];
+  /**
+   * Get is owner of workspace
+   * @deprecated use WorkspaceType[role] instead
+   */
+  isOwner: Scalars['Boolean']['output'];
   /** List all copilot prompts */
   listCopilotPrompts: Array<CopilotPromptType>;
   prices: Array<SubscriptionPrice>;
+  /** Get public user by id */
+  publicUserById: Maybe<PublicUserType>;
   /** server config */
   serverConfig: ServerConfigType;
   /** get all server runtime configurable settings */
@@ -1268,7 +1445,10 @@ export interface Query {
   usersCount: Scalars['Int']['output'];
   /** Get workspace by id */
   workspace: WorkspaceType;
-  /** Get workspace role permissions */
+  /**
+   * Get workspace role permissions
+   * @deprecated use WorkspaceType[permissions] instead
+   */
   workspaceRolePermissions: WorkspaceRolePermissions;
   /** Get all accessible workspaces for current user */
   workspaces: Array<WorkspaceType>;
@@ -1290,8 +1470,8 @@ export interface QueryIsOwnerArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface QueryListBlobsArgs {
-  workspaceId: Scalars['String']['input'];
+export interface QueryPublicUserByIdArgs {
+  id: Scalars['String']['input'];
 }
 
 export interface QueryUserArgs {
@@ -1537,6 +1717,12 @@ export enum SubscriptionVariant {
   Onetime = 'Onetime',
 }
 
+export type UnionNotificationBodyType =
+  | InvitationAcceptedNotificationBodyType
+  | InvitationBlockedNotificationBodyType
+  | InvitationNotificationBodyType
+  | MentionNotificationBodyType;
+
 export interface UnknownOauthProviderDataType {
   __typename?: 'UnknownOauthProviderDataType';
   name: Scalars['String']['output'];
@@ -1642,6 +1828,10 @@ export interface UserType {
   invoices: Array<InvoiceType>;
   /** User name */
   name: Scalars['String']['output'];
+  /** Get user notification count */
+  notificationCount: Scalars['Int']['output'];
+  /** Get current user notifications */
+  notifications: PaginatedNotificationObjectType;
   quota: UserQuotaType;
   quotaUsage: UserQuotaUsageType;
   subscriptions: Array<SubscriptionType>;
@@ -1656,6 +1846,15 @@ export interface UserTypeCopilotArgs {
 export interface UserTypeInvoicesArgs {
   skip?: InputMaybe<Scalars['Int']['input']>;
   take?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface UserTypeNotificationsArgs {
+  pagination: PaginationInput;
+}
+
+export interface ValidationErrorDataType {
+  __typename?: 'ValidationErrorDataType';
+  errors: Scalars['String']['output'];
 }
 
 export interface VersionRejectedDataType {
@@ -1706,13 +1905,20 @@ export interface WorkspacePermissionNotFoundDataType {
 
 export interface WorkspacePermissions {
   __typename?: 'WorkspacePermissions';
+  Workspace_Administrators_Manage: Scalars['Boolean']['output'];
+  Workspace_Blobs_List: Scalars['Boolean']['output'];
+  Workspace_Blobs_Read: Scalars['Boolean']['output'];
+  Workspace_Blobs_Write: Scalars['Boolean']['output'];
+  Workspace_Copilot: Scalars['Boolean']['output'];
   Workspace_CreateDoc: Scalars['Boolean']['output'];
   Workspace_Delete: Scalars['Boolean']['output'];
   Workspace_Organize_Read: Scalars['Boolean']['output'];
+  Workspace_Payment_Manage: Scalars['Boolean']['output'];
   Workspace_Properties_Create: Scalars['Boolean']['output'];
   Workspace_Properties_Delete: Scalars['Boolean']['output'];
   Workspace_Properties_Read: Scalars['Boolean']['output'];
   Workspace_Properties_Update: Scalars['Boolean']['output'];
+  Workspace_Read: Scalars['Boolean']['output'];
   Workspace_Settings_Read: Scalars['Boolean']['output'];
   Workspace_Settings_Update: Scalars['Boolean']['output'];
   Workspace_Sync: Scalars['Boolean']['output'];
@@ -1785,6 +1991,8 @@ export interface WorkspaceType {
   owner: UserType;
   /** Cloud page metadata of workspace */
   pageMeta: WorkspacePageMeta;
+  /** map of action permissions */
+  permissions: WorkspacePermissions;
   /** is Public workspace */
   public: Scalars['Boolean']['output'];
   /** Get public docs of a workspace */
@@ -1833,6 +2041,14 @@ export interface WorkspaceTypePageMetaArgs {
 
 export interface WorkspaceTypePublicPageArgs {
   pageId: Scalars['String']['input'];
+}
+
+export interface WorkspaceUserType {
+  __typename?: 'WorkspaceUserType';
+  avatarUrl: Maybe<Scalars['String']['output']>;
+  email: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
 }
 
 export interface WrongSignInCredentialsDataType {
@@ -2247,6 +2463,7 @@ export type GetCopilotSessionsQuery = {
       sessions: Array<{
         __typename?: 'CopilotSessionType';
         id: string;
+        parentSessionId: string | null;
         promptName: string;
       }>;
     };
@@ -2560,7 +2777,7 @@ export type GetPageGrantedUsersListQuery = {
             __typename?: 'GrantedDocUserType';
             role: DocRole;
             user: {
-              __typename?: 'PublicUserType';
+              __typename?: 'WorkspaceUserType';
               id: string;
               name: string;
               email: string;
@@ -2571,6 +2788,20 @@ export type GetPageGrantedUsersListQuery = {
       };
     };
   };
+};
+
+export type GetPublicUserByIdQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type GetPublicUserByIdQuery = {
+  __typename?: 'Query';
+  publicUserById: {
+    __typename?: 'PublicUserType';
+    id: string;
+    avatarUrl: string | null;
+    name: string;
+  } | null;
 };
 
 export type GetServerRuntimeConfigQueryVariables = Exact<{
@@ -3396,13 +3627,20 @@ export type GetWorkspaceRolePermissionsQuery = {
     __typename?: 'WorkspaceRolePermissions';
     permissions: {
       __typename?: 'WorkspacePermissions';
+      Workspace_Administrators_Manage: boolean;
+      Workspace_Blobs_List: boolean;
+      Workspace_Blobs_Read: boolean;
+      Workspace_Blobs_Write: boolean;
+      Workspace_Copilot: boolean;
       Workspace_CreateDoc: boolean;
       Workspace_Delete: boolean;
       Workspace_Organize_Read: boolean;
+      Workspace_Payment_Manage: boolean;
       Workspace_Properties_Create: boolean;
       Workspace_Properties_Delete: boolean;
       Workspace_Properties_Read: boolean;
       Workspace_Properties_Update: boolean;
+      Workspace_Read: boolean;
       Workspace_Settings_Read: boolean;
       Workspace_Settings_Update: boolean;
       Workspace_Sync: boolean;
@@ -3420,7 +3658,7 @@ export type ApproveWorkspaceTeamMemberMutationVariables = Exact<{
 
 export type ApproveWorkspaceTeamMemberMutation = {
   __typename?: 'Mutation';
-  approveMember: string;
+  approveMember: boolean;
 };
 
 export type GrantWorkspaceTeamMemberMutationVariables = Exact<{
@@ -3431,7 +3669,7 @@ export type GrantWorkspaceTeamMemberMutationVariables = Exact<{
 
 export type GrantWorkspaceTeamMemberMutation = {
   __typename?: 'Mutation';
-  grantMember: string;
+  grantMember: boolean;
 };
 
 export type Queries =
@@ -3539,6 +3777,11 @@ export type Queries =
       name: 'getPageGrantedUsersListQuery';
       variables: GetPageGrantedUsersListQueryVariables;
       response: GetPageGrantedUsersListQuery;
+    }
+  | {
+      name: 'getPublicUserByIdQuery';
+      variables: GetPublicUserByIdQueryVariables;
+      response: GetPublicUserByIdQuery;
     }
   | {
       name: 'getServerRuntimeConfigQuery';

@@ -1,9 +1,9 @@
 import { ShadowlessElement } from '@blocksuite/block-std';
-import { assertEquals } from '@blocksuite/global/utils';
 import { type Text } from '@blocksuite/store';
 import { css, html } from 'lit';
 import { state } from 'lit/decorators.js';
 import { createRef, ref } from 'lit/directives/ref.js';
+import isEqual from 'lodash-es/isEqual';
 import * as Y from 'yjs';
 
 import { t } from '../../../../core/index.js';
@@ -63,11 +63,10 @@ export function fillSelectionWithFocusCellData(
   if (!focusCell) return;
 
   if (rowsSelection && columnsSelection) {
-    assertEquals(
-      columnsSelection.start,
-      columnsSelection.end,
-      'expected selections on a single column'
-    );
+    if (!isEqual(columnsSelection.start, columnsSelection.end)) {
+      console.error('expected selections on a single column');
+      return;
+    }
 
     const curCol = focusCell.column; // we are sure that we are always in the same column while iterating through rows
     const cell = focusCell.cell$.value;

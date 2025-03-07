@@ -3,27 +3,24 @@ import type { IconButton } from '@blocksuite/affine-components/icon-button';
 import {
   cleanSpecifiedTail,
   getTextContentFromInlineRange,
-} from '@blocksuite/affine-components/rich-text';
+} from '@blocksuite/affine-rich-text';
 import { unsafeCSSVar } from '@blocksuite/affine-shared/theme';
 import {
   createKeydownObserver,
   getCurrentNativeRange,
+  getPopperPosition,
   getViewportElement,
 } from '@blocksuite/affine-shared/utils';
 import { PropTypes, requiredProperties } from '@blocksuite/block-std';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
-import {
-  SignalWatcher,
-  throttle,
-  WithDisposable,
-} from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { MoreHorizontalIcon } from '@blocksuite/icons/lit';
 import { effect } from '@preact/signals-core';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query, queryAll, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import throttle from 'lodash-es/throttle';
 
-import { getPopperPosition } from '../../utils/position.js';
 import type { LinkedDocContext, LinkedMenuGroup } from './config.js';
 import { linkedDocPopoverStyles } from './styles.js';
 import { resolveSignal } from './utils.js';

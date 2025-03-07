@@ -2,8 +2,8 @@ import {
   EdgelessCRUDIdentifier,
   TextUtils,
 } from '@blocksuite/affine-block-surface';
-import type { RichText } from '@blocksuite/affine-components/rich-text';
 import type { TextElementModel } from '@blocksuite/affine-model';
+import type { RichText } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { getSelectedRect } from '@blocksuite/affine-shared/utils';
 import {
@@ -11,7 +11,7 @@ import {
   ShadowlessElement,
 } from '@blocksuite/block-std';
 import { Bound, toRadian, Vec } from '@blocksuite/global/gfx';
-import { WithDisposable } from '@blocksuite/global/utils';
+import { WithDisposable } from '@blocksuite/global/lit';
 import { css, html, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';

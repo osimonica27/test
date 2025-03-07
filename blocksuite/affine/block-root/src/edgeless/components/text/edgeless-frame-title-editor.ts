@@ -1,5 +1,5 @@
-import type { RichText } from '@blocksuite/affine-components/rich-text';
 import { FrameBlockModel } from '@blocksuite/affine-model';
+import type { RichText } from '@blocksuite/affine-rich-text';
 import {
   AFFINE_FRAME_TITLE_WIDGET,
   type AffineFrameTitleWidget,
@@ -10,7 +10,7 @@ import {
   ShadowlessElement,
 } from '@blocksuite/block-std';
 import { Bound } from '@blocksuite/global/gfx';
-import { WithDisposable } from '@blocksuite/global/utils';
+import { WithDisposable } from '@blocksuite/global/lit';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { css, html, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';

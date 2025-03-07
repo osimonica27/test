@@ -1,8 +1,8 @@
+import type { RootBlockModel } from '@blocksuite/affine-model';
 import {
   DefaultInlineManagerExtension,
   type RichText,
-} from '@blocksuite/affine-components/rich-text';
-import type { RootBlockModel } from '@blocksuite/affine-model';
+} from '@blocksuite/affine-rich-text';
 import {
   ParseDocUrlProvider,
   TelemetryProvider,

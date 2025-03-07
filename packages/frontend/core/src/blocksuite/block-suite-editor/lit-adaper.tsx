@@ -7,6 +7,7 @@ import {
   type PageEditor,
 } from '@affine/core/blocksuite/editors';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
+import { AuthService, PublicUserService } from '@affine/core/modules/cloud';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
 import { DocService, DocsService } from '@affine/core/modules/doc';
 import type {
@@ -19,6 +20,7 @@ import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { JournalService } from '@affine/core/modules/journal';
 import { toURLSearchParams } from '@affine/core/modules/navigation';
 import { PeekViewService } from '@affine/core/modules/peek-view/services/peek-view';
+import { MemberSearchService } from '@affine/core/modules/permissions';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import track from '@affine/track';
 import {
@@ -69,6 +71,8 @@ import {
   type ReferenceReactRenderer,
 } from '../extensions/reference-renderer';
 import { patchSideBarService } from '../extensions/side-bar-service';
+import { patchUserExtensions } from '../extensions/user';
+import { patchUserListExtensions } from '../extensions/user-list';
 import { BiDirectionalLinkPanel } from './bi-directional-link-panel';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import { StarterBar } from './starter-bar';
@@ -90,6 +94,9 @@ const usePatchSpecs = (mode: DocMode) => {
     editorService,
     workspaceService,
     featureFlagService,
+    memberSearchService,
+    publicUserService,
+    authService,
   } = useServices({
     PeekViewService,
     DocService,
@@ -97,7 +104,11 @@ const usePatchSpecs = (mode: DocMode) => {
     WorkspaceService,
     EditorService,
     FeatureFlagService,
+    MemberSearchService,
+    PublicUserService,
+    AuthService,
   });
+  const isCloud = workspaceService.workspace.flavour !== 'local';
   const framework = useFramework();
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
     return function customReference(reference) {
@@ -155,6 +166,12 @@ const usePatchSpecs = (mode: DocMode) => {
         patchQuickSearchService(framework),
         patchSideBarService(framework),
         patchDocModeService(docService, docsService, editorService),
+        isCloud
+          ? [
+              patchUserListExtensions(memberSearchService),
+              patchUserExtensions(publicUserService, authService),
+            ]
+          : [],
         mode === 'edgeless' && enableTurboRenderer
           ? [ViewportTurboRendererExtension]
           : [],
@@ -173,18 +190,22 @@ const usePatchSpecs = (mode: DocMode) => {
 
     return builder.value;
   }, [
+    framework,
     mode,
+    enableAI,
+    reactToLit,
+    referenceRenderer,
     confirmModal,
+    peekViewService,
     docService,
     docsService,
     editorService,
-    framework,
-    peekViewService,
-    reactToLit,
-    referenceRenderer,
-    featureFlagService,
-    enableAI,
+    isCloud,
+    memberSearchService,
+    publicUserService,
+    authService,
     enableTurboRenderer,
+    featureFlagService.flags.enable_pdf_embed_preview.value,
   ]);
 
   return [

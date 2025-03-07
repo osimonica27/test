@@ -1,4 +1,4 @@
-import { DefaultInlineManagerExtension } from '@blocksuite/affine-components/rich-text';
+import { DefaultInlineManagerExtension } from '@blocksuite/affine-rich-text';
 import type { EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement } from '@blocksuite/block-std';
 import type { DetailSlotProps } from '@blocksuite/data-view';
@@ -6,7 +6,7 @@ import type {
   KanbanSingleView,
   TableSingleView,
 } from '@blocksuite/data-view/view-presets';
-import { WithDisposable } from '@blocksuite/global/utils';
+import { WithDisposable } from '@blocksuite/global/lit';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 

@@ -5,16 +5,16 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { TextBackgroundDuotoneIcon } from '@blocksuite/affine-components/icons';
+import type { TableColumn, TableRow } from '@blocksuite/affine-model';
 import {
   DefaultInlineManagerExtension,
   RichText,
-} from '@blocksuite/affine-components/rich-text';
-import type { TableColumn, TableRow } from '@blocksuite/affine-model';
+} from '@blocksuite/affine-rich-text';
 import { cssVarV2 } from '@blocksuite/affine-shared/theme';
 import { getViewportElement } from '@blocksuite/affine-shared/utils';
 import { ShadowlessElement } from '@blocksuite/block-std';
 import { IS_MAC } from '@blocksuite/global/env';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import {
   ArrowDownBigIcon,
   ArrowLeftBigIcon,

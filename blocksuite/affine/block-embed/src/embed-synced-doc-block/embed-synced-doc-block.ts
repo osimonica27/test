@@ -1,15 +1,15 @@
 import { Peekable } from '@blocksuite/affine-components/peek';
 import {
-  type DocLinkClickedEvent,
-  RefNodeSlotsProvider,
-} from '@blocksuite/affine-components/rich-text';
-import {
   type AliasInfo,
   type DocMode,
   type EmbedSyncedDocModel,
   NoteDisplayMode,
   type ReferenceInfo,
 } from '@blocksuite/affine-model';
+import {
+  type DocLinkClickedEvent,
+  RefNodeSlotsProvider,
+} from '@blocksuite/affine-rich-text';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
 import {
   DocDisplayMetaProvider,
@@ -291,15 +291,18 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     }
     const index = parent.children.indexOf(this.model);
 
-    doc.addBlock(
+    const blockId = doc.addBlock(
       'affine:embed-linked-doc',
       { caption, ...this.referenceInfo, ...aliasInfo },
       parent,
       index
     );
 
-    this.std.selection.setGroup('note', []);
     doc.deleteBlock(this.model);
+
+    this.std.selection.setGroup('note', [
+      this.std.selection.create(BlockSelection, { blockId }),
+    ]);
   };
 
   covertToInline = () => {
@@ -469,7 +472,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   }
 
   private _selectBlock() {
-    const selectionManager = this.host.selection;
+    const selectionManager = this.std.selection;
     const blockSelection = selectionManager.create(BlockSelection, {
       blockId: this.blockId,
     });

@@ -75,15 +75,11 @@ import { EdgelessTemplatePanel } from './edgeless/components/toolbar/template/te
 import { EdgelessTemplateButton } from './edgeless/components/toolbar/template/template-tool-button.js';
 import { EdgelessTextMenu } from './edgeless/components/toolbar/text/text-menu.js';
 import {
-  AFFINE_EMBED_CARD_TOOLBAR_WIDGET,
-  AFFINE_FORMAT_BAR_WIDGET,
-  AffineFormatBarWidget,
   AffineImageToolbarWidget,
   AffineModalWidget,
   EDGELESS_TOOLBAR_WIDGET,
   EdgelessRootBlockComponent,
   EdgelessRootPreviewBlockComponent,
-  EmbedCardToolbar,
   FramePreview,
   PageRootBlockComponent,
   PreviewRootBlockComponent,
@@ -110,14 +106,6 @@ import {
   AFFINE_PAGE_DRAGGING_AREA_WIDGET,
   AffinePageDraggingAreaWidget,
 } from './widgets/page-dragging-area/page-dragging-area.js';
-import {
-  AFFINE_SLASH_MENU_WIDGET,
-  AffineSlashMenuWidget,
-} from './widgets/slash-menu/index.js';
-import {
-  InnerSlashMenu,
-  SlashMenu,
-} from './widgets/slash-menu/slash-menu-popover.js';
 import {
   AFFINE_SURFACE_REF_TOOLBAR,
   AffineSurfaceRefToolbar,
@@ -153,7 +141,6 @@ function registerRootComponents() {
 }
 
 function registerWidgets() {
-  customElements.define(AFFINE_EMBED_CARD_TOOLBAR_WIDGET, EmbedCardToolbar);
   customElements.define(AFFINE_INNER_MODAL_WIDGET, AffineInnerModalWidget);
   customElements.define(AFFINE_MODAL_WIDGET, AffineModalWidget);
   customElements.define(
@@ -161,7 +148,6 @@ function registerWidgets() {
     AffinePageDraggingAreaWidget
   );
   customElements.define(AFFINE_IMAGE_TOOLBAR_WIDGET, AffineImageToolbarWidget);
-  customElements.define(AFFINE_SLASH_MENU_WIDGET, AffineSlashMenuWidget);
   customElements.define(
     AFFINE_VIEWPORT_OVERLAY_WIDGET,
     AffineViewportOverlayWidget
@@ -171,7 +157,6 @@ function registerWidgets() {
     AffineEdgelessZoomToolbarWidget
   );
   customElements.define(AFFINE_SURFACE_REF_TOOLBAR, AffineSurfaceRefToolbar);
-  customElements.define(AFFINE_FORMAT_BAR_WIDGET, AffineFormatBarWidget);
 }
 
 function registerEdgelessToolbarComponents() {
@@ -280,8 +265,6 @@ function registerEdgelessEditorComponents() {
 function registerMiscComponents() {
   // Modal and menu components
   customElements.define('affine-custom-modal', AffineCustomModal);
-  customElements.define('affine-slash-menu', SlashMenu);
-  customElements.define('inner-slash-menu', InnerSlashMenu);
 
   // Loading and preview components
   customElements.define('loader-element', Loader);
