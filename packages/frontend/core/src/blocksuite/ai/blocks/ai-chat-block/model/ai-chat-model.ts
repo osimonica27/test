@@ -20,7 +20,6 @@ export const AIChatBlockSchema = defineBlockSchema({
   props: (): AIChatProps => ({
     xywh: '[0,0,0,0]',
     index: 'a0',
-    lockedBySelf: false,
     scale: 1,
     messages: '',
     sessionId: '',

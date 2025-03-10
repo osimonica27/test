@@ -22,7 +22,6 @@
           "light": "#ffffff"
         },
         "index": "a0",
-        "lockedBySelf": false,
         "hidden": false,
         "displayMode": "both",
         "edgeless": {
@@ -58,7 +57,6 @@
           "props": {
             "xywh": "[0,0,16,16]",
             "index": "a0",
-            "lockedBySelf": false,
             "scale": 1,
             "rotate": 0,
             "latex": "aaa"

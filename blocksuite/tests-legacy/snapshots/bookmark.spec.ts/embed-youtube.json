@@ -22,7 +22,6 @@
           "light": "#ffffff"
         },
         "index": "a0",
-        "lockedBySelf": false,
         "hidden": false,
         "displayMode": "both",
         "edgeless": {
@@ -43,7 +42,6 @@
           "props": {
             "index": "a0",
             "xywh": "[0,0,0,0]",
-            "lockedBySelf": false,
             "rotate": 0,
             "style": "video",
             "url": "https://www.youtube.com/watch?v=fakeid",

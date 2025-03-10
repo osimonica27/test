@@ -27,7 +27,6 @@
           "props": {
             "xywh": "[-25,-25,220,26]",
             "index": "a1",
-            "lockedBySelf": false,
             "color": "#53b2ef",
             "fontFamily": "blocksuite:surface:Inter",
             "fontStyle": "normal",
@@ -79,7 +78,6 @@
           "light": "#ffffff"
         },
         "index": "a0",
-        "lockedBySelf": false,
         "hidden": false,
         "displayMode": "both",
         "edgeless": {
