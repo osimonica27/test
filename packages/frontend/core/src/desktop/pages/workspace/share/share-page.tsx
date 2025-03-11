@@ -20,7 +20,7 @@ import {
   WorkspacesService,
 } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
-import { DisposableGroup } from '@blocksuite/affine/global/slot';
+import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { type DocMode, DocModes } from '@blocksuite/affine/model';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
 import { Logo1Icon } from '@blocksuite/icons/rc';
@@ -201,7 +201,7 @@ const SharePageInner = ({
         editorContainer.host?.std.getOptional(RefNodeSlotsProvider);
       if (refNodeSlots) {
         disposable.add(
-          refNodeSlots.docLinkClicked.on(({ pageId, params }) => {
+          refNodeSlots.docLinkClicked.subscribe(({ pageId, params }) => {
             if (params) {
               const { mode, blockIds, elementIds } = params;
               jumpToPageBlock(workspaceId, pageId, mode, blockIds, elementIds);

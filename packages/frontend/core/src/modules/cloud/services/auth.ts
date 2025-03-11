@@ -52,7 +52,7 @@ export class AuthService extends Service {
         skip(1) // skip the initial value
       )
       .subscribe(({ account }) => {
-        AIProvider.slots.userInfo.emit(toAIUserInfo(account));
+        AIProvider.slots.userInfo.next(toAIUserInfo(account));
 
         if (account === null) {
           this.eventBus.emit(AccountLoggedOut, account);

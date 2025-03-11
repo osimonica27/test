@@ -232,7 +232,7 @@ export class EdgelessChangeShapeButton extends WithDisposable(LitElement) {
     const _disposables = this._disposables;
 
     _disposables.add(
-      this._shapePanel.slots.select.on(shapeName => {
+      this._shapePanel.slots.select.subscribe(shapeName => {
         this.edgeless.doc.captureSync();
         this.elements.forEach(element => {
           this.crud.updateElement(element.id, {

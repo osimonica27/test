@@ -18,10 +18,7 @@ import { ViewService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { isNewTabTrigger } from '@affine/core/utils';
 import track from '@affine/track';
-import {
-  type Disposable,
-  DisposableGroup,
-} from '@blocksuite/affine/global/slot';
+import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
 import {
   AiIcon,
@@ -39,6 +36,7 @@ import {
 import clsx from 'clsx';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import type { Subscription } from 'rxjs';
 
 import { AffineErrorBoundary } from '../../../../components/affine/affine-error-boundary';
 import { GlobalPageHistoryModal } from '../../../../components/affine/page-history-modal';
@@ -113,14 +111,18 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   }, [editorContainer, isActiveView, setActiveBlockSuiteEditor]);
 
   useEffect(() => {
-    const disposables: Disposable[] = [];
+    const disposables: Subscription[] = [];
     const openHandler = () => {
       workbench.openSidebar();
       view.activeSidebarTab('chat');
     };
-    disposables.push(AIProvider.slots.requestOpenWithChat.on(openHandler));
-    disposables.push(AIProvider.slots.requestSendWithChat.on(openHandler));
-    return () => disposables.forEach(d => d.dispose());
+    disposables.push(
+      AIProvider.slots.requestOpenWithChat.subscribe(openHandler)
+    );
+    disposables.push(
+      AIProvider.slots.requestSendWithChat.subscribe(openHandler)
+    );
+    return () => disposables.forEach(d => d.unsubscribe());
   }, [activeSidebarTab, view, workbench]);
 
   useEffect(() => {
@@ -169,7 +171,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         if (refNodeSlots) {
           disposable.add(
             // the event should not be emitted by AffineReference
-            refNodeSlots.docLinkClicked.on(
+            refNodeSlots.docLinkClicked.subscribe(
               ({ pageId, params, openMode, event, host }) => {
                 if (host !== editorContainer.host) {
                   return;

@@ -81,7 +81,7 @@ export class LinkCell extends BaseCellRenderer<string> {
       return;
     }
 
-    std.getOptional(RefNodeSlotsProvider)?.docLinkClicked.emit({
+    std.getOptional(RefNodeSlotsProvider)?.docLinkClicked.next({
       pageId: this.docId$.value,
       host: std.host,
     });

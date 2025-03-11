@@ -1,5 +1,5 @@
 import type { PropertyMetaConfig } from '@blocksuite/data-view';
-import type { Disposable } from '@blocksuite/global/slot';
+import type { DisposableMember } from '@blocksuite/global/disposable';
 import type { Block, BlockModel } from '@blocksuite/store';
 
 type PropertyMeta<
@@ -14,7 +14,7 @@ type PropertyMeta<
   setColumnData?: (block: T, data: ColumnData) => void;
   get: (block: T) => Value;
   set?: (block: T, value: Value) => void;
-  updated: (block: T, callback: () => void) => Disposable;
+  updated: (block: T, callback: () => void) => DisposableMember;
 };
 export type BlockMeta<T extends BlockModel = BlockModel> = {
   selector: (block: Block) => boolean;

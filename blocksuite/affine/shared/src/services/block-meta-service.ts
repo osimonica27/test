@@ -21,7 +21,7 @@ export class BlockMetaService extends StoreExtension {
 
   override loaded() {
     this.store.disposableGroup.add(
-      this.store.slots.blockUpdated.on(({ type, id }) => {
+      this.store.slots.blockUpdated.subscribe(({ type, id }) => {
         if (!this.isBlockMetaEnabled) return;
 
         const model = this.store.getBlock(id)?.model;

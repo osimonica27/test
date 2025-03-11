@@ -25,7 +25,7 @@ import {
   customImageProxyMiddleware,
   ImageProxyService,
 } from '@blocksuite/affine/blocks/image';
-import { DisposableGroup } from '@blocksuite/affine/global/slot';
+import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
 import { LinkPreviewerService } from '@blocksuite/affine/shared/services';
 import {
@@ -162,7 +162,7 @@ const DetailPageImpl = () => {
       const disposable = new DisposableGroup();
       if (refNodeService) {
         disposable.add(
-          refNodeService.docLinkClicked.on(({ pageId, params }) => {
+          refNodeService.docLinkClicked.subscribe(({ pageId, params }) => {
             if (params) {
               const { mode, blockIds, elementIds } = params;
               return jumpToPageBlock(

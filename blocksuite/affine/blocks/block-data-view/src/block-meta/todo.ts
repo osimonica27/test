@@ -39,7 +39,7 @@ todoMeta.addProperty({
     block.checked = value ?? false;
   },
   updated: (block, callback) => {
-    return block.propsUpdated.on(({ key }) => {
+    return block.propsUpdated.subscribe(({ key }) => {
       if (key === 'checked') {
         callback();
       }
@@ -53,7 +53,7 @@ todoMeta.addProperty({
   metaConfig: propertyPresets.textPropertyConfig,
   get: block => block.doc.meta?.title ?? '',
   updated: (block, callback) => {
-    return block.doc.workspace.slots.docListUpdated.on(() => {
+    return block.doc.workspace.slots.docListUpdated.subscribe(() => {
       callback();
     });
   },

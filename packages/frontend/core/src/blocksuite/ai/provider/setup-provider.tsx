@@ -527,13 +527,15 @@ Could you make a new website based on these notes and send back just the html fi
     return client.forkSession(options);
   });
 
-  const disposeRequestLoginHandler = AIProvider.slots.requestLogin.on(() => {
-    globalDialogService.open('sign-in', {});
-  });
+  const disposeRequestLoginHandler = AIProvider.slots.requestLogin.subscribe(
+    () => {
+      globalDialogService.open('sign-in', {});
+    }
+  );
 
   setupTracker();
 
   return () => {
-    disposeRequestLoginHandler.dispose();
+    disposeRequestLoginHandler.unsubscribe();
   };
 }

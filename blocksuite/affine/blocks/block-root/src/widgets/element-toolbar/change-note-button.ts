@@ -159,7 +159,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     const surfaceService = this.edgeless.service;
     if (!surfaceService) return;
 
-    this.edgeless.slots.toggleNoteSlicer.emit();
+    this.edgeless.slots.toggleNoteSlicer.next();
   }
 
   private _setCollapse() {
@@ -201,7 +201,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     const clear = () => {
       this.doc.history.off('stack-item-added', addHandler);
       this.doc.history.off('stack-item-popped', popHandler);
-      disposable.dispose();
+      disposable.unsubscribe();
     };
     const closeNotify = () => {
       abortController.abort();
@@ -212,7 +212,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     const popHandler = this.doc.history.on('stack-item-popped', closeNotify);
     const disposable = this.edgeless.std
       .get(EditorLifeCycleExtension)
-      .slots.unmounted.on(closeNotify);
+      .slots.unmounted.subscribe(closeNotify);
 
     const undo = () => {
       this.doc.undo();
