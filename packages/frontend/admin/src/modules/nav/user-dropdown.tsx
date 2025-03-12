@@ -12,7 +12,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@affine/admin/components/ui/dropdown-menu';
-import { CircleUser, MoreVertical } from 'lucide-react';
+import { MoreVerticalIcon } from '@blocksuite/icons/rc';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { CircleUser } from 'lucide-react';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -79,10 +81,11 @@ export function UserDropdown({ isCollapsed }: UserDropdownProps) {
           <span className="text-sm">{currentUser?.email.split('@')[0]}</span>
         )}
         <span
-          className="rounded p-1 text-xs"
+          className="ml-2 rounded px-2 py-0.5 text-xs h-5 border"
           style={{
-            backgroundColor: 'rgba(30, 150, 235, 0.20)',
-            color: 'rgba(30, 150, 235, 1)',
+            borderRadius: '4px',
+            backgroundColor: cssVarV2('chip/label/blue'),
+            borderColor: cssVarV2('layer/insideBorder/border'),
           }}
         >
           Admin
@@ -91,7 +94,7 @@ export function UserDropdown({ isCollapsed }: UserDropdownProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="ml-2 p-1 h-6">
-            <MoreVertical size={20} />
+            <MoreVerticalIcon fontSize={20} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" side="right">

@@ -6,6 +6,7 @@ import {
 import type { UserType } from '@affine/graphql';
 import { FeatureType } from '@affine/graphql';
 import type { ColumnDef } from '@tanstack/react-table';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import clsx from 'clsx';
 import {
   LockIcon,
@@ -64,16 +65,29 @@ export const columns: ColumnDef<UserType>[] = [
         </Avatar>
         <div className="flex flex-col gap-1 max-w-full overflow-hidden">
           <div className="text-sm font-medium max-w-full overflow-hidden gap-[6px]">
-            <span>{row.original.name}</span>{' '}
+            <span>{row.original.name}</span>
             {row.original.features.includes(FeatureType.Admin) && (
               <span
-                className="rounded p-1 text-xs"
+                className="ml-2 rounded px-2 py-0.5 text-xs h-5 border"
                 style={{
-                  backgroundColor: 'rgba(30, 150, 235, 0.20)',
-                  color: 'rgba(30, 150, 235, 1)',
+                  borderRadius: '4px',
+                  backgroundColor: cssVarV2('chip/label/blue'),
+                  borderColor: cssVarV2('layer/insideBorder/border'),
                 }}
               >
                 Admin
+              </span>
+            )}
+            {row.original.disabled && (
+              <span
+                className="ml-2 rounded px-2 py-0.5 text-xs h-5 border"
+                style={{
+                  borderRadius: '4px',
+                  backgroundColor: cssVarV2('chip/label/white'),
+                  borderColor: cssVarV2('layer/insideBorder/border'),
+                }}
+              >
+                Disabled
               </span>
             )}
           </div>

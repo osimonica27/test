@@ -10,17 +10,17 @@ import {
 import { Input } from '@affine/admin/components/ui/input';
 import { useCallback, useEffect, useState } from 'react';
 
-export const DeleteAccountDialog = ({
+export const DisableAccountDialog = ({
   email,
   open,
   onClose,
-  onDelete,
+  onDisable,
   onOpenChange,
 }: {
   email: string;
   open: boolean;
   onClose: () => void;
-  onDelete: () => void;
+  onDisable: () => void;
   onOpenChange: (open: boolean) => void;
 }) => {
   const [input, setInput] = useState('');
@@ -41,11 +41,11 @@ export const DeleteAccountDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[460px]">
         <DialogHeader>
-          <DialogTitle>Delete Account ?</DialogTitle>
+          <DialogTitle>Disable Account ?</DialogTitle>
           <DialogDescription>
-            <span className="font-bold">{email}</span> will be permanently
-            deleted. This operation is irreversible. Please proceed with
-            caution.
+            The data associated with <span className="font-bold">{email}</span>{' '}
+            will be deleted and cannot be used for logging in. This operation is
+            irreversible. Please proceed with caution.
           </DialogDescription>
         </DialogHeader>
         <Input
@@ -62,12 +62,12 @@ export const DeleteAccountDialog = ({
             </Button>
             <Button
               type="button"
-              onClick={onDelete}
+              onClick={onDisable}
+              disabled={input !== email}
               size="sm"
               variant="destructive"
-              disabled={input !== email}
             >
-              Delete
+              Disable
             </Button>
           </div>
         </DialogFooter>

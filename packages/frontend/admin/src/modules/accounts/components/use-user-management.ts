@@ -8,6 +8,8 @@ import {
   createChangePasswordUrlMutation,
   createUserMutation,
   deleteUserMutation,
+  disableUserMutation,
+  enableUserMutation,
   getUsersCountQuery,
   listUsersQuery,
   updateAccountFeaturesMutation,
@@ -160,6 +162,55 @@ export const useDeleteUser = () => {
   );
 
   return deleteById;
+};
+
+export const useEnableUser = () => {
+  const { trigger: enableUserById } = useMutation({
+    mutation: enableUserMutation,
+  });
+
+  const revalidate = useMutateQueryResource();
+
+  const enableById = useAsyncCallback(
+    async (id: string, callback?: () => void) => {
+      await enableUserById({ id })
+        .then(async ({ enableUser }) => {
+          await revalidate(listUsersQuery);
+          toast(`User ${enableUser.email} enabled successfully`);
+          callback?.();
+        })
+        .catch(e => {
+          toast.error('Failed to enable user: ' + e.message);
+        });
+    },
+    [enableUserById, revalidate]
+  );
+
+  return enableById;
+};
+export const useDisableUser = () => {
+  const { trigger: disableUserById } = useMutation({
+    mutation: disableUserMutation,
+  });
+
+  const revalidate = useMutateQueryResource();
+
+  const disableById = useAsyncCallback(
+    async (id: string, callback?: () => void) => {
+      await disableUserById({ id })
+        .then(async ({ banUser }) => {
+          await revalidate(listUsersQuery);
+          toast(`User ${banUser.email} disabled successfully`);
+          callback?.();
+        })
+        .catch(e => {
+          toast.error('Failed to disable user: ' + e.message);
+        });
+    },
+    [disableUserById, revalidate]
+  );
+
+  return disableById;
 };
 
 export const useUserCount = () => {

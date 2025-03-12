@@ -636,6 +636,10 @@ export interface GraphqlBadRequestDataType {
   message: Scalars['String']['output'];
 }
 
+export interface ImportUsersInput {
+  users: Array<CreateUserInput>;
+}
+
 export interface InvalidEmailDataType {
   __typename?: 'InvalidEmailDataType';
   email: Scalars['String']['output'];
@@ -750,6 +754,8 @@ export interface InviteUserType {
    * @deprecated useless
    */
   createdAt: Maybe<Scalars['DateTime']['output']>;
+  /** User is disabled */
+  disabled: Maybe<Scalars['Boolean']['output']>;
   /** User email */
   email: Maybe<Scalars['String']['output']>;
   /** User email verified */
@@ -891,6 +897,8 @@ export interface Mutation {
   addContextDoc: Array<CopilotContextListItem>;
   addWorkspaceFeature: Scalars['Boolean']['output'];
   approveMember: Scalars['Boolean']['output'];
+  /** Ban an user */
+  banUser: UserType;
   cancelSubscription: SubscriptionType;
   changeEmail: UserType;
   changePassword: Scalars['Boolean']['output'];
@@ -922,11 +930,15 @@ export interface Mutation {
   /** Delete a user account */
   deleteUser: DeleteAccount;
   deleteWorkspace: Scalars['Boolean']['output'];
+  /** Reenable an banned user */
+  enableUser: UserType;
   /** Create a chat session */
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
+  /** import users */
+  importUsers: Array<UserImportResultType>;
   invite: Scalars['String']['output'];
   inviteBatch: Array<InviteResult>;
   leaveWorkspace: Scalars['Boolean']['output'];
@@ -969,7 +981,7 @@ export interface Mutation {
   /** update multiple server runtime configurable settings */
   updateRuntimeConfigs: Array<ServerRuntimeConfigType>;
   updateSubscriptionRecurring: SubscriptionType;
-  /** Update a user */
+  /** Update an user */
   updateUser: UserType;
   /** update user enabled feature */
   updateUserFeatures: Array<FeatureType>;
@@ -1003,6 +1015,10 @@ export interface MutationAddWorkspaceFeatureArgs {
 export interface MutationApproveMemberArgs {
   userId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationBanUserArgs {
+  id: Scalars['String']['input'];
 }
 
 export interface MutationCancelSubscriptionArgs {
@@ -1088,6 +1104,10 @@ export interface MutationDeleteWorkspaceArgs {
   id: Scalars['String']['input'];
 }
 
+export interface MutationEnableUserArgs {
+  id: Scalars['String']['input'];
+}
+
 export interface MutationForkCopilotSessionArgs {
   options: ForkChatSessionInput;
 }
@@ -1104,6 +1124,10 @@ export interface MutationGrantMemberArgs {
   permission: Permission;
   userId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationImportUsersArgs {
+  input: ImportUsersInput;
 }
 
 export interface MutationInviteArgs {
@@ -1517,6 +1541,14 @@ export interface QueryTooLongDataType {
   max: Scalars['Int']['output'];
 }
 
+export interface ReleaseVersionType {
+  __typename?: 'ReleaseVersionType';
+  changelog: Scalars['String']['output'];
+  publishedAt: Scalars['DateTime']['output'];
+  url: Scalars['String']['output'];
+  version: Scalars['String']['output'];
+}
+
 export interface RemoveAvatar {
   __typename?: 'RemoveAvatar';
   success: Scalars['Boolean']['output'];
@@ -1553,6 +1585,8 @@ export interface SameSubscriptionRecurringDataType {
 
 export interface ServerConfigType {
   __typename?: 'ServerConfigType';
+  /** fetch latest available upgradable release of server */
+  availableUpgrade: ReleaseVersionType;
   /** Features for user that can be configured */
   availableUserFeatures: Array<FeatureType>;
   /** server base url */
@@ -1772,6 +1806,14 @@ export interface UpdateWorkspaceInput {
   public?: InputMaybe<Scalars['Boolean']['input']>;
 }
 
+export interface UserImportFailedType {
+  __typename?: 'UserImportFailedType';
+  email: Scalars['String']['output'];
+  error: Scalars['String']['output'];
+}
+
+export type UserImportResultType = UserImportFailedType | UserType;
+
 export type UserOrLimitedUser = LimitedUserType | UserType;
 
 export interface UserQuotaHumanReadableType {
@@ -1813,6 +1855,8 @@ export interface UserType {
    * @deprecated useless
    */
   createdAt: Maybe<Scalars['DateTime']['output']>;
+  /** User is disabled */
+  disabled: Scalars['Boolean']['output'];
   /** User email */
   email: Scalars['String']['output'];
   /** User email verified */
@@ -2551,6 +2595,15 @@ export type DeleteWorkspaceMutation = {
   deleteWorkspace: boolean;
 };
 
+export type DisableUserMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type DisableUserMutation = {
+  __typename?: 'Mutation';
+  banUser: { __typename?: 'UserType'; email: string; disabled: boolean };
+};
+
 export type GetDocRolePermissionsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   docId: Scalars['String']['input'];
@@ -2580,6 +2633,15 @@ export type GetDocRolePermissionsQuery = {
       };
     };
   };
+};
+
+export type EnableUserMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type EnableUserMutation = {
+  __typename?: 'Mutation';
+  enableUser: { __typename?: 'UserType'; email: string; disabled: boolean };
 };
 
 export type CredentialsRequirementsFragment = {
@@ -3149,6 +3211,7 @@ export type ListUsersQuery = {
     id: string;
     name: string;
     email: string;
+    disabled: boolean;
     features: Array<FeatureType>;
     hasPassword: boolean | null;
     emailVerified: boolean;
@@ -4105,6 +4168,16 @@ export type Mutations =
       name: 'deleteWorkspaceMutation';
       variables: DeleteWorkspaceMutationVariables;
       response: DeleteWorkspaceMutation;
+    }
+  | {
+      name: 'disableUserMutation';
+      variables: DisableUserMutationVariables;
+      response: DisableUserMutation;
+    }
+  | {
+      name: 'enableUserMutation';
+      variables: EnableUserMutationVariables;
+      response: EnableUserMutation;
     }
   | {
       name: 'generateLicenseKeyMutation';
