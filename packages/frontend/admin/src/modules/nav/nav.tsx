@@ -4,6 +4,7 @@ import { AccountIcon, AiOutlineIcon, SelfhostIcon } from '@blocksuite/icons/rc';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { NavLink } from 'react-router-dom';
 
+import { ServerVersion } from './server-version';
 import { SettingsItem } from './settings-item';
 import { UserDropdown } from './user-dropdown';
 
@@ -112,11 +113,12 @@ export function Nav({ isCollapsed = false }: NavProps) {
       </nav>
       <div
         className={cn(
-          'flex gap-1 px-2 flex-col overflow-hidden',
+          'flex gap-2 px-2 flex-col overflow-hidden',
           isCollapsed && 'items-center px-0 gap-1'
         )}
       >
         <UserDropdown isCollapsed={isCollapsed} />
+        {isCollapsed ? null : <ServerVersion />}
       </div>
     </div>
   );

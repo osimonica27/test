@@ -449,6 +449,7 @@ type DocRoleControlType =
   | 'Manager'
   | 'Reader'
   | 'External'
+  | 'None'
   | 'Remove';
 
 type TabActionControlType =

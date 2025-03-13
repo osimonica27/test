@@ -40,6 +40,12 @@ export const adminServerConfigQuery = {
     credentialsRequirement {
       ...CredentialsRequirements
     }
+    availableUpgrade {
+      changelog
+      version
+      publishedAt
+      url
+    }
     availableUserFeatures
   }
 }
