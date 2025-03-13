@@ -58,41 +58,60 @@ export function ImportUsersDialog({
 
   const importUsersCallback = useCallback(
     (result: UserImportReturnType) => {
-      const successCount = result.filter(
-        r => r.__typename === 'UserType'
-      ).length;
+      const successfulUsers = result.filter(
+        (user): user is Extract<typeof user, { __typename: 'UserType' }> =>
+          user.__typename === 'UserType'
+      );
+
+      const failedUsers = result.filter(
+        (
+          user
+        ): user is Extract<
+          typeof user,
+          { __typename: 'UserImportFailedType' }
+        > => user.__typename === 'UserImportFailedType'
+      );
+
+      const successCount = successfulUsers.length;
       const failedCount = parsedUsers.length - successCount;
-      if (failedCount < 1) {
-        toast.success(`Successfully imported ${successCount} users`);
-      }
+
       if (failedCount > 0) {
         toast.info(
           `Successfully imported ${successCount} users, ${failedCount} failed`
         );
+      } else {
+        toast.success(`Successfully imported ${successCount} users`);
       }
+
+      const successfulUserEmails = new Set(
+        successfulUsers.map(user => user.email)
+      );
+
+      const failedUserErrorMap = new Map(
+        failedUsers.map(user => [user.email, user.error])
+      );
+
       setParsedUsers(prev => {
-        const updatedUsers = prev.map(user => {
-          const resultForUser = result.find(r => r.email === user.email);
-          if (resultForUser?.__typename === 'UserType') {
+        return prev.map(user => {
+          if (successfulUserEmails.has(user.email)) {
             return {
               ...user,
               importStatus: ImportStatus.Success,
             };
           }
+
+          const errorMessage = failedUserErrorMap.get(user.email) || user.error;
           return {
             ...user,
             importStatus: ImportStatus.Failed,
-            importError: resultForUser?.error || user.error,
+            importError: errorMessage,
           };
         });
-
-        return updatedUsers;
       });
 
-      // Set importing state to false after processing results
       setIsImporting(false);
     },
-    [parsedUsers.length]
+    [parsedUsers.length, setIsImporting]
   );
 
   const handleFileSelected = useCallback(async (file: File) => {
