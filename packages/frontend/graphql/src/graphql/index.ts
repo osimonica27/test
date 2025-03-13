@@ -893,6 +893,25 @@ export const listHistoryQuery = {
 }`,
 };
 
+export const importUsersMutation = {
+  id: 'importUsersMutation' as const,
+  op: 'ImportUsers',
+  query: `mutation ImportUsers($input: ImportUsersInput!) {
+  importUsers(input: $input) {
+    __typename
+    ... on UserType {
+      id
+      name
+      email
+    }
+    ... on UserImportFailedType {
+      email
+      error
+    }
+  }
+}`,
+};
+
 export const getInvoicesCountQuery = {
   id: 'getInvoicesCountQuery' as const,
   op: 'getInvoicesCount',
