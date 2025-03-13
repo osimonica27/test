@@ -37,7 +37,7 @@
     "blocksuite/tests-legacy/snapshots"
   ],
   "rules": {
-    "import/named": "allow",
+    "import/named": "error",
     "no-await-in-loop": "allow",
     "promise/no-callback-in-promise": "allow",
     "typescript/ban-types": "allow",
@@ -231,7 +231,7 @@
         "typescript/ban-ts-comment": "off",
         "unicorn/prefer-dom-node-dataset": "off",
         "typescript/consistent-type-imports": "off",
-        "no-cycle": "off"
+        "import/no-cycle": "off"
       }
     }
   ]
