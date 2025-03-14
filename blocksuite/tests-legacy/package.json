@@ -10,7 +10,7 @@
     "@blocksuite/affine": "workspace:*",
     "@blocksuite/integration-test": "workspace:*",
     "@playwright/test": "=1.51.0",
-    "@toeverything/theme": "^1.1.12",
+    "@toeverything/theme": "^1.1.13",
     "rxjs": "^7.8.1"
   },
   "bsImport": {
