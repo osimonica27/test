@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid';
 import { Observable, ReplaySubject, share, Subject } from 'rxjs';
 import { diffUpdate, encodeStateVectorFromUpdate, mergeUpdates } from 'yjs';
 
-import type { DocStorage, SyncStorage } from '../../storage';
+import type { DocStorage, DocSyncStorage } from '../../storage';
 import { AsyncPriorityQueue } from '../../utils/async-priority-queue';
 import { ClockMap } from '../../utils/clock';
 import { isEmptyUpdate } from '../../utils/is-empty-update';
@@ -147,7 +147,7 @@ export class DocSyncPeer {
   constructor(
     readonly peerId: string,
     readonly local: DocStorage,
-    readonly syncMetadata: SyncStorage,
+    readonly syncMetadata: DocSyncStorage,
     readonly remote: DocStorage,
     readonly options: DocSyncPeerOptions = {}
   ) {}
@@ -557,10 +557,10 @@ export class DocSyncPeer {
         };
         this.statusUpdatedSubject$.next(true);
       }
-      // wait for 1s before next retry
+      // wait for 5s before next retry
       await Promise.race([
         new Promise<void>(resolve => {
-          setTimeout(resolve, 1000);
+          setTimeout(resolve, 5000);
         }),
         new Promise((_, reject) => {
           // exit if manually stopped

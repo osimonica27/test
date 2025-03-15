@@ -27,6 +27,7 @@
     "**/*.gen.ts",
     "**/*.gql",
     "**/*.d.ts",
+    "packages/frontend/graphql/src/graphql/index.ts",
     "tools/cli/src/webpack/error-handler.js",
     "packages/backend/native/index.d.ts",
     "packages/backend/server/src/__tests__/__snapshots__",

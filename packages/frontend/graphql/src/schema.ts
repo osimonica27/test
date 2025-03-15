@@ -73,7 +73,7 @@ export interface ChatMessage {
   role: Scalars['String']['output'];
 }
 
-export enum ContextFileStatus {
+export enum ContextEmbedStatus {
   failed = 'failed',
   finished = 'finished',
   processing = 'processing',
@@ -155,6 +155,7 @@ export interface CopilotContext {
 export interface CopilotContextMatchContextArgs {
   content: Scalars['String']['input'];
   limit?: InputMaybe<Scalars['SafeInt']['input']>;
+  threshold?: InputMaybe<Scalars['Float']['input']>;
 }
 
 export interface CopilotContextMatchWorkspaceContextArgs {
@@ -166,6 +167,7 @@ export interface CopilotContextDoc {
   __typename?: 'CopilotContextDoc';
   createdAt: Scalars['SafeInt']['output'];
   id: Scalars['ID']['output'];
+  status: Maybe<ContextEmbedStatus>;
 }
 
 export interface CopilotContextFile {
@@ -176,7 +178,7 @@ export interface CopilotContextFile {
   error: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
-  status: ContextFileStatus;
+  status: ContextEmbedStatus;
 }
 
 export interface CopilotContextFileNotSupportedDataType {
@@ -381,6 +383,12 @@ export interface DocHistoryType {
   id: Scalars['String']['output'];
   timestamp: Scalars['DateTime']['output'];
   workspaceId: Scalars['String']['output'];
+}
+
+/** Doc mode */
+export enum DocMode {
+  edgeless = 'edgeless',
+  page = 'page',
 }
 
 export interface DocNotFoundDataType {
@@ -887,6 +895,7 @@ export interface MentionDocInput {
   /** The element id in the doc */
   elementId?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['String']['input'];
+  mode: DocMode;
   title: Scalars['String']['input'];
 }
 
@@ -895,6 +904,7 @@ export interface MentionDocType {
   blockId: Maybe<Scalars['String']['output']>;
   elementId: Maybe<Scalars['String']['output']>;
   id: Scalars['String']['output'];
+  mode: DocMode;
   title: Scalars['String']['output'];
 }
 
@@ -2329,6 +2339,7 @@ export type AddContextDocMutation = {
     __typename?: 'CopilotContextDoc';
     id: string;
     createdAt: number;
+    status: ContextEmbedStatus | null;
   };
 };
 
@@ -2354,42 +2365,10 @@ export type AddContextFileMutation = {
     createdAt: number;
     name: string;
     chunkSize: number;
-    status: ContextFileStatus;
+    error: string | null;
+    status: ContextEmbedStatus;
     blobId: string;
   };
-};
-
-export type ListContextFilesQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  sessionId: Scalars['String']['input'];
-  contextId: Scalars['String']['input'];
-}>;
-
-export type ListContextFilesQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    copilot: {
-      __typename?: 'Copilot';
-      contexts: Array<{
-        __typename?: 'CopilotContext';
-        docs: Array<{
-          __typename?: 'CopilotContextDoc';
-          id: string;
-          createdAt: number;
-        }>;
-        files: Array<{
-          __typename?: 'CopilotContextFile';
-          id: string;
-          name: string;
-          blobId: string;
-          chunkSize: number;
-          status: ContextFileStatus;
-          createdAt: number;
-        }>;
-      }>;
-    };
-  } | null;
 };
 
 export type MatchContextQueryVariables = Exact<{
@@ -2427,13 +2406,13 @@ export type RemoveContextFileMutation = {
   removeContextFile: boolean;
 };
 
-export type ListContextDocsAndFilesQueryVariables = Exact<{
+export type ListContextObjectQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   sessionId: Scalars['String']['input'];
   contextId: Scalars['String']['input'];
 }>;
 
-export type ListContextDocsAndFilesQuery = {
+export type ListContextObjectQuery = {
   __typename?: 'Query';
   currentUser: {
     __typename?: 'UserType';
@@ -2444,6 +2423,7 @@ export type ListContextDocsAndFilesQuery = {
         docs: Array<{
           __typename?: 'CopilotContextDoc';
           id: string;
+          status: ContextEmbedStatus | null;
           createdAt: number;
         }>;
         files: Array<{
@@ -2453,7 +2433,7 @@ export type ListContextDocsAndFilesQuery = {
           blobId: string;
           chunkSize: number;
           error: string | null;
-          status: ContextFileStatus;
+          status: ContextEmbedStatus;
           createdAt: number;
         }>;
       }>;
@@ -3444,6 +3424,15 @@ export type ListUsersQuery = {
   }>;
 };
 
+export type MentionUserMutationVariables = Exact<{
+  input: MentionInput;
+}>;
+
+export type MentionUserMutation = {
+  __typename?: 'Mutation';
+  mentionUser: string;
+};
+
 export type NotificationCountQueryVariables = Exact<{ [key: string]: never }>;
 
 export type NotificationCountQuery = {
@@ -4023,19 +4012,14 @@ export type Queries =
       response: ListBlobsQuery;
     }
   | {
-      name: 'listContextFilesQuery';
-      variables: ListContextFilesQueryVariables;
-      response: ListContextFilesQuery;
-    }
-  | {
       name: 'matchContextQuery';
       variables: MatchContextQueryVariables;
       response: MatchContextQuery;
     }
   | {
-      name: 'listContextDocsAndFilesQuery';
-      variables: ListContextDocsAndFilesQueryVariables;
-      response: ListContextDocsAndFilesQuery;
+      name: 'listContextObjectQuery';
+      variables: ListContextObjectQueryVariables;
+      response: ListContextObjectQuery;
     }
   | {
       name: 'listContextQuery';
@@ -4458,6 +4442,11 @@ export type Mutations =
       name: 'leaveWorkspaceMutation';
       variables: LeaveWorkspaceMutationVariables;
       response: LeaveWorkspaceMutation;
+    }
+  | {
+      name: 'mentionUserMutation';
+      variables: MentionUserMutationVariables;
+      response: MentionUserMutation;
     }
   | {
       name: 'publishPageMutation';

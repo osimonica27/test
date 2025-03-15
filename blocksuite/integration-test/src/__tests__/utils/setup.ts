@@ -99,6 +99,16 @@ async function createEditor(
   return app;
 }
 
+export function createPainterWorker() {
+  const worker = new Worker(
+    new URL('./turbo-painter-entry.worker.ts', import.meta.url),
+    {
+      type: 'module',
+    }
+  );
+  return worker;
+}
+
 export async function setupEditor(
   mode: DocMode = 'page',
   extensions: ExtensionType[] = []

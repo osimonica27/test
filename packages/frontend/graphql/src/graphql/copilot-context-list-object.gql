@@ -1,4 +1,4 @@
-query listContextFiles(
+query listContextObject(
   $workspaceId: String!
   $sessionId: String!
   $contextId: String!
@@ -8,6 +8,7 @@ query listContextFiles(
       contexts(sessionId: $sessionId, contextId: $contextId) {
         docs {
           id
+          status
           createdAt
         }
         files {
@@ -15,6 +16,7 @@ query listContextFiles(
           name
           blobId
           chunkSize
+          error
           status
           createdAt
         }

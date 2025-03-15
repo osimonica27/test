@@ -35,7 +35,7 @@ type ChatMessage {
   role: String!
 }
 
-enum ContextFileStatus {
+enum ContextEmbedStatus {
   failed
   finished
   processing
@@ -95,6 +95,7 @@ type CopilotContext {
 type CopilotContextDoc {
   createdAt: SafeInt!
   id: ID!
+  status: ContextEmbedStatus
 }
 
 type CopilotContextFile {
@@ -104,7 +105,7 @@ type CopilotContextFile {
   error: String
   id: ID!
   name: String!
-  status: ContextFileStatus!
+  status: ContextEmbedStatus!
 }
 
 type CopilotContextFileNotSupportedDataType {
@@ -297,6 +298,12 @@ type DocHistoryType {
   id: String!
   timestamp: DateTime!
   workspaceId: String!
+}
+
+"""Doc mode"""
+enum DocMode {
+  edgeless
+  page
 }
 
 type DocNotFoundDataType {
@@ -754,6 +761,7 @@ input MentionDocInput {
   """The element id in the doc"""
   elementId: String
   id: String!
+  mode: DocMode!
   title: String!
 }
 
@@ -761,6 +769,7 @@ type MentionDocType {
   blockId: String
   elementId: String
   id: String!
+  mode: DocMode!
   title: String!
 }
 

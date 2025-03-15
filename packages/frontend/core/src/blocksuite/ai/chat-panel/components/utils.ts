@@ -8,7 +8,7 @@ import type { ChatChip, ChipState, DocChip, FileChip } from '../chat-context';
 export function getChipTooltip(
   state: ChipState,
   name: string,
-  tooltip?: string
+  tooltip?: string | null
 ) {
   if (tooltip) {
     return tooltip;
@@ -20,7 +20,7 @@ export function getChipTooltip(
     return 'Processing...';
   }
   if (state === 'failed') {
-    return 'Failed to process';
+    return 'Failed to add to context';
   }
   return name;
 }
@@ -45,7 +45,7 @@ export function isDocChip(chip: ChatChip): chip is DocChip {
 }
 
 export function isFileChip(chip: ChatChip): chip is FileChip {
-  return 'fileId' in chip;
+  return 'file' in chip && chip.file instanceof File;
 }
 
 export function isDocContext(

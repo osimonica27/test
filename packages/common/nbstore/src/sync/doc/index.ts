@@ -1,9 +1,9 @@
 import type { Observable } from 'rxjs';
 import { combineLatest, map, of, ReplaySubject, share } from 'rxjs';
 
-import type { DocStorage, SyncStorage } from '../../storage';
+import type { DocStorage, DocSyncStorage } from '../../storage';
 import { DummyDocStorage } from '../../storage/dummy/doc';
-import { DummySyncStorage } from '../../storage/dummy/sync';
+import { DummyDocSyncStorage } from '../../storage/dummy/doc-sync';
 import { MANUALLY_STOP } from '../../utils/throw-if-aborted';
 import type { PeerStorageOptions } from '../types';
 import { DocSyncPeer } from './peer';
@@ -68,7 +68,7 @@ export class DocSyncImpl implements DocSync {
 
   constructor(
     readonly storages: PeerStorageOptions<DocStorage>,
-    readonly sync: SyncStorage
+    readonly sync: DocSyncStorage
   ) {}
 
   /**
@@ -80,7 +80,7 @@ export class DocSyncImpl implements DocSync {
         local: new DummyDocStorage(),
         remotes: {},
       },
-      new DummySyncStorage()
+      new DummyDocSyncStorage()
     );
   }
 

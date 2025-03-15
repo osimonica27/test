@@ -23,7 +23,10 @@ const cache = createEmotionCache();
 
 let storeManagerClient: StoreManagerClient;
 
-if (window.SharedWorker) {
+if (
+  window.SharedWorker &&
+  localStorage.getItem('disableSharedWorker') !== 'true'
+) {
   const worker = new SharedWorker(
     new URL(/* webpackChunkName: "nbstore" */ './nbstore.ts', import.meta.url),
     { name: 'affine-shared-worker' }

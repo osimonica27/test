@@ -112,7 +112,7 @@ export class ChatPanelDocChip extends SignalWatcher(
         const markdown = this.chip.markdown ?? new Signal<string>('');
         markdown.value = value;
         this.updateChip(this.chip, {
-          state: 'success',
+          state: 'finished',
           markdown,
           tokenCount,
         });
@@ -125,7 +125,7 @@ export class ChatPanelDocChip extends SignalWatcher(
     } catch (e) {
       this.updateChip(this.chip, {
         state: 'failed',
-        tooltip: e instanceof Error ? e.message : 'Failed to process document',
+        tooltip: e instanceof Error ? e.message : 'Failed to extract markdown',
       });
     }
   };

@@ -7578,6 +7578,10 @@ export function useAFFiNEI18N(): {
         message: string;
     }>): string;
     /**
+      * `Embedding feature not available, you may need to install pgvector extension to your database`
+      */
+    ["error.COPILOT_EMBEDDING_UNAVAILABLE"](): string;
+    /**
       * `You have exceeded your blob storage quota.`
       */
     ["error.BLOB_QUOTA_EXCEEDED"](): string;

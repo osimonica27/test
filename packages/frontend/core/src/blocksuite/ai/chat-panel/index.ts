@@ -1,6 +1,7 @@
 import './chat-panel-input';
 import './chat-panel-messages';
 
+import type { CopilotContextDoc, CopilotContextFile } from '@affine/graphql';
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import { ShadowlessElement } from '@blocksuite/affine/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
@@ -28,13 +29,14 @@ import type {
   DocSearchMenuConfig,
 } from './chat-config';
 import type {
+  ChatChip,
   ChatContextValue,
   ChatItem,
   DocChip,
   FileChip,
 } from './chat-context';
 import type { ChatPanelMessages } from './chat-panel-messages';
-import { isDocContext } from './components/utils';
+import { isDocChip, isDocContext } from './components/utils';
 
 const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
   quote: '',
@@ -45,6 +47,7 @@ const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
   status: 'idle',
   error: null,
   markdown: '',
+  embeddingProgress: [0, 0],
 };
 
 export class ChatPanel extends SignalWatcher(
@@ -173,14 +176,13 @@ export class ChatPanel extends SignalWatcher(
     this._scrollToEnd();
   };
 
-  private readonly _updateChips = async () => {
+  private readonly _initChips = async () => {
     // context not initialized, show candidate chip
     if (!this._chatSessionId || !this._chatContextId) {
       return;
     }
 
     // context initialized, show the chips
-    let chips: (DocChip | FileChip)[] = [];
     const { docs = [], files = [] } =
       (await AIProvider.context?.getContextDocsAndFiles(
         this.doc.workspace.id,
@@ -191,27 +193,42 @@ export class ChatPanel extends SignalWatcher(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
-    chips = list.map(item => {
-      let chip: DocChip | FileChip;
-      if (isDocContext(item)) {
-        chip = {
-          docId: item.id,
-          state: 'processing',
-        };
-      } else {
-        chip = {
-          fileId: item.id,
-          state: item.status === 'finished' ? 'success' : item.status,
-          fileName: item.name,
-          fileType: '',
-        };
-      }
-      return chip;
-    });
+    const chips: ChatChip[] = await Promise.all(
+      list.map(async item => {
+        if (isDocContext(item)) {
+          return {
+            docId: item.id,
+            state: item.status || 'processing',
+          } as DocChip;
+        }
+        const file = await this.host.doc.blobSync.get(item.blobId);
+        if (!file) {
+          return {
+            blobId: item.id,
+            file: new File([], item.name),
+            state: 'failed',
+            tooltip: 'File not found in blob storage',
+          } as FileChip;
+        } else {
+          return {
+            file: new File([file], item.name),
+            blobId: item.blobId,
+            fileId: item.id,
+            state: item.status,
+            tooltip: item.error,
+          } as FileChip;
+        }
+      })
+    );
+
     this.chatContextValue = {
       ...this.chatContextValue,
       chips,
     };
+  };
+
+  private readonly _initEmbeddingProgress = async () => {
+    await this._pollContextDocsAndFiles();
   };
 
   private readonly _getSessionId = async () => {
@@ -274,6 +291,8 @@ export class ChatPanel extends SignalWatcher(
 
   private _width: Signal<number | undefined> = signal(undefined);
 
+  private _pollAbortController: AbortController | null = null;
+
   private readonly _scrollToEnd = () => {
     if (!this._wheelTriggered) {
       this._chatMessages.value?.scrollToEnd();
@@ -334,14 +353,82 @@ export class ChatPanel extends SignalWatcher(
           this._chatSessionId
         );
       }
-      await this._updateChips();
+      await this._initChips();
+      await this._initEmbeddingProgress();
     } catch (error) {
       console.error(error);
     }
   };
 
+  private readonly _pollContextDocsAndFiles = async () => {
+    if (!this._chatSessionId || !this._chatContextId || !AIProvider.context) {
+      return;
+    }
+    if (this._pollAbortController) {
+      // already polling, reset timer
+      this._abortPoll();
+    }
+    this._pollAbortController = new AbortController();
+    await AIProvider.context.pollContextDocsAndFiles(
+      this.doc.workspace.id,
+      this._chatSessionId,
+      this._chatContextId,
+      this._onPoll,
+      this._pollAbortController.signal
+    );
+  };
+
+  private readonly _onPoll = (
+    result?: BlockSuitePresets.AIDocsAndFilesContext
+  ) => {
+    if (!result) {
+      this._abortPoll();
+      return;
+    }
+    const { docs = [], files = [] } = result;
+    const hashMap = new Map<string, CopilotContextDoc | CopilotContextFile>();
+    const totalCount = docs.length + files.length;
+    let processingCount = 0;
+    docs.forEach(doc => {
+      hashMap.set(doc.id, doc);
+      if (doc.status === 'processing') {
+        processingCount++;
+      }
+    });
+    files.forEach(file => {
+      hashMap.set(file.id, file);
+      if (file.status === 'processing') {
+        processingCount++;
+      }
+    });
+    const nextChips = this.chatContextValue.chips.map(chip => {
+      const id = isDocChip(chip) ? chip.docId : chip.fileId;
+      const item = id && hashMap.get(id);
+      if (item && item.status) {
+        return {
+          ...chip,
+          state: item.status,
+        };
+      }
+      return chip;
+    });
+    this.updateContext({
+      chips: nextChips,
+      embeddingProgress: [totalCount - processingCount, totalCount],
+    });
+    if (processingCount === 0) {
+      this._abortPoll();
+    }
+  };
+
+  private readonly _abortPoll = () => {
+    this._pollAbortController?.abort();
+    this._pollAbortController = null;
+  };
+
   protected override updated(_changedProperties: PropertyValues) {
     if (_changedProperties.has('doc')) {
+      this._abortPoll();
       this._chatSessionId = null;
       this._chatContextId = null;
       this.chatContextValue = DEFAULT_CHAT_CONTEXT_VALUE;
@@ -457,10 +544,12 @@ export class ChatPanel extends SignalWatcher(
     const style = styleMap({
       padding: width > 540 ? '8px 24px 0 24px' : '8px 12px 0 12px',
     });
+    const [done, total] = this.chatContextValue.embeddingProgress;
+    const isEmbedding = total > 0 && done < total;
 
     return html`<div class="chat-panel-container" style=${style}>
       <div class="chat-panel-title">
-        <div>AFFiNE AI</div>
+        <div>${isEmbedding ? `Embedding ${done}/${total}` : 'AFFiNE AI'}</div>
         <div
           @click=${() => {
             AIProvider.toggleGeneralAIOnboarding?.(true);
@@ -483,12 +572,14 @@ export class ChatPanel extends SignalWatcher(
         .chatContextValue=${this.chatContextValue}
         .getContextId=${this._getContextId}
         .updateContext=${this.updateContext}
+        .pollContextDocsAndFiles=${this._pollContextDocsAndFiles}
         .docDisplayConfig=${this.docDisplayConfig}
         .docSearchMenuConfig=${this.docSearchMenuConfig}
       ></chat-panel-chips>
       <chat-panel-input
         .chatContextValue=${this.chatContextValue}
         .getSessionId=${this._getSessionId}
+        .getContextId=${this._getContextId}
         .networkSearchConfig=${this.networkSearchConfig}
         .updateContext=${this.updateContext}
         .host=${this.host}

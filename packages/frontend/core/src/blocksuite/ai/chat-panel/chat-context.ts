@@ -36,10 +36,17 @@ export type ChatStatus =
 
 export interface DocContext {
   docId: string;
-  plaintext?: string;
-  markdown?: string;
-  images?: File[];
+  refIndex: number;
+  markdown: string;
 }
+
+export type FileContext = {
+  blobId: string;
+  refIndex: number;
+  fileName: string;
+  fileType: string;
+  chunks: string;
+};
 
 export type ChatContextValue = {
   // history messages of the chat
@@ -54,6 +61,8 @@ export type ChatContextValue = {
   images: File[];
   // chips of workspace doc or user uploaded file
   chips: ChatChip[];
+  // the progress of the embedding
+  embeddingProgress: [number, number];
   abortController: AbortController | null;
 };
 
@@ -63,29 +72,29 @@ export type ChatBlockMessage = ChatMessage & {
   avatarUrl?: string;
 };
 
-export type ChipState = 'candidate' | 'processing' | 'success' | 'failed';
+export type ChipState = 'candidate' | 'processing' | 'finished' | 'failed';
 
 export interface BaseChip {
   /**
    * candidate: the chip is a candidate for the chat
    * processing: the chip is processing
-   * success: the chip is successfully processed
+   * finished: the chip is successfully processed
    * failed: the chip is failed to process
    */
   state: ChipState;
-  tooltip?: string;
+  tooltip?: string | null;
 }
 
 export interface DocChip extends BaseChip {
   docId: string;
-  markdown?: Signal<string>;
-  tokenCount?: number;
+  markdown?: Signal<string> | null;
+  tokenCount?: number | null;
 }
 
 export interface FileChip extends BaseChip {
-  fileName: string;
-  fileId: string;
-  fileType: string;
+  file: File;
+  fileId?: string | null;
+  blobId?: string | null;
 }
 
 export interface TagChip extends BaseChip {

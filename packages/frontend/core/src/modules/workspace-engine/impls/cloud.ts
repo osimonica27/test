@@ -13,8 +13,9 @@ import type {
 import { CloudBlobStorage, StaticCloudDocStorage } from '@affine/nbstore/cloud';
 import {
   IndexedDBBlobStorage,
+  IndexedDBBlobSyncStorage,
   IndexedDBDocStorage,
-  IndexedDBSyncStorage,
+  IndexedDBDocSyncStorage,
 } from '@affine/nbstore/idb';
 import {
   IndexedDBV1BlobStorage,
@@ -22,8 +23,9 @@ import {
 } from '@affine/nbstore/idb/v1';
 import {
   SqliteBlobStorage,
+  SqliteBlobSyncStorage,
   SqliteDocStorage,
-  SqliteSyncStorage,
+  SqliteDocSyncStorage,
 } from '@affine/nbstore/sqlite';
 import {
   SqliteV1BlobStorage,
@@ -111,10 +113,14 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     : BUILD_CONFIG.isWeb || BUILD_CONFIG.isMobileWeb
       ? IndexedDBV1BlobStorage
       : undefined;
-  SyncStorageType =
+  DocSyncStorageType =
     BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
-      ? SqliteSyncStorage
-      : IndexedDBSyncStorage;
+      ? SqliteDocSyncStorage
+      : IndexedDBDocSyncStorage;
+  BlobSyncStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
+      ? SqliteBlobSyncStorage
+      : IndexedDBBlobSyncStorage;
 
   async deleteWorkspace(id: string): Promise<void> {
     await this.graphqlService.gql({
@@ -431,8 +437,16 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
             id: workspaceId,
           },
         },
-        sync: {
-          name: this.SyncStorageType.identifier,
+        docSync: {
+          name: this.DocSyncStorageType.identifier,
+          opts: {
+            flavour: this.flavour,
+            type: 'workspace',
+            id: workspaceId,
+          },
+        },
+        blobSync: {
+          name: this.BlobSyncStorageType.identifier,
           opts: {
             flavour: this.flavour,
             type: 'workspace',

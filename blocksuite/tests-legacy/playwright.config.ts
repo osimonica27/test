@@ -34,6 +34,8 @@ export default defineConfig({
     video: 'on-first-retry',
     // Timeout for each action
     actionTimeout: 5_000,
+    colorScheme: 'light',
+    timezoneId: 'Asia/Tokyo',
     permissions:
       process.env.BROWSER && process.env.BROWSER !== 'chromium'
         ? []

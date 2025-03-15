@@ -16,8 +16,8 @@ import { ContextSession } from './session';
 import {
   ContextConfig,
   ContextConfigSchema,
+  ContextEmbedStatus,
   ContextFile,
-  ContextFileStatus,
   EmbeddingClient,
 } from './types';
 import { checkEmbeddingAvailable } from './utils';
@@ -173,7 +173,7 @@ export class CopilotContextService implements OnModuleInit {
     await context.saveFileRecord(fileId, file => ({
       ...(file as ContextFile),
       chunkSize,
-      status: ContextFileStatus.finished,
+      status: ContextEmbedStatus.finished,
     }));
   }
 
@@ -187,7 +187,7 @@ export class CopilotContextService implements OnModuleInit {
     await context.saveFileRecord(fileId, file => ({
       ...(file as ContextFile),
       error,
-      status: ContextFileStatus.failed,
+      status: ContextEmbedStatus.failed,
     }));
   }
 }

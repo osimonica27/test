@@ -1,7 +1,4 @@
-import {
-  ParagraphLayoutHandlerExtension,
-  ParagraphPaintConfigExtension,
-} from '@blocksuite/affine/blocks/paragraph';
+import { ParagraphLayoutHandlerExtension } from '@blocksuite/affine/blocks/paragraph';
 import {
   TurboRendererConfigFactory,
   ViewportTurboRendererExtension,
@@ -9,17 +6,13 @@ import {
 } from '@blocksuite/affine/gfx/turbo-renderer';
 
 import { addSampleNotes } from './doc-generator.js';
-import { setupEditor } from './setup.js';
+import { createPainterWorker, setupEditor } from './setup.js';
 
 async function init() {
   setupEditor('edgeless', [
     ParagraphLayoutHandlerExtension,
-    ParagraphPaintConfigExtension,
     TurboRendererConfigFactory({
-      options: {
-        zoomThreshold: 1,
-        debounceTime: 1000,
-      },
+      painterWorkerEntry: createPainterWorker,
     }),
     ViewportTurboRendererExtension,
   ]);

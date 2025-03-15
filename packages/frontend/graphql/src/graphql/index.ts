@@ -149,6 +149,7 @@ export const addContextDocMutation = {
   addContextDoc(options: $options) {
     id
     createdAt
+    status
   }
 }`,
 };
@@ -170,36 +171,12 @@ export const addContextFileMutation = {
     createdAt
     name
     chunkSize
+    error
     status
     blobId
   }
 }`,
   file: true,
-};
-
-export const listContextFilesQuery = {
-  id: 'listContextFilesQuery' as const,
-  op: 'listContextFiles',
-  query: `query listContextFiles($workspaceId: String!, $sessionId: String!, $contextId: String!) {
-  currentUser {
-    copilot(workspaceId: $workspaceId) {
-      contexts(sessionId: $sessionId, contextId: $contextId) {
-        docs {
-          id
-          createdAt
-        }
-        files {
-          id
-          name
-          blobId
-          chunkSize
-          status
-          createdAt
-        }
-      }
-    }
-  }
-}`,
 };
 
 export const matchContextQuery = {
@@ -229,15 +206,16 @@ export const removeContextFileMutation = {
 }`,
 };
 
-export const listContextDocsAndFilesQuery = {
-  id: 'listContextDocsAndFilesQuery' as const,
-  op: 'listContextDocsAndFiles',
-  query: `query listContextDocsAndFiles($workspaceId: String!, $sessionId: String!, $contextId: String!) {
+export const listContextObjectQuery = {
+  id: 'listContextObjectQuery' as const,
+  op: 'listContextObject',
+  query: `query listContextObject($workspaceId: String!, $sessionId: String!, $contextId: String!) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
       contexts(sessionId: $sessionId, contextId: $contextId) {
         docs {
           id
+          status
           createdAt
         }
         files {
@@ -639,9 +617,7 @@ export const getCurrentUserQuery = {
     }
   }
 }`,
-  deprecations: [
-    "'token' is deprecated: use [/api/auth/sign-in?native=true] instead",
-  ],
+  deprecations: ["'token' is deprecated: use [/api/auth/sign-in?native=true] instead"],
 };
 
 export const getDocDefaultRoleQuery = {
@@ -893,10 +869,7 @@ export const getWorkspaceInfoQuery = {
     team
   }
 }`,
-  deprecations: [
-    "'isAdmin' is deprecated: use WorkspaceType[role] instead",
-    "'isOwner' is deprecated: use WorkspaceType[role] instead",
-  ],
+  deprecations: ["'isAdmin' is deprecated: use WorkspaceType[role] instead","'isOwner' is deprecated: use WorkspaceType[role] instead"],
 };
 
 export const getWorkspacePageByIdQuery = {
@@ -1134,6 +1107,14 @@ export const listUsersQuery = {
 }`,
 };
 
+export const mentionUserMutation = {
+  id: 'mentionUserMutation' as const,
+  op: 'mentionUser',
+  query: `mutation mentionUser($input: MentionInput!) {
+  mentionUser(input: $input)
+}`,
+};
+
 export const notificationCountQuery = {
   id: 'notificationCountQuery' as const,
   op: 'notificationCount',
@@ -1195,9 +1176,7 @@ export const quotaQuery = {
     }
   }
 }`,
-  deprecations: [
-    "'storageQuota' is deprecated: use `UserQuotaType['usedStorageQuota']` instead",
-  ],
+  deprecations: ["'storageQuota' is deprecated: use `UserQuotaType['usedStorageQuota']` instead"],
 };
 
 export const readNotificationMutation = {
@@ -1644,9 +1623,7 @@ export const getWorkspaceRolePermissionsQuery = {
     }
   }
 }`,
-  deprecations: [
-    "'workspaceRolePermissions' is deprecated: use WorkspaceType[permissions] instead",
-  ],
+  deprecations: ["'workspaceRolePermissions' is deprecated: use WorkspaceType[permissions] instead"],
 };
 
 export const approveWorkspaceTeamMemberMutation = {

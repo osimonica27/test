@@ -41,8 +41,8 @@ import { CopilotContextDocJob } from './job';
 import { CopilotContextService } from './service';
 import {
   ContextDoc,
+  ContextEmbedStatus,
   type ContextFile,
-  ContextFileStatus,
   DocChunkSimilarity,
   FileChunkSimilarity,
   MAX_EMBEDDABLE_SIZE,
@@ -94,12 +94,15 @@ export class CopilotContextType {
   workspaceId!: string;
 }
 
-registerEnumType(ContextFileStatus, { name: 'ContextFileStatus' });
+registerEnumType(ContextEmbedStatus, { name: 'ContextEmbedStatus' });
 
 @ObjectType()
 class CopilotContextDoc implements ContextDoc {
   @Field(() => ID)
   id!: string;
+
+  @Field(() => ContextEmbedStatus, { nullable: true })
+  status!: ContextEmbedStatus | null;
 
   @Field(() => SafeIntResolver)
   createdAt!: number;
@@ -116,8 +119,8 @@ class CopilotContextFile implements ContextFile {
   @Field(() => SafeIntResolver)
   chunkSize!: number;
 
-  @Field(() => ContextFileStatus)
-  status!: ContextFileStatus;
+  @Field(() => ContextEmbedStatus)
+  status!: ContextEmbedStatus;
 
   @Field(() => String, { nullable: true })
   error!: string | null;

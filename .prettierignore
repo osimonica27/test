@@ -24,6 +24,7 @@ test-results
 **/*.gen.ts
 **/*.gql
 **/*.d.ts
+packages/frontend/graphql/src/graphql/index.ts
 
 # per files
 tools/cli/src/webpack/error-handler.js

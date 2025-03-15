@@ -1863,6 +1863,7 @@
   "error.COPILOT_CONTEXT_FILE_NOT_SUPPORTED": "File {{fileName}} is not supported to use as context: {{message}}",
   "error.COPILOT_FAILED_TO_MODIFY_CONTEXT": "Failed to modify context {{contextId}}: {{message}}",
   "error.COPILOT_FAILED_TO_MATCH_CONTEXT": "Failed to match context {{contextId}} with \"%7B%7Bcontent%7D%7D\": {{message}}",
+  "error.COPILOT_EMBEDDING_UNAVAILABLE": "Embedding feature not available, you may need to install pgvector extension to your database",
   "error.BLOB_QUOTA_EXCEEDED": "You have exceeded your blob storage quota.",
   "error.MEMBER_QUOTA_EXCEEDED": "You have exceeded your workspace member quota.",
   "error.COPILOT_QUOTA_EXCEEDED": "You have reached the limit of actions in this workspace, please upgrade your plan.",

@@ -1,5 +1,6 @@
 import type {
   ChatHistoryOrder,
+  ContextMatchedFileChunk,
   CopilotContextDoc,
   CopilotContextFile,
   CopilotSessionType,
@@ -10,7 +11,7 @@ import type { EditorHost } from '@blocksuite/affine/block-std';
 import type { GfxModel } from '@blocksuite/affine/block-std/gfx';
 import type { BlockModel } from '@blocksuite/affine/store';
 
-import type { DocContext } from '../chat-panel/chat-context';
+import type { DocContext, FileContext } from '../chat-panel/chat-context';
 
 export const translateLangs = [
   'English',
@@ -114,7 +115,10 @@ declare global {
     interface ChatOptions extends AITextActionOptions {
       sessionId?: string;
       isRootSession?: boolean;
-      docs?: DocContext[];
+      contexts?: {
+        docs: DocContext[];
+        files: FileContext[];
+      };
     }
 
     interface TranslateOptions extends AITextActionOptions {
@@ -238,6 +242,11 @@ declare global {
       ): AIActionTextResponse<T>;
     }
 
+    type AIDocsAndFilesContext = {
+      docs: CopilotContextDoc[];
+      files: CopilotContextFile[];
+    };
+
     interface AIContextService {
       createContext: (
         workspaceId: string,
@@ -250,30 +259,39 @@ declare global {
       addContextDoc: (options: {
         contextId: string;
         docId: string;
-      }) => Promise<{ id: string; createdAt: number }>;
+      }) => Promise<CopilotContextDoc>;
       removeContextDoc: (options: {
         contextId: string;
         docId: string;
       }) => Promise<boolean>;
-      addContextFile: (options: {
-        contextId: string;
-        fileId: string;
-      }) => Promise<void>;
+      addContextFile: (
+        file: File,
+        options: {
+          contextId: string;
+          blobId: string;
+        }
+      ) => Promise<CopilotContextFile>;
       removeContextFile: (options: {
         contextId: string;
         fileId: string;
-      }) => Promise<void>;
+      }) => Promise<boolean>;
       getContextDocsAndFiles: (
         workspaceId: string,
         sessionId: string,
         contextId: string
-      ) => Promise<
-        | {
-            docs: Array<CopilotContextDoc>;
-            files: Array<CopilotContextFile>;
-          }
-        | undefined
-      >;
+      ) => Promise<AIDocsAndFilesContext | undefined>;
+      pollContextDocsAndFiles: (
+        workspaceId: string,
+        sessionId: string,
+        contextId: string,
+        onPoll: (result: AIDocsAndFilesContext | undefined) => void,
+        abortSignal: AbortSignal
+      ) => Promise<void>;
+      matchContext: (
+        contextId: string,
+        content: string,
+        limit?: number
+      ) => Promise<ContextMatchedFileChunk[] | undefined>;
     }
 
     // TODO(@Peng): should be refactored to get rid of implement details (like messages, action, role, etc.)

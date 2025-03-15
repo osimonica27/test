@@ -6,8 +6,8 @@ import {
   ChunkSimilarity,
   ContextConfig,
   ContextDoc,
+  ContextEmbedStatus,
   ContextFile,
-  ContextFileStatus,
   ContextList,
   DocChunkSimilarity,
   EmbeddingClient,
@@ -54,7 +54,7 @@ export class ContextSession implements AsyncDisposable {
     if (doc) {
       return doc;
     }
-    const record = { id: docId, createdAt: Date.now() };
+    const record = { id: docId, createdAt: Date.now(), status: null };
     this.config.docs.push(record);
     await this.save();
     return record;
@@ -76,7 +76,7 @@ export class ContextSession implements AsyncDisposable {
     if (existsBlob) {
       // use exists file id if the blob exists
       // we assume that the file content pointed to by the same blobId is consistent.
-      if (existsBlob.status === ContextFileStatus.finished) {
+      if (existsBlob.status === ContextEmbedStatus.finished) {
         return existsBlob;
       }
       fileId = existsBlob.id;
@@ -179,7 +179,7 @@ export class ContextSession implements AsyncDisposable {
     if (file) {
       Object.assign(file, cb({ ...file }));
     } else {
-      const file = { id: fileId, status: ContextFileStatus.processing };
+      const file = { id: fileId, status: ContextEmbedStatus.processing };
       files.push(cb(file));
     }
     await this.save(tx);

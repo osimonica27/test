@@ -1,6 +1,6 @@
 import type { Connection } from '../connection';
 
-export type StorageType = 'blob' | 'doc' | 'sync' | 'awareness';
+export type StorageType = 'blob' | 'blobSync' | 'doc' | 'docSync' | 'awareness';
 
 export interface Storage {
   readonly storageType: StorageType;

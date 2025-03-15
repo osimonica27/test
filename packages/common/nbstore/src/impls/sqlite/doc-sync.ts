@@ -1,9 +1,9 @@
 import { share } from '../../connection';
-import { type DocClock, SyncStorageBase } from '../../storage';
+import { type DocClock, DocSyncStorageBase } from '../../storage';
 import { NativeDBConnection, type SqliteNativeDBOptions } from './db';
 
-export class SqliteSyncStorage extends SyncStorageBase {
-  static readonly identifier = 'SqliteSyncStorage';
+export class SqliteDocSyncStorage extends DocSyncStorageBase {
+  static readonly identifier = 'SqliteDocSyncStorage';
 
   override connection = share(new NativeDBConnection(this.options));
 

@@ -4,6 +4,7 @@ mutation addContextFile($content: Upload!, $options: AddContextFileInput!) {
     createdAt
     name
     chunkSize
+    error
     status
     blobId
   }

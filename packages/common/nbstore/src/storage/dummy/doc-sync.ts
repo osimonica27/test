@@ -1,8 +1,8 @@
 import { DummyConnection } from '../../connection';
 import type { DocClock, DocClocks } from '../doc';
-import { SyncStorageBase } from '../sync';
+import { DocSyncStorageBase } from '../doc-sync';
 
-export class DummySyncStorage extends SyncStorageBase {
+export class DummyDocSyncStorage extends DocSyncStorageBase {
   override getPeerRemoteClock(
     _peer: string,
     _docId: string

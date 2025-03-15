@@ -83,20 +83,9 @@ export interface RendererOptions {
   debounceTime: number;
 }
 
-export interface BlockPainterConfig {
-  type: string;
-  path: string;
-}
-
 export interface TurboRendererConfig {
   options?: Partial<RendererOptions>;
+  painterWorkerEntry: () => Worker;
 }
 
-export type MessageRegisterPainter = {
-  type: 'registerPainter';
-  data: {
-    painterConfigs: BlockPainterConfig[];
-  };
-};
-
-export type HostToWorkerMessage = MessagePaint | MessageRegisterPainter;
+export type HostToWorkerMessage = MessagePaint;

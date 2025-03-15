@@ -1,13 +1,21 @@
-import { ViewportTurboRendererExtension } from '@blocksuite/affine-gfx-turbo-renderer';
+import { ParagraphLayoutHandlerExtension } from '@blocksuite/affine/blocks/paragraph';
+import {
+  TurboRendererConfigFactory,
+  ViewportTurboRendererExtension,
+} from '@blocksuite/affine-gfx-turbo-renderer';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { wait } from '../utils/common.js';
 import { addSampleNotes } from '../utils/doc-generator.js';
-import { setupEditor } from '../utils/setup.js';
+import { createPainterWorker, setupEditor } from '../utils/setup.js';
 
 describe('viewport turbo renderer', () => {
   beforeEach(async () => {
     const cleanup = await setupEditor('edgeless', [
+      ParagraphLayoutHandlerExtension,
+      TurboRendererConfigFactory({
+        painterWorkerEntry: createPainterWorker,
+      }),
       ViewportTurboRendererExtension,
     ]);
     return cleanup;

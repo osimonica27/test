@@ -1,3 +1,10 @@
+import {
+  Container,
+  createIdentifier,
+  type ServiceProvider,
+} from '@blocksuite/global/di';
+import type { ExtensionType } from '@blocksuite/store';
+
 import type {
   BlockLayoutPainter,
   HostToWorkerMessage,
@@ -5,23 +12,42 @@ import type {
   WorkerToHostMessage,
 } from '../types';
 
-class BlockPainterRegistry {
-  private readonly painters = new Map<string, BlockLayoutPainter>();
+export const BlockPainterProvider = createIdentifier<BlockLayoutPainter>(
+  'block-painter-provider'
+);
 
-  register(type: string, painter: BlockLayoutPainter) {
-    this.painters.set(type, painter);
-  }
+export const BlockLayoutPainterExtension = (
+  type: string,
+  painter: new () => BlockLayoutPainter
+): ExtensionType => {
+  return {
+    setup: di => {
+      di.addImpl(BlockPainterProvider(type), painter);
+    },
+  };
+};
 
-  getPainter(type: string): BlockLayoutPainter | undefined {
-    return this.painters.get(type);
-  }
-}
-
-class ViewportLayoutPainter {
+export class ViewportLayoutPainter {
   private readonly canvas: OffscreenCanvas = new OffscreenCanvas(0, 0);
   private ctx: OffscreenCanvasRenderingContext2D | null = null;
   private zoom = 1;
-  public readonly registry = new BlockPainterRegistry();
+  public provider: ServiceProvider;
+
+  getPainter(type: string): BlockLayoutPainter | undefined {
+    return this.provider.get(BlockPainterProvider(type));
+  }
+
+  constructor(extensions: ExtensionType[]) {
+    const container = new Container();
+
+    extensions.forEach(extension => {
+      extension.setup(container);
+    });
+
+    this.provider = container.provider();
+
+    self.onmessage = this.handler;
+  }
 
   setSize(layoutRectW: number, layoutRectH: number, dpr: number, zoom: number) {
     const width = layoutRectW * dpr * zoom;
@@ -53,7 +79,7 @@ class ViewportLayoutPainter {
     ctx.scale(this.zoom, this.zoom);
 
     layout.blocks.forEach(blockLayout => {
-      const painter = this.registry.getPainter(blockLayout.type);
+      const painter = this.getPainter(blockLayout.type);
       if (!painter) return;
       painter.paint(ctx, blockLayout, layout.rect.x, layout.rect.y);
     });
@@ -66,26 +92,16 @@ class ViewportLayoutPainter {
     };
     self.postMessage(message, { transfer: [bitmap] });
   }
+
+  handler = async (e: MessageEvent<HostToWorkerMessage>) => {
+    const { type, data } = e.data;
+    switch (type) {
+      case 'paintLayout': {
+        const { layout, width, height, dpr, zoom, version } = data;
+        this.setSize(width, height, dpr, zoom);
+        this.paint(layout, version);
+        break;
+      }
+    }
+  };
 }
-
-const painter = new ViewportLayoutPainter();
-
-self.onmessage = async (e: MessageEvent<HostToWorkerMessage>) => {
-  const { type, data } = e.data;
-
-  switch (type) {
-    case 'paintLayout': {
-      const { layout, width, height, dpr, zoom, version } = data;
-      painter.setSize(width, height, dpr, zoom);
-      painter.paint(layout, version);
-      break;
-    }
-    case 'registerPainter': {
-      const { painterConfigs } = data;
-      painterConfigs.forEach(async ({ type, path }) => {
-        painter.registry.register(type, new (await import(path)).default());
-      });
-      break;
-    }
-  }
-};

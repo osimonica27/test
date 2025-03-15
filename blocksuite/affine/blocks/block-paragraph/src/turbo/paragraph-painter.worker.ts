@@ -4,6 +4,7 @@ import type {
   TextRect,
   WorkerToHostMessage,
 } from '@blocksuite/affine-gfx-turbo-renderer';
+import { BlockLayoutPainterExtension } from '@blocksuite/affine-gfx-turbo-renderer/painter';
 
 interface SentenceLayout {
   text: string;
@@ -39,16 +40,23 @@ function isParagraphLayout(layout: BlockLayout): layout is ParagraphLayout {
   return layout.type === 'affine:paragraph';
 }
 
-export default class ParagraphLayoutPainter implements BlockLayoutPainter {
-  static readonly font = new FontFace(
-    'Inter',
-    `url(https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcviYwYZ8UA3.woff2)`
-  );
+class ParagraphLayoutPainter implements BlockLayoutPainter {
+  private static readonly supportFontFace =
+    typeof FontFace !== 'undefined' &&
+    typeof self !== 'undefined' &&
+    'fonts' in self;
 
-  static fontLoaded = false;
+  static readonly font = ParagraphLayoutPainter.supportFontFace
+    ? new FontFace(
+        'Inter',
+        `url(https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcviYwYZ8UA3.woff2)`
+      )
+    : null;
+
+  static fontLoaded = !ParagraphLayoutPainter.supportFontFace;
 
   static {
-    if (typeof self !== 'undefined' && 'fonts' in self) {
+    if (ParagraphLayoutPainter.supportFontFace && ParagraphLayoutPainter.font) {
       // @ts-expect-error worker fonts API
       self.fonts.add(ParagraphLayoutPainter.font);
 
@@ -107,3 +115,8 @@ export default class ParagraphLayoutPainter implements BlockLayoutPainter {
     });
   }
 }
+
+export const ParagraphLayoutPainterExtension = BlockLayoutPainterExtension(
+  'affine:paragraph',
+  ParagraphLayoutPainter
+);

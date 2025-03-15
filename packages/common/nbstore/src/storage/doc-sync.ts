@@ -2,8 +2,8 @@ import type { Connection } from '../connection';
 import type { DocClock, DocClocks } from './doc';
 import { type Storage } from './storage';
 
-export interface SyncStorage extends Storage {
-  readonly storageType: 'sync';
+export interface DocSyncStorage extends Storage {
+  readonly storageType: 'docSync';
 
   getPeerRemoteClock(peer: string, docId: string): Promise<DocClock | null>;
   getPeerRemoteClocks(peer: string): Promise<DocClocks>;
@@ -20,8 +20,8 @@ export interface SyncStorage extends Storage {
   clearClocks(): Promise<void>;
 }
 
-export abstract class SyncStorageBase implements SyncStorage {
-  readonly storageType = 'sync';
+export abstract class DocSyncStorageBase implements DocSyncStorage {
+  readonly storageType = 'docSync';
   abstract readonly connection: Connection;
 
   abstract getPeerRemoteClock(

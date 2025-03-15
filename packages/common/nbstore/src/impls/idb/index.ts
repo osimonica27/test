@@ -1,14 +1,17 @@
 import type { StorageConstructor } from '..';
 import { IndexedDBBlobStorage } from './blob';
+import { IndexedDBBlobSyncStorage } from './blob-sync';
 import { IndexedDBDocStorage } from './doc';
-import { IndexedDBSyncStorage } from './sync';
+import { IndexedDBDocSyncStorage } from './doc-sync';
 
 export * from './blob';
+export * from './blob-sync';
 export * from './doc';
-export * from './sync';
+export * from './doc-sync';
 
 export const idbStorages = [
   IndexedDBDocStorage,
   IndexedDBBlobStorage,
-  IndexedDBSyncStorage,
+  IndexedDBDocSyncStorage,
+  IndexedDBBlobSyncStorage,
 ] satisfies StorageConstructor[];

@@ -26,7 +26,7 @@ declare global {
 
 export const MAX_EMBEDDABLE_SIZE = 50 * OneMB;
 
-export enum ContextFileStatus {
+export enum ContextEmbedStatus {
   processing = 'processing',
   finished = 'finished',
   failed = 'failed',
@@ -40,9 +40,9 @@ export const ContextConfigSchema = z.object({
       chunkSize: z.number(),
       name: z.string(),
       status: z.enum([
-        ContextFileStatus.processing,
-        ContextFileStatus.finished,
-        ContextFileStatus.failed,
+        ContextEmbedStatus.processing,
+        ContextEmbedStatus.finished,
+        ContextEmbedStatus.failed,
       ]),
       error: z.string().nullable(),
       blobId: z.string(),
@@ -52,6 +52,15 @@ export const ContextConfigSchema = z.object({
   docs: z
     .object({
       id: z.string(),
+      // status for workspace doc embedding progress
+      // only exists when the client submits the doc embedding task
+      status: z
+        .enum([
+          ContextEmbedStatus.processing,
+          ContextEmbedStatus.finished,
+          ContextEmbedStatus.failed,
+        ])
+        .nullable(),
       createdAt: z.number(),
     })
     .array(),
