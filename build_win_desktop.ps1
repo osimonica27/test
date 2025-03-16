@@ -19,9 +19,9 @@ function Handle-Error {
     exit 1
 }
 
-# Function to check Node.js and Yarn versions
+# Function to check Node.js, Yarn, and Rust versions
 function Check-Versions {
-    Write-Host "Build_Win_Desktop: Checking Node.js and Yarn versions..." -ForegroundColor DarkMagenta
+    Write-Host "Build_Win_Desktop: Checking Node.js, Yarn, and Rust versions..." -ForegroundColor DarkMagenta
 
     # Check Node.js version
     $nodeVersion = node -v 2>$null
@@ -37,7 +37,14 @@ function Check-Versions {
         exit 1
     }
 
-    Write-Host "Build_Win_Desktop: Node.js and Yarn versions are correct." -ForegroundColor DarkMagenta
+    # Check Rust version
+    $rustVersion = rustc -V 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Build_Win_Desktop: Rust is not installed. Please install Rust to proceed." -ForegroundColor DarkMagenta
+        exit 1
+    }
+
+    Write-Host "Build_Win_Desktop: Dependencies Node.js, Yarn, and Rust versions are correct." -ForegroundColor DarkMagenta
 }
 
 # Function to check if @affine/native module is built
@@ -56,8 +63,23 @@ function Check-Native-Built {
 # Enable error handling
 $ErrorActionPreference = "Stop"
 try {
-    # Step 0: Check Node.js and Yarn versions
+    # Step 0: Check for Node.js, Yarn and Rust
     Check-Versions
+
+    # Step 0.5: Check if output directory exists and prompt user to clean or cancel
+    $outputDir = Join-Path -Path $PSScriptRoot -ChildPath "packages\frontend\apps\electron\out\canary"
+    if (Test-Path $outputDir) {
+        Write-Host "Build_Win_Desktop: Existing build files found in $outputDir." -ForegroundColor Yellow
+        $response = Read-Host "Build_Win_Desktop: Do you want to clean the output directory before proceeding? (y to clean, anything else to cancel)"
+        if ($response -eq "y") {
+            Write-Host "Build_Win_Desktop: Cleaning the output directory..." -ForegroundColor DarkMagenta
+            Remove-Item -Recurse -Force $outputDir
+            Write-Host "Build_Win_Desktop: Output directory cleaned." -ForegroundColor DarkMagenta
+        } else {
+            Write-Host "Build_Win_Desktop: Operation canceled by the user." -ForegroundColor Red
+            exit 1
+        }
+    }
 
     # Step 1: Build native module if not already built
     if (-not (Check-Native-Built)) {
@@ -87,14 +109,14 @@ try {
     # yarn affine @affine/electron make-nsis --platform=win32 --arch=x64
     if ($LASTEXITCODE -ne 0) { Handle-Error }
 
-    # Output the location of the created installer
-$installerPath = "./packages/frontend/apps/electron/out/canary/AFFiNE-canary.exe"
+    # Output the location of the created installer to terminal
+    $installerPath = Join-Path -Path $outputDir -ChildPath "AFFiNE-canary-win32-x64\AFFiNE-canary.exe"
 
-if (Test-Path $installerPath) {
-    Write-Host "Build_Win_Desktop: Build completed successfully!  Installer created at $installerPath" -ForegroundColor DarkMagenta
-} else {
-    Write-Host "Build_Win_Desktop: Installer not found at expected location: $installerPath" -ForegroundColor Red
-}
+    if (Test-Path $installerPath) {
+        Write-Host "Build_Win_Desktop: Build completed successfully! Installer created at $installerPath" -ForegroundColor DarkMagenta
+    } else {
+        Write-Host "Build_Win_Desktop: Installer not found at expected location: $installerPath" -ForegroundColor Red
+    }
 
 } catch {
     Handle-Error
