@@ -29,7 +29,11 @@ export enum MOUSE_BUTTON {
 }
 
 export function isMiddleButtonPressed(e: MouseEvent) {
-  return (MOUSE_BUTTONS.AUXILIARY & e.buttons) === MOUSE_BUTTONS.AUXILIARY;
+  if ((MOUSE_BUTTONS.AUXILIARY & e.buttons) === MOUSE_BUTTONS.AUXILIARY) {
+    e.preventDefault(); // Prevent unintended default behavior
+    return true;
+  }
+  return false;
 }
 
 export function isRightButtonPressed(e: MouseEvent) {
