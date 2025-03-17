@@ -22,6 +22,7 @@ export class JobExecutor
 {
   private readonly logger = new Logger('job');
   private readonly workers: Record<string, Worker> = {};
+  private readonly activeJobTotal: Record<string, number> = {};
 
   constructor(
     private readonly config: Config,
@@ -85,13 +86,27 @@ export class JobExecutor
         handler: handler.name,
       }
     );
-    const activeJobs = metrics.queue.counter('active_jobs');
-    activeJobs.add(1, { queue: ns });
+    this.activeJob(ns);
     try {
       return await fn();
     } finally {
-      activeJobs.add(-1, { queue: ns });
+      this.inactiveJob(ns);
     }
+  }
+
+  private activeJob(queue: string) {
+    this.activeJobTotal[queue] ??= 0;
+    this.activeJobTotal[queue]++;
+    metrics.queue.gauge('active_jobs').record(this.activeJobTotal[queue], {
+      queue,
+    });
+  }
+
+  private inactiveJob(queue: string) {
+    this.activeJobTotal[queue]--;
+    metrics.queue.gauge('active_jobs').record(this.activeJobTotal[queue], {
+      queue,
+    });
   }
 
   private async startWorkers(queues: Queue[]) {
