@@ -2590,7 +2590,7 @@ checksum = "1e91099d4268b0e11973f036e885d652fb0b21fedcf69738c627f94db6a44f42"
 [[package]]
 name = "pdf-extract"
 version = "0.8.2"
-source = "git+https://github.com/toeverything/pdf-extract#49ef7d2aec5bb495467a40082cd9717e849ee29a"
+source = "git+https://github.com/toeverything/pdf-extract?branch=darksky%2Fimprove-font-decoding#e74beed894e1b8dc228c2bf078ed92814b27759f"
 dependencies = [
  "adobe-cmap-parser",
  "cff-parser",
