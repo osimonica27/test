@@ -243,6 +243,8 @@ export class DocsService extends Service {
       delete properties[key];
     });
     targetDoc.updateProperties(properties);
+    // ensure tags are copied over too
+    targetDoc.setTags(sourceDoc.tags$.value);
 
     return targetDocId;
   }

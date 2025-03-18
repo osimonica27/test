@@ -34,6 +34,7 @@ export class Doc extends Entity {
   readonly primaryMode$ = this.record.primaryMode$;
   readonly title$ = this.record.title$;
   readonly trash$ = this.record.trash$;
+  readonly tags$ = this.record.tags$;
 
   customProperty$(propertyId: string) {
     return this.record.customProperty$(propertyId);
@@ -53,6 +54,10 @@ export class Doc extends Entity {
 
   setCustomProperty(propertyId: string, value: string) {
     return this.record.setCustomProperty(propertyId, value);
+  }
+
+  setTags(tags: string[]) {
+    return this.record.setTags(tags);
   }
 
   setPrimaryMode(mode: DocMode) {
