@@ -67,8 +67,10 @@ export const AttachmentPage = ({
   if (doc && model) {
     return (
       <FrameworkScope scope={doc.scope}>
-        <ViewTitle title={model.name} />
-        <ViewIcon icon={model.type.endsWith('pdf') ? 'pdf' : 'attachment'} />
+        <ViewTitle title={model.props.name} />
+        <ViewIcon
+          icon={model.props.type.endsWith('pdf') ? 'pdf' : 'attachment'}
+        />
         <AttachmentViewerView model={model} />
       </FrameworkScope>
     );

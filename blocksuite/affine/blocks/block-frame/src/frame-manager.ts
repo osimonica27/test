@@ -154,7 +154,9 @@ export class EdgelessFrameManager extends GfxExtension {
   }
 
   static framePresentationComparator<
-    T extends FrameBlockModel | { index: string; presentationIndex?: string },
+    T extends
+      | FrameBlockModel
+      | { props: { index: string; presentationIndex?: string } },
   >(a: T, b: T) {
     function stringCompare(a: string, b: string) {
       if (a < b) return -1;
@@ -162,29 +164,40 @@ export class EdgelessFrameManager extends GfxExtension {
       return 0;
     }
 
+    const isModel = (
+      x:
+        | FrameBlockModel
+        | { props: { index: string; presentationIndex?: string } }
+    ): x is FrameBlockModel => {
+      return 'presentationIndex$' in x;
+    };
+
     if (
-      'presentationIndex$' in a &&
-      'presentationIndex$' in b &&
-      a.presentationIndex$.value &&
-      b.presentationIndex$.value
+      isModel(a) &&
+      isModel(b) &&
+      a.props.presentationIndex$.value &&
+      b.props.presentationIndex$.value
     ) {
       return stringCompare(
-        a.presentationIndex$.value,
-        b.presentationIndex$.value
+        a.props.presentationIndex$.value,
+        b.props.presentationIndex$.value
       );
-    } else if (a.presentationIndex && b.presentationIndex) {
-      return stringCompare(a.presentationIndex, b.presentationIndex);
-    } else if (a.presentationIndex) {
+    } else if (a.props.presentationIndex && b.props.presentationIndex) {
+      return stringCompare(
+        a.props.presentationIndex,
+        b.props.presentationIndex
+      );
+    } else if (a.props.presentationIndex) {
       return -1;
-    } else if (b.presentationIndex) {
+    } else if (b.props.presentationIndex) {
       return 1;
     } else {
-      return stringCompare(a.index, b.index);
+      return stringCompare(a.props.index, b.props.index);
     }
   }
 
   private _addChildrenToLegacyFrame(frame: FrameBlockModel) {
-    if (frame.childElementIds !== undefined) return;
+    if (frame.props.childElementIds !== undefined) return;
     const elements = this.getElementsInFrameBound(frame);
     const childElements = elements.filter(
       element => this.getParentFrame(element) === null && element !== frame
@@ -281,7 +294,7 @@ export class EdgelessFrameManager extends GfxExtension {
   addElementsToFrame(frame: FrameBlockModel, elements: GfxModel[]) {
     if (frame.isLocked()) return;
 
-    if (frame.childElementIds === undefined) {
+    if (frame.props.childElementIds === undefined) {
       this._addChildrenToLegacyFrame(frame);
     }
 
@@ -369,7 +382,7 @@ export class EdgelessFrameManager extends GfxExtension {
 
   generatePresentationIndex() {
     const before =
-      this.frames[this.frames.length - 1]?.presentationIndex ?? null;
+      this.frames[this.frames.length - 1]?.props.presentationIndex ?? null;
 
     return generateKeyBetweenV2(before, null);
   }
@@ -380,7 +393,7 @@ export class EdgelessFrameManager extends GfxExtension {
    * 2. Return all child elements of the frame if `childElements` exists.
    */
   getChildElementsInFrame(frame: FrameBlockModel): GfxModel[] {
-    if (frame.childElementIds === undefined) {
+    if (frame.props.childElementIds === undefined) {
       return this.getElementsInFrameBound(frame).filter(
         element => this.getParentFrame(element) !== null
       );
@@ -431,24 +444,25 @@ export class EdgelessFrameManager extends GfxExtension {
   refreshLegacyFrameOrder() {
     const frames = this.frames.splice(0, this.frames.length);
 
-    let splitIndex = frames.findIndex(frame => frame.presentationIndex);
+    let splitIndex = frames.findIndex(frame => frame.props.presentationIndex);
     if (splitIndex === 0) return;
 
     if (splitIndex === -1) splitIndex = frames.length;
 
     let afterPreIndex =
-      frames[splitIndex]?.presentationIndex || generateKeyBetweenV2(null, null);
+      frames[splitIndex]?.props.presentationIndex ||
+      generateKeyBetweenV2(null, null);
 
     for (let index = splitIndex - 1; index >= 0; index--) {
       const preIndex = generateKeyBetweenV2(null, afterPreIndex);
-      frames[index].presentationIndex = preIndex;
+      frames[index].props.presentationIndex = preIndex;
       afterPreIndex = preIndex;
     }
   }
 
   removeAllChildrenFromFrame(frame: FrameBlockModel) {
     this.gfx.doc.transact(() => {
-      frame.childElementIds = {};
+      frame.props.childElementIds = {};
     });
   }
 

@@ -584,7 +584,7 @@ const documentGroupFrameToolGroup: DynamicKeyboardToolPanelGroup = ({
     .map(block => block.model) as FrameBlockModel[];
 
   const frameItems = frameModels.map<KeyboardToolbarActionItem>(frameModel => ({
-    name: 'Frame: ' + frameModel.title.toString(),
+    name: 'Frame: ' + frameModel.props.title.toString(),
     icon: FrameIcon(),
     action: ({ std }) => {
       std.command

@@ -68,13 +68,16 @@ export class SurfaceRefNotePortal extends WithDisposable(ShadowlessElement) {
 
   override render() {
     const { model, index } = this;
-    const { displayMode, edgeless } = model;
+    const { displayMode, edgeless } = model.props;
     if (!!displayMode && displayMode === NoteDisplayMode.DocOnly)
       return nothing;
 
     const backgroundColor = this.host.std
       .get(ThemeProvider)
-      .generateColorProperty(model.background, DefaultTheme.noteBackgrounColor);
+      .generateColorProperty(
+        model.props.background,
+        DefaultTheme.noteBackgrounColor
+      );
 
     const [modelX, modelY, modelW, modelH] = deserializeXYWH(model.xywh);
     const style = {

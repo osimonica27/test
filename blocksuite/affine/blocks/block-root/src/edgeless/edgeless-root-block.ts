@@ -318,10 +318,10 @@ export class EdgelessRootBlockComponent extends BlockComponent<
       const note = this.model.children.find(
         (child): child is NoteBlockModel =>
           matchModels(child, [NoteBlockModel]) &&
-          child.displayMode !== NoteDisplayMode.EdgelessOnly
+          child.props.displayMode !== NoteDisplayMode.EdgelessOnly
       );
 
-      if (primaryMode !== 'page' || !note || note.edgeless.collapse)
+      if (primaryMode !== 'page' || !note || note.props.edgeless.collapse)
         return false;
 
       const leftPadding = parseInt(

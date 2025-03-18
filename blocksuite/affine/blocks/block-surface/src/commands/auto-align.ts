@@ -121,14 +121,14 @@ function autoResizeElements(
     }
 
     if (ele instanceof NoteBlockModel) {
-      const curScale = ele.edgeless.scale ?? 1;
+      const curScale = ele.props.edgeless.scale ?? 1;
       const nextScale = curScale * (ALIGN_HEIGHT / ele.elementBound.h);
       const bound = Bound.deserialize(ele.xywh);
       bound.h = bound.h * (nextScale / curScale);
       bound.w = bound.w * (nextScale / curScale);
       updateElement(ele.id, {
         edgeless: {
-          ...ele.edgeless,
+          ...ele.props.edgeless,
           scale: nextScale,
         },
         xywh: bound.serialize(),
@@ -137,7 +137,7 @@ function autoResizeElements(
       ele instanceof EdgelessTextBlockModel ||
       ele instanceof EmbedSyncedDocModel
     ) {
-      const curScale = ele.scale ?? 1;
+      const curScale = ele.props.scale ?? 1;
       const nextScale = curScale * (ALIGN_HEIGHT / ele.elementBound.h);
       const bound = Bound.deserialize(ele.xywh);
       bound.h = bound.h * (nextScale / curScale);

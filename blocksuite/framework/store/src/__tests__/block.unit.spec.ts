@@ -104,8 +104,8 @@ test('init block without props should add default props', () => {
   const model = block.model as RootModel;
 
   expect(yBlock.get('prop:count')).toBe(0);
-  expect(model.count).toBe(0);
-  expect(model.style).toEqual({});
+  expect(model.props.count).toBe(0);
+  expect(model.props.style).toEqual({});
 });
 
 describe('block model should has signal props', () => {
@@ -120,38 +120,38 @@ describe('block model should has signal props', () => {
     const block = new Block(doc.schema, yBlock, doc);
     const model = block.model as RootModel;
 
-    const isOdd = computed(() => model.count$.value % 2 === 1);
+    const isOdd = computed(() => model.props.count$.value % 2 === 1);
 
-    expect(model.count$.value).toBe(0);
+    expect(model.props.count$.value).toBe(0);
     expect(isOdd.peek()).toBe(false);
 
     // set prop
-    model.count = 1;
-    expect(model.count$.value).toBe(1);
+    model.props.count = 1;
+    expect(model.props.count$.value).toBe(1);
     expect(isOdd.peek()).toBe(true);
     expect(yBlock.get('prop:count')).toBe(1);
 
     // set signal
-    model.count$.value = 2;
-    expect(model.count).toBe(2);
+    model.props.count$.value = 2;
+    expect(model.props.count).toBe(2);
     expect(isOdd.peek()).toBe(false);
     expect(yBlock.get('prop:count')).toBe(2);
 
     // set prop
     yBlock.set('prop:count', 3);
-    expect(model.count).toBe(3);
-    expect(model.count$.value).toBe(3);
+    expect(model.props.count).toBe(3);
+    expect(model.props.count$.value).toBe(3);
     expect(isOdd.peek()).toBe(true);
 
     const toggleEffect = vi.fn();
     effect(() => {
-      toggleEffect(model.toggle$.value);
+      toggleEffect(model.props.toggle$.value);
     });
     expect(toggleEffect).toHaveBeenCalledTimes(1);
     const runToggle = () => {
-      const next = !model.toggle;
-      model.toggle = next;
-      expect(model.toggle$.value).toBe(next);
+      const next = !model.props.toggle;
+      model.props.toggle = next;
+      expect(model.props.toggle$.value).toBe(next);
     };
     const times = 10;
     for (let i = 0; i < times; i++) {
@@ -159,9 +159,9 @@ describe('block model should has signal props', () => {
     }
     expect(toggleEffect).toHaveBeenCalledTimes(times + 1);
     const runToggleReverse = () => {
-      const next = !model.toggle;
-      model.toggle$.value = next;
-      expect(model.toggle).toBe(next);
+      const next = !model.props.toggle;
+      model.props.toggle$.value = next;
+      expect(model.props.toggle).toBe(next);
     };
     for (let i = 0; i < times; i++) {
       runToggleReverse();
@@ -179,22 +179,22 @@ describe('block model should has signal props', () => {
 
     const block = new Block(doc.schema, yBlock, doc);
     const model = block.model as RootModel;
-    expect(model.style).toEqual({});
+    expect(model.props.style).toEqual({});
 
-    model.style = { color: 'red' };
+    model.props.style = { color: 'red' };
     expect((yBlock.get('prop:style') as Y.Map<unknown>).toJSON()).toEqual({
       color: 'red',
     });
-    expect(model.style$.value).toEqual({ color: 'red' });
+    expect(model.props.style$.value).toEqual({ color: 'red' });
 
-    model.style.color = 'yellow';
+    model.props.style.color = 'yellow';
     expect((yBlock.get('prop:style') as Y.Map<unknown>).toJSON()).toEqual({
       color: 'yellow',
     });
-    expect(model.style$.value).toEqual({ color: 'yellow' });
+    expect(model.props.style$.value).toEqual({ color: 'yellow' });
 
-    model.style$.value = { color: 'blue' };
-    expect(model.style.color).toBe('blue');
+    model.props.style$.value = { color: 'blue' };
+    expect(model.props.style.color).toBe('blue');
     expect((yBlock.get('prop:style') as Y.Map<unknown>).toJSON()).toEqual({
       color: 'blue',
     });
@@ -202,8 +202,8 @@ describe('block model should has signal props', () => {
     const map = new Y.Map();
     map.set('color', 'green');
     yBlock.set('prop:style', map);
-    expect(model.style.color).toBe('green');
-    expect(model.style$.value).toEqual({ color: 'green' });
+    expect(model.props.style.color).toBe('green');
+    expect(model.props.style$.value).toEqual({ color: 'green' });
   });
 
   test('with stash and pop', () => {
@@ -218,34 +218,34 @@ describe('block model should has signal props', () => {
     const block = new Block(doc.schema, yBlock, doc, { onChange });
     const model = block.model as RootModel;
 
-    expect(model.count).toBe(0);
+    expect(model.props.count).toBe(0);
     model.stash('count');
 
     onChange.mockClear();
-    model.count = 1;
-    expect(model.count$.value).toBe(1);
+    model.props.count = 1;
+    expect(model.props.count$.value).toBe(1);
     expect(yBlock.get('prop:count')).toBe(0);
     expect(onChange).toHaveBeenCalledTimes(1);
 
-    model.count$.value = 2;
-    expect(model.count).toBe(2);
+    model.props.count$.value = 2;
+    expect(model.props.count).toBe(2);
     expect(yBlock.get('prop:count')).toBe(0);
     expect(onChange).toHaveBeenCalledTimes(2);
 
     model.pop('count');
     expect(yBlock.get('prop:count')).toBe(2);
-    expect(model.count).toBe(2);
-    expect(model.count$.value).toBe(2);
+    expect(model.props.count).toBe(2);
+    expect(model.props.count$.value).toBe(2);
     expect(onChange).toHaveBeenCalledTimes(3);
 
     model.stash('count');
     yBlock.set('prop:count', 3);
-    expect(model.count).toBe(3);
-    expect(model.count$.value).toBe(3);
+    expect(model.props.count).toBe(3);
+    expect(model.props.count$.value).toBe(3);
 
-    model.count$.value = 4;
+    model.props.count$.value = 4;
     expect(yBlock.get('prop:count')).toBe(3);
-    expect(model.count).toBe(4);
+    expect(model.props.count).toBe(4);
 
     model.pop('count');
     expect(yBlock.get('prop:count')).toBe(4);
@@ -266,22 +266,22 @@ test('on change', () => {
   });
   const model = block.model as RootModel;
 
-  model.title = internalPrimitives.Text('abc');
+  model.props.title = internalPrimitives.Text('abc');
   expect(onPropsUpdated).toHaveBeenCalledWith(expect.anything(), 'title', true);
-  expect(model.title$.value.toDelta()).toEqual([{ insert: 'abc' }]);
+  expect(model.props.title$.value.toDelta()).toEqual([{ insert: 'abc' }]);
 
   onPropsUpdated.mockClear();
 
-  model.title.insert('d', 1);
+  model.props.title.insert('d', 1);
   expect(onPropsUpdated).toHaveBeenCalledWith(expect.anything(), 'title', true);
 
-  expect(model.title$.value.toDelta()).toEqual([{ insert: 'adbc' }]);
+  expect(model.props.title$.value.toDelta()).toEqual([{ insert: 'adbc' }]);
 
   onPropsUpdated.mockClear();
 
-  model.boxed.getValue()!.set('foo', 0);
+  model.props.boxed.getValue()!.set('foo', 0);
   expect(onPropsUpdated).toHaveBeenCalledWith(expect.anything(), 'boxed', true);
-  expect(model.boxed$.value.getValue()!.toJSON()).toEqual({
+  expect(model.props.boxed$.value.getValue()!.toJSON()).toEqual({
     foo: 0,
   });
 });
@@ -299,33 +299,33 @@ test('deep sync', () => {
     onChange: onPropsUpdated,
   });
   const model = block.model as TableModel;
-  expect(model.cols).toEqual({});
-  expect(model.rows).toEqual([]);
+  expect(model.props.cols).toEqual({});
+  expect(model.props.rows).toEqual([]);
 
-  model.cols = {
+  model.props.cols = {
     '1': { color: 'red' },
   };
   const onColsUpdated = vi.fn();
   const onRowsUpdated = vi.fn();
   effect(() => {
-    onColsUpdated(model.cols$.value);
+    onColsUpdated(model.props.cols$.value);
   });
   effect(() => {
-    onRowsUpdated(model.rows$.value);
+    onRowsUpdated(model.props.rows$.value);
   });
   const getColsMap = () => yBlock.get('prop:cols') as Y.Map<unknown>;
   const getRowsArr = () => yBlock.get('prop:rows') as Y.Array<unknown>;
   expect(getColsMap().toJSON()).toEqual({
     '1': { color: 'red' },
   });
-  expect(model.cols$.value).toEqual({
+  expect(model.props.cols$.value).toEqual({
     '1': { color: 'red' },
   });
 
   onPropsUpdated.mockClear();
   onColsUpdated.mockClear();
 
-  model.cols['2'] = { color: 'blue' };
+  model.props.cols['2'] = { color: 'blue' };
   expect(getColsMap().toJSON()).toEqual({
     '1': { color: 'red' },
     '2': { color: 'blue' },
@@ -355,7 +355,7 @@ test('deep sync', () => {
   onPropsUpdated.mockClear();
   onRowsUpdated.mockClear();
 
-  model.rows.push({ color: 'yellow' });
+  model.props.rows.push({ color: 'yellow' });
   expect(onPropsUpdated).toHaveBeenCalledWith(expect.anything(), 'rows', true);
   expect(onRowsUpdated).toHaveBeenCalledWith([{ color: 'yellow' }]);
   expect(onPropsUpdated).toHaveBeenCalledTimes(1);
@@ -368,7 +368,7 @@ test('deep sync', () => {
   row1.set('color', 'green');
   expect(onRowsUpdated).toHaveBeenCalledWith([{ color: 'green' }]);
   expect(onPropsUpdated).toHaveBeenCalledWith(expect.anything(), 'rows', true);
-  expect(model.rows$.value).toEqual([{ color: 'green' }]);
+  expect(model.props.rows$.value).toEqual([{ color: 'green' }]);
   expect(onPropsUpdated).toHaveBeenCalledTimes(1);
   expect(onRowsUpdated).toHaveBeenCalledTimes(1);
 });

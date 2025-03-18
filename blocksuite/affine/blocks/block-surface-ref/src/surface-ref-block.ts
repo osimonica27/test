@@ -281,7 +281,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
           flavour: 'affine:paragraph',
         },
       ]);
-      const model = this.doc.getBlockById(paragraphId);
+      const model = this.doc.getModelById(paragraphId);
       if (!model) return;
 
       requestConnectedFrame(() => {
@@ -316,19 +316,19 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     this._surfaceModel = surfaceModel;
 
     const findReferencedModel = (): [GfxModel | null, string] => {
-      if (!this.model.reference) return [null, this.doc.id];
+      if (!this.model.props.reference) return [null, this.doc.id];
 
-      if (this.doc.getBlock(this.model.reference)) {
+      if (this.doc.getBlock(this.model.props.reference)) {
         return [
-          this.doc.getBlock(this.model.reference)
+          this.doc.getBlock(this.model.props.reference)
             ?.model as GfxBlockElementModel,
           this.doc.id,
         ];
       }
 
-      if (this._surfaceModel?.getElementById(this.model.reference)) {
+      if (this._surfaceModel?.getElementById(this.model.props.reference)) {
         return [
-          this._surfaceModel.getElementById(this.model.reference),
+          this._surfaceModel.getElementById(this.model.props.reference),
           this.doc.id,
         ];
       }
@@ -337,17 +337,18 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         .map(doc => doc.getStore())
         .find(
           doc =>
-            doc.getBlock(this.model.reference) ||
-            getSurfaceBlock(doc)?.getElementById(this.model.reference)
+            doc.getBlock(this.model.props.reference) ||
+            getSurfaceBlock(doc)?.getElementById(this.model.props.reference)
         );
 
       if (doc) {
         this._surfaceModel = getSurfaceBlock(doc);
       }
 
-      if (doc && doc.getBlock(this.model.reference)) {
+      if (doc && doc.getBlock(this.model.props.reference)) {
         return [
-          doc.getBlock(this.model.reference)?.model as GfxBlockElementModel,
+          doc.getBlock(this.model.props.reference)
+            ?.model as GfxBlockElementModel,
           doc.id,
         ];
       }
@@ -355,7 +356,10 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       if (doc) {
         const surfaceBlock = getSurfaceBlock(doc);
         if (surfaceBlock) {
-          return [surfaceBlock.getElementById(this.model.reference), doc.id];
+          return [
+            surfaceBlock.getElementById(this.model.props.reference),
+            doc.id,
+          ];
         }
       }
 
@@ -379,7 +383,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       this.model.propsUpdated.subscribe(payload => {
         if (
           payload.key === 'reference' &&
-          this.model.reference !== this._referencedModel?.id
+          this.model.props.reference !== this._referencedModel?.id
         ) {
           init();
         }
@@ -389,7 +393,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     if (surfaceModel && this._referencedModel instanceof SurfaceElementModel) {
       this._disposables.add(
         surfaceModel.elementRemoved.subscribe(({ id }) => {
-          if (this.model.reference === id) {
+          if (this.model.props.reference === id) {
             init();
           }
         })
@@ -399,7 +403,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     if (this._referencedModel instanceof GfxBlockElementModel) {
       this._disposables.add(
         this.doc.slots.blockUpdated.subscribe(({ type, id }) => {
-          if (type === 'delete' && id === this.model.reference) {
+          if (type === 'delete' && id === this.model.props.reference) {
             init();
           }
         })
@@ -442,7 +446,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     }
     this._previewSpec.extend([SurfaceRefViewportInitializer]);
 
-    const referenceId = this.model.reference;
+    const referenceId = this.model.props.reference;
     const setReferenceXYWH = (xywh: typeof this._referenceXYWH) => {
       this._referenceXYWH = xywh;
     };
@@ -564,7 +568,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       <div class="placeholder-image">${noContentPlaceholder}</div>
       <div class="placeholder-text">
         No Such
-        ${NO_CONTENT_TITLE[model.refFlavour ?? 'DEFAULT'] ??
+        ${NO_CONTENT_TITLE[model.props.refFlavour ?? 'DEFAULT'] ??
         NO_CONTENT_TITLE.DEFAULT}
       </div>
       <div class="placeholder-action">
@@ -574,7 +578,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         </button>
       </div>
       <div class="placeholder-reason">
-        ${NO_CONTENT_REASON[model.refFlavour ?? 'DEFAULT'] ??
+        ${NO_CONTENT_REASON[model.props.refFlavour ?? 'DEFAULT'] ??
         NO_CONTENT_REASON.DEFAULT}
       </div>
     </div>`;

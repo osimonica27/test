@@ -90,8 +90,8 @@ export class Doc extends Entity {
       ?.model as RootBlockModel | undefined;
     if (pageBlock) {
       this.blockSuiteDoc.transact(() => {
-        pageBlock.title.delete(0, pageBlock.title.length);
-        pageBlock.title.insert(newTitle, 0);
+        pageBlock.props.title.delete(0, pageBlock.props.title.length);
+        pageBlock.props.title.insert(newTitle, 0);
       });
       this.record.setMeta({ title: newTitle });
     }

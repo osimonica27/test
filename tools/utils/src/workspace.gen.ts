@@ -336,6 +336,7 @@ export const PackageList = [
     location: 'blocksuite/affine/blocks/block-surface-ref',
     name: '@blocksuite/affine-block-surface-ref',
     workspaceDependencies: [
+      'blocksuite/affine/blocks/block-frame',
       'blocksuite/affine/blocks/block-surface',
       'blocksuite/affine/components',
       'blocksuite/affine/model',
@@ -583,6 +584,11 @@ export const PackageList = [
     ],
   },
   {
+    location: 'blocksuite/docs',
+    name: '@blocksuite/bs-docs',
+    workspaceDependencies: ['blocksuite/affine/all'],
+  },
+  {
     location: 'blocksuite/framework/block-std',
     name: '@blocksuite/block-std',
     workspaceDependencies: [
@@ -629,14 +635,6 @@ export const PackageList = [
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/affine/data-view',
-      'blocksuite/integration-test',
-    ],
-  },
-  {
-    location: 'blocksuite/tests-legacy',
-    name: '@blocksuite/legacy-e2e',
-    workspaceDependencies: [
-      'blocksuite/affine/all',
       'blocksuite/integration-test',
     ],
   },
@@ -735,6 +733,7 @@ export const PackageList = [
       'packages/frontend/electron-api',
       'packages/frontend/i18n',
       'packages/common/nbstore',
+      'blocksuite/affine/all',
       'packages/common/infra',
       'tools/utils',
     ],
@@ -881,6 +880,14 @@ export const PackageList = [
     workspaceDependencies: ['tests/kit'],
   },
   {
+    location: 'tests/blocksuite',
+    name: '@affine-test/blocksuite',
+    workspaceDependencies: [
+      'blocksuite/affine/all',
+      'blocksuite/integration-test',
+    ],
+  },
+  {
     location: 'tests/kit',
     name: '@affine-test/kit',
     workspaceDependencies: ['tools/utils', 'blocksuite/affine/all'],
@@ -965,6 +972,7 @@ export type PackageName =
   | '@blocksuite/affine-widget-scroll-anchoring'
   | '@blocksuite/affine-widget-slash-menu'
   | '@blocksuite/affine-widget-toolbar'
+  | '@blocksuite/bs-docs'
   | '@blocksuite/block-std'
   | '@blocksuite/global'
   | '@blocksuite/inline'
@@ -972,7 +980,6 @@ export type PackageName =
   | '@blocksuite/sync'
   | '@blocksuite/integration-test'
   | '@blocksuite/playground'
-  | '@blocksuite/legacy-e2e'
   | '@affine/docs'
   | '@affine/server-native'
   | '@affine/server'
@@ -1003,6 +1010,7 @@ export type PackageName =
   | '@affine-test/affine-desktop-cloud'
   | '@affine-test/affine-local'
   | '@affine-test/affine-mobile'
+  | '@affine-test/blocksuite'
   | '@affine-test/kit'
   | '@types/build-config'
   | '@types/affine__env'

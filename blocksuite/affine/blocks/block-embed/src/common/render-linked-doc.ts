@@ -37,7 +37,7 @@ export function renderLinkedDocInCard(
   const linkedDoc = card.linkedDoc;
   if (!linkedDoc) {
     console.error(
-      `Trying to load page ${card.model.pageId} in linked page block, but the page is not found.`
+      `Trying to load page ${card.model.props.pageId} in linked page block, but the page is not found.`
     );
     return;
   }
@@ -62,7 +62,7 @@ async function renderPageAsBanner(card: EmbedSyncedDocCard) {
   const linkedDoc = card.linkedDoc;
   if (!linkedDoc) {
     console.error(
-      `Trying to load page ${card.model.pageId} in linked page block, but the page is not found.`
+      `Trying to load page ${card.model.props.pageId} in linked page block, but the page is not found.`
     );
     return;
   }
@@ -89,7 +89,7 @@ async function renderImageAsBanner(
   card: EmbedSyncedDocCard,
   image: BlockModel
 ) {
-  const sourceId = (image as ImageBlockModel).sourceId;
+  const sourceId = (image as ImageBlockModel).props.sourceId;
   if (!sourceId) return;
 
   const storage = card.linkedDoc?.blobSync;
@@ -131,7 +131,7 @@ async function renderNoteContent(
   const doc = card.linkedDoc;
   if (!doc) {
     console.error(
-      `Trying to load page ${card.model.pageId} in linked page block, but the page is not found.`
+      `Trying to load page ${card.model.props.pageId} in linked page block, but the page is not found.`
     );
     return;
   }
@@ -141,7 +141,7 @@ async function renderNoteContent(
     return;
   }
 
-  const cardStyle = card.model.style;
+  const cardStyle = card.model.props.style;
   const isHorizontal = cardStyle === 'horizontal';
   const allowFlavours = isHorizontal ? [] : [ImageBlockModel];
 
@@ -230,7 +230,7 @@ export function getNotesFromDoc(doc: Store) {
   const notes = doc.root?.children.filter(
     child =>
       matchModels(child, [NoteBlockModel]) &&
-      child.displayMode !== NoteDisplayMode.EdgelessOnly
+      child.props.displayMode !== NoteDisplayMode.EdgelessOnly
   );
 
   if (!notes || !notes.length) {
@@ -313,8 +313,8 @@ export function getTitleFromSelectedModels(selectedModels: DraftModel[]) {
     model: DraftModel
   ): model is DraftModel<ParagraphBlockModel> =>
     model.flavour === 'affine:paragraph';
-  if (isParagraph(firstBlock) && firstBlock.type.startsWith('h')) {
-    return firstBlock.text?.toString();
+  if (isParagraph(firstBlock) && firstBlock.props.type.startsWith('h')) {
+    return firstBlock.props.text.toString();
   }
   return undefined;
 }

@@ -263,7 +263,7 @@ export const getSelectedImagesAsBlobs = async (host: EditorHost) => {
 
   const blobs = await Promise.all(
     data.selectedBlocks?.map(async b => {
-      const sourceId = (b.model as ImageBlockModel).sourceId;
+      const sourceId = (b.model as ImageBlockModel).props.sourceId;
       if (!sourceId) return null;
       const blob = await host.doc.blobSync.get(sourceId);
       if (!blob) return null;
@@ -295,9 +295,9 @@ export const imageCustomInput = async (host: EditorHost) => {
 
   const imageBlock = selectedElements[0];
   if (!(imageBlock instanceof ImageBlockModel)) return;
-  if (!imageBlock.sourceId) return;
+  if (!imageBlock.props.sourceId) return;
 
-  const blob = await host.doc.blobSync.get(imageBlock.sourceId);
+  const blob = await host.doc.blobSync.get(imageBlock.props.sourceId);
   if (!blob) return;
 
   return {

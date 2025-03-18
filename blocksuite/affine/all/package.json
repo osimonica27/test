@@ -3,10 +3,7 @@
   "description": "BlockSuite for Affine",
   "type": "module",
   "scripts": {
-    "build": "tsc --build --verbose",
-    "test:unit": "nx vite:test --run --passWithNoTests",
-    "test:unit:coverage": "nx vite:test --run --coverage",
-    "test:e2e": "playwright test"
+    "build": "tsc --build --verbose"
   },
   "sideEffects": false,
   "keywords": [],
@@ -146,7 +143,6 @@
     "./shared/theme": "./src/shared/theme.ts",
     "./shared/types": "./src/shared/types.ts",
     "./shared/utils": "./src/shared/utils.ts",
-    "./shared/viewport-renderer": "./src/shared/viewport-renderer.ts",
     "./schemas": "./src/schemas.ts",
     "./model": "./src/model/index.ts",
     "./sync": "./src/sync/index.ts",

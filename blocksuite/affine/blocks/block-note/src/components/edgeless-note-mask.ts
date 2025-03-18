@@ -15,9 +15,9 @@ export class EdgelessNoteMask extends SignalWatcher(
     const maskDOM = this.renderRoot!.querySelector('.affine-note-mask');
     const observer = new ResizeObserver(entries => {
       for (const entry of entries) {
-        if (!this.model.edgeless.collapse) {
+        if (!this.model.props.edgeless.collapse) {
           const bound = Bound.deserialize(this.model.xywh);
-          const scale = this.model.edgeless.scale ?? 1;
+          const scale = this.model.props.edgeless.scale ?? 1;
           const height = entry.contentRect.height * scale;
 
           if (!height || almostEqual(bound.h, height)) {
@@ -53,7 +53,7 @@ export class EdgelessNoteMask extends SignalWatcher(
           zIndex: '1',
           pointerEvents: this.editing || this.disableMask ? 'none' : 'auto',
           borderRadius: `${
-            this.model.edgeless.style.borderRadius * this.zoom
+            this.model.props.edgeless.style.borderRadius * this.zoom
           }px`,
         })}
       ></div>

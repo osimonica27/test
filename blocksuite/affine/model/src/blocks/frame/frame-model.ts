@@ -78,7 +78,7 @@ export class FrameBlockModel
     for (const key of this.childIds) {
       const element =
         this.surface.getElementById(key) ||
-        (this.surface.doc.getBlockById(key) as GfxBlockElementModel);
+        (this.surface.doc.getModelById(key) as GfxBlockElementModel);
 
       element && elements.push(element);
     }
@@ -87,7 +87,9 @@ export class FrameBlockModel
   }
 
   get childIds() {
-    return this.childElementIds ? Object.keys(this.childElementIds) : [];
+    return this.props.childElementIds
+      ? Object.keys(this.props.childElementIds)
+      : [];
   }
 
   get descendantElements(): GfxModel[] {
@@ -98,7 +100,10 @@ export class FrameBlockModel
     if (!canSafeAddToContainer(this, element)) return;
 
     this.doc.transact(() => {
-      this.childElementIds = { ...this.childElementIds, [element.id]: true };
+      this.props.childElementIds = {
+        ...this.props.childElementIds,
+        [element.id]: true,
+      };
     });
   }
 
@@ -114,8 +119,8 @@ export class FrameBlockModel
     }
 
     this.doc.transact(() => {
-      this.childElementIds = {
-        ...this.childElementIds,
+      this.props.childElementIds = {
+        ...this.props.childElementIds,
         ...newChildren,
       };
     });
@@ -126,7 +131,9 @@ export class FrameBlockModel
   }
 
   hasChild(element: GfxModel): boolean {
-    return this.childElementIds ? element.id in this.childElementIds : false;
+    return this.props.childElementIds
+      ? element.id in this.props.childElementIds
+      : false;
   }
 
   hasDescendant(element: GfxModel): boolean {
@@ -147,7 +154,8 @@ export class FrameBlockModel
 
   removeChild(element: GfxModel): void {
     this.doc.transact(() => {
-      this.childElementIds && delete this.childElementIds[element.id];
+      this.props.childElementIds &&
+        delete this.props.childElementIds[element.id];
     });
   }
 }

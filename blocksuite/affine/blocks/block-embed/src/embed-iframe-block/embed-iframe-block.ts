@@ -19,6 +19,7 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 import type { IframeOptions } from './extension/embed-iframe-config.js';
 import { EmbedIframeService } from './extension/embed-iframe-service.js';
 import { embedIframeBlockStyles } from './style.js';
+import type { EmbedIframeStatusCardOptions } from './types.js';
 
 export type EmbedIframeStatus = 'idle' | 'loading' | 'success' | 'error';
 const DEFAULT_IFRAME_HEIGHT = 152;
@@ -74,8 +75,14 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
     return flag ?? false;
   }
 
+  get _statusCardOptions(): EmbedIframeStatusCardOptions {
+    return this.inSurface
+      ? { layout: 'vertical' }
+      : { layout: 'horizontal', height: 114 };
+  }
+
   open = () => {
-    const link = this.model.url;
+    const link = this.model.props.url;
     window.open(link, '_blank');
   };
 
@@ -95,7 +102,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
         );
       }
 
-      const { url } = this.model;
+      const { url } = this.model.props;
       if (!url) {
         throw new BlockSuiteError(
           ErrorCode.ValueNotExists,
@@ -110,7 +117,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
       ]);
 
       // if the embed data is not found, and the iframeUrl is not set, throw an error
-      const currentIframeUrl = this.model.iframeUrl;
+      const currentIframeUrl = this.model.props.iframeUrl;
       if (!embedData && !currentIframeUrl) {
         throw new BlockSuiteError(
           ErrorCode.ValueNotExists,
@@ -172,7 +179,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
   };
 
   private readonly _renderIframe = () => {
-    const { iframeUrl } = this.model;
+    const { iframeUrl } = this.model.props;
     const {
       widthPercent,
       heightInNote,
@@ -206,6 +213,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
     if (this.isLoading$.value) {
       return html`<embed-iframe-loading-card
         .std=${this.std}
+        .options=${this._statusCardOptions}
       ></embed-iframe-loading-card>`;
     }
 
@@ -215,6 +223,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
         .model=${this.model}
         .onRetry=${this._handleRetry}
         .std=${this.std}
+        .options=${this._statusCardOptions}
       ></embed-iframe-error-card>`;
     }
 
@@ -226,13 +235,13 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
 
     this.contentEditable = 'false';
 
-    if (!this.model.iframeUrl) {
+    if (!this.model.props.iframeUrl) {
       this.doc.withoutTransact(() => {
         this.refreshData().catch(console.error);
       });
     } else {
       // update iframe options, to ensure the iframe is rendered with the correct options
-      this._updateIframeOptions(this.model.url);
+      this._updateIframeOptions(this.model.props.url);
       this.status$.value = 'success';
     }
 

@@ -72,8 +72,8 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
     )
       return false;
 
-    const lengthBeforeJoin = prevBlock.text?.length ?? 0;
-    prevBlock.text.join(model.text as Text);
+    const lengthBeforeJoin = prevBlock.props.text?.length ?? 0;
+    prevBlock.props.text.join(model.text as Text);
     doc.deleteBlock(model, {
       bringChildrenTo: parent,
     });
@@ -138,7 +138,7 @@ function handleNoPreviousSibling(editorHost: EditorHost, model: ExtendedModel) {
   }
 
   const rootModel = model.doc.root as RootBlockModel;
-  const title = rootModel.title;
+  const title = rootModel.props.title;
 
   doc.captureSync();
   let textLength = 0;

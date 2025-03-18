@@ -11,28 +11,10 @@ import type { BlockSchemaType } from './zod.js';
 type SignaledProps<Props> = Props & {
   [P in keyof Props & string as `${P}$`]: Signal<Props[P]>;
 };
-/**
- * The MagicProps function is used to append the props to the class.
- * For example:
- *
- * ```ts
- * class MyBlock extends MagicProps()<{ foo: string }> {}
- * const myBlock = new MyBlock();
- * // You'll get type checking for the foo prop
- * myBlock.foo = 'bar';
- * ```
- */
-function MagicProps(): { new <Props>(): Props } {
-  return class {} as never;
-}
 
 const modelLabel = Symbol('model_label');
 
-// @ts-expect-error allow magic props
-export class BlockModel<
-  Props extends object = object,
-  PropsSignal extends object = SignaledProps<Props>,
-> extends MagicProps()<PropsSignal> {
+export class BlockModel<Props extends object = object> {
   private readonly _children = signal<string[]>([]);
 
   private _store!: Store;
@@ -82,8 +64,15 @@ export class BlockModel<
 
   stash!: (prop: keyof Props & string) => void;
 
-  // text is optional
-  text?: Text;
+  get text(): Text | undefined {
+    return (this.props as { text?: Text }).text;
+  }
+
+  set text(text: Text) {
+    if (this.keys.includes('text')) {
+      (this.props as { text?: Text }).text = text;
+    }
+  }
 
   yBlock!: YBlock;
 
@@ -125,7 +114,6 @@ export class BlockModel<
   }
 
   constructor() {
-    super();
     this._onCreated = {
       dispose: this.created.pipe(take(1)).subscribe(() => {
         this._children.value = this.yBlock.get('sys:children').toArray();

@@ -27,7 +27,7 @@ export const newIdCrossDoc =
         payload.type === 'block' &&
         matchModels(payload.model, [DatabaseBlockModel])
       ) {
-        const originalCells = payload.model.cells;
+        const originalCells = payload.model.props.cells;
         const newCells = {
           ...originalCells,
         };
@@ -38,7 +38,7 @@ export const newIdCrossDoc =
           }
         });
 
-        payload.model.cells$.value = newCells;
+        payload.model.props.cells$.value = newCells;
       }
     });
   };

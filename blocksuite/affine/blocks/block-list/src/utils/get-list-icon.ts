@@ -36,7 +36,7 @@ export function getListIcon(
   onClick: (e: MouseEvent) => void
 ) {
   const deep = getListDeep(model);
-  switch (model.type) {
+  switch (model.props.type) {
     case 'bulleted':
       return html`<div
         contenteditable="false"
@@ -51,7 +51,7 @@ export function getListIcon(
         class="affine-list-block__prefix affine-list-block__numbered"
         @click=${onClick}
       >
-        ${model.order ? getNumberPrefix(model.order, deep) : '1.'}
+        ${model.props.order ? getNumberPrefix(model.props.order, deep) : '1.'}
       </div>`;
     case 'todo':
       return html`<div
@@ -59,7 +59,7 @@ export function getListIcon(
         class=${`affine-list-block__prefix affine-list-block__todo-prefix ${model.doc.readonly ? 'readonly' : ''}`}
         @click=${onClick}
       >
-        ${model.checked
+        ${model.props.checked
           ? CheckBoxCheckSolidIcon({ style: 'color: #1E96EB' })
           : CheckBoxUnIcon()}
       </div>`;
@@ -72,7 +72,7 @@ export function getListIcon(
         ${showChildren ? ToggleDownIcon() : ToggleRightIcon()}
       </div>`;
     default:
-      console.error('Unknown list type', model.type, model);
+      console.error('Unknown list type', model.props.type, model);
       return null;
   }
 }

@@ -12,7 +12,7 @@ export async function queryEmbedLoomData(
   embedLoomModel: EmbedLoomModel,
   signal?: AbortSignal
 ): Promise<Partial<EmbedLoomBlockUrlData>> {
-  const url = embedLoomModel.url;
+  const url = embedLoomModel.props.url;
 
   const loomEmbedData: Partial<EmbedLoomBlockUrlData> =
     await queryLoomOEmbedData(url, signal);

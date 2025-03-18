@@ -8,7 +8,7 @@ export class ParagraphBlockService extends BlockService {
   static override readonly flavour = ParagraphBlockSchema.model.flavour;
 
   placeholderGenerator: (model: ParagraphBlockModel) => string = model => {
-    if (model.type === 'text') {
+    if (model.props.type === 'text') {
       return "Type '/' for commands";
     }
 
@@ -21,6 +21,6 @@ export class ParagraphBlockService extends BlockService {
       h6: 'Heading 6',
       quote: '',
     };
-    return placeholders[model.type];
+    return placeholders[model.props.type];
   };
 }

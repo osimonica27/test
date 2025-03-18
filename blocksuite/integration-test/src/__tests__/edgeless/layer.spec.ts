@@ -848,7 +848,9 @@ test('the actual rendering z-index should satisfy the logic order of their index
       const zIndex = Number(block.style.zIndex);
       const nextZIndex = Number(blocks[index + 1].style.zIndex);
 
-      expect(model.index <= nextModel.index).equals(zIndex <= nextZIndex);
+      expect(model.props.index <= nextModel.props.index).equals(
+        zIndex <= nextZIndex
+      );
     });
 });
 

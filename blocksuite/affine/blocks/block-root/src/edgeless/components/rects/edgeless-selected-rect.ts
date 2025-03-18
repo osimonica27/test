@@ -1009,7 +1009,7 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
       direction === HandleDirection.BottomRight ||
       direction === HandleDirection.BottomLeft
     ) {
-      const newScale = element.scale * (bound.w / oldXYWH.w);
+      const newScale = element.props.scale * (bound.w / oldXYWH.w);
       this._scalePercent = `${Math.round(newScale * 100)}%`;
       this._scaleDirection = direction;
 
@@ -1030,11 +1030,11 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
       if (!textPortal.checkWidthOverflow(bound.w)) return;
 
       const newRealWidth = clamp(
-        bound.w / element.scale,
+        bound.w / element.props.scale,
         EDGELESS_TEXT_BLOCK_MIN_WIDTH,
         Infinity
       );
-      bound.w = newRealWidth * element.scale;
+      bound.w = newRealWidth * element.props.scale;
       this.gfx.updateElement(element.id, {
         xywh: Bound.serialize({
           ...bound,
@@ -1068,7 +1068,7 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
   ) {
     const curBound = Bound.deserialize(element.xywh);
 
-    let scale = element.scale ?? 1;
+    let scale = element.props.scale ?? 1;
     let width = curBound.w / scale;
     let height = curBound.h / scale;
     if (this._shiftKey) {
@@ -1123,7 +1123,7 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
   ) {
     const curBound = Bound.deserialize(element.xywh);
 
-    let scale = element.edgeless.scale ?? 1;
+    let scale = element.props.edgeless.scale ?? 1;
     if (this._shiftKey) {
       scale = (bound.w / curBound.w) * scale;
       this._scalePercent = `${Math.round(scale * 100)}%`;
@@ -1138,14 +1138,14 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
 
     if (bound.h > NOTE_MIN_HEIGHT * scale) {
       this.doc.updateBlock(element, () => {
-        element.edgeless.collapse = true;
-        element.edgeless.collapsedHeight = bound.h / scale;
+        element.props.edgeless.collapse = true;
+        element.props.edgeless.collapsedHeight = bound.h / scale;
       });
     }
 
     this.gfx.updateElement(element.id, {
       edgeless: {
-        ...element.edgeless,
+        ...element.props.edgeless,
         scale,
       },
       xywh: bound.serialize(),
@@ -1160,13 +1160,13 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
     const curBound = Bound.deserialize(element.xywh);
 
     if (isImageBlock(element)) {
-      const { height } = element;
+      const { height } = element.props;
       if (height) {
         this._scalePercent = `${Math.round((bound.h / height) * 100)}%`;
         this._scaleDirection = direction;
       }
     } else {
-      const cardStyle = (element as BookmarkBlockModel).style;
+      const cardStyle = (element as BookmarkBlockModel).props.style;
       const height = EMBED_CARD_HEIGHT[cardStyle];
       this._scalePercent = `${Math.round((bound.h / height) * 100)}%`;
       this._scaleDirection = direction;

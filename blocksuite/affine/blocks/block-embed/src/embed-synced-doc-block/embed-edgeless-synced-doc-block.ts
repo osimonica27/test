@@ -37,7 +37,7 @@ export class EmbedEdgelessSyncedDocBlockComponent extends toEdgelessEmbedBlock(
       position: 'relative',
       width: '100%',
     });
-    const modelScale = this.model.scale ?? 1;
+    const modelScale = this.model.props.scale ?? 1;
     const bound = Bound.deserialize(this.model.xywh);
     const width = bound.w / modelScale;
     const height = bound.h / modelScale;
@@ -58,7 +58,7 @@ export class EmbedEdgelessSyncedDocBlockComponent extends toEdgelessEmbedBlock(
     }
     const theme = this.isPageMode ? appTheme : edgelessTheme;
 
-    const scale = this.model.scale ?? 1;
+    const scale = this.model.props.scale ?? 1;
 
     this.dataset.nestedEditor = '';
 
@@ -121,7 +121,8 @@ export class EmbedEdgelessSyncedDocBlockComponent extends toEdgelessEmbedBlock(
   };
 
   override convertToCard = (aliasInfo?: AliasInfo) => {
-    const { id, doc, caption, xywh } = this.model;
+    const { id, doc, xywh } = this.model;
+    const { caption } = this.model.props;
 
     const style = 'vertical';
     const bound = Bound.deserialize(xywh);
@@ -155,7 +156,7 @@ export class EmbedEdgelessSyncedDocBlockComponent extends toEdgelessEmbedBlock(
   };
 
   override renderGfxBlock() {
-    const { style, xywh } = this.model;
+    const { style, xywh } = this.model.props;
     const bound = Bound.deserialize(xywh);
 
     this.embedContainerStyle.width = `${bound.w}px`;

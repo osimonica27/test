@@ -17,7 +17,7 @@ export async function refreshBookmarkUrlData(
 
     const linkPreviewer = bookmarkElement.doc.get(LinkPreviewerService);
     const bookmarkUrlData = await linkPreviewer.query(
-      bookmarkElement.model.url,
+      bookmarkElement.model.props.url,
       signal
     );
 

@@ -36,7 +36,7 @@ export const AttachmentViewerView = ({ model }: AttachmentViewerProps) => {
 };
 
 const AttachmentViewerInner = (props: PDFViewerProps) => {
-  return props.model.type.endsWith('pdf') ? (
+  return props.model.props.type.endsWith('pdf') ? (
     <AttachmentPreviewErrorBoundary>
       <PDFViewer {...props} />
     </AttachmentPreviewErrorBoundary>

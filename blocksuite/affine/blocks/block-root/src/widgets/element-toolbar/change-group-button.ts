@@ -25,7 +25,7 @@ export class EdgelessChangeGroupButton extends WithDisposable(LitElement) {
     const notes = rootModel.children.filter(
       model =>
         matchModels(model, [NoteBlockModel]) &&
-        model.displayMode !== NoteDisplayMode.EdgelessOnly
+        model.props.displayMode !== NoteDisplayMode.EdgelessOnly
     );
     const lastNote = notes[notes.length - 1];
     const referenceGroup = this.groups[0];

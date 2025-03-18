@@ -72,7 +72,7 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
     const note = this._rootModel.children.find(
       (child): child is NoteBlockModel =>
         matchModels(child, [NoteBlockModel]) &&
-        child.displayMode !== NoteDisplayMode.EdgelessOnly
+        child.props.displayMode !== NoteDisplayMode.EdgelessOnly
     );
     if (note) return note;
 
@@ -89,7 +89,7 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
 
       const inlineRange = this.inlineEditor?.getInlineRange();
       if (inlineRange) {
-        const rightText = this._rootModel.title.split(inlineRange.index);
+        const rightText = this._rootModel.props.title.split(inlineRange.index);
         const newFirstParagraphId = this.doc.addBlock(
           'affine:paragraph',
           { text: rightText },
@@ -129,7 +129,7 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
 
   private readonly _updateTitleInMeta = () => {
     this.doc.workspace.meta.setDocMeta(this.doc.id, {
-      title: this._rootModel.title.toString(),
+      title: this._rootModel.props.title.toString(),
     });
   };
 
@@ -188,14 +188,14 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
       this._updateTitleInMeta();
       this.requestUpdate();
     };
-    this._rootModel.title.yText.observe(updateMetaTitle);
+    this._rootModel.props.title.yText.observe(updateMetaTitle);
     this._disposables.add(() => {
-      this._rootModel.title.yText.unobserve(updateMetaTitle);
+      this._rootModel.props.title.yText.unobserve(updateMetaTitle);
     });
   }
 
   override render() {
-    const isEmpty = !this._rootModel.title.length && !this._isComposing;
+    const isEmpty = !this._rootModel.props.title.length && !this._isComposing;
 
     return html`
       <div
@@ -205,7 +205,7 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
         data-block-is-title="true"
       >
         <rich-text
-          .yText=${this._rootModel.title.yText}
+          .yText=${this._rootModel.props.title.yText}
           .undoManager=${this.doc.history}
           .verticalScrollContainerGetter=${() => this._viewport}
           .readonly=${this.doc.readonly}

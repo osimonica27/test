@@ -24,7 +24,7 @@ export async function queryEmbedGithubData(
 ): Promise<Partial<EmbedGithubBlockUrlData>> {
   const [githubApiData, openGraphData] = await Promise.all([
     queryEmbedGithubApiData(embedGithubModel, signal),
-    linkPreviewer.query(embedGithubModel.url, signal),
+    linkPreviewer.query(embedGithubModel.props.url, signal),
   ]);
   return { ...githubApiData, ...openGraphData };
 }
@@ -33,7 +33,7 @@ export async function queryEmbedGithubApiData(
   embedGithubModel: EmbedGithubModel,
   signal?: AbortSignal
 ): Promise<Partial<EmbedGithubBlockUrlData>> {
-  const { owner, repo, githubType, githubId } = embedGithubModel;
+  const { owner, repo, githubType, githubId } = embedGithubModel.props;
   let githubApiData: Partial<EmbedGithubBlockUrlData> = {};
 
   // github's public api has a rate limit of 60 requests per hour

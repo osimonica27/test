@@ -100,10 +100,10 @@ export function addNote(
     noteId
   );
   if (options.collapse && height > NOTE_MIN_HEIGHT) {
-    const note = doc.getBlockById(noteId) as NoteBlockModel;
+    const note = doc.getModelById(noteId) as NoteBlockModel;
     doc.updateBlock(note, () => {
-      note.edgeless.collapse = true;
-      note.edgeless.collapsedHeight = height;
+      note.props.edgeless.collapse = true;
+      note.props.edgeless.collapsedHeight = height;
     });
   }
   gfx.tool.setTool(

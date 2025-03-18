@@ -116,7 +116,7 @@ export class FrameCardTitle extends WithDisposable(ShadowlessElement) {
         <span
           @click=${(e: MouseEvent) => e.stopPropagation()}
           @dblclick=${this._mountTitleEditor}
-          >${this.frame.title}</span
+          >${this.frame.props.title}</span
         >
       </div>
     </div>`;
@@ -124,7 +124,7 @@ export class FrameCardTitle extends WithDisposable(ShadowlessElement) {
 
   override updated(_changedProperties: PropertyValues) {
     if (_changedProperties.has('frame')) {
-      this._setFrameDisposables(this.frame.title.yText);
+      this._setFrameDisposables(this.frame.props.title.yText);
     }
   }
 

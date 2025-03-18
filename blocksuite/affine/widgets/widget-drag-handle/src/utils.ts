@@ -59,8 +59,8 @@ export const getDragHandleContainerHeight = (model: BlockModel) => {
   const flavour = model.flavour;
   const index = flavour.indexOf(':');
   let key = flavour.slice(index + 1);
-  if (key === 'paragraph' && (model as ParagraphBlockModel).type) {
-    key = (model as ParagraphBlockModel).type;
+  if (key === 'paragraph' && (model as ParagraphBlockModel).props.type) {
+    key = (model as ParagraphBlockModel).props.type;
   }
 
   const height = heightMap[key] ?? DRAG_HANDLE_CONTAINER_HEIGHT;
@@ -253,7 +253,7 @@ export function getDragHandleLeftPadding(blocks: BlockComponent[]) {
       (matchModels(block.model, [ListBlockModel]) &&
         block.model.children.length > 0) ||
       (block instanceof ParagraphBlockComponent &&
-        block.model.type.startsWith('h') &&
+        block.model.props.type.startsWith('h') &&
         block.collapsedSiblings.length > 0)
   );
   const offsetLeft = hasToggleList

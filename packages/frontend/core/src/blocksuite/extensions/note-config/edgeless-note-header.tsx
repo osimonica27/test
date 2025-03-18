@@ -25,7 +25,7 @@ import * as styles from './edgeless-note-header.css';
 
 const EdgelessNoteToggleButton = ({ note }: { note: NoteBlockModel }) => {
   const t = useI18n();
-  const [collapsed, setCollapsed] = useState(note.edgeless.collapse);
+  const [collapsed, setCollapsed] = useState(note.props.edgeless.collapse);
   const editor = useService(EditorService).editor;
   const editorContainer = useLiveData(editor.editorContainer$);
   const gfx = editorContainer?.std.get(GfxControllerIdentifier);
@@ -39,7 +39,7 @@ const EdgelessNoteToggleButton = ({ note }: { note: NoteBlockModel }) => {
   );
 
   useEffect(() => {
-    return note.edgeless$.subscribe(({ collapse, collapsedHeight }) => {
+    return note.props.edgeless$.subscribe(({ collapse, collapsedHeight }) => {
       if (
         collapse &&
         collapsedHeight &&
@@ -50,7 +50,7 @@ const EdgelessNoteToggleButton = ({ note }: { note: NoteBlockModel }) => {
         setCollapsed(false);
       }
     });
-  }, [note.edgeless$]);
+  }, [note.props.edgeless$]);
 
   useEffect(() => {
     if (!gfx) return;
@@ -60,7 +60,7 @@ const EdgelessNoteToggleButton = ({ note }: { note: NoteBlockModel }) => {
     const dispose = selection.slots.updated.subscribe(() => {
       if (selection.has(note.id) && selection.editing) {
         note.doc.transact(() => {
-          note.edgeless.collapse = false;
+          note.props.edgeless.collapse = false;
         });
       }
     });
@@ -74,13 +74,13 @@ const EdgelessNoteToggleButton = ({ note }: { note: NoteBlockModel }) => {
     });
     note.doc.transact(() => {
       if (collapsed) {
-        note.edgeless.collapse = false;
+        note.props.edgeless.collapse = false;
       } else {
-        const bound = Bound.deserialize(note.xywh);
-        bound.h = styles.headerHeight * (note.edgeless.scale ?? 1);
-        note.xywh = bound.serialize();
-        note.edgeless.collapse = true;
-        note.edgeless.collapsedHeight = styles.headerHeight;
+        const bound = Bound.deserialize(note.props.xywh);
+        bound.h = styles.headerHeight * (note.props.edgeless.scale ?? 1);
+        note.props.xywh = bound.serialize();
+        note.props.edgeless.collapse = true;
+        note.props.edgeless.collapsedHeight = styles.headerHeight;
         gfx?.selection.clear();
       }
     });

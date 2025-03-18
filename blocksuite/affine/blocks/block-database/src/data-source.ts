@@ -70,7 +70,7 @@ export class DatabaseBlockDataSource extends DataSourceBase {
   properties$: ReadonlySignal<string[]> = computed(() => {
     const fixedPropertiesSet = new Set(this.fixedProperties$.value);
     const properties: string[] = [];
-    this._model.columns$.value.forEach(column => {
+    this._model.props.columns$.value.forEach(column => {
       if (fixedPropertiesSet.has(column.type)) {
         fixedPropertiesSet.delete(column.type);
       }
@@ -96,7 +96,7 @@ export class DatabaseBlockDataSource extends DataSourceBase {
   viewConverts = databaseBlockViewConverts;
 
   viewDataList$: ReadonlySignal<DataViewDataType[]> = computed(() => {
-    return this._model.views$.value as DataViewDataType[];
+    return this._model.props.views$.value as DataViewDataType[];
   });
 
   override viewManager: ViewManager = new ViewManagerBase(this);
@@ -140,7 +140,9 @@ export class DatabaseBlockDataSource extends DataSourceBase {
   private newPropertyName() {
     let i = 1;
     while (
-      this._model.columns$.value.some(column => column.name === `Column ${i}`)
+      this._model.props.columns$.value.some(
+        column => column.name === `Column ${i}`
+      )
     ) {
       i++;
     }
@@ -164,7 +166,7 @@ export class DatabaseBlockDataSource extends DataSourceBase {
       dataSource: this,
       newValue: value,
       setValue: newValue => {
-        if (this._model.columns$.value.some(v => v.id === propertyId)) {
+        if (this._model.props.columns$.value.some(v => v.id === propertyId)) {
           updateCell(this._model, rowId, {
             columnId: propertyId,
             value: newValue,
@@ -227,11 +229,11 @@ export class DatabaseBlockDataSource extends DataSourceBase {
         index: number;
       }
     | undefined {
-    const index = this._model.columns$.value.findIndex(
+    const index = this._model.props.columns$.value.findIndex(
       v => v.id === propertyId
     );
     if (index >= 0) {
-      const column = this._model.columns$.value[index];
+      const column = this._model.props.columns$.value[index];
       if (!column) {
         return;
       }
@@ -281,11 +283,11 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     this._model.doc.transact(() => {
       if (index >= 0) {
         const result = updater(prevColumn);
-        this._model.columns[index] = { ...prevColumn, ...result };
+        this._model.props.columns[index] = { ...prevColumn, ...result };
       } else {
         const result = updater(prevColumn);
-        this._model.columns = [
-          ...this._model.columns,
+        this._model.props.columns = [
+          ...this._model.props.columns,
           { ...prevColumn, ...result },
         ];
       }
@@ -327,11 +329,13 @@ export class DatabaseBlockDataSource extends DataSourceBase {
       return;
     }
     this.doc.captureSync();
-    const index = this._model.columns.findIndex(v => v.id === id);
+    const index = this._model.props.columns.findIndex(v => v.id === id);
     if (index < 0) return;
 
     this.doc.transact(() => {
-      this._model.columns = this._model.columns.filter((_, i) => i !== index);
+      this._model.props.columns = this._model.props.columns.filter(
+        (_, i) => i !== index
+      );
     });
   }
 
@@ -345,7 +349,7 @@ export class DatabaseBlockDataSource extends DataSourceBase {
       return;
     }
     const { id: copyId, ...nonIdProps } = currentSchema;
-    const names = new Set(this._model.columns$.value.map(v => v.name));
+    const names = new Set(this._model.props.columns$.value.map(v => v.name));
     let index = 1;
     while (names.has(`${nonIdProps.name}(${index})`)) {
       index++;
@@ -462,7 +466,7 @@ export class DatabaseBlockDataSource extends DataSourceBase {
   }
 
   rowMove(rowId: string, position: InsertToPosition): void {
-    const model = this.doc.getBlockById(rowId);
+    const model = this.doc.getModelById(rowId);
     if (model) {
       const index = insertPositionToIndex(position, this._model.children);
       const target = this._model.children[index];
@@ -476,7 +480,7 @@ export class DatabaseBlockDataSource extends DataSourceBase {
   viewDataAdd(viewData: DataViewDataType): string {
     this._model.doc.captureSync();
     this._model.doc.transact(() => {
-      this._model.views = [...this._model.views, viewData];
+      this._model.props.views = [...this._model.props.views, viewData];
     });
     return viewData.id;
   }

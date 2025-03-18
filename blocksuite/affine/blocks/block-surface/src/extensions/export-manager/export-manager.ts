@@ -459,9 +459,9 @@ export class ExportManager {
       nodes ?? gfx.getElementsByBound(bound, { type: 'block' }) ?? [];
     for (const block of blocks) {
       if (matchModels(block, [ImageBlockModel])) {
-        if (!block.sourceId) return;
+        if (!block.props.sourceId) return;
 
-        const blob = await block.doc.blobSync.get(block.sourceId);
+        const blob = await block.doc.blobSync.get(block.props.sourceId);
         if (!blob) return;
 
         const blobToImage = (blob: Blob) =>
@@ -564,7 +564,7 @@ export class ExportManager {
     const pdfBase64 = await pdfDoc.saveAsBase64({ dataUri: true });
 
     FileExporter.exportFile(
-      (rootModel as RootBlockModel).title.toString() + '.pdf',
+      (rootModel as RootBlockModel).props.title.toString() + '.pdf',
       pdfBase64
     );
   }
@@ -578,7 +578,7 @@ export class ExportManager {
     }
 
     FileExporter.exportPng(
-      (this.doc.root as RootBlockModel).title.toString(),
+      (this.doc.root as RootBlockModel).props.title.toString(),
       canvasImage.toDataURL('image/png')
     );
   }
@@ -602,7 +602,7 @@ function getNotesInFrameBound(
 ): NoteBlockModel[] {
   const bound = Bound.deserialize(frame.xywh);
 
-  return (doc.getBlockByFlavour('affine:note') as NoteBlockModel[]).filter(
+  return (doc.getModelsByFlavour('affine:note') as NoteBlockModel[]).filter(
     ele => {
       const xywh = Bound.deserialize(ele.xywh);
 

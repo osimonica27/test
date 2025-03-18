@@ -51,7 +51,7 @@ export class BaseBlockTransformer<Props extends object = object> {
     }
     return Object.fromEntries(
       draftModel.keys.map(key => {
-        const value = draftModel[key as keyof typeof draftModel];
+        const value = draftModel.props[key as keyof typeof draftModel.props];
         return [key, toJSON(value)];
       })
     );

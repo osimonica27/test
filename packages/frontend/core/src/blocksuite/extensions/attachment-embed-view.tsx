@@ -16,9 +16,10 @@ export function patchForAttachmentEmbedViews(
       di.override(AttachmentEmbedConfigIdentifier('pdf'), () => ({
         name: 'pdf',
         check: (model, maxFileSize) =>
-          model.type === 'application/pdf' && model.size <= maxFileSize,
+          model.props.type === 'application/pdf' &&
+          model.props.size <= maxFileSize,
         action: model => {
-          const bound = Bound.deserialize(model.xywh);
+          const bound = Bound.deserialize(model.props.xywh);
           bound.w = 537 + 24 + 2;
           bound.h = 759 + 46 + 24 + 2;
           model.doc.updateBlock(model, {

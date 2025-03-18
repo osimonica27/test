@@ -49,37 +49,37 @@ test('trigger props updated', () => {
   const getItems = () => rootModel.yBlock.get('prop:items') as Y.Array<unknown>;
   const getCount = () => rootModel.yBlock.get('prop:count');
 
-  rootModel.count = 1;
+  rootModel.props.count = 1;
   expect(onPropsUpdated).toBeCalledTimes(1);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(1, { key: 'count' });
   expect(getCount()).toBe(1);
 
-  rootModel.count = 2;
+  rootModel.props.count = 2;
   expect(onPropsUpdated).toBeCalledTimes(2);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(2, { key: 'count' });
   expect(getCount()).toBe(2);
 
-  rootModel.style.color = 'blue';
+  rootModel.props.style.color = 'blue';
   expect(onPropsUpdated).toBeCalledTimes(3);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(3, { key: 'style' });
   expect(getColor()).toBe('blue');
 
-  rootModel.style = { color: 'red' };
+  rootModel.props.style = { color: 'red' };
   expect(onPropsUpdated).toBeCalledTimes(4);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(4, { key: 'style' });
   expect(getColor()).toBe('red');
 
-  rootModel.style.color = 'green';
+  rootModel.props.style.color = 'green';
   expect(onPropsUpdated).toBeCalledTimes(5);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(5, { key: 'style' });
   expect(getColor()).toBe('green');
 
-  rootModel.items.push(1);
+  rootModel.props.items.push(1);
   expect(onPropsUpdated).toBeCalledTimes(6);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(6, { key: 'items' });
   expect(getItems().get(0)).toBe(1);
 
-  rootModel.items[0] = { id: '1' };
+  rootModel.props.items[0] = { id: '1' };
   expect(onPropsUpdated).toBeCalledTimes(7);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(7, { key: 'items' });
   expect(getItems().get(0)).toBeInstanceOf(Y.Map);
@@ -107,13 +107,13 @@ test('stash and pop', () => {
   const getColor = () =>
     (rootModel.yBlock.get('prop:style') as Y.Map<string>).get('color');
 
-  rootModel.count = 1;
+  rootModel.props.count = 1;
   expect(onPropsUpdated).toBeCalledTimes(1);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(1, { key: 'count' });
   expect(getCount()).toBe(1);
 
   rootModel.stash('count');
-  rootModel.count = 2;
+  rootModel.props.count = 2;
   expect(onPropsUpdated).toBeCalledTimes(3);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(3, { key: 'count' });
   expect(rootModel.yBlock.get('prop:count')).toBe(1);
@@ -123,13 +123,13 @@ test('stash and pop', () => {
   expect(onPropsUpdated).toHaveBeenNthCalledWith(4, { key: 'count' });
   expect(rootModel.yBlock.get('prop:count')).toBe(2);
 
-  rootModel.style.color = 'blue';
+  rootModel.props.style.color = 'blue';
   expect(getColor()).toBe('blue');
   expect(onPropsUpdated).toBeCalledTimes(5);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(5, { key: 'style' });
 
   rootModel.stash('style');
-  rootModel.style = {
+  rootModel.props.style = {
     color: 'red',
   };
   expect(getColor()).toBe('blue');
@@ -145,7 +145,7 @@ test('stash and pop', () => {
   expect(onPropsUpdated).toBeCalledTimes(9);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(9, { key: 'style' });
 
-  rootModel.style.color = 'green';
+  rootModel.props.style.color = 'green';
   expect(onPropsUpdated).toBeCalledTimes(10);
   expect(onPropsUpdated).toHaveBeenNthCalledWith(10, { key: 'style' });
   expect(getColor()).toBe('red');
@@ -173,33 +173,33 @@ test('always get latest value in onChange', () => {
   let value: unknown;
   rootModel.propsUpdated.subscribe(({ key }) => {
     // @ts-expect-error ignore
-    value = rootModel[key];
+    value = rootModel.props[key];
   });
 
-  rootModel.count = 1;
+  rootModel.props.count = 1;
   expect(value).toBe(1);
 
   rootModel.stash('count');
 
-  rootModel.count = 2;
+  rootModel.props.count = 2;
   expect(value).toBe(2);
 
   rootModel.pop('count');
 
-  rootModel.count = 3;
+  rootModel.props.count = 3;
   expect(value).toBe(3);
 
-  rootModel.style.color = 'blue';
+  rootModel.props.style.color = 'blue';
   expect(value).toEqual({ color: 'blue' });
 
   rootModel.stash('style');
-  rootModel.style = { color: 'red' };
+  rootModel.props.style = { color: 'red' };
   expect(value).toEqual({ color: 'red' });
-  rootModel.style.color = 'green';
+  rootModel.props.style.color = 'green';
   expect(value).toEqual({ color: 'green' });
 
   rootModel.pop('style');
-  rootModel.style.color = 'yellow';
+  rootModel.props.style.color = 'yellow';
   expect(value).toEqual({ color: 'yellow' });
 });
 

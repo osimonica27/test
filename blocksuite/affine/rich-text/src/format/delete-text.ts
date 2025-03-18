@@ -26,7 +26,7 @@ export const deleteTextCommand: Command<{
 
   let fromText: Text | undefined;
   if (matchModels(fromElement.model, [RootBlockModel])) {
-    fromText = fromElement.model.title;
+    fromText = fromElement.model.props.title;
   } else {
     fromText = fromElement.model.text;
   }

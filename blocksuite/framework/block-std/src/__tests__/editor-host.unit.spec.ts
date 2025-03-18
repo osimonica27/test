@@ -54,7 +54,7 @@ describe('editor host', () => {
 
     expect(headingElm!.tagName).toBe('TEST-H1-BLOCK');
 
-    (headingBlock.model as HeadingBlockModel).type = 'h2';
+    (headingBlock.model as HeadingBlockModel).props.type = 'h2';
     await wait(50);
     headingElm = editorContainer.std.view.getBlock(headingId);
 

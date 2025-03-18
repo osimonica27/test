@@ -9,12 +9,13 @@ import {
   EdgelessTextBlockModel,
   EmbedSyncedDocModel,
   ImageBlockModel,
+  type ImageBlockProps,
   NoteBlockModel,
   ShapeElementModel,
   TextElementModel,
 } from '@blocksuite/affine/model';
 import { matchModels } from '@blocksuite/affine/shared/utils';
-import { Slice } from '@blocksuite/affine/store';
+import { type BlockModel, Slice } from '@blocksuite/affine/store';
 import type { TemplateResult } from 'lit';
 
 import { getContentFromSlice } from '../../utils';
@@ -87,8 +88,9 @@ export async function getContentFromSelected(
 
   function isImageWithCaption(
     el: ImageBlockModel
-  ): el is RemoveUndefinedKey<ImageBlockModel, 'caption'> {
-    return el.caption !== undefined && el.caption.length !== 0;
+  ): el is ImageBlockModel &
+    BlockModel<RemoveUndefinedKey<ImageBlockProps, 'caption'>> {
+    return el.props.caption !== undefined && el.props.caption.length !== 0;
   }
 
   const { notes, texts, shapes, images, edgelessTexts, embedSyncedDocs } =
@@ -96,7 +98,7 @@ export async function getContentFromSelected(
       notes: NoteBlockModel[];
       texts: TextElementModel[];
       shapes: RemoveUndefinedKey<ShapeElementModel, 'text'>[];
-      images: RemoveUndefinedKey<ImageBlockModel, 'caption'>[];
+      images: RemoveUndefinedKey<ImageBlockProps, 'caption'>[];
       edgelessTexts: EdgelessTextBlockModel[];
       embedSyncedDocs: EmbedSyncedDocModel[];
     }>(
@@ -108,7 +110,7 @@ export async function getContentFromSelected(
         } else if (cur instanceof ShapeElementModel && isShapeWithText(cur)) {
           pre.shapes.push(cur);
         } else if (cur instanceof ImageBlockModel && isImageWithCaption(cur)) {
-          pre.images.push(cur);
+          pre.images.push(cur.props);
         } else if (cur instanceof EdgelessTextBlockModel) {
           pre.edgelessTexts.push(cur);
         } else if (cur instanceof EmbedSyncedDocModel) {

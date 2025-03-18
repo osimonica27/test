@@ -232,8 +232,8 @@ describe('apply last props', () => {
       throw new Error('id is not found');
     }
     const text = service.crud.getElementById(id) as EdgelessTextBlockModel;
-    expect(text.color).toBe(DefaultTheme.textColor);
-    expect(text.fontFamily).toBe(FontFamily.Inter);
+    expect(text.props.color).toBe(DefaultTheme.textColor);
+    expect(text.props.fontFamily).toBe(FontFamily.Inter);
     service.crud.updateElement(id, {
       color: DefaultTheme.StrokeColorShortMap.Green,
       fontFamily: FontFamily.OrelegaOne,
@@ -244,8 +244,8 @@ describe('apply last props', () => {
       throw new Error('id2 is not found');
     }
     const text2 = service.crud.getElementById(id2) as EdgelessTextBlockModel;
-    expect(text2.color).toBe(DefaultTheme.StrokeColorShortMap.Green);
-    expect(text2.fontFamily).toBe(FontFamily.OrelegaOne);
+    expect(text2.props.color).toBe(DefaultTheme.StrokeColorShortMap.Green);
+    expect(text2.props.fontFamily).toBe(FontFamily.OrelegaOne);
   });
 
   test('note', () => {
@@ -254,8 +254,8 @@ describe('apply last props', () => {
       throw new Error('id is not found');
     }
     const note = service.crud.getElementById(id) as NoteBlockModel;
-    expect(note.background).toEqual(DefaultTheme.noteBackgrounColor);
-    expect(note.edgeless.style.shadowType).toBe(DEFAULT_NOTE_SHADOW);
+    expect(note.props.background).toEqual(DefaultTheme.noteBackgrounColor);
+    expect(note.props.edgeless.style.shadowType).toBe(DEFAULT_NOTE_SHADOW);
     service.crud.updateElement(id, {
       background: DefaultTheme.NoteBackgroundColorMap.Purple,
       edgeless: {
@@ -270,10 +270,10 @@ describe('apply last props', () => {
       throw new Error('id2 is not found');
     }
     const note2 = service.crud.getElementById(id2) as NoteBlockModel;
-    expect(note2.background).toEqual(
+    expect(note2.props.background).toEqual(
       DefaultTheme.NoteBackgroundColorMap.Purple
     );
-    expect(note2.edgeless.style.shadowType).toBe(NoteShadow.Film);
+    expect(note2.props.edgeless.style.shadowType).toBe(NoteShadow.Film);
   });
 
   test('frame', () => {
@@ -283,7 +283,7 @@ describe('apply last props', () => {
       throw new Error('id is not found');
     }
     const note = service.crud.getElementById(id) as FrameBlockModel;
-    expect(note.background).toBe('transparent');
+    expect(note.props.background).toBe('transparent');
     service.crud.updateElement(id, {
       background: DefaultTheme.StrokeColorShortMap.Purple,
     });
@@ -293,7 +293,9 @@ describe('apply last props', () => {
       throw new Error('id2 is not found');
     }
     const frame2 = service.crud.getElementById(id2) as FrameBlockModel;
-    expect(frame2.background).toBe(DefaultTheme.StrokeColorShortMap.Purple);
+    expect(frame2.props.background).toBe(
+      DefaultTheme.StrokeColorShortMap.Purple
+    );
     service.crud.updateElement(id2, {
       background: { normal: '#def4e740' },
     });
@@ -303,7 +305,7 @@ describe('apply last props', () => {
       throw new Error('id3 is not found');
     }
     const frame3 = service.crud.getElementById(id3) as FrameBlockModel;
-    expect(frame3.background).toEqual({ normal: '#def4e740' });
+    expect(frame3.props.background).toEqual({ normal: '#def4e740' });
     service.crud.updateElement(id3, {
       background: { light: '#a381aa23', dark: '#6e907452' },
     });
@@ -313,7 +315,7 @@ describe('apply last props', () => {
       throw new Error('id4 is not found');
     }
     const frame4 = service.crud.getElementById(id4) as FrameBlockModel;
-    expect(frame4.background).toEqual({
+    expect(frame4.props.background).toEqual({
       light: '#a381aa23',
       dark: '#6e907452',
     });

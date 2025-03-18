@@ -49,6 +49,7 @@ const NoteBackgroundColorMap = {
   Black: getColorByKey('edgeless/note/black'),
   Grey: getColorByKey('edgeless/note/grey'),
   White: getColorByKey('edgeless/note/white'),
+  Transparent: Transparent,
 } as const;
 
 const Palettes: Palette[] = [
@@ -78,7 +79,7 @@ const StrokeColorShortPalettes: Palette[] = [
   ...buildPalettes(StrokeColorShortMap),
 ] as const;
 
-const FillColorShortMap = { ...Medium, Black, White } as const;
+const FillColorShortMap = { ...Medium, Black, White, Transparent } as const;
 
 const FillColorShortPalettes: Palette[] = [
   ...buildPalettes(FillColorShortMap),

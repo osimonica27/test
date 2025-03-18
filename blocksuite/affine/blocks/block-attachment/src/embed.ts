@@ -113,11 +113,11 @@ export class AttachmentEmbedService extends Extension {
     blobUrl?: string,
     maxFileSize = this._maxFileSize
   ) {
-    if (!model.embed || !blobUrl) return;
+    if (!model.props.embed || !blobUrl) return;
 
     const config = this.values.find(config => config.check(model, maxFileSize));
     if (!config || !config.template) {
-      console.error('No embed view template found!', model, model.type);
+      console.error('No embed view template found!', model, model.props.type);
       return;
     }
 
@@ -130,7 +130,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
     name: 'image',
     check: model =>
       model.doc.schema.flavourSchemaMap.has('affine:image') &&
-      model.type.startsWith('image/'),
+      model.props.type.startsWith('image/'),
     async action(model, std) {
       const component = std.view.getBlock(model.id);
       if (!component) return;
@@ -141,7 +141,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
   {
     name: 'pdf',
     check: (model, maxFileSize) =>
-      model.type === 'application/pdf' && model.size <= maxFileSize,
+      model.props.type === 'application/pdf' && model.props.size <= maxFileSize,
     template: (_, blobUrl) => {
       // More options: https://tinytip.co/tips/html-pdf-params/
       // https://chromium.googlesource.com/chromium/src/+/refs/tags/121.0.6153.1/chrome/browser/resources/pdf/open_pdf_params_parser.ts
@@ -162,7 +162,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
   {
     name: 'video',
     check: (model, maxFileSize) =>
-      model.type.startsWith('video/') && model.size <= maxFileSize,
+      model.props.type.startsWith('video/') && model.props.size <= maxFileSize,
     template: (_, blobUrl) =>
       html`<video
         style="max-height: max-content;"
@@ -175,7 +175,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
   {
     name: 'audio',
     check: (model, maxFileSize) =>
-      model.type.startsWith('audio/') && model.size <= maxFileSize,
+      model.props.type.startsWith('audio/') && model.props.size <= maxFileSize,
     template: (_, blobUrl) =>
       html`<audio controls src=${blobUrl} style="margin: 4px;"></audio>`,
   },
@@ -190,13 +190,15 @@ export async function turnIntoImageBlock(model: AttachmentBlockModel) {
     return;
   }
 
-  const sourceId = model.sourceId;
+  const sourceId = model.props.sourceId;
   if (!sourceId) return;
 
   const { saveAttachmentData, getImageData } = withTempBlobData();
-  saveAttachmentData(sourceId, { name: model.name });
+  saveAttachmentData(sourceId, { name: model.props.name });
 
-  let imageSize = model.sourceId ? getImageData(model.sourceId) : undefined;
+  let imageSize = model.props.sourceId
+    ? getImageData(model.props.sourceId)
+    : undefined;
 
   const bounds = model.xywh
     ? Bound.fromXYWH(model.deserializedXYWH)
@@ -223,8 +225,8 @@ export async function turnIntoImageBlock(model: AttachmentBlockModel) {
 
   const imageProp: Partial<ImageBlockProps> = {
     sourceId,
-    caption: model.caption,
-    size: model.size,
+    caption: model.props.caption,
+    size: model.props.size,
     ...imageSize,
     ...others,
   };

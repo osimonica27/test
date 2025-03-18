@@ -25,7 +25,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
 ) {
   private get _isShowCollapsedContent() {
     return (
-      this.model.edgeless.collapse &&
+      this.model.props.edgeless.collapse &&
       this.gfx.selection.has(this.model.id) &&
       !this._dragging &&
       (this._isResizing || this._isHover)
@@ -41,7 +41,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
       return nothing;
     }
 
-    const { xywh, edgeless } = this.model;
+    const { xywh, edgeless } = this.model.props;
     const { borderSize } = edgeless.style;
 
     const extraPadding = this._editing ? ACTIVE_NOTE_EXTRA_PADDING : 0;
@@ -100,19 +100,19 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
   private _setCollapse(event: MouseEvent) {
     event.stopImmediatePropagation();
 
-    const { collapse, collapsedHeight } = this.model.edgeless;
+    const { collapse, collapsedHeight } = this.model.props.edgeless;
 
     if (collapse) {
       this.model.doc.updateBlock(this.model, () => {
-        this.model.edgeless.collapse = false;
+        this.model.props.edgeless.collapse = false;
       });
     } else if (collapsedHeight) {
-      const { xywh, edgeless } = this.model;
+      const { xywh, edgeless } = this.model.props;
       const bound = Bound.deserialize(xywh);
       bound.h = collapsedHeight * (edgeless.scale ?? 1);
       this.model.doc.updateBlock(this.model, () => {
-        this.model.edgeless.collapse = true;
-        this.model.xywh = bound.serialize();
+        this.model.props.edgeless.collapse = true;
+        this.model.props.xywh = bound.serialize();
       });
     }
 
@@ -164,7 +164,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
       const rect = this._noteContent?.getBoundingClientRect();
       if (!rect) return;
       const zoom = this.gfx.viewport.zoom;
-      const scale = this.model.edgeless.scale ?? 1;
+      const scale = this.model.props.edgeless.scale ?? 1;
       this._noteFullHeight =
         rect.height / scale / zoom + 2 * EDGELESS_BLOCK_CHILD_PADDING;
     });
@@ -184,7 +184,7 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
   }
 
   override getRenderingRect() {
-    const { xywh, edgeless } = this.model;
+    const { xywh, edgeless } = this.model.props;
     const { collapse, scale = 1 } = edgeless;
 
     const bound = Bound.deserialize(xywh);
@@ -202,11 +202,11 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
 
   override renderGfxBlock() {
     const { model } = this;
-    const { displayMode } = model;
+    const { displayMode } = model.props;
     if (!!displayMode && displayMode === NoteDisplayMode.DocOnly)
       return nothing;
 
-    const { xywh, edgeless } = model;
+    const { xywh, edgeless } = model.props;
     const { borderRadius } = edgeless.style;
     const { collapse = false, collapsedHeight, scale = 1 } = edgeless;
 

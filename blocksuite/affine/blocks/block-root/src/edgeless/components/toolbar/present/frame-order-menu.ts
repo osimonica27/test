@@ -179,8 +179,9 @@ export class EdgelessFrameOrderMenu extends SignalWatcher(
           // Legacy compatibility
           frameMgr.refreshLegacyFrameOrder();
 
-          const before = this._frames[newIndex - 1]?.presentationIndex || null;
-          const after = this._frames[newIndex]?.presentationIndex || null;
+          const before =
+            this._frames[newIndex - 1]?.props.presentationIndex || null;
+          const after = this._frames[newIndex]?.props.presentationIndex || null;
 
           const frame = this._frames[index];
 
@@ -223,7 +224,7 @@ export class EdgelessFrameOrderMenu extends SignalWatcher(
           (frame, index) => html`
             <div class="item draggable" id=${frame.id} index=${index}>
               <div class="drag-indicator"></div>
-              <div class="title">${frame.title.toString()}</div>
+              <div class="title">${frame.props.title.toString()}</div>
             </div>
           `
         )}
@@ -232,7 +233,7 @@ export class EdgelessFrameOrderMenu extends SignalWatcher(
           ${frame
             ? html`<div class="drag-indicator"></div>
                 <div class="index">${this._curIndex + 1}</div>
-                <div class="title">${frame.title.toString()}</div>`
+                <div class="title">${frame.props.title.toString()}</div>`
             : nothing}
         </div>
       </div>

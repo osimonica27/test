@@ -16,10 +16,10 @@ export function calculateCollapsedSiblings(
     if (
       i > index &&
       matchModels(child, [ParagraphBlockModel]) &&
-      child.type.startsWith('h')
+      child.props.type.startsWith('h')
     ) {
-      const modelLevel = parseInt(model.type.slice(1));
-      const childLevel = parseInt(child.type.slice(1));
+      const modelLevel = parseInt(model.props.type.slice(1));
+      const childLevel = parseInt(child.props.type.slice(1));
       return childLevel <= modelLevel;
     }
     return false;
@@ -47,7 +47,7 @@ export function getNearestHeadingBefore(
     const sibling = parent.children[i];
     if (
       matchModels(sibling, [ParagraphBlockModel]) &&
-      sibling.type.startsWith('h')
+      sibling.props.type.startsWith('h')
     ) {
       return sibling;
     }

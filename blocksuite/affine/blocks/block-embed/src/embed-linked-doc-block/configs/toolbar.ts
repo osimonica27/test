@@ -44,10 +44,10 @@ export const builtinToolbarConfig = {
         if (!component) return null;
 
         const model = component.model;
-        if (!model.title) return null;
+        if (!model.props.title) return null;
 
         const originalTitle =
-          ctx.workspace.getDoc(model.pageId)?.meta?.title || 'Untitled';
+          ctx.workspace.getDoc(model.props.pageId)?.meta?.title || 'Untitled';
 
         return html`<affine-linked-doc-title
           .title=${originalTitle}
@@ -99,10 +99,10 @@ export const builtinToolbarConfig = {
             const model = component.model;
 
             // same doc
-            if (model.pageId === ctx.store.id) return true;
+            if (model.props.pageId === ctx.store.id) return true;
 
             // linking to block
-            if (referenceToNode(model)) return true;
+            if (referenceToNode(model.props)) return true;
 
             return false;
           },
@@ -197,7 +197,7 @@ export const builtinToolbarConfig = {
             .actions=${actions}
             .context=${ctx}
             .toggle=${toggle}
-            .style$=${model.style$}
+            .style$=${model.props.style$}
           ></affine-card-style-dropdown-menu>`
         )}`;
       },

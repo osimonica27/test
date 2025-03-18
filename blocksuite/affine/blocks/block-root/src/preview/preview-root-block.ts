@@ -36,7 +36,8 @@ export class PreviewRootBlockComponent extends BlockComponent {
       const isNote = matchModels(child, [NoteBlockModel]);
       const note = child as NoteBlockModel;
       const displayOnEdgeless =
-        !!note.displayMode && note.displayMode === NoteDisplayMode.EdgelessOnly;
+        !!note.props.displayMode &&
+        note.props.displayMode === NoteDisplayMode.EdgelessOnly;
       // Should remove deprecated `hidden` property in the future
       return !(isNote && displayOnEdgeless);
     });

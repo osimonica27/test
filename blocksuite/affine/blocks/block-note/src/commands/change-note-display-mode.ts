@@ -12,7 +12,7 @@ export const changeNoteDisplayMode: Command<{
   const noteBlockModel = std.store.getBlock(noteId)?.model;
   if (!noteBlockModel || !matchModels(noteBlockModel, [NoteBlockModel])) return;
 
-  const currentMode = noteBlockModel.displayMode;
+  const currentMode = noteBlockModel.props.displayMode;
   if (currentMode === mode) return;
 
   if (stopCapture) std.store.captureSync();
@@ -29,10 +29,10 @@ export const changeNoteDisplayMode: Command<{
       matchModels(child, [NoteBlockModel])
     );
     const firstEdgelessOnlyNote = notes.find(
-      note => note.displayMode === NoteDisplayMode.EdgelessOnly
+      note => note.props.displayMode === NoteDisplayMode.EdgelessOnly
     );
     const lastPageVisibleNote = notes.findLast(
-      note => note.displayMode !== NoteDisplayMode.EdgelessOnly
+      note => note.props.displayMode !== NoteDisplayMode.EdgelessOnly
     );
 
     if (currentMode === NoteDisplayMode.EdgelessOnly) {

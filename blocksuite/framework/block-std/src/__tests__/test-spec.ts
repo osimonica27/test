@@ -12,7 +12,7 @@ export const testSpecs: ExtensionType[] = [
   BlockViewExtension('test:note', literal`test-note-block`),
 
   BlockViewExtension('test:heading', model => {
-    const h = (model as HeadingBlockModel).type$.value;
+    const h = (model as HeadingBlockModel).props.type$.value;
 
     if (h === 'h1') {
       return literal`test-h1-block`;

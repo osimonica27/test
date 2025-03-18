@@ -43,7 +43,7 @@ export class LatexBlockComponent extends CaptionedBlockComponent<LatexBlockModel
 
     disposables.add(
       effect(() => {
-        const latex = this.model.latex$.value;
+        const latex = this.model.props.latex$.value;
 
         katexContainer.replaceChildren();
         // @ts-expect-error lit hack won't fix
@@ -119,7 +119,7 @@ export class LatexBlockComponent extends CaptionedBlockComponent<LatexBlockModel
     const portal = createLitPortal({
       template: html`<latex-editor-menu
         .std=${this.std}
-        .latexSignal=${this.model.latex$}
+        .latexSignal=${this.model.props.latex$}
         .abortController=${this._editorAbortController}
       ></latex-editor-menu>`,
       container: this.host,

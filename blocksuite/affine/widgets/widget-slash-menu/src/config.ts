@@ -1,5 +1,8 @@
 import { toast } from '@blocksuite/affine-components/toast';
-import type { ParagraphBlockModel } from '@blocksuite/affine-model';
+import type {
+  ListBlockModel,
+  ParagraphBlockModel,
+} from '@blocksuite/affine-model';
 import { insertContent } from '@blocksuite/affine-rich-text';
 import {
   ArrowDownBigIcon,
@@ -149,14 +152,17 @@ export const defaultSlashMenuConfig: SlashMenuConfig = {
           }
           const index = parent.children.indexOf(model);
 
-          // TODO add clone model util
+          // FIXME: this clone is not correct
           host.doc.addBlock(
-            model.flavour as never,
+            model.flavour,
             {
-              type: (model as ParagraphBlockModel).type,
-              text: new Text(model.text.toDelta() as DeltaInsert[]),
-              // @ts-expect-error FIXME: ts error
-              checked: model.checked,
+              type: (model as ParagraphBlockModel).props.type,
+              text: new Text(
+                (
+                  model as ParagraphBlockModel
+                ).props.text.toDelta() as DeltaInsert[]
+              ),
+              checked: (model as ListBlockModel).props.checked,
             },
             host.doc.getParent(model),
             index

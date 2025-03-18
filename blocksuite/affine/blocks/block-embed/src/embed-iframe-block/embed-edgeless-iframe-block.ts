@@ -37,8 +37,8 @@ export class EmbedEdgelessIframeBlockComponent extends toGfxBlockComponent(
       return nothing;
     }
 
-    const bound = Bound.deserialize(this.model.xywh$.value);
-    const scale = this.model.scale$.value;
+    const bound = Bound.deserialize(this.model.props.xywh$.value);
+    const scale = this.model.props.scale$.value;
     const width = bound.w / scale;
     const height = bound.h / scale;
     const style = {

@@ -65,7 +65,7 @@ export const builtinToolbarConfig = {
             return {
               ...action,
               disabled: shouldOpenInActiveView
-                ? component.model.pageId === ctx.store.id
+                ? component.model.props.pageId === ctx.store.id
                 : false,
               when: allowed,
               run: (_ctx: ToolbarContext) =>

@@ -5,12 +5,14 @@ import {
   type Text,
 } from '@blocksuite/store';
 
-interface CodeBlockProps {
+import type { BlockMeta } from '../../utils/types';
+
+type CodeBlockProps = {
   text: Text;
   language: string | null;
   wrap: boolean;
   caption: string;
-}
+} & BlockMeta;
 
 export const CodeBlockSchema = defineBlockSchema({
   flavour: 'affine:code',
@@ -20,6 +22,10 @@ export const CodeBlockSchema = defineBlockSchema({
       language: null,
       wrap: false,
       caption: '',
+      'meta:createdAt': undefined,
+      'meta:createdBy': undefined,
+      'meta:updatedAt': undefined,
+      'meta:updatedBy': undefined,
     }) as CodeBlockProps,
   metadata: {
     version: 1,
@@ -37,6 +43,4 @@ export const CodeBlockSchema = defineBlockSchema({
 
 export const CodeBlockSchemaExtension = BlockSchemaExtension(CodeBlockSchema);
 
-export class CodeBlockModel extends BlockModel<CodeBlockProps> {
-  override text!: Text;
-}
+export class CodeBlockModel extends BlockModel<CodeBlockProps> {}

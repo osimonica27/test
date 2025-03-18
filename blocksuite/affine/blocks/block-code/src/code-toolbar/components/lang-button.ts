@@ -76,10 +76,10 @@ export class LanguageListButton extends WithDisposable(
           sortedBundledLanguages.unshift(item);
         }
         this.blockComponent.doc.transact(() => {
-          this.blockComponent.model.language$.value = item.name;
+          this.blockComponent.model.props.language$.value = item.name;
         });
       },
-      active: item => item.name === this.blockComponent.model.language,
+      active: item => item.name === this.blockComponent.model.props.language,
       items: this._sortedBundledLanguages,
     };
 

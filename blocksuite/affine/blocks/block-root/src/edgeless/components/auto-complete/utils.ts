@@ -293,9 +293,9 @@ export function createEdgelessElement(
     id = doc.addBlock(
       'affine:note',
       {
-        background: current.background,
-        displayMode: current.displayMode,
-        edgeless: current.edgeless,
+        background: current.props.background,
+        displayMode: current.props.displayMode,
+        edgeless: current.props.edgeless,
         xywh: bound.serialize(),
       },
       edgeless.model.id
@@ -309,7 +309,7 @@ export function createEdgelessElement(
     }
     assertType<NoteBlockModel>(note);
     doc.updateBlock(note, () => {
-      note.edgeless.collapse = true;
+      note.props.edgeless.collapse = true;
     });
     doc.addBlock('affine:paragraph', {}, note.id);
 

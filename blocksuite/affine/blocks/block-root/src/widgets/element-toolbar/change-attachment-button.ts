@@ -85,7 +85,7 @@ export class EdgelessChangeAttachmentButton extends WithDisposable(LitElement) {
   override render() {
     return join(
       [
-        this.model.style === 'pdf'
+        this.model.props.style === 'pdf'
           ? null
           : html`
               <editor-menu-button
@@ -100,7 +100,7 @@ export class EdgelessChangeAttachmentButton extends WithDisposable(LitElement) {
                 `}
               >
                 <card-style-panel
-                  .value=${this.model.style}
+                  .value=${this.model.props.style}
                   .options=${this._getCardStyleOptions}
                   .onSelect=${this._setCardStyle}
                 >

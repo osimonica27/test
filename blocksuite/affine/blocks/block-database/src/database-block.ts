@@ -110,10 +110,14 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
     const options = this.optionsConfig.configure(this.model, {
       items: [
         menu.input({
-          initialValue: this.model.title.toString(),
+          initialValue: this.model.props.title.toString(),
           placeholder: 'Untitled',
           onChange: text => {
-            this.model.title.replace(0, this.model.title.length, text);
+            this.model.props.title.replace(
+              0,
+              this.model.props.title.length,
+              text
+            );
           },
         }),
         menu.action({
@@ -162,7 +166,7 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
     const addRow = () => dataViewMethod.addRow?.('start');
     return html` <affine-database-title
       style="overflow: hidden"
-      .titleText="${this.model.title}"
+      .titleText="${this.model.props.title}"
       .readonly="${this.dataSource.readonly$.value}"
       .onPressEnterKey="${addRow}"
     ></affine-database-title>`;

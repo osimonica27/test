@@ -154,14 +154,14 @@ export class NoteSlicer extends WidgetComponent<
       index: originIndex,
       xywh,
       background,
-      children,
       displayMode,
-    } = this._anchorNote;
+    } = this._anchorNote.props;
+    const { children } = this._anchorNote;
     const {
       collapse: _,
       collapsedHeight: __,
       ...restOfEdgeless
-    } = this._anchorNote.edgeless;
+    } = this._anchorNote.props.edgeless;
     const anchorBlockId = this._noteBlockIds[this._activeSlicerIndex];
     if (!anchorBlockId) return;
     const sliceIndex = children.findIndex(block => block.id === anchorBlockId);
@@ -182,7 +182,7 @@ export class NoteSlicer extends WidgetComponent<
       doc.root?.id
     );
 
-    doc.moveBlocks(resetBlocks, doc.getBlockById(newNoteId) as NoteBlockModel);
+    doc.moveBlocks(resetBlocks, doc.getModelById(newNoteId) as NoteBlockModel);
 
     this._activeSlicerIndex = 0;
     this._selection.set({

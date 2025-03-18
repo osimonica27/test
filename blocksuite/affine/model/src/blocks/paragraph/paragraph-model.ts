@@ -53,9 +53,7 @@ export const ParagraphBlockSchemaExtension =
   BlockSchemaExtension(ParagraphBlockSchema);
 
 export class ParagraphBlockModel extends BlockModel<ParagraphProps> {
-  override text!: Text;
-
   override isEmpty(): boolean {
-    return this.text$.value.length === 0 && this.children.length === 0;
+    return this.props.text$.value.length === 0 && this.children.length === 0;
   }
 }

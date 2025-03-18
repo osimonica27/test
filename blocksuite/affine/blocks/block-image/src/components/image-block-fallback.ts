@@ -94,8 +94,8 @@ export class ImageBlockFallbackCard extends WithDisposable(ShadowlessElement) {
         : 'Image';
 
     const size =
-      !!model.size && model.size > 0
-        ? humanFileSize(model.size, true, 0)
+      !!model.props.size && model.props.size > 0
+        ? humanFileSize(model.props.size, true, 0)
         : null;
 
     return html`

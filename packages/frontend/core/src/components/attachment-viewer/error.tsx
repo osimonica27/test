@@ -90,7 +90,7 @@ interface ErrorProps {
 
 export const Error = ({ model, ext }: ErrorProps) => {
   const t = useI18n();
-  const Icon = FILE_ICONS[model.type] ?? FileIcon;
+  const Icon = FILE_ICONS[model.props.type] ?? FileIcon;
   const title = t['com.affine.attachment.preview.error.title']();
   const subtitle = `.${ext} ${t['com.affine.attachment.preview.error.subtitle']()}`;
 

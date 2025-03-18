@@ -41,24 +41,24 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
     e.stopPropagation();
     e.preventDefault();
 
-    if (this.model.type === 'toggle') {
+    if (this.model.props.type === 'toggle') {
       if (this.doc.readonly) {
         this._readonlyCollapsed = !this._readonlyCollapsed;
       } else {
         this.doc.captureSync();
         this.doc.updateBlock(this.model, {
-          collapsed: !this.model.collapsed,
+          collapsed: !this.model.props.collapsed,
         });
       }
 
       return;
-    } else if (this.model.type === 'todo') {
+    } else if (this.model.props.type === 'todo') {
       if (this.doc.readonly) return;
 
       this.doc.captureSync();
-      const checkedPropObj = { checked: !this.model.checked };
+      const checkedPropObj = { checked: !this.model.props.checked };
       this.doc.updateBlock(this.model, checkedPropObj);
-      if (this.model.checked) {
+      if (this.model.props.checked) {
         const checkEl = this.querySelector('.affine-list-block__todo-prefix');
         if (checkEl) {
           playCheckAnimation(checkEl).catch(console.error);
@@ -110,22 +110,22 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
 
     this.disposables.add(
       effect(() => {
-        const collapsed = this.model.collapsed$.value;
+        const collapsed = this.model.props.collapsed$.value;
         this._readonlyCollapsed = collapsed;
       })
     );
 
     this.disposables.add(
       effect(() => {
-        const type = this.model.type$.value;
-        const order = this.model.order$.value;
+        const type = this.model.props.type$.value;
+        const order = this.model.props.order$.value;
         // old numbered list has no order
         if (type === 'numbered' && !Number.isInteger(order)) {
           correctNumberedListsOrderToPrev(this.doc, this.model, false);
         }
         // if list is not numbered, order should be null
         if (type !== 'numbered' && order !== null) {
-          this.model.order = null;
+          this.model.props.order = null;
         }
       })
     );
@@ -141,7 +141,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
     const { model, _onClickIcon } = this;
     const collapsed = this.doc.readonly
       ? this._readonlyCollapsed
-      : model.collapsed;
+      : model.props.collapsed;
 
     const listIcon = getListIcon(model, !collapsed, _onClickIcon);
 
@@ -161,7 +161,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
           class=${classMap({
             'affine-list-rich-text-wrapper': true,
             'affine-list--checked':
-              this.model.type === 'todo' && this.model.checked,
+              this.model.props.type === 'todo' && this.model.props.checked,
             [TOGGLE_BUTTON_PARENT_CLASS]: true,
           })}
         >
@@ -184,7 +184,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
             : nothing}
           ${listIcon}
           <rich-text
-            .yText=${this.model.text.yText}
+            .yText=${this.model.props.text.yText}
             .inlineEventSource=${this.topContenteditableElement ?? nothing}
             .undoManager=${this.doc.history}
             .attributeRenderer=${this.attributeRenderer}

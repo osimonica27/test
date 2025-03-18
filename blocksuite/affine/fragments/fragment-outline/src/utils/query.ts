@@ -25,7 +25,7 @@ export function getNotesFromDoc(
   rootModel.children.forEach(block => {
     if (!matchModels(block, [NoteBlockModel])) return;
 
-    if (modes.includes(block.displayMode$.value)) {
+    if (modes.includes(block.props.displayMode$.value)) {
       notes.push(block);
     }
   });
@@ -42,7 +42,7 @@ export function isHeadingBlock(
 ): block is ParagraphBlockModel {
   return (
     matchModels(block, [ParagraphBlockModel]) &&
-    headingKeys.has(block.type$.value)
+    headingKeys.has(block.props.type$.value)
   );
 }
 

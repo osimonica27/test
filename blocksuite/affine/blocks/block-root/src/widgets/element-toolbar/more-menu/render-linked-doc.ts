@@ -86,7 +86,7 @@ export function createLinkedDocFromEdgelessElements(
           });
         } else {
           if (isFrameBlock(model)) {
-            mapFrameIds(blockProps as unknown as FrameBlockModel, ids);
+            mapFrameIds(blockProps as FrameBlockModel['props'], ids);
           }
 
           newId = linkedDoc.addBlock(model.flavour, blockProps, surfaceId);

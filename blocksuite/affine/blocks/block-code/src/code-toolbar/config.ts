@@ -110,7 +110,7 @@ export const clipboardGroup: MenuItemGroup<CodeBlockToolbarContext> = {
     {
       type: 'wrap',
       generate: ({ blockComponent, close }) => {
-        const wrapped = blockComponent.model.wrap;
+        const wrapped = blockComponent.model.props.wrap;
         const label = wrapped ? 'Cancel wrap' : 'Wrap';
         const icon = wrapped ? CancelWrapIcon : WrapIcon;
 

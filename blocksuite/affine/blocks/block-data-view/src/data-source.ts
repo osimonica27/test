@@ -47,7 +47,7 @@ export class BlockQueryDataSource extends DataSourceBase {
   get properties(): string[] {
     return [
       ...this.meta.properties.map(v => v.key),
-      ...this.block.columns.map(v => v.id),
+      ...this.block.props.columns.map(v => v.id),
     ];
   }
 
@@ -107,7 +107,9 @@ export class BlockQueryDataSource extends DataSourceBase {
 
   private newColumnName() {
     let i = 1;
-    while (this.block.columns.some(column => column.name === `Column ${i}`)) {
+    while (
+      this.block.props.columns.some(column => column.name === `Column ${i}`)
+    ) {
       i++;
     }
     return `Column ${i}`;
@@ -116,8 +118,8 @@ export class BlockQueryDataSource extends DataSourceBase {
   cellValueChange(rowId: string, propertyId: string, value: unknown): void {
     const viewColumn = this.getViewColumn(propertyId);
     if (viewColumn) {
-      this.block.cells[rowId] = {
-        ...this.block.cells[rowId],
+      this.block.props.cells[rowId] = {
+        ...this.block.props.cells[rowId],
         [propertyId]: value,
       };
       return;
@@ -133,7 +135,7 @@ export class BlockQueryDataSource extends DataSourceBase {
   cellValueGet(rowId: string, propertyId: string): unknown {
     const viewColumn = this.getViewColumn(propertyId);
     if (viewColumn) {
-      return this.block.cells[rowId]?.[propertyId];
+      return this.block.props.cells[rowId]?.[propertyId];
     }
     const block = this.blockMap.get(rowId);
     if (block) {
@@ -143,7 +145,7 @@ export class BlockQueryDataSource extends DataSourceBase {
   }
 
   getViewColumn(id: string) {
-    return this.block.columns.find(v => v.id === id);
+    return this.block.props.columns.find(v => v.id === id);
   }
 
   listenToDoc(doc: Store) {
@@ -174,7 +176,7 @@ export class BlockQueryDataSource extends DataSourceBase {
     ].create(this.newColumnName());
 
     const id = doc.workspace.idGenerator();
-    if (this.block.columns.some(v => v.id === id)) {
+    if (this.block.props.columns.some(v => v.id === id)) {
       return id;
     }
     doc.transact(() => {
@@ -182,8 +184,8 @@ export class BlockQueryDataSource extends DataSourceBase {
         ...column,
         id,
       };
-      this.block.columns.splice(
-        insertPositionToIndex(insertToPosition, this.block.columns),
+      this.block.props.columns.splice(
+        insertPositionToIndex(insertToPosition, this.block.props.columns),
         0,
         col
       );
@@ -211,9 +213,9 @@ export class BlockQueryDataSource extends DataSourceBase {
   }
 
   propertyDelete(_id: string): void {
-    const index = this.block.columns.findIndex(v => v.id === _id);
+    const index = this.block.props.columns.findIndex(v => v.id === _id);
     if (index >= 0) {
-      this.block.columns.splice(index, 1);
+      this.block.props.columns.splice(index, 1);
     }
   }
 
@@ -293,8 +295,8 @@ export class BlockQueryDataSource extends DataSourceBase {
       viewColumn.data = result.property;
       currentCells.forEach((value, i) => {
         if (value != null || result.cells[i] != null) {
-          this.block.cells[rows[i]] = {
-            ...this.block.cells[rows[i]],
+          this.block.props.cells[rows[i]] = {
+            ...this.block.props.cells[rows[i]],
             [propertyId]: result.cells[i],
           };
         }

@@ -49,7 +49,8 @@ export const builtinToolbarConfig = {
             );
             if (!model) return;
 
-            const { title, caption, url, parent } = model;
+            const { title, caption, url } = model.props;
+            const { parent } = model;
             const index = parent?.children.indexOf(model);
 
             const yText = new Y.Text();
@@ -84,7 +85,8 @@ export const builtinToolbarConfig = {
             );
             if (!model) return;
 
-            const { url, caption, parent } = model;
+            const { url, caption } = model.props;
+            const { parent } = model;
             const index = parent?.children.indexOf(model);
 
             const flavour = 'affine:bookmark';

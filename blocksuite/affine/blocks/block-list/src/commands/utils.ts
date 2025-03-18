@@ -23,7 +23,7 @@ export function correctNumberedListsOrderToPrev(
 
   if (
     !matchModels(model, [ListBlockModel]) ||
-    model.type$.value !== 'numbered'
+    model.props.type$.value !== 'numbered'
   ) {
     return;
   }
@@ -34,19 +34,19 @@ export function correctNumberedListsOrderToPrev(
     if (
       previousSibling &&
       matchModels(previousSibling, [ListBlockModel]) &&
-      previousSibling.type === 'numbered'
+      previousSibling.props.type === 'numbered'
     ) {
-      if (!previousSibling.order) previousSibling.order = 1;
-      model.order = previousSibling.order + 1;
+      if (!previousSibling.props.order) previousSibling.props.order = 1;
+      model.props.order = previousSibling.props.order + 1;
     } else {
-      model.order = 1;
+      model.props.order = 1;
     }
 
     // step 2
-    let base = model.order + 1;
+    let base = model.props.order + 1;
     const continuousNumberedLists = getNextContinuousNumberedLists(doc, model);
     continuousNumberedLists.forEach(list => {
-      list.order = base;
+      list.props.order = base;
       base++;
     });
   };
@@ -60,11 +60,11 @@ export function correctNumberedListsOrderToPrev(
 
 export function correctListOrder(doc: Store, model: ListBlockModel) {
   // old numbered list has no order
-  if (model.type === 'numbered' && !Number.isInteger(model.order)) {
+  if (model.props.type === 'numbered' && !Number.isInteger(model.props.order)) {
     correctNumberedListsOrderToPrev(doc, model, false);
   }
   // if list is not numbered, order should be null
-  if (model.type !== 'numbered') {
-    model.order = null;
+  if (model.props.type !== 'numbered') {
+    model.props.order = null;
   }
 }

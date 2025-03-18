@@ -106,9 +106,7 @@ export function createNewPresentationIndexes(
       const { data } = BlockSnapshotSchema.safeParse(block);
       return data?.flavour === 'affine:frame';
     })
-    .sort((a, b) =>
-      EdgelessFrameManager.framePresentationComparator(a.props, b.props)
-    );
+    .sort((a, b) => EdgelessFrameManager.framePresentationComparator(a, b));
 
   const frameMgr = edgeless.service.frame;
   let before = frameMgr.generatePresentationIndex();

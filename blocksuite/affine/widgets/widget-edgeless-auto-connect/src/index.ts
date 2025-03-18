@@ -199,16 +199,18 @@ export class EdgelessAutoConnectWidget extends WidgetComponent<RootBlockModel> {
 
     notes.forEach(note => {
       if (isNoteBlock(note)) {
-        if (note.displayMode$.value === NoteDisplayMode.EdgelessOnly) {
+        if (note.props.displayMode$.value === NoteDisplayMode.EdgelessOnly) {
           edgelessOnlyNotesSet.add(note);
-        } else if (note.displayMode$.value === NoteDisplayMode.DocAndEdgeless) {
+        } else if (
+          note.props.displayMode$.value === NoteDisplayMode.DocAndEdgeless
+        ) {
           pageVisibleBlocks.set(note, 1);
         }
       }
 
       note.children.forEach(model => {
         if (matchModels(model, [SurfaceRefBlockModel])) {
-          const reference = this._crud.getElementById(model.reference);
+          const reference = this._crud.getElementById(model.props.reference);
 
           if (!isAutoConnectElement(reference)) return;
 
@@ -294,7 +296,9 @@ export class EdgelessAutoConnectWidget extends WidgetComponent<RootBlockModel> {
         selectedElements.length === 1 &&
         !this._selection.editing &&
         (isNoteBlock(selectedElements[0]) ||
-          surfaceRefs.some(ref => ref.reference === selectedElements[0].id))
+          surfaceRefs.some(
+            ref => ref.props.reference === selectedElements[0].id
+          ))
       ) {
         this._show = true;
       } else {
@@ -342,7 +346,7 @@ export class EdgelessAutoConnectWidget extends WidgetComponent<RootBlockModel> {
         surface.elementUpdated.subscribe(payload => {
           if (
             payload.props['xywh'] &&
-            surfaceRefs.some(ref => ref.reference === payload.id)
+            surfaceRefs.some(ref => ref.props.reference === payload.id)
           ) {
             this.requestUpdate();
           }

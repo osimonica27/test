@@ -40,8 +40,8 @@ export class PageKeyboardManager {
 
       if (
         matchModels(model, [ParagraphBlockModel]) &&
-        model.type.startsWith('h') &&
-        model.collapsed
+        model.props.type.startsWith('h') &&
+        model.props.collapsed
       ) {
         const component = this.rootComponent.host.view.getBlock(id);
         if (!(component instanceof ParagraphBlockComponent)) return;

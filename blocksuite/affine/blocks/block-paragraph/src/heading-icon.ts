@@ -67,7 +67,7 @@ export class ParagraphHeadingIcon extends SignalWatcher(
   `;
 
   override render() {
-    const type = this.model.type$.value;
+    const type = this.model.props.type$.value;
     if (!type.startsWith('h')) return nothing;
 
     const i = parseInt(type.slice(1));

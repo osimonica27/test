@@ -280,7 +280,8 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   });
 
   convertToCard = (aliasInfo?: AliasInfo) => {
-    const { doc, caption } = this.model;
+    const { doc } = this.model;
+    const { caption } = this.model.props;
 
     const parent = doc.getParent(this.model);
     if (!parent) {
@@ -343,14 +344,14 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   };
 
   icon$ = computed(() => {
-    const { pageId, params } = this.model;
+    const { pageId, params } = this.model.props;
     return this.std
       .get(DocDisplayMetaProvider)
       .icon(pageId, { params, referenced: true }).value;
   });
 
   open = (event?: Partial<DocLinkClickedEvent>) => {
-    const pageId = this.model.pageId;
+    const pageId = this.model.props.pageId;
     if (pageId === this.doc.id) return;
 
     this.std
@@ -366,7 +367,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   };
 
   title$ = computed(() => {
-    const { pageId, params } = this.model;
+    const { pageId, params } = this.model.props;
     return this.std
       .get(DocDisplayMetaProvider)
       .title(pageId, { params, referenced: true });
@@ -402,19 +403,20 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   }
 
   get referenceInfo(): ReferenceInfo {
-    return cloneReferenceInfo(this.model);
+    return cloneReferenceInfo(this.model.props);
   }
 
   get syncedDoc() {
     const options: GetBlocksOptions = { readonly: true };
     if (this.isPageMode) options.query = this._pageFilter;
-    return this.std.workspace.getDoc(this.model.pageId, options);
+    return this.std.workspace.getDoc(this.model.props.pageId, options);
   }
 
   private _checkCycle() {
     let editorHost: EditorHost | null = this.host;
     while (editorHost && !this._cycle) {
-      this._cycle = !!editorHost && editorHost.doc.id === this.model.pageId;
+      this._cycle =
+        !!editorHost && editorHost.doc.id === this.model.props.pageId;
       editorHost = editorHost.parentElement?.closest('editor-host') ?? null;
     }
   }
@@ -483,7 +485,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   }
 
   private _setDocUpdatedAt() {
-    const meta = this.doc.workspace.meta.getDocMeta(this.model.pageId);
+    const meta = this.doc.workspace.meta.getDocMeta(this.model.props.pageId);
     if (meta) {
       const date = meta.updatedDate || meta.createDate;
       this._docUpdatedAt = new Date(date);
@@ -496,7 +498,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
 
   override connectedCallback() {
     super.connectedCallback();
-    this._cardStyle = this.model.style;
+    this._cardStyle = this.model.props.style;
 
     this.style.display = 'block';
     this._load().catch(e => {
@@ -526,13 +528,13 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
 
     if (!this.linkedMode) {
       const docMode = this.std.get(DocModeProvider);
-      this.syncedDocMode = docMode.getPrimaryMode(this.model.pageId);
+      this.syncedDocMode = docMode.getPrimaryMode(this.model.props.pageId);
       this._isEmptySyncedDoc = isEmptyDoc(this.syncedDoc, this.editorMode);
       this.disposables.add(
         docMode.onPrimaryModeChange(mode => {
           this.syncedDocMode = mode;
           this._isEmptySyncedDoc = isEmptyDoc(this.syncedDoc, this.editorMode);
-        }, this.model.pageId)
+        }, this.model.props.pageId)
       );
     }
 

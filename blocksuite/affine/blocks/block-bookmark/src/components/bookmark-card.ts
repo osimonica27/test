@@ -54,7 +54,8 @@ export class BookmarkCard extends WithDisposable(ShadowlessElement) {
   }
 
   override render() {
-    const { icon, title, url, description, image, style } = this.bookmark.model;
+    const { icon, title, url, description, image, style } =
+      this.bookmark.model.props;
 
     const cardClassMap = classMap({
       loading: this.loading,

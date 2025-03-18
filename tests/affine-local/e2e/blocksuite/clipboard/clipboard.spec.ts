@@ -43,8 +43,8 @@ async function verifyParagraphContent(
       .nth(index)
       .evaluate(
         (block: ParagraphBlockComponent, expected: string) =>
-          block.model.type === 'text' &&
-          block.model.text.toString() === expected,
+          block.model.props.type === 'text' &&
+          block.model.props.text.toString() === expected,
         expectedText
       )
   ).toBeTruthy();

@@ -35,7 +35,8 @@
     "packages/frontend/native/index.d.ts",
     "packages/frontend/native/index.js",
     "packages/frontend/apps/android/App/app/build/**",
-    "blocksuite/tests-legacy/snapshots"
+    "tests/blocksuite/snapshots",
+    "blocksuite/docs/api/**"
   ],
   "rules": {
     "import/named": "error",
@@ -227,7 +228,7 @@
       }
     },
     {
-      "files": ["blocksuite/tests-legacy/**/*.ts"],
+      "files": ["tests/blocksuite/**/*.ts"],
       "rules": {
         "typescript/ban-ts-comment": "off",
         "unicorn/prefer-dom-node-dataset": "off",

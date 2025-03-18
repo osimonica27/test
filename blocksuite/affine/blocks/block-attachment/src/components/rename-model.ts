@@ -19,7 +19,7 @@ export const RenameModal = ({
   const inputRef = createRef<HTMLInputElement>();
   // Fix auto focus
   setTimeout(() => inputRef.value?.focus());
-  const originalName = model.name;
+  const originalName = model.props.name;
   const nameWithoutExtension = originalName.slice(
     0,
     originalName.lastIndexOf('.')

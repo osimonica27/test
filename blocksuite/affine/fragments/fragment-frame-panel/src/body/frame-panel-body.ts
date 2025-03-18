@@ -150,7 +150,7 @@ export class FramePanelBody extends SignalWatcher(
   private readonly _updateFrameItems = () => {
     this._frameItems = this.frames.map((frame, idx) => ({
       frame,
-      frameIndex: frame.presentationIndex ?? frame.index,
+      frameIndex: frame.props.presentationIndex ?? frame.props.index,
       cardIndex: idx,
     }));
   };
@@ -307,8 +307,8 @@ export class FramePanelBody extends SignalWatcher(
 
       // update selected frames index
       // make the indexes larger than the frame before and smaller than the frame after
-      let before = frames[insertIndex - 1]?.presentationIndex || null;
-      const after = frames[insertIndex]?.presentationIndex || null;
+      let before = frames[insertIndex - 1]?.props.presentationIndex || null;
+      const after = frames[insertIndex]?.props.presentationIndex || null;
       selectedFrames.forEach(frame => {
         const newIndex = generateKeyBetweenV2(before, after);
         frame.doc.updateBlock(frame, {
@@ -352,7 +352,7 @@ export class FramePanelBody extends SignalWatcher(
     frames.forEach((frame, idx) => {
       const frameItem = {
         frame,
-        frameIndex: frame.presentationIndex ?? frame.index,
+        frameIndex: frame.props.presentationIndex ?? frame.props.index,
         cardIndex: idx,
       };
 

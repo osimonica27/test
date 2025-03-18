@@ -64,7 +64,7 @@ export class EmbedCardEditCaptionEditModal extends WithDisposable(
             <textarea
               class="embed-card-modal-input caption"
               placeholder="Write a caption..."
-              .value=${this._model.caption ?? ''}
+              .value=${this._model.props.caption ?? ''}
             ></textarea>
           </div>
           <div class="embed-card-modal-row">

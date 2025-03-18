@@ -37,16 +37,16 @@ export const splitParagraphCommand: Command<
   // be deleted and not counted as model.text.yText.length.
   // Example: "`a`[enter]" -> yText[<ContentFormat: Code>, "a", <ContentFormat: Code>]
   // In this case, we should not split the block.
-  if (model.text.yText.length < splitIndex + splitLength) return;
+  if (model.props.text.yText.length < splitIndex + splitLength) return;
 
   if (model.children.length > 0 && splitIndex > 0) {
     store.captureSync();
-    const right = model.text.split(splitIndex, splitLength);
+    const right = model.props.text.split(splitIndex, splitLength);
     const id = store.addBlock(
       model.flavour,
       {
         text: right,
-        type: model.type,
+        type: model.props.type,
       },
       model,
       0
@@ -60,12 +60,12 @@ export const splitParagraphCommand: Command<
   const index = parent.children.indexOf(model);
   if (index < 0) return;
   store.captureSync();
-  const right = model.text.split(splitIndex, splitLength);
+  const right = model.props.text.split(splitIndex, splitLength);
   const id = store.addBlock(
     model.flavour,
     {
       text: right,
-      type: model.type,
+      type: model.props.type,
     },
     parent,
     index + 1

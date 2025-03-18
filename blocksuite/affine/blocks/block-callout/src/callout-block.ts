@@ -57,7 +57,7 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
       template: html`<affine-emoji-menu
         .theme=${theme}
         .onEmojiSelect=${(data: any) => {
-          this.model.emoji = data.native;
+          this.model.props.emoji = data.native;
         }}
       ></affine-emoji-menu>`,
       portalStyles: {
@@ -109,7 +109,7 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
           contenteditable="false"
           class="affine-callout-emoji-container"
         >
-          <span class="affine-callout-emoji">${this.model.emoji}</span>
+          <span class="affine-callout-emoji">${this.model.props.emoji$}</span>
         </div>
         <div class="affine-callout-children">
           ${this.renderChildren(this.model)}

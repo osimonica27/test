@@ -20,7 +20,8 @@ export class EmbedEdgelessLinkedDocBlockComponent extends toEdgelessEmbedBlock(
   EmbedLinkedDocBlockComponent
 ) {
   override convertToEmbed = () => {
-    const { id, doc, caption, xywh } = this.model;
+    const { caption, xywh } = this.model.props;
+    const { doc, id } = this.model;
 
     const style = 'syncedDoc';
     const bound = Bound.deserialize(xywh);

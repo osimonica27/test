@@ -10,7 +10,10 @@ export const reorderList =
     slots.afterImport.subscribe(payload => {
       if (payload.type === 'block') {
         const model = payload.model;
-        if (matchModels(model, [ListBlockModel]) && model.type === 'numbered') {
+        if (
+          matchModels(model, [ListBlockModel]) &&
+          model.props.type === 'numbered'
+        ) {
           const next = std.store.getNext(model);
           correctNumberedListsOrderToPrev(std.store, model);
           if (next) {

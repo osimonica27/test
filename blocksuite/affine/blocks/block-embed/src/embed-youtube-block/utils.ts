@@ -12,7 +12,7 @@ export async function queryEmbedYoutubeData(
   linkPreviewer: LinkPreviewerService,
   signal?: AbortSignal
 ): Promise<Partial<EmbedYoutubeBlockUrlData>> {
-  const url = embedYoutubeModel.url;
+  const url = embedYoutubeModel.props.url;
 
   const [videoOpenGraphData, videoOEmbedData] = await Promise.all([
     linkPreviewer.query(url, signal),

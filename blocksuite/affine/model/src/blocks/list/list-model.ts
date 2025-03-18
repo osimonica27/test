@@ -5,16 +5,18 @@ import {
   defineBlockSchema,
 } from '@blocksuite/store';
 
+import type { BlockMeta } from '../../utils/types';
+
 // `toggle` type has been deprecated, do not use it
 export type ListType = 'bulleted' | 'numbered' | 'todo' | 'toggle';
 
-export interface ListProps {
+export type ListProps = {
   type: ListType;
   text: Text;
   checked: boolean;
   collapsed: boolean;
   order: number | null;
-}
+} & BlockMeta;
 
 export const ListBlockSchema = defineBlockSchema({
   flavour: 'affine:list',
@@ -27,6 +29,10 @@ export const ListBlockSchema = defineBlockSchema({
 
       // number type only for numbered list
       order: null,
+      'meta:createdAt': undefined,
+      'meta:createdBy': undefined,
+      'meta:updatedAt': undefined,
+      'meta:updatedBy': undefined,
     }) as ListProps,
   metadata: {
     version: 1,
@@ -44,6 +50,4 @@ export const ListBlockSchema = defineBlockSchema({
 
 export const ListBlockSchemaExtension = BlockSchemaExtension(ListBlockSchema);
 
-export class ListBlockModel extends BlockModel<ListProps> {
-  override text!: Text;
-}
+export class ListBlockModel extends BlockModel<ListProps> {}

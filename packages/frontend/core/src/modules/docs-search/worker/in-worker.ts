@@ -138,7 +138,7 @@ function generateMarkdownPreviewBuilder(
     );
 
     return {
-      ...props,
+      props,
       id: yblock.get('sys:id') as string,
       flavour,
       children: [],
@@ -147,7 +147,7 @@ function generateMarkdownPreviewBuilder(
       keys: Array.from(yblock.keys())
         .filter(key => key.startsWith('prop:'))
         .map(key => key.substring(5)),
-    } as DraftModel;
+    } as unknown as DraftModel;
   }
 
   const titleMiddleware: TransformerMiddleware = ({ adapterConfigs }) => {
@@ -300,12 +300,12 @@ function generateMarkdownPreviewBuilder(
 
     const info = ['an image block'];
 
-    if (model.sourceId) {
-      info.push(`file id ${model.sourceId}`);
+    if (model.props.sourceId) {
+      info.push(`file id ${model.props.sourceId}`);
     }
 
-    if (model.caption) {
-      info.push(`with caption ${model.caption}`);
+    if (model.props.caption) {
+      info.push(`with caption ${model.props.caption}`);
     }
 
     return info.join(', ') + '\n';
@@ -353,8 +353,8 @@ function generateMarkdownPreviewBuilder(
     if (!isBookmarkModel(draftModel)) {
       return null;
     }
-    const title = draftModel.title;
-    const url = draftModel.url;
+    const title = draftModel.props.title;
+    const url = draftModel.props.url;
     return `[${title}](${url})\n`;
   };
 
@@ -370,7 +370,7 @@ function generateMarkdownPreviewBuilder(
       return null;
     }
 
-    return `[${draftModel.name}](${draftModel.sourceId})\n`;
+    return `[${draftModel.props.name}](${draftModel.props.sourceId})\n`;
   };
 
   const generateTableMarkdownPreview = (block: BlockDocumentInfo) => {

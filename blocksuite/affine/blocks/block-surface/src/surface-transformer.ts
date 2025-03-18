@@ -90,7 +90,7 @@ export class SurfaceBlockTransformer extends BaseBlockTransformer<SurfaceBlockPr
 
   override toSnapshot(payload: ToSnapshotPayload<SurfaceBlockProps>) {
     const snapshot = super.toSnapshot(payload);
-    const elementsValue = payload.model.elements.getValue();
+    const elementsValue = payload.model.props.elements.getValue();
     const value: Record<string, unknown> = {};
     /**
      * When the selectedElements is defined, only the selected elements will be serialized.

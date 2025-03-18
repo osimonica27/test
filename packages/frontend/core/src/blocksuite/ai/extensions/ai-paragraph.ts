@@ -12,7 +12,7 @@ class AIParagraphBlockWatcher extends LifeCycleWatcher {
     super.mounted();
     const service = this.std.get(ParagraphBlockService);
     service.placeholderGenerator = model => {
-      if (model.type === 'text') {
+      if (model.props.type === 'text') {
         return "Type '/' for commands, 'space' for AI";
       }
 
@@ -25,7 +25,7 @@ class AIParagraphBlockWatcher extends LifeCycleWatcher {
         h6: 'Heading 6',
         quote: '',
       };
-      return placeholders[model.type];
+      return placeholders[model.props.type];
     };
   }
 }

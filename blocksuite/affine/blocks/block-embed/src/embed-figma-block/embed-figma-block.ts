@@ -22,7 +22,7 @@ export class EmbedFigmaBlockComponent extends EmbedBlockComponent<EmbedFigmaMode
   protected _isResizing = false;
 
   open = () => {
-    let link = this.model.url;
+    let link = this.model.props.url;
     if (!link.match(/^[a-zA-Z]+:\/\//)) {
       link = 'https://' + link;
     }
@@ -51,9 +51,9 @@ export class EmbedFigmaBlockComponent extends EmbedBlockComponent<EmbedFigmaMode
 
   override connectedCallback() {
     super.connectedCallback();
-    this._cardStyle = this.model.style;
+    this._cardStyle = this.model.props.style;
 
-    if (!this.model.title) {
+    if (!this.model.props.title) {
       this.doc.withoutTransact(() => {
         this.doc.updateBlock(this.model, {
           title: 'Figma',
@@ -90,7 +90,7 @@ export class EmbedFigmaBlockComponent extends EmbedBlockComponent<EmbedFigmaMode
   }
 
   override renderBlock() {
-    const { title, description, url } = this.model;
+    const { title, description, url } = this.model.props;
     const titleText = title ?? 'Figma';
 
     return this.renderEmbed(

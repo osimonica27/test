@@ -34,4 +34,5 @@ packages/common/native/fixtures/**
 packages/frontend/native/index.d.ts
 packages/frontend/native/index.js
 packages/frontend/apps/android/App/app/build/**
-blocksuite/tests-legacy/snapshots
+tests/blocksuite/snapshots
+blocksuite/docs/api/**
