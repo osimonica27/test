@@ -13800,7 +13800,7 @@ __metadata:
     graphemer: "npm:^1.4.0"
     idb: "npm:^8.0.0"
     jotai: "npm:^2.10.3"
-    jotai-effect: "npm:^1.0.5"
+    jotai-effect: "npm:^2.0.0"
     lodash-es: "npm:^4.17.21"
     nanoid: "npm:^5.0.9"
     react: "npm:19.0.0"
@@ -23916,12 +23916,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai-effect@npm:^1.0.5":
-  version: 1.1.6
-  resolution: "jotai-effect@npm:1.1.6"
+"jotai-effect@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "jotai-effect@npm:2.0.0"
   peerDependencies:
-    jotai: ">=2.5.0"
-  checksum: 10/22317fc5e2d0a6a7d2fc31b74d1c52b062839901a81ef47335da5eb4c321c77ee67d096be783305e939b8bcb662ca9be5b3fd34c15249907cd67fbaf6cc1ce95
+    jotai: ">=2.12.1"
+  checksum: 10/b7df35ac83994fadfec6ce28c01f778fee7af6aaa208f93aa9daa2d5b6d11a274be860e9a5cbeee22bd494e7feef157db0ebfad17254aa8fdd0f824cb4d85b67
   languageName: node
   linkType: hard
 
