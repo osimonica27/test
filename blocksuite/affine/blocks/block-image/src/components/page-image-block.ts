@@ -249,7 +249,7 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
       };
     }
 
-    const { width, height } = this._model;
+    const { width, height } = this._model.props;
     if (!width || !height) {
       return {
         width: 'unset',

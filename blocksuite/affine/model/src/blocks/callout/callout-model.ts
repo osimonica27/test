@@ -31,9 +31,7 @@ export type CalloutProps = {
   text: Text;
 };
 
-export class CalloutBlockModel extends BlockModel<CalloutProps> {
-  override text!: Text;
-}
+export class CalloutBlockModel extends BlockModel<CalloutProps> {}
 
 export const CalloutBlockSchemaExtension =
   BlockSchemaExtension(CalloutBlockSchema);

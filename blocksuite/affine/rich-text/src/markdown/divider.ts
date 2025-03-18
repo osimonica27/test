@@ -17,7 +17,7 @@ export function toDivider(
   const { store: doc } = std;
   if (
     matchModels(model, [DividerBlockModel]) ||
-    (matchModels(model, [ParagraphBlockModel]) && model.type === 'quote')
+    (matchModels(model, [ParagraphBlockModel]) && model.props.type === 'quote')
   ) {
     return;
   }

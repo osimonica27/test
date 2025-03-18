@@ -72,8 +72,8 @@ export const TemplateDocSetting = () => {
       </SettingRow>
       {enablePageTemplate ? (
         <SettingRow
-          name={t['com.affine.settings.workspace.template.journal']()}
-          desc={t['com.affine.settings.workspace.template.journal-desc']()}
+          name={t['com.affine.settings.workspace.template.page-select']()}
+          desc={null}
         >
           <TemplateSelector
             testId="page-template-selector"

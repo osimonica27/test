@@ -75,7 +75,9 @@ function useImageBlob(
           return null;
         }
         const blockModel = block.model as ImageBlockModel;
-        return await docCollection.blobSync.get(blockModel.sourceId as string);
+        return await docCollection.blobSync.get(
+          blockModel.props.sourceId as string
+        );
       },
       suspense: false,
     }
@@ -154,8 +156,8 @@ const ImagePreviewModalImpl = ({
     return block.model as ImageBlockModel;
   }, [blockId, blocksuiteDoc]);
   const caption = useMemo(() => {
-    return blockModel?.caption ?? '';
-  }, [blockModel?.caption]);
+    return blockModel?.props.caption ?? '';
+  }, [blockModel?.props.caption]);
   const [blocks, setBlocks] = useState<ImageBlockModel[]>([]);
   const [cursor, setCursor] = useState(0);
   const zoomRef = useRef<HTMLDivElement | null>(null);

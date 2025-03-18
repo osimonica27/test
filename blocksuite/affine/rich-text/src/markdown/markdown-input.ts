@@ -38,8 +38,8 @@ export function markdownInput(
   if (!isMarkdownPrefix(prefixText)) return;
 
   const isParagraph = matchModels(model, [ParagraphBlockModel]);
-  const isHeading = isParagraph && model.type.startsWith('h');
-  const isParagraphQuoteBlock = isParagraph && model.type === 'quote';
+  const isHeading = isParagraph && model.props.type.startsWith('h');
+  const isParagraphQuoteBlock = isParagraph && model.props.type === 'quote';
   const isCodeBlock = matchModels(model, [CodeBlockModel]);
   if (
     isHeading ||

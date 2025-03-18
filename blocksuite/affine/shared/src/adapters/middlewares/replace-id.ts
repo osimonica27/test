@@ -19,10 +19,10 @@ export const replaceIdMiddleware =
         payload.snapshot.flavour === 'affine:database'
       ) {
         const model = payload.model as DatabaseBlockModel;
-        Object.keys(model.cells).forEach(cellId => {
+        Object.keys(model.props.cells).forEach(cellId => {
           if (idMap.has(cellId)) {
-            model.cells[idMap.get(cellId)!] = model.cells[cellId];
-            delete model.cells[cellId];
+            model.props.cells[idMap.get(cellId)!] = model.props.cells[cellId];
+            delete model.props.cells[cellId];
           }
         });
       }
@@ -35,7 +35,7 @@ export const replaceIdMiddleware =
         const model = payload.model as ParagraphBlockModel | ListBlockModel;
         let prev = 0;
         const delta: DeltaOperation[] = [];
-        for (const d of model.text.toDelta()) {
+        for (const d of model.props.text.toDelta()) {
           if (d.attributes?.reference?.pageId) {
             const newId = idMap.get(d.attributes.reference.pageId);
             if (!newId) {
@@ -62,7 +62,7 @@ export const replaceIdMiddleware =
           }
         }
         if (delta.length > 0) {
-          model.text.applyDelta(delta);
+          model.props.text.applyDelta(delta);
         }
       }
 
@@ -71,20 +71,20 @@ export const replaceIdMiddleware =
         payload.snapshot.flavour === 'affine:surface-ref'
       ) {
         const model = payload.model as SurfaceRefBlockModel;
-        const original = model.reference;
+        const original = model.props.reference;
         // If there exists a replacement, replace the reference with the new id.
         // Otherwise,
         // 1. If the reference is an affine:frame not in doc, generate a new id.
         // 2. If the reference is graph, keep the original id.
         if (idMap.has(original)) {
-          model.reference = idMap.get(original)!;
+          model.props.reference = idMap.get(original)!;
         } else if (
-          model.refFlavour === 'affine:frame' &&
+          model.props.refFlavour === 'affine:frame' &&
           !model.doc.hasBlock(original)
         ) {
           const newId = idGenerator();
           idMap.set(original, newId);
-          model.reference = newId;
+          model.props.reference = newId;
         }
       }
 
@@ -98,16 +98,16 @@ export const replaceIdMiddleware =
         const model = payload.model as
           | EmbedLinkedDocModel
           | EmbedSyncedDocModel;
-        const original = model.pageId;
+        const original = model.props.pageId;
         // If the pageId is not in the doc, generate a new id.
         // If we already have a replacement, use it.
         if (!docCRUD.get(original)) {
           if (idMap.has(original)) {
-            model.pageId = idMap.get(original)!;
+            model.props.pageId = idMap.get(original)!;
           } else {
             const newId = idGenerator();
             idMap.set(original, newId);
-            model.pageId = newId;
+            model.props.pageId = newId;
           }
         }
       }

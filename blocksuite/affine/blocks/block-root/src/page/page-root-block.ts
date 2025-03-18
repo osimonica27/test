@@ -191,7 +191,7 @@ export class PageRootBlockComponent extends BlockComponent<
     const { doc } = this;
 
     const noteId = doc.addBlock('affine:note', {}, doc.root?.id);
-    return doc.getBlockById(noteId) as NoteBlockModel;
+    return doc.getModelById(noteId) as NoteBlockModel;
   }
 
   private _getDefaultNoteBlock() {
@@ -238,7 +238,7 @@ export class PageRootBlockComponent extends BlockComponent<
         const blocks = this.model.children
           .filter(model => {
             if (matchModels(model, [NoteBlockModel])) {
-              if (model.displayMode === NoteDisplayMode.EdgelessOnly)
+              if (model.props.displayMode === NoteDisplayMode.EdgelessOnly)
                 return false;
 
               return true;
@@ -262,7 +262,7 @@ export class PageRootBlockComponent extends BlockComponent<
         );
         if (!sel) return;
         let model: BlockModel | null = null;
-        let current = this.doc.getBlockById(sel.blockId);
+        let current = this.doc.getModelById(sel.blockId);
         while (current && !model) {
           if (current.flavour === 'affine:note') {
             model = current;
@@ -280,7 +280,7 @@ export class PageRootBlockComponent extends BlockComponent<
           }
           return;
         }
-        const notes = this.doc.getBlockByFlavour('affine:note');
+        const notes = this.doc.getModelsByFlavour('affine:note');
         const index = notes.indexOf(prevNote);
         if (index !== 0) return;
 
@@ -332,7 +332,7 @@ export class PageRootBlockComponent extends BlockComponent<
       const notes = this.model.children.filter(
         (child): child is NoteBlockModel =>
           child instanceof NoteBlockModel &&
-          child.displayMode !== NoteDisplayMode.EdgelessOnly
+          child.props.displayMode !== NoteDisplayMode.EdgelessOnly
       );
 
       // make sure there is a block can be focused
@@ -358,7 +358,7 @@ export class PageRootBlockComponent extends BlockComponent<
         if (
           !lastBlock ||
           !matchModels(lastBlock, [ParagraphBlockModel]) ||
-          lastBlock.text.length !== 0
+          lastBlock.props.text.length !== 0
         ) {
           this.std.command.exec(appendParagraphCommand);
         }
@@ -436,7 +436,8 @@ export class PageRootBlockComponent extends BlockComponent<
       const isNote = matchModels(child, [NoteBlockModel]);
       const note = child as NoteBlockModel;
       const displayOnEdgeless =
-        !!note.displayMode && note.displayMode === NoteDisplayMode.EdgelessOnly;
+        !!note.props.displayMode &&
+        note.props.displayMode === NoteDisplayMode.EdgelessOnly;
       // Should remove deprecated `hidden` property in the future
       return !(isNote && displayOnEdgeless);
     });

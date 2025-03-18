@@ -24,7 +24,13 @@ export interface Doc {
   dispose(): void;
 
   slots: {
+    /**
+     * This fires when the doc history is updated.
+     */
     historyUpdated: Subject<void>;
+    /**
+     * This fires when the doc yBlock is updated.
+     */
     yBlockUpdated: Subject<
       | {
           type: 'add';

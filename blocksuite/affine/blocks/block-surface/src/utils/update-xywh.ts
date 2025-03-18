@@ -47,13 +47,13 @@ export function updateXYWH(
   if (ele instanceof ConnectorElementModel) {
     ele.moveTo(bound);
   } else if (ele instanceof NoteBlockModel) {
-    const scale = ele.edgeless.scale ?? 1;
+    const scale = ele.props.edgeless.scale ?? 1;
     bound.w = clamp(bound.w, NOTE_MIN_WIDTH * scale, Infinity);
     bound.h = clamp(bound.h, NOTE_MIN_HEIGHT * scale, Infinity);
     if (bound.h >= NOTE_MIN_HEIGHT * scale) {
       updateBlock(ele, () => {
-        ele.edgeless.collapse = true;
-        ele.edgeless.collapsedHeight = bound.h / scale;
+        ele.props.edgeless.collapse = true;
+        ele.props.edgeless.collapsedHeight = bound.h / scale;
       });
     }
     updateElement(ele.id, {

@@ -23,7 +23,7 @@ export function getNextContinuousNumberedLists(
   const firstNotNumberedListIndex = parent.children.findIndex(
     (model, i) =>
       i > modelIndex &&
-      (!matchModels(model, [ListBlockModel]) || model.type !== 'numbered')
+      (!matchModels(model, [ListBlockModel]) || model.props.type !== 'numbered')
   );
   const newContinuousLists = parent.children.slice(
     modelIndex + 1,
@@ -31,7 +31,8 @@ export function getNextContinuousNumberedLists(
   );
   if (
     !newContinuousLists.every(
-      model => matchModels(model, [ListBlockModel]) && model.type === 'numbered'
+      model =>
+        matchModels(model, [ListBlockModel]) && model.props.type === 'numbered'
     )
   )
     return [];
@@ -56,11 +57,11 @@ export function toNumberedList(
   if (
     prevSibling &&
     matchModels(prevSibling, [ListBlockModel]) &&
-    prevSibling.type === 'numbered'
+    prevSibling.props.type === 'numbered'
   ) {
     doc.transact(() => {
-      if (!prevSibling.order) prevSibling.order = 1;
-      realOrder = prevSibling.order + 1;
+      if (!prevSibling.props.order) prevSibling.props.order = 1;
+      realOrder = prevSibling.props.order + 1;
     });
   }
 
@@ -93,7 +94,7 @@ export function toNumberedList(
   let base = realOrder + 1;
   nextContinuousNumberedLists.forEach(list => {
     doc.transact(() => {
-      list.order = base;
+      list.props.order = base;
     });
     base += 1;
   });

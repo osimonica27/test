@@ -96,7 +96,7 @@ export const indentParagraphCommand: Command<{
     if (
       nearestHeading &&
       matchModels(nearestHeading, [ParagraphBlockModel]) &&
-      nearestHeading.collapsed
+      nearestHeading.props.collapsed
     ) {
       store.updateBlock(nearestHeading, {
         collapsed: false,
@@ -106,8 +106,8 @@ export const indentParagraphCommand: Command<{
 
   if (
     matchModels(model, [ParagraphBlockModel]) &&
-    model.type.startsWith('h') &&
-    model.collapsed
+    model.props.type.startsWith('h') &&
+    model.props.collapsed
   ) {
     const collapsedSiblings = calculateCollapsedSiblings(model);
     store.moveBlocks([model, ...collapsedSiblings], previousSibling);
@@ -125,7 +125,7 @@ export const indentParagraphCommand: Command<{
     if (
       nearestHeading &&
       matchModels(nearestHeading, [ParagraphBlockModel]) &&
-      nearestHeading.collapsed
+      nearestHeading.props.collapsed
     ) {
       store.updateBlock(nearestHeading, {
         collapsed: false,
@@ -136,7 +136,7 @@ export const indentParagraphCommand: Command<{
   // update collapsed state of affine list
   if (
     matchModels(previousSibling, [ListBlockModel]) &&
-    previousSibling.collapsed
+    previousSibling.props.collapsed
   ) {
     store.updateBlock(previousSibling, {
       collapsed: false,

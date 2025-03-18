@@ -1,8 +1,10 @@
+import { EmbedIframeService } from '@blocksuite/affine-block-embed';
 import { toast } from '@blocksuite/affine-components/toast';
 import { BookmarkBlockModel } from '@blocksuite/affine-model';
 import {
   ActionPlacement,
   EmbedOptionProvider,
+  FeatureFlagService,
   type ToolbarAction,
   type ToolbarActionGroup,
   type ToolbarModuleConfig,
@@ -43,7 +45,7 @@ export const builtinToolbarConfig = {
         );
         if (!model) return null;
 
-        const { url } = model;
+        const { url } = model.props;
 
         return html`<affine-link-preview .url=${url}></affine-link-preview>`;
       },
@@ -61,7 +63,8 @@ export const builtinToolbarConfig = {
             );
             if (!model) return;
 
-            const { title, caption, url, parent } = model;
+            const { title, caption, url } = model.props;
+            const { parent } = model;
             const index = parent?.children.indexOf(model);
 
             const yText = new Y.Text();
@@ -101,11 +104,21 @@ export const builtinToolbarConfig = {
             );
             if (!model) return true;
 
+            const url = model.props.url;
+            // check if the url can be embedded as iframe block
+            const featureFlag = ctx.std.get(FeatureFlagService);
+            const embedIframeService = ctx.std.get(EmbedIframeService);
+            const isEmbedIframeEnabled = featureFlag.getFlag(
+              'enable_embed_iframe_block'
+            );
+            const canEmbedAsIframe =
+              isEmbedIframeEnabled && embedIframeService.canEmbed(url);
+
             const options = ctx.std
               .get(EmbedOptionProvider)
-              .getEmbedBlockOptions(model.url);
+              .getEmbedBlockOptions(url);
 
-            return options?.viewType !== 'embed';
+            return !canEmbedAsIframe && options?.viewType !== 'embed';
           },
           run(ctx) {
             const model = ctx.getCurrentModelByType(
@@ -114,31 +127,51 @@ export const builtinToolbarConfig = {
             );
             if (!model) return;
 
-            const { caption, url, style, parent } = model;
+            const { caption, url, style } = model.props;
+            const { parent } = model;
             const index = parent?.children.indexOf(model);
+            if (!parent) return;
 
-            const options = ctx.std
-              .get(EmbedOptionProvider)
-              .getEmbedBlockOptions(url);
+            let blockId: string | undefined;
 
-            if (!options) return;
-
-            const { flavour, styles } = options;
-
-            const newStyle = styles.includes(style)
-              ? style
-              : styles.find(s => s !== 'vertical' && s !== 'cube');
-
-            const blockId = ctx.store.addBlock(
-              flavour,
-              {
-                url,
-                caption,
-                style: newStyle,
-              },
-              parent,
-              index
+            // first try to embed as iframe block
+            const featureFlag = ctx.std.get(FeatureFlagService);
+            const isEmbedIframeEnabled = featureFlag.getFlag(
+              'enable_embed_iframe_block'
             );
+            const embedIframeService = ctx.std.get(EmbedIframeService);
+            if (isEmbedIframeEnabled && embedIframeService.canEmbed(url)) {
+              blockId = embedIframeService.addEmbedIframeBlock(
+                { url, caption },
+                parent.id,
+                index
+              );
+            } else {
+              const options = ctx.std
+                .get(EmbedOptionProvider)
+                .getEmbedBlockOptions(url);
+
+              if (!options) return;
+
+              const { flavour, styles } = options;
+
+              const newStyle = styles.includes(style)
+                ? style
+                : styles.find(s => s !== 'vertical' && s !== 'cube');
+
+              blockId = ctx.store.addBlock(
+                flavour,
+                {
+                  url,
+                  caption,
+                  style: newStyle,
+                },
+                parent,
+                index
+              );
+            }
+
+            if (!blockId) return;
 
             ctx.store.deleteBlock(model);
 
@@ -232,7 +265,7 @@ export const builtinToolbarConfig = {
             .actions=${actions}
             .context=${ctx}
             .toggle=${toggle}
-            .style$=${model.style$}
+            .style$=${model.props.style$}
           ></affine-card-style-dropdown-menu>`
         )}`;
       },

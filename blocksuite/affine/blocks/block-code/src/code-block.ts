@@ -47,7 +47,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
   highlightTokens$: Signal<ThemedToken[][]> = signal([]);
 
   languageName$: Signal<string> = computed(() => {
-    const lang = this.model.language$.value;
+    const lang = this.model.props.language$.value;
     if (lang === null) {
       return 'Plain Text';
     }
@@ -83,7 +83,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
   }
 
   private _updateHighlightTokens() {
-    const modelLang = this.model.language$.value;
+    const modelLang = this.model.props.language$.value;
     if (modelLang === null) {
       this.highlightTokens$.value = [];
       return;
@@ -97,7 +97,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
     );
 
     if (matchedInfo) {
-      this.model.language$.value = matchedInfo.id;
+      this.model.props.language$.value = matchedInfo.id;
       const langImport = matchedInfo.import;
       const lang = matchedInfo.id;
 
@@ -108,8 +108,8 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
         return;
       }
 
-      noop(this.model.text.deltas$.value);
-      const code = this.model.text.toString();
+      noop(this.model.props.text.deltas$.value);
+      const code = this.model.props.text.toString();
 
       const loadedLanguages = highlighter.getLoadedLanguages();
       if (!loadedLanguages.includes(lang)) {
@@ -131,7 +131,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
     } else {
       this.highlightTokens$.value = [];
       // clear language if not found
-      this.model.language$.value = null;
+      this.model.props.language$.value = null;
     }
   }
 
@@ -339,7 +339,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
         const inlineEditor = this.inlineEditor;
         const inlineRange = inlineEditor?.getInlineRange();
         if (!inlineRange || !inlineEditor) return;
-        const isEnd = model.text.length === inlineRange.index;
+        const isEnd = model.props.text.length === inlineRange.index;
         if (!isEnd) return;
         const parent = this.doc.getParent(model);
         if (!parent) return;
@@ -389,11 +389,11 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
         class=${classMap({
           'affine-code-block-container': true,
           mobile: IS_MOBILE,
-          wrap: this.model.wrap,
+          wrap: this.model.props.wrap,
         })}
       >
         <rich-text
-          .yText=${this.model.text.yText}
+          .yText=${this.model.props.text.yText}
           .inlineEventSource=${this.topContenteditableElement ?? nothing}
           .undoManager=${this.doc.history}
           .attributesSchema=${this.inlineManager.getSchema()}
@@ -402,7 +402,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
           .inlineRangeProvider=${this._inlineRangeProvider}
           .enableClipboard=${false}
           .enableUndoRedo=${false}
-          .wrapText=${this.model.wrap}
+          .wrapText=${this.model.props.wrap}
           .verticalScrollContainerGetter=${() => getViewportElement(this.host)}
           .vLineRenderer=${showLineNumbers
             ? (vLine: VLine) => {

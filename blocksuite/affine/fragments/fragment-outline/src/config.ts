@@ -27,7 +27,7 @@ import type { TemplateResult } from 'lit';
 const _16px = { width: '16px', height: '16px' };
 
 const paragraphIconMap: Record<
-  ParagraphBlockModel['type'],
+  ParagraphBlockModel['props']['type'],
   TemplateResult<1>
 > = {
   quote: QuoteIcon(_16px),
@@ -54,7 +54,10 @@ export const previewIconMap = {
   attachment: AttachmentIcon(_16px),
 };
 
-const paragraphPlaceholderMap: Record<ParagraphBlockModel['type'], string> = {
+const paragraphPlaceholderMap: Record<
+  ParagraphBlockModel['props']['type'],
+  string
+> = {
   quote: 'Quote',
   text: 'Text Block',
   h1: 'Heading 1',

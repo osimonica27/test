@@ -130,7 +130,7 @@ export class NoteBlockModel
   implements GfxElementGeometry
 {
   private _isSelectable(): boolean {
-    return this.displayMode !== NoteDisplayMode.DocOnly;
+    return this.props.displayMode !== NoteDisplayMode.DocOnly;
   }
 
   override containsBound(bounds: Bound): boolean {
@@ -169,7 +169,7 @@ export class NoteBlockModel
       this.parent?.children.find(
         child =>
           child instanceof NoteBlockModel &&
-          child.displayMode !== NoteDisplayMode.EdgelessOnly
+          child.props.displayMode !== NoteDisplayMode.EdgelessOnly
       ) === this
     );
   }

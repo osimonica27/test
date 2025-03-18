@@ -86,4 +86,13 @@ export const EdgelessTextBlockSchemaExtension = BlockSchemaExtension(
 
 export class EdgelessTextBlockModel
   extends GfxCompatible<EdgelessTextProps>(BlockModel)
-  implements GfxElementGeometry {}
+  implements GfxElementGeometry
+{
+  get color() {
+    return this.props.color;
+  }
+
+  set color(color: EdgelessTextProps['color']) {
+    this.props.color = color;
+  }
+}

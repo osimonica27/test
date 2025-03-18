@@ -6,7 +6,7 @@ import { downloadBlob } from '../../utils/resource';
 import type { PDFViewerProps } from './types';
 
 export async function getAttachmentBlob(model: AttachmentBlockModel) {
-  const sourceId = model.sourceId;
+  const sourceId = model.props.sourceId;
   if (!sourceId) {
     return null;
   }
@@ -15,7 +15,7 @@ export async function getAttachmentBlob(model: AttachmentBlockModel) {
   let blob = await doc.blobSync.get(sourceId);
 
   if (blob) {
-    blob = new Blob([blob], { type: model.type });
+    blob = new Blob([blob], { type: model.props.type });
   }
 
   return blob;
@@ -25,16 +25,16 @@ export async function download(model: AttachmentBlockModel) {
   const blob = await getAttachmentBlob(model);
   if (!blob) return;
 
-  await downloadBlob(blob, model.name);
+  await downloadBlob(blob, model.props.name);
 }
 
 export function buildAttachmentProps(
   model: AttachmentBlockModel
 ): PDFViewerProps {
-  const pieces = model.name.split('.');
+  const pieces = model.props.name.split('.');
   const ext = pieces.pop() || '';
   const name = pieces.join('.');
-  const size = filesize(model.size);
+  const size = filesize(model.props.size);
   return { model, name, ext, size };
 }
 

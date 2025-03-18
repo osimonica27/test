@@ -32,7 +32,7 @@ export function forwardDelete(std: BlockStdScope) {
     matchModels(model.parent, [CalloutBlockModel])
   )
     return;
-  const isEnd = isCollapsed && text.from.index === model.text.length;
+  const isEnd = isCollapsed && text.from.index === model.props.text.length;
   if (!isEnd) return;
   const parent = store.getParent(model);
   if (!parent) return;
@@ -57,7 +57,7 @@ export function forwardDelete(std: BlockStdScope) {
   }
 
   if (matchModels(nextSibling, [ParagraphBlockModel, ListBlockModel])) {
-    model.text.join(nextSibling.text);
+    model.props.text.join(nextSibling.props.text);
     if (nextSibling.children) {
       const parent = store.getParent(nextSibling);
       if (!parent) return false;
@@ -70,7 +70,7 @@ export function forwardDelete(std: BlockStdScope) {
 
   const nextBlock = getNextContentBlock(host, model);
   if (nextBlock?.text) {
-    model.text.join(nextBlock.text);
+    model.props.text.join(nextBlock.text);
     if (nextBlock.children) {
       const parent = store.getParent(nextBlock);
       if (!parent) return false;

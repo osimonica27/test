@@ -89,7 +89,10 @@ export class PageEditor extends SignalWatcher(
     changedProperties: Map<string | number | symbol, unknown>
   ) {
     super.willUpdate(changedProperties);
-    if (changedProperties.has('doc')) {
+    if (
+      this.hasUpdated && // skip the first update
+      changedProperties.has('doc')
+    ) {
       this.std = new BlockStdScope({
         store: this.doc,
         extensions: this.specs,

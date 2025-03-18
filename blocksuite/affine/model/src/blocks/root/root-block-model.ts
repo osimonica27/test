@@ -15,12 +15,15 @@ export class RootBlockModel extends BlockModel<RootBlockProps> {
     const createdSubscription = this.created.subscribe(() => {
       createdSubscription.unsubscribe();
       this.doc.slots.rootAdded.subscribe(id => {
-        const model = this.doc.getBlockById(id);
+        const model = this.doc.getModelById(id);
         if (model instanceof RootBlockModel) {
           const newDocMeta = this.doc.workspace.meta.getDocMeta(model.doc.id);
-          if (!newDocMeta || newDocMeta.title !== model.title.toString()) {
+          if (
+            !newDocMeta ||
+            newDocMeta.title !== model.props.title.toString()
+          ) {
             this.doc.workspace.meta.setDocMeta(model.doc.id, {
-              title: model.title.toString(),
+              title: model.props.title.toString(),
             });
           }
         }

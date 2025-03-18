@@ -325,30 +325,37 @@ function createToolbarMoreMenuConfigV2(baseUrl?: string) {
               const createdAt = 'meta:createdAt';
               const createdBy = 'meta:createdBy';
               return (
-                createdAt in block.model &&
-                block.model[createdAt] !== undefined &&
-                createdBy in block.model &&
-                block.model[createdBy] !== undefined &&
-                typeof block.model[createdBy] === 'string' &&
-                typeof block.model[createdAt] === 'number'
+                createdAt in block.model.props &&
+                block.model.props[createdAt] !== undefined &&
+                createdBy in block.model.props &&
+                block.model.props[createdBy] !== undefined &&
+                typeof block.model.props[createdBy] === 'string' &&
+                typeof block.model.props[createdAt] === 'number'
               );
             },
             content: cx => {
               const model = cx.getCurrentModelBy(BlockSelection);
               if (!model) return null;
               const createdAt = 'meta:createdAt';
-              if (!(createdAt in model)) return null;
+              if (!(createdAt in model.props)) return null;
               const createdBy = 'meta:createdBy';
-              if (!(createdBy in model)) return null;
-              const createdByUserId = model[createdBy] as string;
-              const createdAtTimestamp = model[createdAt] as number;
+              if (!(createdBy in model.props)) return null;
+              const createdByUserId = model.props[createdBy] as string;
+              const createdAtTimestamp = model.props[createdAt] as number;
               const date = new Date(createdAtTimestamp);
               const userProvider = cx.std.get(UserProvider);
               userProvider.revalidateUserInfo(createdByUserId);
               const userSignal = userProvider.userInfo$(createdByUserId);
+              const isLoadingSignal = userProvider.isLoading$(createdByUserId);
               const name = computed(() => {
                 const value = userSignal.value;
-                if (!value) return I18n['Unknown User']();
+                if (!value) {
+                  if (isLoadingSignal.value) {
+                    // if user info is loading
+                    return '';
+                  }
+                  return I18n['Unknown User']();
+                }
                 const removed = isRemovedUserInfo(value);
                 if (removed) {
                   return I18n['Deleted User']();
@@ -410,7 +417,7 @@ function createExternalLinkableToolbarConfig(
               )?.model;
               if (!model) return;
 
-              const { url } = model;
+              const { url } = model.props;
 
               navigator.clipboard.writeText(url).catch(console.error);
               toast(ctx.host, 'Copied link to clipboard');
@@ -523,7 +530,7 @@ function createOpenDocActionGroup(
           return {
             ...action,
             disabled: shouldOpenInActiveView
-              ? component.model.pageId === ctx.store.id
+              ? component.model.props.pageId === ctx.store.id
               : false,
             when:
               allowed &&
@@ -590,7 +597,7 @@ const embedLinkedDocToolbarConfig = {
             );
             if (!model) return;
 
-            const { pageId, params } = model;
+            const { pageId, params } = model.props;
 
             const url = ctx.std
               .getOptional(GenerateDocUrlProvider)
@@ -625,7 +632,7 @@ const embedLinkedDocToolbarConfig = {
             ctx.hide();
 
             const model = component.model;
-            const doc = ctx.workspace.getDoc(model.pageId);
+            const doc = ctx.workspace.getDoc(model.props.pageId);
             const abortController = new AbortController();
             abortController.signal.onabort = () => ctx.show();
 
@@ -683,7 +690,7 @@ const embedSyncedDocToolbarConfig = {
             );
             if (!model) return;
 
-            const { pageId, params } = model;
+            const { pageId, params } = model.props;
 
             const url = ctx.std
               .getOptional(GenerateDocUrlProvider)
@@ -718,7 +725,7 @@ const embedSyncedDocToolbarConfig = {
             ctx.hide();
 
             const model = component.model;
-            const doc = ctx.workspace.getDoc(model.pageId);
+            const doc = ctx.workspace.getDoc(model.props.pageId);
             const abortController = new AbortController();
             abortController.signal.onabort = () => ctx.show();
 
@@ -920,7 +927,7 @@ const embedIframeToolbarConfig = {
             )?.model;
             if (!model) return;
 
-            const { url } = model;
+            const { url } = model.props;
 
             navigator.clipboard.writeText(url).catch(console.error);
             toast(ctx.host, 'Copied link to clipboard');

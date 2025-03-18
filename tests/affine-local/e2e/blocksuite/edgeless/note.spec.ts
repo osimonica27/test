@@ -296,7 +296,7 @@ test.describe('edgeless note element toolbar', () => {
           'affine-edgeless-root'
         ) as EdgelessRootBlockComponent;
         const note = root.gfx.getElementById(noteId) as NoteBlockModel;
-        return note.edgeless;
+        return note.props.edgeless;
       }, noteId);
     };
 

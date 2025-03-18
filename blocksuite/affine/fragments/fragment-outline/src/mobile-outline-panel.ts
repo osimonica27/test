@@ -140,13 +140,13 @@ export class MobileOutlineMenu extends SignalWatcher(
     let text = '';
     if (matchModels(item, [RootBlockModel])) {
       className = 'title';
-      text = item.title$.value.toString();
+      text = item.props.title$.value.toString();
     } else if (
       matchModels(item, [ParagraphBlockModel]) &&
-      ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(item.type$.value)
+      ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(item.props.type$.value)
     ) {
-      className = item.type$.value;
-      text = item.text$.value.toString();
+      className = item.props.type$.value;
+      text = item.props.text$.value.toString();
     } else {
       return nothing;
     }

@@ -1,3 +1,4 @@
+import { SurfaceBlockModel } from '@blocksuite/affine-block-surface';
 import {
   CaptionedBlockComponent,
   SelectedStyle,
@@ -7,20 +8,22 @@ import {
   FeatureFlagService,
   LinkPreviewerService,
 } from '@blocksuite/affine-shared/services';
+import { matchModels } from '@blocksuite/affine-shared/utils';
 import { BlockSelection } from '@blocksuite/block-std';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 import { type ClassInfo, classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import type { IframeOptions } from './extension/embed-iframe-config.js';
 import { EmbedIframeService } from './extension/embed-iframe-service.js';
 import { embedIframeBlockStyles } from './style.js';
+import type { EmbedIframeStatusCardOptions } from './types.js';
 
 export type EmbedIframeStatus = 'idle' | 'loading' | 'success' | 'error';
 const DEFAULT_IFRAME_HEIGHT = 152;
+const DEFAULT_IFRAME_WIDTH = '100%';
 
 export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIframeBlockModel> {
   selectedStyle$: ReadonlySignal<ClassInfo> | null = computed<ClassInfo>(
@@ -40,6 +43,18 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
   readonly hasError$ = computed(() => this.status$.value === 'error');
   readonly isSuccess$ = computed(() => this.status$.value === 'success');
 
+  readonly isDraggingOnHost$ = signal(false);
+  readonly isResizing$ = signal(false);
+  // show overlay to prevent the iframe from capturing pointer events
+  // when the block is dragging, resizing, or not selected
+  readonly showOverlay$ = computed(
+    () =>
+      this.isSuccess$.value &&
+      (this.isDraggingOnHost$.value ||
+        this.isResizing$.value ||
+        !this.selected$.value)
+  );
+
   private _iframeOptions: IframeOptions | undefined = undefined;
 
   get embedIframeService() {
@@ -50,8 +65,24 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
     return this.std.get(LinkPreviewerService);
   }
 
+  get inSurface() {
+    return matchModels(this.model.parent, [SurfaceBlockModel]);
+  }
+
+  get isEmbedIframeBlockEnabled() {
+    const featureFlagService = this.doc.get(FeatureFlagService);
+    const flag = featureFlagService.getFlag('enable_embed_iframe_block');
+    return flag ?? false;
+  }
+
+  get _statusCardOptions(): EmbedIframeStatusCardOptions {
+    return this.inSurface
+      ? { layout: 'vertical' }
+      : { layout: 'horizontal', height: 114 };
+  }
+
   open = () => {
-    const link = this.model.url;
+    const link = this.model.props.url;
     window.open(link, '_blank');
   };
 
@@ -71,7 +102,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
         );
       }
 
-      const { url } = this.model;
+      const { url } = this.model.props;
       if (!url) {
         throw new BlockSuiteError(
           ErrorCode.ValueNotExists,
@@ -86,7 +117,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
       ]);
 
       // if the embed data is not found, and the iframeUrl is not set, throw an error
-      const currentIframeUrl = this.model.iframeUrl;
+      const currentIframeUrl = this.model.props.iframeUrl;
       if (!embedData && !currentIframeUrl) {
         throw new BlockSuiteError(
           ErrorCode.ValueNotExists,
@@ -134,8 +165,12 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
     selectionManager.setGroup('note', [blockSelection]);
   };
 
-  protected readonly _handleClick = (event: MouseEvent) => {
+  protected _handleClick = (event: MouseEvent) => {
     event.stopPropagation();
+    // We don't need to select the block when the block is in the surface
+    if (this.inSurface) {
+      return;
+    }
     this._selectBlock();
   };
 
@@ -143,27 +178,25 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
     await this.refreshData();
   };
 
-  private readonly _embedIframeBlockEnabled$: ReadonlySignal = computed(() => {
-    const featureFlagService = this.doc.get(FeatureFlagService);
-    const flag = featureFlagService.getFlag('enable_embed_iframe_block');
-    return flag ?? false;
-  });
-
   private readonly _renderIframe = () => {
-    const { iframeUrl } = this.model;
+    const { iframeUrl } = this.model.props;
     const {
-      defaultWidth,
-      defaultHeight,
+      widthPercent,
+      heightInNote,
       style,
       allow,
       referrerpolicy,
       scrolling,
       allowFullscreen,
     } = this._iframeOptions ?? {};
+    const width = `${widthPercent}%`;
+    // if the block is in the surface, use 100% as the height
+    // otherwise, use the heightInNote
+    const height = this.inSurface ? '100%' : heightInNote;
     return html`
       <iframe
-        width=${defaultWidth ?? '100%'}
-        height=${defaultHeight ?? DEFAULT_IFRAME_HEIGHT}
+        width=${width ?? DEFAULT_IFRAME_WIDTH}
+        height=${height ?? DEFAULT_IFRAME_HEIGHT}
         ?allowfullscreen=${allowFullscreen}
         loading="lazy"
         frameborder="0"
@@ -180,6 +213,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
     if (this.isLoading$.value) {
       return html`<embed-iframe-loading-card
         .std=${this.std}
+        .options=${this._statusCardOptions}
       ></embed-iframe-loading-card>`;
     }
 
@@ -189,6 +223,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
         .model=${this.model}
         .onRetry=${this._handleRetry}
         .std=${this.std}
+        .options=${this._statusCardOptions}
       ></embed-iframe-error-card>`;
     }
 
@@ -200,13 +235,13 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
 
     this.contentEditable = 'false';
 
-    if (!this.model.iframeUrl) {
+    if (!this.model.props.iframeUrl) {
       this.doc.withoutTransact(() => {
         this.refreshData().catch(console.error);
       });
     } else {
       // update iframe options, to ensure the iframe is rendered with the correct options
-      this._updateIframeOptions(this.model.url);
+      this._updateIframeOptions(this.model.props.url);
       this.status$.value = 'success';
     }
 
@@ -218,31 +253,51 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
         }
       })
     );
+
+    // subscribe the editor host global dragging event
+    // to show the overlay for the dragging area or other pointer events
+    this.handleEvent(
+      'dragStart',
+      () => {
+        this.isDraggingOnHost$.value = true;
+      },
+      { global: true }
+    );
+    this.handleEvent(
+      'dragEnd',
+      () => {
+        this.isDraggingOnHost$.value = false;
+      },
+      { global: true }
+    );
   }
 
   override renderBlock() {
-    if (!this._embedIframeBlockEnabled$.value) {
+    if (!this.isEmbedIframeBlockEnabled) {
       return nothing;
     }
 
-    const classes = classMap({
-      'affine-embed-iframe-block': true,
+    const containerClasses = classMap({
+      'affine-embed-iframe-block-container': true,
       ...this.selectedStyle$?.value,
+      'in-surface': this.inSurface,
     });
-
-    const style = styleMap({
-      width: '100%',
+    const overlayClasses = classMap({
+      'affine-embed-iframe-block-overlay': true,
+      show: this.showOverlay$.value,
     });
 
     return html`
       <div
         draggable=${this.blockDraggable ? 'true' : 'false'}
-        class=${classes}
-        style=${style}
+        class=${containerClasses}
         @click=${this._handleClick}
         @dblclick=${this._handleDoubleClick}
       >
         ${this._renderContent()}
+
+        <!-- overlay to prevent the iframe from capturing pointer events -->
+        <div class=${overlayClasses}></div>
       </div>
     `;
   }

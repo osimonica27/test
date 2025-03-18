@@ -153,7 +153,7 @@ export const openGroup: MenuItemGroup<ElementToolbarMoreMenuContext> = {
 
         if (!linkedDocBlock) return;
 
-        const disabled = linkedDocBlock.pageId === ctx.doc.id;
+        const disabled = linkedDocBlock.props.pageId === ctx.doc.id;
 
         return {
           action: () => {

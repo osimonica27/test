@@ -90,7 +90,8 @@ export class OutlineNoteCard extends SignalWatcher(
     this.disposables.add(
       std.dnd.draggable<NoteCardEntity>({
         element: this,
-        canDrag: () => this.note.displayMode !== NoteDisplayMode.EdgelessOnly,
+        canDrag: () =>
+          this.note.props.displayMode !== NoteDisplayMode.EdgelessOnly,
         onDragStart: () => {
           if (this.status !== 'selected') {
             this.dispatchEvent(
@@ -139,7 +140,7 @@ export class OutlineNoteCard extends SignalWatcher(
           noteId: this.note.id,
         }),
         canDrop: () => {
-          return this.note.displayMode !== NoteDisplayMode.EdgelessOnly;
+          return this.note.props.displayMode !== NoteDisplayMode.EdgelessOnly;
         },
       })
     );
@@ -167,16 +168,17 @@ export class OutlineNoteCard extends SignalWatcher(
   }
 
   override render() {
-    const { children, displayMode } = this.note;
+    const { displayMode } = this.note.props;
+    const { children } = this.note;
     const currentMode = this._getCurrentModeLabel(displayMode);
     const invisible =
-      this.note.displayMode$.value === NoteDisplayMode.EdgelessOnly;
+      this.note.props.displayMode$.value === NoteDisplayMode.EdgelessOnly;
 
     const enableSorting = this._context.enableSorting$.value;
 
     return html`
       <div
-        data-visibility=${this.note.displayMode}
+        data-visibility=${this.note.props.displayMode}
         data-sortable=${enableSorting}
         data-status=${this.status}
         class=${styles.outlineCard}

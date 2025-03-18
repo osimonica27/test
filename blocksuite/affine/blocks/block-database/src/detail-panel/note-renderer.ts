@@ -68,7 +68,7 @@ export class NoteRenderer
       );
       collection.meta.setDocMeta(note.id, { title: rowContent });
       if (note.root) {
-        (note.root as RootBlockModel).title.insert(rowContent ?? '', 0);
+        (note.root as RootBlockModel).props.title.insert(rowContent ?? '', 0);
         note.root.children
           .find(child => child.flavour === 'affine:note')
           ?.children.find(block =>

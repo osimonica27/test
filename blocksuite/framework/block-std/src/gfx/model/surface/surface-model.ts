@@ -109,6 +109,10 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
     return models;
   }
 
+  get elements() {
+    return this.props.elements;
+  }
+
   get localElementModels() {
     return this.localElements;
   }

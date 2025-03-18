@@ -30,7 +30,7 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
   protected _isResizing = false;
 
   open = () => {
-    let link = this.model.url;
+    let link = this.model.props.url;
     if (!link.match(/^[a-zA-Z]+:\/\//)) {
       link = 'https://' + link;
     }
@@ -63,11 +63,11 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
 
   override connectedCallback() {
     super.connectedCallback();
-    this._cardStyle = this.model.style;
+    this._cardStyle = this.model.props.style;
 
-    if (!this.model.videoId) {
+    if (!this.model.props.videoId) {
       this.doc.withoutTransact(() => {
-        const url = this.model.url;
+        const url = this.model.props.url;
         const urlMatch = url.match(youtubeUrlRegex);
         if (urlMatch) {
           const [, videoId] = urlMatch;
@@ -78,7 +78,7 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
       });
     }
 
-    if (!this.model.description && !this.model.title) {
+    if (!this.model.props.description && !this.model.props.title) {
       this.doc.withoutTransact(() => {
         this.refreshData();
       });
@@ -125,7 +125,7 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
       creator,
       creatorImage,
       videoId,
-    } = this.model;
+    } = this.model.props;
 
     const loading = this.loading;
     const theme = this.std.get(ThemeProvider).theme;

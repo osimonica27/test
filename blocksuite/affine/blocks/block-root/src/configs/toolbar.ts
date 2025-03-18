@@ -74,7 +74,7 @@ const conversionsActionGroup = {
       textConversionConfigs.find(
         ({ flavour, type }) =>
           flavour === model.flavour &&
-          (type ? 'type' in model && type === model.type : true)
+          (type ? 'type' in model.props && type === model.props.type : true)
       ) ?? textConversionConfigs[0];
     const update = (flavour: string, type?: string) => {
       chain

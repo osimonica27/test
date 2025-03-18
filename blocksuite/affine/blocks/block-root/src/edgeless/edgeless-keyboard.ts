@@ -261,7 +261,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
                     block.group === null &&
                     !(
                       matchModels(block, [NoteBlockModel]) &&
-                      block.displayMode === NoteDisplayMode.DocOnly
+                      block.props.displayMode === NoteDisplayMode.DocOnly
                     )
                 )
                 .map(block => block.id),

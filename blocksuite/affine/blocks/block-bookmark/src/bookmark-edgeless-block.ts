@@ -16,7 +16,7 @@ export class BookmarkEdgelessBlockComponent extends toGfxBlockComponent(
 
   override getRenderingRect() {
     const elementBound = this.model.elementBound;
-    const style = this.model.style$.value;
+    const style = this.model.props.style$.value;
 
     return {
       x: elementBound.x,
@@ -28,7 +28,7 @@ export class BookmarkEdgelessBlockComponent extends toGfxBlockComponent(
   }
 
   override renderGfxBlock() {
-    const style = this.model.style$.value;
+    const style = this.model.props.style$.value;
     const width = EMBED_CARD_WIDTH[style];
     const height = EMBED_CARD_HEIGHT[style];
     const bound = this.model.elementBound;

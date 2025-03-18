@@ -60,7 +60,7 @@ export const insertEdgelessTextCommand: Command<
         if (!editing || id !== textId) {
           const textBlock = host.view.getBlock(textId);
           if (textBlock instanceof EdgelessTextBlockComponent) {
-            textBlock.model.hasMaxWidth = true;
+            textBlock.model.props.hasMaxWidth = true;
           }
 
           disposable.unsubscribe();

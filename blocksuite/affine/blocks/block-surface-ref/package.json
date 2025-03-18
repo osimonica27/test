@@ -3,16 +3,14 @@
   "description": "Surface ref block for BlockSuite.",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "test:unit": "nx vite:test --run --passWithNoTests",
-    "test:unit:coverage": "nx vite:test --run --coverage",
-    "test:e2e": "playwright test"
+    "build": "tsc"
   },
   "sideEffects": false,
   "keywords": [],
   "author": "toeverything",
   "license": "MIT",
   "dependencies": {
+    "@blocksuite/affine-block-frame": "workspace:*",
     "@blocksuite/affine-block-surface": "workspace:*",
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-model": "workspace:*",

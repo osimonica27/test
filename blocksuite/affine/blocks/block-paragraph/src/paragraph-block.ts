@@ -148,20 +148,20 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
 
     this.disposables.add(
       effect(() => {
-        const type = this.model.type$.value;
-        if (!type.startsWith('h') && this.model.collapsed) {
-          this.model.collapsed = false;
+        const type = this.model.props.type$.value;
+        if (!type.startsWith('h') && this.model.props.collapsed) {
+          this.model.props.collapsed = false;
         }
       })
     );
 
     this.disposables.add(
       effect(() => {
-        const collapsed = this.model.collapsed$.value;
+        const collapsed = this.model.props.collapsed$.value;
         this._readonlyCollapsed = collapsed;
 
         // reset text selection when selected block is collapsed
-        if (this.model.type$.value.startsWith('h') && collapsed) {
+        if (this.model.props.type$.value.startsWith('h') && collapsed) {
           const collapsedSiblings = this.collapsedSiblings;
           const textSelection = this.host.selection.find(TextSelection);
 
@@ -181,19 +181,19 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
     // # 456
     //
     // we need to update collapsed state of 123 when 456 converted to text
-    let beforeType = this.model.type$.peek();
+    let beforeType = this.model.props.type$.peek();
     this.disposables.add(
       effect(() => {
-        const type = this.model.type$.value;
+        const type = this.model.props.type$.value;
         if (beforeType !== type && !type.startsWith('h')) {
           const nearestHeading = getNearestHeadingBefore(this.model);
           if (
             nearestHeading &&
-            nearestHeading.type.startsWith('h') &&
-            nearestHeading.collapsed &&
+            nearestHeading.props.type.startsWith('h') &&
+            nearestHeading.props.collapsed &&
             !this.doc.readonly
           ) {
-            nearestHeading.collapsed = false;
+            nearestHeading.props.collapsed = false;
           }
         }
         beforeType = type;
@@ -208,14 +208,14 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
   }
 
   override renderBlock(): TemplateResult<1> {
-    const { type$ } = this.model;
+    const { type$ } = this.model.props;
     const collapsed = this.doc.readonly
       ? this._readonlyCollapsed
-      : this.model.collapsed;
+      : this.model.props.collapsed;
     const collapsedSiblings = this.collapsedSiblings;
 
     let style = html``;
-    if (this.model.type$.value.startsWith('h') && collapsed) {
+    if (this.model.props.type$.value.startsWith('h') && collapsed) {
       style = html`
         <style>
           ${collapsedSiblings.map(sibling =>
@@ -259,14 +259,14 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
             [TOGGLE_BUTTON_PARENT_CLASS]: true,
           })}
         >
-          ${this.model.type$.value.startsWith('h')
+          ${this.model.props.type$.value.startsWith('h')
             ? html`
                 <affine-paragraph-heading-icon
                   .model=${this.model}
                 ></affine-paragraph-heading-icon>
               `
             : nothing}
-          ${this.model.type$.value.startsWith('h') &&
+          ${this.model.props.type$.value.startsWith('h') &&
           collapsedSiblings.length > 0
             ? html`
                 <blocksuite-toggle-button
@@ -285,7 +285,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
               `
             : nothing}
           <rich-text
-            .yText=${this.model.text.yText}
+            .yText=${this.model.props.text.yText}
             .inlineEventSource=${this.topContenteditableElement ?? nothing}
             .undoManager=${this.doc.history}
             .attributesSchema=${this.attributesSchema}

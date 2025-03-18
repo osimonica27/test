@@ -86,7 +86,7 @@ class MobileSpecsPatches extends LifeCycleWatcher {
           h6: 'Heading 6',
           quote: '',
         };
-        return placeholders[model.type];
+        return placeholders[model.props.type];
       };
     }
   }

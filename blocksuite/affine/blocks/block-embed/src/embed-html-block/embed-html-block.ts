@@ -49,7 +49,7 @@ export class EmbedHtmlBlockComponent extends EmbedBlockComponent<EmbedHtmlModel>
 
   override connectedCallback() {
     super.connectedCallback();
-    this._cardStyle = this.model.style;
+    this._cardStyle = this.model.props.style;
 
     // this is required to prevent iframe from capturing pointer events
     this.disposables.add(
@@ -80,11 +80,11 @@ export class EmbedHtmlBlockComponent extends EmbedBlockComponent<EmbedHtmlModel>
           margin: 0;
         }
       </style>
-      ${this.model.html}
+      ${this.model.props.html}
     `;
 
     return this.renderEmbed(() => {
-      if (!this.model.html) {
+      if (!this.model.props.html) {
         return html` <div class="affine-html-empty">Empty</div>`;
       }
       return html`

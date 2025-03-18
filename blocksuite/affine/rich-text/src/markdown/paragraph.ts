@@ -36,7 +36,7 @@ export function toParagraph(
     return id;
   }
 
-  if (matchModels(model, [ParagraphBlockModel]) && model.type !== type) {
+  if (matchModels(model, [ParagraphBlockModel]) && model.props.type !== type) {
     beforeConvert(std, model, prefix.length);
 
     doc.updateBlock(model, { type });

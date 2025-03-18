@@ -155,7 +155,7 @@ export class EmbedIframeLinkEditPopup extends SignalWatcher(
 
   override render() {
     const isInputEmpty = this._isInputEmpty();
-    const { url$ } = this.model;
+    const { url$ } = this.model.props;
 
     return html`
       <div class="embed-iframe-link-edit-popup">

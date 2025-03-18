@@ -485,7 +485,7 @@ class PasteTr {
     if (this.firstSnapshot!.props.type) {
       this.firstSnapshot!.props.type = (
         this.pointState.model as ParagraphBlockModel
-      ).type;
+      ).props.type;
     }
   }
 

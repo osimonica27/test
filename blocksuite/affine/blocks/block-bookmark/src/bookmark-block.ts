@@ -28,7 +28,7 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
   protected containerStyleMap!: ReturnType<typeof styleMap>;
 
   open = () => {
-    let link = this.model.url;
+    let link = this.model.props.url;
     if (!link.match(/^[a-zA-Z]+:\/\//)) {
       link = 'https://' + link;
     }
@@ -57,7 +57,7 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
 
     this.contentEditable = 'false';
 
-    if (!this.model.description && !this.model.title) {
+    if (!this.model.props.description && !this.model.props.title) {
       this.refreshData();
     }
 

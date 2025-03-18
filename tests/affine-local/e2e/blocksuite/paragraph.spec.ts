@@ -175,7 +175,7 @@ test('add new heading when press enter at the end of collapsed heading', async (
       .nth(1)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.text.toString() === 'bbb'
+          block.model.props.text.toString() === 'bbb'
       )
   ).toBeTruthy();
   await pressEnter(page);
@@ -184,7 +184,8 @@ test('add new heading when press enter at the end of collapsed heading', async (
       .nth(1)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'text' && block.model.text.toString() === ''
+          block.model.props.type === 'text' &&
+          block.model.props.text.toString() === ''
       )
   ).toBeTruthy();
   expect(
@@ -192,7 +193,7 @@ test('add new heading when press enter at the end of collapsed heading', async (
       .nth(2)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.text.toString() === 'bbb'
+          block.model.props.text.toString() === 'bbb'
       )
   ).toBeTruthy();
 
@@ -202,7 +203,7 @@ test('add new heading when press enter at the end of collapsed heading', async (
       .nth(1)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.text.toString() === 'bbb'
+          block.model.props.text.toString() === 'bbb'
       )
   ).toBeTruthy();
   expect(await paragraph.nth(1).isVisible()).toBeTruthy();
@@ -221,7 +222,8 @@ test('add new heading when press enter at the end of collapsed heading', async (
       .nth(2)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'h1' && block.model.text.toString() === ''
+          block.model.props.type === 'h1' &&
+          block.model.props.text.toString() === ''
       )
   ).toBeTruthy();
 });
@@ -262,7 +264,8 @@ test('unfold collapsed heading when its siblings changed to text type from headi
       .nth(2)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'h1' && block.model.text.toString() === 'ccc'
+          block.model.props.type === 'h1' &&
+          block.model.props.text.toString() === 'ccc'
       )
   ).toBeTruthy();
   await page.keyboard.press('Backspace');
@@ -271,7 +274,8 @@ test('unfold collapsed heading when its siblings changed to text type from headi
       .nth(2)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'text' && block.model.text.toString() === 'ccc'
+          block.model.props.type === 'text' &&
+          block.model.props.text.toString() === 'ccc'
       )
   ).toBeTruthy();
   expect(await paragraph.nth(1).isVisible()).toBeTruthy();
@@ -292,7 +296,8 @@ test('also move children when dedent collapsed heading', async ({ page }) => {
       .nth(0)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'h1' && block.model.text.toString() === 'bbb'
+          block.model.props.type === 'h1' &&
+          block.model.props.text.toString() === 'bbb'
       )
   ).toBeTruthy();
   expect(
@@ -300,7 +305,8 @@ test('also move children when dedent collapsed heading', async ({ page }) => {
       .nth(1)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'text' && block.model.text.toString() === 'ccc'
+          block.model.props.type === 'text' &&
+          block.model.props.text.toString() === 'ccc'
       )
   ).toBeTruthy();
 
@@ -319,7 +325,8 @@ test('also move children when dedent collapsed heading', async ({ page }) => {
       .nth(1)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'h1' && block.model.text.toString() === 'bbb'
+          block.model.props.type === 'h1' &&
+          block.model.props.text.toString() === 'bbb'
       )
   ).toBeTruthy();
   expect(
@@ -327,7 +334,8 @@ test('also move children when dedent collapsed heading', async ({ page }) => {
       .nth(2)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'text' && block.model.text.toString() === 'ccc'
+          block.model.props.type === 'text' &&
+          block.model.props.text.toString() === 'ccc'
       )
   ).toBeTruthy();
 
@@ -364,7 +372,8 @@ test('also move collapsed siblings when indent collapsed heading', async ({
       .nth(0)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'h1' && block.model.text.toString() === 'bbb'
+          block.model.props.type === 'h1' &&
+          block.model.props.text.toString() === 'bbb'
       )
   ).toBeTruthy();
   await undoByKeyboard(page);
@@ -386,7 +395,8 @@ test('also move collapsed siblings when indent collapsed heading', async ({
       .nth(0)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'h1' && block.model.text.toString() === 'bbb'
+          block.model.props.type === 'h1' &&
+          block.model.props.text.toString() === 'bbb'
       )
   ).toBeTruthy();
   expect(
@@ -396,7 +406,8 @@ test('also move collapsed siblings when indent collapsed heading', async ({
       .nth(1)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'text' && block.model.text.toString() === 'ccc'
+          block.model.props.type === 'text' &&
+          block.model.props.text.toString() === 'ccc'
       )
   ).toBeTruthy();
 });
@@ -428,7 +439,8 @@ test('unfold collapsed heading when its other blocks indented to be its sibling'
       .nth(2)
       .evaluate(
         (block: ParagraphBlockComponent) =>
-          block.model.type === 'text' && block.model.text.toString() === 'ccc'
+          block.model.props.type === 'text' &&
+          block.model.props.text.toString() === 'ccc'
       )
   ).toBeTruthy();
   await paragraph.locator('blocksuite-toggle-button .toggle-icon').click();

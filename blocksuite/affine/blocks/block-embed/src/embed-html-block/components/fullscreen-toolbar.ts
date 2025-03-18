@@ -108,7 +108,7 @@ export class EmbedHtmlFullscreenToolbar extends LitElement {
 
     this.embedHtml.std.clipboard
       .writeToClipboard(items => {
-        items['text/plain'] = this.embedHtml.model.html ?? '';
+        items['text/plain'] = this.embedHtml.model.props.html ?? '';
         return items;
       })
       .then(() => {

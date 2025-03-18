@@ -258,7 +258,7 @@ export class PointerEventWatcher {
       this.widget.noteScale.value =
         this.widget.mode === 'page'
           ? 1
-          : (closestNoteBlock?.model.edgeless.scale ?? 1);
+          : (closestNoteBlock?.model.props.edgeless.scale ?? 1);
 
       if (
         closestNoteBlock &&

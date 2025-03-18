@@ -127,7 +127,7 @@ export const indentListCommand: Command<{
   if (
     nearestHeading &&
     matchModels(nearestHeading, [ParagraphBlockModel]) &&
-    nearestHeading.collapsed
+    nearestHeading.props.collapsed
   ) {
     store.updateBlock(nearestHeading, {
       collapsed: false,

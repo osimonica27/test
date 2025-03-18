@@ -59,8 +59,8 @@ export const dedentBlocks: Command<{
     if (!model) return;
     if (
       matchModels(model, [ParagraphBlockModel]) &&
-      model.type.startsWith('h') &&
-      model.collapsed
+      model.props.type.startsWith('h') &&
+      model.props.collapsed
     ) {
       const collapsedSiblings = calculateCollapsedSiblings(model);
       collapsedIds.push(...collapsedSiblings.map(sibling => sibling.id));

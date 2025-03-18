@@ -47,8 +47,8 @@ export const dedentBlock: Command<{
 
   if (
     matchModels(model, [ParagraphBlockModel]) &&
-    model.type.startsWith('h') &&
-    model.collapsed
+    model.props.type.startsWith('h') &&
+    model.props.collapsed
   ) {
     const collapsedSiblings = calculateCollapsedSiblings(model);
     store.moveBlocks([model, ...collapsedSiblings], grandParent, parent, false);

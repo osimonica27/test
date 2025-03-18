@@ -53,7 +53,7 @@ export const ParagraphKeymapExtension = KeymapExtension(
 
         // When deleting at line start of a paragraph block,
         // firstly switch it to normal text, then delete this empty block.
-        if (model.type !== 'text') {
+        if (model.props.type !== 'text') {
           // Try to switch to normal text
           store.captureSync();
           store.updateBlock(model, { type: 'text' });
@@ -91,7 +91,7 @@ export const ParagraphKeymapExtension = KeymapExtension(
         if (!inlineRange || !inlineEditor) return;
         const raw = ctx.get('keyboardState').raw;
         raw.preventDefault();
-        if (model.type === 'quote') {
+        if (model.props.type === 'quote') {
           store.captureSync();
           inlineEditor.insertText(inlineRange, '\n');
           inlineEditor.setInlineRange({
@@ -123,10 +123,10 @@ export const ParagraphKeymapExtension = KeymapExtension(
         if (!inlineRange || !inlineEditor) return;
 
         const raw = ctx.get('keyboardState').raw;
-        const isEnd = model.text.length === inlineRange.index;
+        const isEnd = model.props.text.length === inlineRange.index;
 
-        if (model.type === 'quote') {
-          const textStr = model.text.toString();
+        if (model.props.type === 'quote') {
+          const textStr = model.props.text.toString();
 
           /**
            * If quote block ends with two blank lines, split the block
@@ -145,7 +145,7 @@ export const ParagraphKeymapExtension = KeymapExtension(
           if (isEnd && endWithTwoBlankLines) {
             raw.preventDefault();
             store.captureSync();
-            model.text.delete(inlineRange.index - 1, 1);
+            model.props.text.delete(inlineRange.index - 1, 1);
             std.command.chain().pipe(addParagraphCommand).run();
             return true;
           }
@@ -158,17 +158,17 @@ export const ParagraphKeymapExtension = KeymapExtension(
           return true;
         }
 
-        if (model.type.startsWith('h') && model.collapsed) {
+        if (model.props.type.startsWith('h') && model.props.collapsed) {
           const parent = store.getParent(model);
           if (!parent) return true;
           const index = parent.children.indexOf(model);
           if (index === -1) return true;
           const collapsedSiblings = calculateCollapsedSiblings(model);
 
-          const rightText = model.text.split(inlineRange.index);
+          const rightText = model.props.text.split(inlineRange.index);
           const newId = store.addBlock(
             model.flavour,
-            { type: model.type, text: rightText },
+            { type: model.props.type, text: rightText },
             parent,
             index + collapsedSiblings.length + 1
           );

@@ -96,10 +96,10 @@ export class DataViewBlockComponent extends CaptionedBlockComponent<DataViewBloc
       options: {
         items: [
           menu.input({
-            initialValue: this.model.title,
+            initialValue: this.model.props.title,
             placeholder: 'Untitled',
             onChange: text => {
-              this.model.title = text;
+              this.model.props.title = text;
             },
           }),
           menu.action({
@@ -158,7 +158,7 @@ export class DataViewBlockComponent extends CaptionedBlockComponent<DataViewBloc
       return html`
         <div style="margin-bottom: 16px;display:flex;flex-direction: column">
           <div style="display:flex;gap:8px;padding: 0 6px;margin-bottom: 8px;">
-            <div>${this.model.title}</div>
+            <div>${this.model.props.title}</div>
             ${this.renderDatabaseOps()}
           </div>
           <div

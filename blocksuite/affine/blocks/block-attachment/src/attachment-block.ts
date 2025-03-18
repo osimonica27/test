@@ -28,7 +28,7 @@ import { checkAttachmentBlob, downloadAttachmentBlob } from './utils';
 
 @Peekable({
   enableOn: ({ model }: AttachmentBlockComponent) => {
-    return model.type.endsWith('pdf');
+    return model.props.type.endsWith('pdf');
   },
 })
 export class AttachmentBlockComponent extends CaptionedBlockComponent<AttachmentBlockModel> {
@@ -104,7 +104,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
 
     this.contentEditable = 'false';
 
-    if (!this.model.style) {
+    if (!this.model.props.style) {
       this.doc.withoutTransact(() => {
         this.doc.updateBlock(this.model, {
           style: AttachmentBlockStyles[1],
@@ -170,7 +170,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
   }
 
   override renderBlock() {
-    const { name, size, style } = this.model;
+    const { name, size, style } = this.model.props;
     const cardStyle = style ?? AttachmentBlockStyles[1];
 
     const theme = this.std.get(ThemeProvider).theme;

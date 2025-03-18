@@ -22,7 +22,7 @@ const colors = [
 type HighlightType = 'color' | 'background';
 
 // TODO(@fundon): these recent settings should be added to the dropdown menu
-// blocksuite/tests-legacy/e2e/format-bar.spec.ts#253
+// tests/blocksutie/e2e/format-bar.spec.ts#253
 //
 // let latestHighlightColor: string | null = null;
 // let latestHighlightType: HighlightType = 'background';

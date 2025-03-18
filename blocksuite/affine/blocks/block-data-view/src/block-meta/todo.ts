@@ -8,6 +8,6 @@ export const todoMeta = createBlockMeta<ListBlockModel>({
       return false;
     }
 
-    return (block.model as ListBlockModel).type === 'todo';
+    return (block.model as ListBlockModel).props.type === 'todo';
   },
 });

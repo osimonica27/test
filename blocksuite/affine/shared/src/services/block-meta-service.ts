@@ -59,13 +59,6 @@ export class BlockMetaService extends StoreExtension {
     const now = getNow();
 
     this.store.withoutTransact(() => {
-      const isFlatModel = model.schema.model.isFlatData;
-      if (!isFlatModel) {
-        model['meta:createdAt'] = now;
-        model['meta:createdBy'] = writer.id;
-        return;
-      }
-
       model.props['meta:createdAt'] = now;
       model.props['meta:createdBy'] = writer.id;
     });
@@ -81,19 +74,6 @@ export class BlockMetaService extends StoreExtension {
     const now = getNow();
 
     this.store.withoutTransact(() => {
-      const isFlatModel = model.schema.model.isFlatData;
-      if (!isFlatModel) {
-        model['meta:updatedAt'] = now;
-        model['meta:updatedBy'] = writer.id;
-        if (!model['meta:createdAt']) {
-          model['meta:createdAt'] = now;
-        }
-        if (!model['meta:createdBy']) {
-          model['meta:createdBy'] = writer.id;
-        }
-        return;
-      }
-
       model.props['meta:updatedAt'] = now;
       model.props['meta:updatedBy'] = writer.id;
       if (!model.props['meta:createdAt']) {

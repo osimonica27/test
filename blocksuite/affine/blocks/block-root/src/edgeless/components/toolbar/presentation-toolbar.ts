@@ -345,7 +345,7 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
               class="edgeless-frame-navigator-title"
               @click=${() => this._moveToCurrentFrame()}
             >
-              ${frame?.title ?? 'no frame'}
+              ${frame?.props.title ?? 'no frame'}
             </span>`}
 
         <span class="edgeless-frame-navigator-count">

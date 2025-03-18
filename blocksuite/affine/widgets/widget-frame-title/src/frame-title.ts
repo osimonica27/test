@@ -38,7 +38,7 @@ export class AffineFrameTitle extends SignalWatcher(
   get colors() {
     let backgroundColor = this.std
       .get(ThemeProvider)
-      .getColorValue(this.model.background, undefined, true);
+      .getColorValue(this.model.props.background, undefined, true);
     if (isTransparent(backgroundColor)) {
       backgroundColor = this.std
         .get(ThemeProvider)
@@ -206,14 +206,14 @@ export class AffineFrameTitle extends SignalWatcher(
     this._zoom = gfx.viewport.zoom;
 
     const updateTitle = () => {
-      this._frameTitle = this.model.title.toString().trim();
+      this._frameTitle = this.model.props.title.toString().trim();
     };
     _disposables.add(() => {
-      this.model.title.yText.unobserve(updateTitle);
+      this.model.props.title.yText.unobserve(updateTitle);
     });
-    this.model.title.yText.observe(updateTitle);
+    this.model.props.title.yText.observe(updateTitle);
 
-    this._frameTitle = this.model.title.toString().trim();
+    this._frameTitle = this.model.props.title.toString().trim();
     this._xywh = this.model.xywh;
   }
 

@@ -88,7 +88,7 @@ export const builtinToolbarConfig = {
             .actions=${actions}
             .context=${ctx}
             .toggle=${toggle}
-            .style$=${model.style$}
+            .style=${model.props.style$}
           ></affine-card-style-dropdown-menu>`
         )}`;
       },

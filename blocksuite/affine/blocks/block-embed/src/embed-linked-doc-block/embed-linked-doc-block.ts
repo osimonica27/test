@@ -102,7 +102,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     }
 
     if (!this.isError) {
-      const cardStyle = this.model.style;
+      const cardStyle = this.model.props.style;
       if (cardStyle === 'horizontal' || cardStyle === 'vertical') {
         renderLinkedDocInCard(this);
       }
@@ -118,7 +118,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   };
 
   private readonly _setDocUpdatedAt = () => {
-    const meta = this.doc.workspace.meta.getDocMeta(this.model.pageId);
+    const meta = this.doc.workspace.meta.getDocMeta(this.model.props.pageId);
     if (meta) {
       const date = meta.updatedDate || meta.createDate;
       this._docUpdatedAt = new Date(date);
@@ -130,7 +130,8 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   convertToEmbed = () => {
     if (this._referenceToNode) return;
 
-    const { doc, caption, parent } = this.model;
+    const { caption } = this.model.props;
+    const { parent, doc } = this.model;
     const index = parent?.children.indexOf(this.model);
 
     const blockId = doc.addBlock(
@@ -181,7 +182,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   };
 
   referenceInfo$ = computed(() => {
-    const { pageId, params, title$, description$ } = this.model;
+    const { pageId, params, title$, description$ } = this.model.props;
     return cloneReferenceInfo({
       pageId,
       params,
@@ -229,7 +230,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   });
 
   get docTitle() {
-    return this.model.title || this.linkedDoc?.meta?.title || 'Untitled';
+    return this.model.props.title || this.linkedDoc?.meta?.title || 'Untitled';
   }
 
   get editorMode() {
@@ -237,8 +238,8 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   }
 
   get linkedDoc() {
-    return this.std.workspace.getDoc(this.model.pageId, {
-      id: this.model.pageId,
+    return this.std.workspace.getDoc(this.model.props.pageId, {
+      id: this.model.props.pageId,
     });
   }
 
@@ -275,8 +276,8 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   override connectedCallback() {
     super.connectedCallback();
 
-    this._cardStyle = this.model.style;
-    this._referenceToNode = referenceToNode(this.model);
+    this._cardStyle = this.model.props.style;
+    this._referenceToNode = referenceToNode(this.model.props);
 
     this._load().catch(e => {
       console.error(e);
@@ -325,14 +326,14 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       );
 
       if (this._referenceToNode) {
-        this._linkedDocMode = this.model.params?.mode ?? 'page';
+        this._linkedDocMode = this.model.props.params?.mode ?? 'page';
       } else {
         const docMode = this.std.get(DocModeProvider);
-        this._linkedDocMode = docMode.getPrimaryMode(this.model.pageId);
+        this._linkedDocMode = docMode.getPrimaryMode(this.model.props.pageId);
         this.disposables.add(
           docMode.onPrimaryModeChange(mode => {
             this._linkedDocMode = mode;
-          }, this.model.pageId)
+          }, this.model.props.pageId)
         );
       }
     }
@@ -340,7 +341,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     this.disposables.add(
       this.model.propsUpdated.subscribe(({ key }) => {
         if (key === 'style') {
-          this._cardStyle = this.model.style;
+          this._cardStyle = this.model.props.style;
         }
         if (key === 'pageId' || key === 'style') {
           this._load().catch(e => {
@@ -395,7 +396,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
         ? LoadingIcon
         : this.icon$.value;
     const title = isLoading ? 'Loading...' : this.title$;
-    const description = this.model.description$;
+    const description = this.model.props.description$;
 
     const showDefaultNoteContent = isError || isLoading || isDeleted || isEmpty;
     const defaultNoteContent = isError
@@ -503,7 +504,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   override updated() {
     // update card style when linked doc deleted
     const linkedDoc = this.linkedDoc;
-    const { xywh, style } = this.model;
+    const { xywh, style } = this.model.props;
     const bound = Bound.deserialize(xywh);
     if (linkedDoc && style === 'horizontalThin') {
       bound.w = EMBED_CARD_WIDTH.horizontal;

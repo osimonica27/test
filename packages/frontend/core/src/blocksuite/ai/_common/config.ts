@@ -287,7 +287,7 @@ const GenerateWithAIGroup: AIItemGroupConfig = {
         return selectedModels.every(
           model =>
             matchModels(model, [ParagraphBlockModel, ListBlockModel]) &&
-            !model.type.startsWith('h')
+            !model.props.type.startsWith('h')
         );
       },
     },

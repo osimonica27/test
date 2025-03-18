@@ -11,7 +11,10 @@ export function toCode(
   prefixText: string,
   language: string | null
 ) {
-  if (matchModels(model, [ParagraphBlockModel]) && model.type === 'quote') {
+  if (
+    matchModels(model, [ParagraphBlockModel]) &&
+    model.props.type === 'quote'
+  ) {
     return;
   }
 

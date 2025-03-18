@@ -5,6 +5,10 @@ import { css, html, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 
 const styles = css`
+  affine-frame-panel {
+    flex-grow: 1;
+  }
+
   frame-panel {
     display: block;
     width: 100%;

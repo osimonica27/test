@@ -185,6 +185,12 @@ export class LinkedDocPopover extends SignalWatcher(
           event.stopPropagation();
           return;
         }
+        if (event.key === 'Escape') {
+          this.context.close();
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
         next();
       },
       onInput: isComposition => {

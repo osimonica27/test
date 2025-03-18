@@ -49,7 +49,7 @@ export function getLastNoteBlock(doc: Store) {
     const child = children[i];
     if (
       matchModels(child, [NoteBlockModel]) &&
-      child.displayMode !== NoteDisplayMode.EdgelessOnly
+      child.props.displayMode !== NoteDisplayMode.EdgelessOnly
     ) {
       note = child as NoteBlockModel;
       break;
@@ -65,7 +65,7 @@ export function getFirstNoteBlock(doc: Store) {
   for (const child of children) {
     if (
       matchModels(child, [NoteBlockModel]) &&
-      child.displayMode !== NoteDisplayMode.EdgelessOnly
+      child.props.displayMode !== NoteDisplayMode.EdgelessOnly
     ) {
       note = child as NoteBlockModel;
       break;

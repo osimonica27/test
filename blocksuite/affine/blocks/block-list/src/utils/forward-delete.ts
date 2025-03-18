@@ -27,12 +27,12 @@ export function forwardDelete(std: BlockStdScope): true | undefined {
   const doc = std.store;
   const model = doc.getBlock(text.from.blockId)?.model;
   if (!model || !matchModels(model, [ListBlockModel])) return;
-  const isEnd = isCollapsed && text.from.index === model.text.length;
+  const isEnd = isCollapsed && text.from.index === model.props.text.length;
   if (!isEnd) return;
   // Has children in list
   const firstChild = model.firstChild();
   if (firstChild) {
-    model.text.join(firstChild.text as Text);
+    model.props.text.join(firstChild.text as Text);
     const grandChildren = firstChild.children;
     if (grandChildren) {
       doc.moveBlocks(grandChildren, model);
@@ -49,7 +49,7 @@ export function forwardDelete(std: BlockStdScope): true | undefined {
   const nextSibling = doc.getNext(model);
   const nextText = nextSibling?.text;
   if (nextSibling && nextText) {
-    model.text.join(nextText);
+    model.props.text.join(nextText);
     if (nextSibling.children) {
       if (!parent) return;
       doc.moveBlocks(nextSibling.children, parent, model, false);
@@ -63,7 +63,7 @@ export function forwardDelete(std: BlockStdScope): true | undefined {
   const nextBlock = getNextContentBlock(std.host, model);
   const nextBlockText = nextBlock?.text;
   if (nextBlock && nextBlockText) {
-    model.text.join(nextBlock.text as Text);
+    model.props.text.join(nextBlock.text as Text);
     if (nextBlock.children) {
       const nextBlockParent = doc.getParent(nextBlock);
       if (!nextBlockParent) return;

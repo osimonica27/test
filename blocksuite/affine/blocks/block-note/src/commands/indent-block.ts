@@ -51,8 +51,8 @@ export const indentBlock: Command<{
 
   if (
     matchModels(model, [ParagraphBlockModel]) &&
-    model.type.startsWith('h') &&
-    model.collapsed
+    model.props.type.startsWith('h') &&
+    model.props.collapsed
   ) {
     const collapsedSiblings = calculateCollapsedSiblings(model);
     store.moveBlocks([model, ...collapsedSiblings], previousSibling);
@@ -63,7 +63,7 @@ export const indentBlock: Command<{
   // update collapsed state of affine list
   if (
     matchModels(previousSibling, [ListBlockModel]) &&
-    previousSibling.collapsed
+    previousSibling.props.collapsed
   ) {
     store.updateBlock(previousSibling, {
       collapsed: false,

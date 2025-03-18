@@ -68,7 +68,7 @@ export async function uploadBlobForImage(
   } finally {
     setImageUploaded(blockId);
 
-    const imageModel = doc.getBlockById(blockId) as ImageBlockModel | null;
+    const imageModel = doc.getModelById(blockId) as ImageBlockModel | null;
     if (sourceId && imageModel) {
       const props: Partial<ImageBlockProps> = {
         sourceId,
@@ -97,7 +97,7 @@ export async function uploadBlobForImage(
 }
 
 async function getImageBlob(model: ImageBlockModel) {
-  const sourceId = model.sourceId;
+  const sourceId = model.props.sourceId;
   if (!sourceId) {
     return null;
   }
@@ -131,7 +131,7 @@ export async function fetchImageBlob(
   block: ImageBlockComponent | ImageEdgelessBlockComponent
 ) {
   try {
-    if (block.model.sourceId !== block.lastSourceId || !block.blobUrl) {
+    if (block.model.props.sourceId !== block.lastSourceId || !block.blobUrl) {
       block.loading = true;
       block.error = false;
       block.blob = undefined;
@@ -145,7 +145,8 @@ export async function fetchImageBlob(
     }
 
     const { model } = block;
-    const { id, sourceId, doc } = model;
+    const { sourceId } = model.props;
+    const { id, doc } = model;
 
     if (isImageUploading(id)) {
       return;
@@ -405,7 +406,7 @@ export async function turnImageIntoCardView(
   }
 
   const model = block.model;
-  const sourceId = model.sourceId;
+  const sourceId = model.props.sourceId;
   const blob = await getImageBlob(model);
   if (!sourceId || !blob) {
     console.error('Image data not available');
@@ -413,14 +414,17 @@ export async function turnImageIntoCardView(
   }
 
   const { saveImageData, getAttachmentData } = withTempBlobData();
-  saveImageData(sourceId, { width: model.width, height: model.height });
+  saveImageData(sourceId, {
+    width: model.props.width,
+    height: model.props.height,
+  });
   const attachmentConvertData = getAttachmentData(sourceId);
   const attachmentProp: Partial<AttachmentBlockProps> = {
     sourceId,
     name: DEFAULT_ATTACHMENT_NAME,
     size: blob.size,
     type: blob.type,
-    caption: model.caption,
+    caption: model.props.caption,
     ...attachmentConvertData,
   };
   transformModel(model, 'affine:attachment', attachmentProp);

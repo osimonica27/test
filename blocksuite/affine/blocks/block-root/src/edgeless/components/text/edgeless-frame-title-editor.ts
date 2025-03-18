@@ -158,7 +158,7 @@ export class EdgelessFrameTitleEditor extends WithDisposable(
 
     return html`<div class="frame-title-editor" style=${inlineEditorStyle}>
       <rich-text
-        .yText=${this.frameModel.title.yText}
+        .yText=${this.frameModel.props.title.yText}
         .enableFormat=${false}
         .enableAutoScrollHorizontally=${false}
         style=${richTextStyle}

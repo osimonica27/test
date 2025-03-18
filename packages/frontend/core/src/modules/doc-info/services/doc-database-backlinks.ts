@@ -98,7 +98,7 @@ export class DocDatabaseBacklinksService extends Service {
                 doc: docRef.doc,
                 docId: backlink.docId,
                 databaseId: dbModel.id,
-                databaseName: dbModel.title.yText.toString(),
+                databaseName: dbModel.props.title.yText.toString(),
                 dataSource: dataSource,
               });
             } else {

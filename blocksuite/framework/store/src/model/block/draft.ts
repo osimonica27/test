@@ -11,18 +11,17 @@ export type DraftModel<Model extends BlockModel = BlockModel> = Pick<
   PropsInDraft
 > & {
   children: DraftModel[];
-} & ModelProps<Model> & {
-    [draftModelSymbol]: true;
-  };
+  props: ModelProps<Model>;
+  [draftModelSymbol]: true;
+};
 
 export function toDraftModel<Model extends BlockModel = BlockModel>(
   origin: Model
 ): DraftModel<Model> {
   const { id, version, flavour, role, keys, text, children } = origin;
 
-  const isFlatData = origin.schema.model.isFlatData;
   const props = origin.keys.reduce((acc, key) => {
-    const target = isFlatData ? origin.props : origin;
+    const target = origin.props;
     const value = target[key as keyof typeof target];
     return {
       ...acc,
@@ -38,6 +37,6 @@ export function toDraftModel<Model extends BlockModel = BlockModel>(
     keys,
     text,
     children: children.map(toDraftModel),
-    ...props,
+    props,
   } as DraftModel<Model>;
 }

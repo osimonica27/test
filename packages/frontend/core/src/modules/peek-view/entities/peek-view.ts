@@ -147,7 +147,7 @@ function resolvePeekInfoFromPeekTarget(
         isEmbedLinkedDocModel(blockModel) ||
         isEmbedSyncedDocModel(blockModel)
       ) {
-        const { pageId: docId, params } = blockModel;
+        const { pageId: docId, params } = blockModel.props;
         const info: DocPeekViewInfo = {
           type: 'doc',
           docRef: { docId, ...params },
@@ -174,7 +174,7 @@ function resolvePeekInfoFromPeekTarget(
           docRef: {
             docId: blockModel.doc.id,
             blockIds: [blockModel.id],
-            filetype: blockModel.type,
+            filetype: blockModel.props.type,
           },
         };
       } else if (isImageBlockModel(blockModel)) {

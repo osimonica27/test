@@ -43,7 +43,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
       return;
     }
 
-    if (!this.model.hasMaxWidth) {
+    if (!this.model.props.hasMaxWidth) {
       this._updateW();
     }
 
@@ -213,14 +213,14 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
       );
     });
     disposables.addFromEvent(this, 'compositionend', () => {
-      if (this.model.hasMaxWidth) {
+      if (this.model.props.hasMaxWidth) {
         composingWidth = EDGELESS_TEXT_BLOCK_MIN_WIDTH;
         return;
       }
       // when IME finish container will crash to a small width, so
       // we set a max width to prevent this
       this._textContainer.style.width = `${composingWidth}px`;
-      this.model.hasMaxWidth = true;
+      this.model.props.hasMaxWidth = true;
       requestAnimationFrame(() => {
         this._textContainer.style.width = '';
       });
@@ -237,11 +237,11 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
     const deltaX = scaledX - bound.x;
     const deltaY = scaledY - bound.y;
 
-    return `translate(${translateX + deltaX}px, ${translateY + deltaY}px) scale(${zoom * this.model.scale})`;
+    return `translate(${translateX + deltaX}px, ${translateY + deltaY}px) scale(${zoom * this.model.props.scale})`;
   }
 
   override getRenderingRect() {
-    const { xywh, scale, rotate, hasMaxWidth } = this.model;
+    const { xywh, scale, rotate, hasMaxWidth } = this.model.props;
     const bound = Bound.deserialize(xywh);
     const w = hasMaxWidth ? bound.w / scale : undefined;
 
@@ -257,7 +257,7 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
 
   override renderGfxBlock() {
     const { model } = this;
-    const { rotate, hasMaxWidth } = model;
+    const { rotate, hasMaxWidth } = model.props;
     const editing = this._editing;
     const containerStyle: StyleInfo = {
       transform: `rotate(${rotate}deg)`,
@@ -291,10 +291,10 @@ export class EdgelessTextBlockComponent extends GfxBlockComponent<EdgelessTextBl
   }
 
   override renderPageContent() {
-    const { fontFamily, fontStyle, fontWeight, textAlign } = this.model;
+    const { fontFamily, fontStyle, fontWeight, textAlign } = this.model.props;
     const color = this.std
       .get(ThemeProvider)
-      .generateColorProperty(this.model.color, '#000000');
+      .generateColorProperty(this.model.props.color, '#000000');
 
     const style = styleMap({
       '--edgeless-text-color': color,

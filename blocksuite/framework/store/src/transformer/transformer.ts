@@ -293,7 +293,7 @@ export class Transformer {
       }
 
       const contentBlocks = blockTree.children
-        .map(tree => doc.getBlockById(tree.draft.id))
+        .map(tree => doc.getModelById(tree.draft.id))
         .filter((x): x is BlockModel => x !== null)
         .map(model => toDraftModel(model));
 
@@ -457,8 +457,8 @@ export class Transformer {
         id: flat.snapshot.id,
         flavour: flat.snapshot.flavour,
         children: [],
-        ...props,
-      } as DraftModel;
+        props,
+      } as unknown as DraftModel;
     } catch (error) {
       console.error(`Error when transforming snapshot to model data:`);
       console.error(error);
@@ -529,7 +529,7 @@ export class Transformer {
 
       const actualIndex =
         startIndex !== undefined ? startIndex + index : undefined;
-      doc.addBlock(flavour, draft as object, parentId, actualIndex);
+      doc.addBlock(flavour, { id, ...draft.props }, parentId, actualIndex);
 
       const model = doc.getBlock(id)?.model;
       if (!model) {

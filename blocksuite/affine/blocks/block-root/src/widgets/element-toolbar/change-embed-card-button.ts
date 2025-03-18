@@ -147,7 +147,8 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
       return;
     }
 
-    const { id, url, xywh, style, caption } = this.model;
+    const { xywh, style, caption } = this.model.props;
+    const { id, url } = this.model;
 
     let targetFlavour = 'affine:bookmark',
       targetStyle = style;
@@ -207,7 +208,8 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
 
     const { flavour, styles } = this._embedOptions;
 
-    const { id, url, xywh, style } = this.model;
+    const { id, url, xywh } = this.model;
+    const { style } = this.model.props;
 
     const targetStyle = styles.includes(style) ? style : styles[0];
 
@@ -241,12 +243,12 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
   private readonly _copyUrl = () => {
     let url!: ReturnType<GenerateDocUrlService['generateDocUrl']>;
 
-    if ('url' in this.model) {
-      url = this.model.url;
+    if ('url' in this.model.props) {
+      url = this.model.props.url;
     } else if (isInternalEmbedModel(this.model)) {
       url = this.std
         .getOptional(GenerateDocUrlProvider)
-        ?.generateDocUrl(this.model.pageId, this.model.params);
+        ?.generateDocUrl(this.model.props.pageId, this.model.props.params);
     }
 
     if (!url) return;
@@ -263,14 +265,14 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
   private _embedOptions: EmbedOptions | null = null;
 
   private readonly _getScale = () => {
-    if ('scale' in this.model) {
-      return this.model.scale ?? 1;
+    if ('scale' in this.model.props) {
+      return this.model.props.scale ?? 1;
     } else if (isEmbedHtmlBlock(this.model)) {
       return 1;
     }
 
     const bound = Bound.deserialize(this.model.xywh);
-    return bound.h / EMBED_CARD_HEIGHT[this.model.style];
+    return bound.h / EMBED_CARD_HEIGHT[this.model.props.style];
   };
 
   private readonly _open = ({ openMode }: { openMode?: OpenDocMode } = {}) => {
@@ -343,16 +345,16 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
     if (isEmbedHtmlBlock(this.model)) return;
 
     const bound = Bound.deserialize(this.model.xywh);
-    if ('scale' in this.model) {
-      const oldScale = this.model.scale ?? 1;
+    if ('scale' in this.model.props) {
+      const oldScale = this.model.props.scale ?? 1;
       const ratio = scale / oldScale;
       bound.w *= ratio;
       bound.h *= ratio;
       const xywh = bound.serialize();
       this.model.doc.updateBlock(this.model, { scale, xywh });
     } else {
-      bound.h = EMBED_CARD_HEIGHT[this.model.style] * scale;
-      bound.w = EMBED_CARD_WIDTH[this.model.style] * scale;
+      bound.h = EMBED_CARD_HEIGHT[this.model.props.style] * scale;
+      bound.w = EMBED_CARD_WIDTH[this.model.props.style] * scale;
       const xywh = bound.serialize();
       this.model.doc.updateBlock(this.model, { xywh });
     }
@@ -456,9 +458,9 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
     }
     return (
       isEmbedLinkedDocBlock(this.model) &&
-      (referenceToNode(this.model) ||
+      (referenceToNode(this.model.props) ||
         !!this._blockComponent?.closest('affine-embed-synced-doc-block') ||
-        this.model.pageId === this._doc.id)
+        this.model.props.pageId === this._doc.id)
     );
   }
 
@@ -516,7 +518,7 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
   get _originalDocInfo(): AliasInfo | undefined {
     const model = this.model;
     const doc = isInternalEmbedModel(model)
-      ? this.std.workspace.getDoc(model.pageId)
+      ? this.std.workspace.getDoc(model.props.pageId)
       : null;
 
     if (doc) {
@@ -533,7 +535,7 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
   get _originalDocTitle() {
     const model = this.model;
     const doc = isInternalEmbedModel(model)
-      ? this.std.workspace.getDoc(model.pageId)
+      ? this.std.workspace.getDoc(model.props.pageId)
       : null;
 
     return doc?.meta?.title || 'Untitled';
@@ -582,7 +584,7 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
           type: item.type,
           icon: item.icon,
           disabled:
-            this.model.pageId === this._doc.id &&
+            this.model.props.pageId === this._doc.id &&
             item.type === 'open-in-active-view',
           action: () => {
             if (item.type === 'open-in-center-peek') {
@@ -723,30 +725,30 @@ export class EdgelessChangeEmbedCardButton extends WithDisposable(LitElement) {
     const model = this.model;
     const isHtmlBlockModel = isEmbedHtmlBlock(model);
 
-    if ('url' in this.model) {
+    if ('url' in this.model.props) {
       this._embedOptions = this.std
         .get(EmbedOptionProvider)
-        .getEmbedBlockOptions(this.model.url);
+        .getEmbedBlockOptions(this.model.props.url);
     }
 
     const buttons = [
       this._openMenuButton(),
 
-      this._canShowUrlOptions && 'url' in model
+      this._canShowUrlOptions && 'url' in model.props
         ? html`
             <a
               class="affine-link-preview"
-              href=${model.url}
+              href=${model.props.url}
               rel="noopener noreferrer"
               target="_blank"
             >
-              <span>${getHostName(model.url)}</span>
+              <span>${getHostName(model.props.url)}</span>
             </a>
           `
         : nothing,
 
       // internal embed model
-      isEmbedLinkedDocBlock(model) && model.title
+      isEmbedLinkedDocBlock(model) && model.props.title
         ? html`
             <editor-icon-button
               class="doc-title"

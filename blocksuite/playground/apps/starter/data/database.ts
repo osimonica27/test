@@ -27,7 +27,7 @@ export const database: InitFn = (collection: Workspace, id: string) => {
     // Add note block inside root block
     const noteId = doc.addBlock('affine:note', {}, rootId);
     const pId = doc.addBlock('affine:paragraph', {}, noteId);
-    const model = doc.getBlockById(pId);
+    const model = doc.getModelById(pId);
     if (!model) {
       throw new Error('model is not found');
     }
@@ -40,10 +40,10 @@ export const database: InitFn = (collection: Workspace, id: string) => {
         },
         noteId
       );
-      const database = doc.getBlockById(databaseId) as DatabaseBlockModel;
+      const database = doc.getModelById(databaseId) as DatabaseBlockModel;
       const datasource = new DatabaseBlockDataSource(database);
       datasource.viewManager.viewAdd('table');
-      database.title = new Text(title);
+      database.props.title = new Text(title);
       const richTextId = datasource.propertyAdd(
         'end',
         databaseBlockColumns.richTextColumnConfig.type
@@ -61,7 +61,7 @@ export const database: InitFn = (collection: Workspace, id: string) => {
       if (group) {
         const groupTrait =
           datasource.viewManager.currentView$.value?.traitGet(groupTraitKey);
-        groupTrait?.changeGroup(database.columns[1].id);
+        groupTrait?.changeGroup(database.props.columns[1].id);
       }
       const paragraphTypes: ParagraphType[] = [
         'text',

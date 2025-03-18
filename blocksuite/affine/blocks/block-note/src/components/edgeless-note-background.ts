@@ -44,13 +44,13 @@ export class EdgelessNoteBackground extends SignalWatcher(
     const themeProvider = this.std.get(ThemeProvider);
     const theme = themeProvider.theme$.value;
     const backgroundColor = themeProvider.generateColorProperty(
-      this.note.background$.value,
+      this.note.props.background$.value,
       DefaultTheme.noteBackgrounColor,
       theme
     );
 
     const { borderRadius, borderSize, borderStyle, shadowType } =
-      this.note.edgeless$.value.style;
+      this.note.props.edgeless$.value.style;
 
     return {
       borderRadius: borderRadius + 'px',

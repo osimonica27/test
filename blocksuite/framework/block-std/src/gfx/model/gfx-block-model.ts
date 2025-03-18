@@ -63,6 +63,42 @@ export class GfxBlockElementModel<
 
   connectable = true;
 
+  get xywh() {
+    return this.props.xywh;
+  }
+
+  get xywh$() {
+    return this.props.xywh$;
+  }
+
+  set xywh(xywh: SerializedXYWH) {
+    this.props.xywh = xywh;
+  }
+
+  get index() {
+    return this.props.index;
+  }
+
+  get index$() {
+    return this.props.index$;
+  }
+
+  set index(index: string) {
+    this.props.index = index;
+  }
+
+  get lockedBySelf(): boolean | undefined {
+    return this.props.lockedBySelf;
+  }
+
+  get lockedBySelf$() {
+    return this.props.lockedBySelf$;
+  }
+
+  set lockedBySelf(lockedBySelf: boolean | undefined) {
+    this.props.lockedBySelf = lockedBySelf;
+  }
+
   /**
    * Defines the extension of the response area beyond the element's bounding box.
    * This tuple specifies the horizontal and vertical margins to be added to the element's [x, y, width, height].

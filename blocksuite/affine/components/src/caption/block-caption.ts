@@ -121,12 +121,12 @@ export class BlockCaptionEditor<
   override connectedCallback(): void {
     super.connectedCallback();
 
-    this.caption = this.model.caption;
+    this.caption = this.model.props.caption;
 
     this.disposables.add(
       this.model.propsUpdated.subscribe(({ key }) => {
         if (key === 'caption') {
-          this.caption = this.model.caption;
+          this.caption = this.model.props.caption;
           if (!this._focus) {
             this.display = !!this.caption?.length;
           }

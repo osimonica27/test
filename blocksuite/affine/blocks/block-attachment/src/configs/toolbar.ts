@@ -100,7 +100,7 @@ const createAttachmentViewDropdownMenuWith = <T extends SelectionConstructor>(
       const actions = this.actions.map(action => ({ ...action }));
       const viewType$ = computed(() => {
         const [cardAction, embedAction] = actions;
-        const embed = model.embed$.value ?? false;
+        const embed = model.props.embed$.value ?? false;
 
         cardAction.disabled = !embed;
         embedAction.disabled = embed && embedProvider.embedded(model);

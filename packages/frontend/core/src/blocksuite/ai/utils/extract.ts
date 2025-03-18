@@ -145,7 +145,7 @@ export async function extractPageAll(
   const blobs = await Promise.all(
     blockModels.map(async s => {
       if (s.flavour !== 'affine:image') return null;
-      const sourceId = (s as ImageBlockModel)?.sourceId;
+      const sourceId = (s as ImageBlockModel)?.props.sourceId;
       if (!sourceId) return null;
       const blob = await (sourceId ? host.doc.blobSync.get(sourceId) : null);
       if (!blob) return null;
@@ -190,7 +190,7 @@ function getNoteBlockModels(doc: Store) {
     .getBlocksByFlavour('affine:note')
     .filter(
       note =>
-        (note.model as NoteBlockModel).displayMode !==
+        (note.model as NoteBlockModel).props.displayMode !==
         NoteDisplayMode.EdgelessOnly
     )
     .map(note => note.model as NoteBlockModel);

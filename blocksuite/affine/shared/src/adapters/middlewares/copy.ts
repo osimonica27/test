@@ -25,7 +25,7 @@ const handlePoint = (
   if (isRootDraftModel(model)) {
     if (length === 0) return;
     (snapshot.props.title as Record<string, unknown>).delta =
-      model.title.sliceToDelta(index, length + index);
+      model.props.title.sliceToDelta(index, length + index);
     return;
   }
 

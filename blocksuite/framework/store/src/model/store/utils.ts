@@ -19,7 +19,7 @@ export function syncBlockProps(
     if (value === undefined) return;
 
     // @ts-expect-error allow props
-    model[key] = value;
+    model.props[key] = value;
   });
 
   // set default value

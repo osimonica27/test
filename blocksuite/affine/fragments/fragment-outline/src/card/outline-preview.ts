@@ -45,8 +45,8 @@ export class OutlineBlockPreview extends SignalWatcher(
 
   private _TextBlockPreview(block: ParagraphBlockModel | ListBlockModel) {
     const deltas: DeltaInsert<AffineTextAttributes>[] =
-      block.text.yText.toDelta();
-    if (!block.text.length) return nothing;
+      block.props.text.yText.toDelta();
+    if (!block.props.text.length) return nothing;
     const iconClass = this.disabledIcon ? styles.iconDisabled : styles.icon;
 
     const previewText = deltas.map(delta => {
@@ -90,17 +90,21 @@ export class OutlineBlockPreview extends SignalWatcher(
     });
 
     const headingClass =
-      block.type in styles.subtypeStyles
-        ? styles.subtypeStyles[block.type as keyof typeof styles.subtypeStyles]
+      block.props.type in styles.subtypeStyles
+        ? styles.subtypeStyles[
+            block.props.type as keyof typeof styles.subtypeStyles
+          ]
         : '';
 
     return html`<span
-        data-testid="outline-block-preview-${block.type}"
+        data-testid="outline-block-preview-${block.props.type}"
         class="${styles.text} ${styles.textGeneral} ${headingClass}"
         >${previewText}</span
       >
       ${this._context.showIcons$.value
-        ? html`<span class=${iconClass}>${previewIconMap[block.type]}</span>`
+        ? html`<span class=${iconClass}
+            >${previewIconMap[block.props.type]}</span
+          >`
         : nothing}`;
   }
 
@@ -126,12 +130,12 @@ export class OutlineBlockPreview extends SignalWatcher(
     switch (block.flavour) {
       case 'affine:page':
         assertType<RootBlockModel>(block);
-        return block.title.length > 0
+        return block.props.title.length > 0
           ? html`<span
               data-testid="outline-block-preview-title"
               class="${styles.text} ${styles.subtypeStyles.title}"
             >
-              ${block.title$.value}
+              ${block.props.title$.value}
             </span>`
           : nothing;
       case 'affine:paragraph':
@@ -144,7 +148,9 @@ export class OutlineBlockPreview extends SignalWatcher(
         assertType<BookmarkBlockModel>(block);
         return html`
           <span class="${styles.text} ${styles.textGeneral}"
-            >${block.title || block.url || placeholderMap['bookmark']}</span
+            >${block.props.title ||
+            block.props.url ||
+            placeholderMap['bookmark']}</span
           >
           ${showPreviewIcon
             ? html`<span class=${iconClass}
@@ -156,7 +162,7 @@ export class OutlineBlockPreview extends SignalWatcher(
         assertType<CodeBlockModel>(block);
         return html`
           <span class="${styles.text} ${styles.textGeneral}"
-            >${block.language ?? placeholderMap['code']}</span
+            >${block.props.language ?? placeholderMap['code']}</span
           >
           ${showPreviewIcon
             ? html`<span class=${iconClass}>${previewIconMap['code']}</span>`
@@ -166,8 +172,8 @@ export class OutlineBlockPreview extends SignalWatcher(
         assertType<DatabaseBlockModel>(block);
         return html`
           <span class="${styles.text} ${styles.textGeneral}"
-            >${block.title.toString().length
-              ? block.title.toString()
+            >${block.props.title.toString().length
+              ? block.props.title.toString()
               : placeholderMap['database']}</span
           >
           ${showPreviewIcon
@@ -178,8 +184,8 @@ export class OutlineBlockPreview extends SignalWatcher(
         assertType<ImageBlockModel>(block);
         return html`
           <span class="${styles.text} ${styles.textGeneral}"
-            >${block.caption?.length
-              ? block.caption
+            >${block.props.caption?.length
+              ? block.props.caption
               : placeholderMap['image']}</span
           >
           ${showPreviewIcon
@@ -190,8 +196,8 @@ export class OutlineBlockPreview extends SignalWatcher(
         assertType<AttachmentBlockModel>(block);
         return html`
           <span class="${styles.text} ${styles.textGeneral}"
-            >${block.name?.length
-              ? block.name
+            >${block.props.name?.length
+              ? block.props.name
               : placeholderMap['attachment']}</span
           >
           ${showPreviewIcon

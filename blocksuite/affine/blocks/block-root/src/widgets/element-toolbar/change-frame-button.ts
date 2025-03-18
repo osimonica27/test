@@ -34,7 +34,7 @@ function getMostCommonColor(
   colorScheme: ColorScheme
 ): string {
   const colors = countBy(elements, (ele: FrameBlockModel) =>
-    resolveColor(ele.background, colorScheme)
+    resolveColor(ele.props.background, colorScheme)
   );
   const max = maxBy(Object.entries(colors), ([_k, count]) => count);
   return max ? (max[0] as string) : 'transparent';
@@ -73,7 +73,7 @@ export class EdgelessChangeFrameButton extends WithDisposable(LitElement) {
     const notes = rootModel.children.filter(
       model =>
         matchModels(model, [NoteBlockModel]) &&
-        model.displayMode !== NoteDisplayMode.EdgelessOnly
+        model.props.displayMode !== NoteDisplayMode.EdgelessOnly
     );
     const lastNote = notes[notes.length - 1];
     const referenceFrame = this.frames[0];
@@ -180,7 +180,7 @@ export class EdgelessChangeFrameButton extends WithDisposable(LitElement) {
             .pick=${this.pickColor}
             .color=${background}
             .theme=${colorScheme}
-            .originalColor=${this.frames[0].background}
+            .originalColor=${this.frames[0].props.background}
             .enableCustomColor=${enableCustomColor}
           >
           </edgeless-color-picker-button>

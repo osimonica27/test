@@ -20,7 +20,7 @@ export function addProperty(
   }
 ): string {
   const id = column.id ?? model.doc.workspace.idGenerator();
-  if (model.columns.some(v => v.id === id)) {
+  if (model.props.columns.some(v => v.id === id)) {
     return id;
   }
   model.doc.transact(() => {
@@ -28,8 +28,8 @@ export function addProperty(
       ...column,
       id,
     };
-    model.columns.splice(
-      insertPositionToIndex(position, model.columns),
+    model.props.columns.splice(
+      insertPositionToIndex(position, model.props.columns),
       0,
       col
     );
@@ -43,10 +43,10 @@ export function copyCellsByProperty(
   toId: Column['id']
 ) {
   model.doc.transact(() => {
-    Object.keys(model.cells).forEach(rowId => {
-      const cell = model.cells[rowId]?.[fromId];
-      if (cell && model.cells[rowId]) {
-        model.cells[rowId][toId] = {
+    Object.keys(model.props.cells).forEach(rowId => {
+      const cell = model.props.cells[rowId]?.[fromId];
+      if (cell && model.props.cells[rowId]) {
+        model.props.cells[rowId][toId] = {
           ...cell,
           columnId: toId,
         };
@@ -59,18 +59,18 @@ export function deleteColumn(
   model: DatabaseBlockModel,
   columnId: Column['id']
 ) {
-  const index = model.columns.findIndex(v => v.id === columnId);
+  const index = model.props.columns.findIndex(v => v.id === columnId);
   if (index < 0) return;
 
   model.doc.transact(() => {
-    model.columns.splice(index, 1);
+    model.props.columns.splice(index, 1);
   });
 }
 
 export function deleteRows(model: DatabaseBlockModel, rowIds: string[]) {
   model.doc.transact(() => {
     for (const rowId of rowIds) {
-      delete model.cells[rowId];
+      delete model.props.cells[rowId];
     }
   });
 }
@@ -78,17 +78,17 @@ export function deleteRows(model: DatabaseBlockModel, rowIds: string[]) {
 export function deleteView(model: DatabaseBlockModel, id: string) {
   model.doc.captureSync();
   model.doc.transact(() => {
-    model.views = model.views.filter(v => v.id !== id);
+    model.props.views = model.props.views.filter(v => v.id !== id);
   });
 }
 
 export function duplicateView(model: DatabaseBlockModel, id: string): string {
   const newId = model.doc.workspace.idGenerator();
   model.doc.transact(() => {
-    const index = model.views.findIndex(v => v.id === id);
-    const view = model.views[index];
+    const index = model.props.views.findIndex(v => v.id === id);
+    const view = model.props.views[index];
     if (view) {
-      model.views.splice(
+      model.props.views.splice(
         index + 1,
         0,
         JSON.parse(JSON.stringify({ ...view, id: newId }))
@@ -109,7 +109,7 @@ export function getCell(
       value: rowId,
     };
   }
-  const yRow = model.cells$.value[rowId];
+  const yRow = model.props.cells$.value[rowId];
   const yCell = yRow?.[columnId] ?? null;
   if (!yCell) return null;
 
@@ -123,7 +123,7 @@ export function getProperty(
   model: DatabaseBlockModel,
   id: Column['id']
 ): Column | undefined {
-  return model.columns.find(v => v.id === id);
+  return model.props.columns.find(v => v.id === id);
 }
 
 export function moveViewTo(
@@ -132,8 +132,8 @@ export function moveViewTo(
   position: InsertToPosition
 ) {
   model.doc.transact(() => {
-    model.views = arrayMove(
-      model.views,
+    model.props.views = arrayMove(
+      model.props.views,
       v => v.id === id,
       arr => insertPositionToIndex(position, arr)
     );
@@ -163,11 +163,11 @@ export function updateCell(
       console.error('Invalid columnId');
       return;
     }
-    if (!model.cells[rowId]) {
-      model.cells[rowId] = Object.create(null);
+    if (!model.props.cells[rowId]) {
+      model.props.cells[rowId] = Object.create(null);
     }
-    if (model.cells[rowId]) {
-      model.cells[rowId][columnId] = {
+    if (model.props.cells[rowId]) {
+      model.props.cells[rowId][columnId] = {
         columnId: columnId,
         value: cell.value,
       };
@@ -189,11 +189,11 @@ export function updateCells(
       ) {
         throw new Error('Invalid rowId');
       }
-      if (!model.cells[rowId]) {
-        model.cells[rowId] = Object.create(null);
+      if (!model.props.cells[rowId]) {
+        model.props.cells[rowId] = Object.create(null);
       }
-      if (model.cells[rowId]) {
-        model.cells[rowId][columnId] = {
+      if (model.props.cells[rowId]) {
+        model.props.cells[rowId][columnId] = {
           columnId,
           value,
         };
@@ -208,17 +208,17 @@ export function updateProperty(
   updater: ColumnUpdater,
   defaultValue?: Record<string, unknown>
 ) {
-  const index = model.columns.findIndex(v => v.id === id);
+  const index = model.props.columns.findIndex(v => v.id === id);
   if (index == null) {
     return;
   }
   model.doc.transact(() => {
-    const column = model.columns[index];
+    const column = model.props.columns[index];
     if (!column) {
       return;
     }
     const result = updater(column);
-    model.columns[index] = { ...defaultValue, ...column, ...result };
+    model.props.columns[index] = { ...defaultValue, ...column, ...result };
   });
   return id;
 }
@@ -229,7 +229,7 @@ export const updateView = <ViewData extends ViewBasicDataType>(
   update: (data: ViewData) => Partial<ViewData>
 ) => {
   model.doc.transact(() => {
-    model.views = model.views.map(v => {
+    model.props.views = model.props.views.map(v => {
       if (v.id !== id) {
         return v;
       }

@@ -42,7 +42,7 @@ export class ImageEdgelessBlockComponent extends GfxBlockComponent<ImageBlockMod
     this.retryCount = 0;
     fetchImageBlob(this)
       .then(() => {
-        const { width, height } = this.model;
+        const { width, height } = this.model.props;
         if ((!width || !height) && this.blob) {
           return resetImageSize(this);
         }

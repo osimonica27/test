@@ -73,7 +73,7 @@ function getMostCommonBackground(
   colorScheme: ColorScheme
 ): string {
   const colors = countBy(elements, (ele: NoteBlockModel) =>
-    resolveColor(ele.background, colorScheme)
+    resolveColor(ele.props.background, colorScheme)
   );
   const max = maxBy(Object.entries(colors), ([_k, count]) => count);
   return max
@@ -90,9 +90,9 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     this.notes.forEach(note => {
       const props = {
         edgeless: {
-          ...note.edgeless,
+          ...note.props.edgeless,
           style: {
-            ...note.edgeless.style,
+            ...note.props.edgeless.style,
             borderRadius,
           },
         },
@@ -105,13 +105,13 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     this.notes.forEach(note => {
       this.doc.updateBlock(note, () => {
         const bound = Bound.deserialize(note.xywh);
-        const oldScale = note.edgeless.scale ?? 1;
+        const oldScale = note.props.edgeless.scale ?? 1;
         const ratio = scale / oldScale;
         bound.w *= ratio;
         bound.h *= ratio;
         const xywh = bound.serialize();
         note.xywh = xywh;
-        note.edgeless.scale = scale;
+        note.props.edgeless.scale = scale;
       });
     });
   };
@@ -155,19 +155,19 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
   private _setCollapse() {
     this.doc.captureSync();
     this.notes.forEach(note => {
-      const { collapse, collapsedHeight } = note.edgeless;
+      const { collapse, collapsedHeight } = note.props.edgeless;
 
       if (collapse) {
         this.doc.updateBlock(note, () => {
-          note.edgeless.collapse = false;
+          note.props.edgeless.collapse = false;
         });
       } else if (collapsedHeight) {
-        const { xywh, edgeless } = note;
+        const { xywh, edgeless } = note.props;
         const bound = Bound.deserialize(xywh);
         bound.h = collapsedHeight * (edgeless.scale ?? 1);
         this.doc.updateBlock(note, () => {
-          note.edgeless.collapse = true;
-          note.xywh = bound.serialize();
+          note.props.edgeless.collapse = true;
+          note.props.xywh = bound.serialize();
         });
       }
     });
@@ -175,7 +175,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
   }
 
   private _setDisplayMode(note: NoteBlockModel, newMode: NoteDisplayMode) {
-    const oldMode = note.displayMode;
+    const oldMode = note.props.displayMode;
     this.edgeless.std.command.exec(changeNoteDisplayMode, {
       noteId: note.id,
       mode: newMode,
@@ -268,9 +268,9 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     this.notes.forEach(note => {
       const props = {
         edgeless: {
-          ...note.edgeless,
+          ...note.props.edgeless,
           style: {
-            ...note.edgeless.style,
+            ...note.props.edgeless.style,
             shadowType,
           },
         },
@@ -283,9 +283,9 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     this.notes.forEach(note => {
       const props = {
         edgeless: {
-          ...note.edgeless,
+          ...note.props.edgeless,
           style: {
-            ...note.edgeless.style,
+            ...note.props.edgeless.style,
             borderStyle,
           },
         },
@@ -298,9 +298,9 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
     this.notes.forEach(note => {
       const props = {
         edgeless: {
-          ...note.edgeless,
+          ...note.props.edgeless,
           style: {
-            ...note.edgeless.style,
+            ...note.props.edgeless.style,
             borderSize,
           },
         },
@@ -322,7 +322,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
   override render() {
     const len = this.notes.length;
     const note = this.notes[0];
-    const { edgeless, displayMode } = note;
+    const { edgeless, displayMode } = note.props;
     const { shadowType, borderRadius, borderSize, borderStyle } =
       edgeless.style;
     const colorScheme = this.edgeless.surface.renderer.getColorScheme();
@@ -406,7 +406,7 @@ export class EdgelessChangeNoteButton extends WithDisposable(LitElement) {
               .colorPanelClass=${'small'}
               .theme=${colorScheme}
               .palettes=${DefaultTheme.NoteBackgroundColorPalettes}
-              .originalColor=${note.background}
+              .originalColor=${note.props.background}
               .enableCustomColor=${enableCustomColor}
             >
             </edgeless-color-picker-button>

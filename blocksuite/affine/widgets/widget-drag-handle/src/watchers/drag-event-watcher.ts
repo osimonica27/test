@@ -454,8 +454,8 @@ export class DragEventWatcher {
         // if block is toggled heading, should select all siblings
         if (
           block instanceof ParagraphBlockComponent &&
-          block.model.type.startsWith('h') &&
-          block.model.collapsed
+          block.model.props.type.startsWith('h') &&
+          block.model.props.collapsed
         ) {
           const collapsedSiblings = block.collapsedSiblings.flatMap(
             sibling => this.widget.host.view.getBlock(sibling.id) ?? []

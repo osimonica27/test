@@ -246,9 +246,9 @@ export class EmbedCardEditModal extends SignalWatcher(
   }
 
   private _updateInfo() {
-    const title = this.model.title || this.originalDocInfo?.title || '';
+    const title = this.model.props.title || this.originalDocInfo?.title || '';
     const description =
-      this.model.description || this.originalDocInfo?.description || '';
+      this.model.props.description || this.originalDocInfo?.description || '';
 
     this.title$.value = title;
     this.description$.value = description;
@@ -395,8 +395,8 @@ export class EmbedCardEditModal extends SignalWatcher(
   accessor resetButtonDisabled$ = computed<boolean>(
     () =>
       !(
-        Boolean(this.model.title$.value?.length) ||
-        Boolean(this.model.description$.value?.length)
+        Boolean(this.model.props.title?.length) ||
+        Boolean(this.model.props.description?.length)
       )
   );
 

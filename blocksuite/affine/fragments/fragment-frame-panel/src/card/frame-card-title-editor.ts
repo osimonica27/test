@@ -94,7 +94,7 @@ export class FrameCardTitleEditor extends WithDisposable(ShadowlessElement) {
       display: 'block',
     });
     return html`<rich-text
-      .yText=${this.frameModel.title.yText}
+      .yText=${this.frameModel.props.title.yText}
       .enableFormat=${false}
       .enableAutoScrollHorizontally=${true}
       .enableUndoRedo=${false}

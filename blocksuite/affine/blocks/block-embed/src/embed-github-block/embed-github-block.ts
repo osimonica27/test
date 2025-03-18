@@ -31,7 +31,7 @@ export class EmbedGithubBlockComponent extends EmbedBlockComponent<
   override _cardStyle: (typeof EmbedGithubStyles)[number] = 'horizontal';
 
   open = () => {
-    let link = this.model.url;
+    let link = this.model.props.url;
     if (!link.match(/^[a-zA-Z]+:\/\//)) {
       link = 'https://' + link;
     }
@@ -75,11 +75,15 @@ export class EmbedGithubBlockComponent extends EmbedBlockComponent<
 
   override connectedCallback() {
     super.connectedCallback();
-    this._cardStyle = this.model.style;
+    this._cardStyle = this.model.props.style;
 
-    if (!this.model.owner || !this.model.repo || !this.model.githubId) {
+    if (
+      !this.model.props.owner ||
+      !this.model.props.repo ||
+      !this.model.props.githubId
+    ) {
       this.doc.withoutTransact(() => {
-        const url = this.model.url;
+        const url = this.model.props.url;
         const urlMatch = url.match(githubUrlRegex);
         if (urlMatch) {
           const [, owner, repo, githubType, githubId] = urlMatch;
@@ -94,7 +98,7 @@ export class EmbedGithubBlockComponent extends EmbedBlockComponent<
     }
 
     this.doc.withoutTransact(() => {
-      if (!this.model.description && !this.model.title) {
+      if (!this.model.props.description && !this.model.props.title) {
         this.refreshData();
       } else {
         this.refreshStatus();
@@ -123,7 +127,7 @@ export class EmbedGithubBlockComponent extends EmbedBlockComponent<
       description,
       image,
       style,
-    } = this.model;
+    } = this.model.props;
 
     const loading = this.loading;
     const theme = this.std.get(ThemeProvider).theme;

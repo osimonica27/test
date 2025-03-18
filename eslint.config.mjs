@@ -313,7 +313,7 @@ export default tseslint.config(
   {
     files: [
       'packages/frontend/apps/electron/scripts/**/*',
-      'blocksuite/tests-legacy/**/*.{ts,tsx}',
+      'tests/blocksuite/**/*.{ts,tsx}',
       'blocksuite/**/__tests__/**/*.{ts,tsx}',
     ],
     rules: {

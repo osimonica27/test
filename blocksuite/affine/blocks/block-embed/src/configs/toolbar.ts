@@ -55,7 +55,7 @@ export function createBuiltinToolbarConfigForExternal(
           const model = ctx.getCurrentBlockBy(BlockSelection)?.model;
           if (!model || !isExternalEmbedModel(model)) return null;
 
-          const { url } = model;
+          const { url } = model.props;
           const options = ctx.std
             .get(EmbedOptionProvider)
             .getEmbedBlockOptions(url);
@@ -75,7 +75,8 @@ export function createBuiltinToolbarConfigForExternal(
               const model = ctx.getCurrentBlockBy(BlockSelection)?.model;
               if (!model || !isExternalEmbedModel(model)) return;
 
-              const { title, caption, url: link, parent } = model;
+              const { title, caption, url: link } = model.props;
+              const { parent } = model;
               const index = parent?.children.indexOf(model);
 
               const yText = new Y.Text();
@@ -107,7 +108,7 @@ export function createBuiltinToolbarConfigForExternal(
               const model = ctx.getCurrentBlockBy(BlockSelection)?.model;
               if (!model || !isExternalEmbedModel(model)) return true;
 
-              const { url } = model;
+              const { url } = model.props;
               const options = ctx.std
                 .get(EmbedOptionProvider)
                 .getEmbedBlockOptions(url);
@@ -118,13 +119,14 @@ export function createBuiltinToolbarConfigForExternal(
               const model = ctx.getCurrentBlockBy(BlockSelection)?.model;
               if (!model || !isExternalEmbedModel(model)) return;
 
-              const { url, caption, parent } = model;
+              const { url, caption } = model.props;
+              const { parent } = model;
               const index = parent?.children.indexOf(model);
               const options = ctx.std
                 .get(EmbedOptionProvider)
                 .getEmbedBlockOptions(url);
 
-              let { style } = model;
+              let { style } = model.props;
               let flavour = 'affine:bookmark';
 
               if (options?.viewType === 'card') {
@@ -166,7 +168,7 @@ export function createBuiltinToolbarConfigForExternal(
               const model = ctx.getCurrentBlockBy(BlockSelection)?.model;
               if (!model || !isExternalEmbedModel(model)) return false;
 
-              const { url } = model;
+              const { url } = model.props;
               const options = ctx.std
                 .get(EmbedOptionProvider)
                 .getEmbedBlockOptions(url);
@@ -177,7 +179,7 @@ export function createBuiltinToolbarConfigForExternal(
               const model = ctx.getCurrentBlockBy(BlockSelection)?.model;
               if (!model || !isExternalEmbedModel(model)) return false;
 
-              const { url } = model;
+              const { url } = model.props;
               const options = ctx.std
                 .get(EmbedOptionProvider)
                 .getEmbedBlockOptions(url);
@@ -188,7 +190,8 @@ export function createBuiltinToolbarConfigForExternal(
               const model = ctx.getCurrentBlockBy(BlockSelection)?.model;
               if (!model || !isExternalEmbedModel(model)) return;
 
-              const { url, caption, parent } = model;
+              const { url, caption } = model.props;
+              const { parent } = model;
               const index = parent?.children.indexOf(model);
               const options = ctx.std
                 .get(EmbedOptionProvider)
@@ -197,7 +200,7 @@ export function createBuiltinToolbarConfigForExternal(
               if (options?.viewType !== 'embed') return;
 
               const { flavour, styles } = options;
-              let { style } = model;
+              let { style } = model.props;
 
               if (!styles.includes(style)) {
                 style =
@@ -231,7 +234,7 @@ export function createBuiltinToolbarConfigForExternal(
           const model = ctx.getCurrentBlockBy(BlockSelection)?.model;
           if (!model || !isExternalEmbedModel(model)) return null;
 
-          const { url } = model;
+          const { url } = model.props;
           const viewType =
             ctx.std.get(EmbedOptionProvider).getEmbedBlockOptions(url)
               ?.viewType ?? 'card';
@@ -309,7 +312,7 @@ export function createBuiltinToolbarConfigForExternal(
               .actions=${actions}
               .context=${ctx}
               .toggle=${toggle}
-              .style$=${model.style$}
+              .style$=${model.props.style$}
             ></affine-card-style-dropdown-menu>`
           )}`;
         },

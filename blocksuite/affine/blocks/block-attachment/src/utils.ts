@@ -98,7 +98,7 @@ export async function uploadAttachmentBlob(
 }
 
 export async function getAttachmentBlob(model: AttachmentBlockModel) {
-  const sourceId = model.sourceId;
+  const sourceId = model.props.sourceId;
   if (!sourceId) {
     return null;
   }
@@ -107,7 +107,7 @@ export async function getAttachmentBlob(model: AttachmentBlockModel) {
   let blob = await doc.blobSync.get(sourceId);
 
   if (blob) {
-    blob = new Blob([blob], { type: model.type });
+    blob = new Blob([blob], { type: model.props.type });
   }
 
   return blob;
@@ -115,7 +115,8 @@ export async function getAttachmentBlob(model: AttachmentBlockModel) {
 
 export async function checkAttachmentBlob(block: AttachmentBlockComponent) {
   const model = block.model;
-  const { id, sourceId } = model;
+  const { id } = model;
+  const { sourceId } = model.props;
 
   if (isAttachmentUploading(id)) {
     block.loading = true;
@@ -174,7 +175,7 @@ export function downloadAttachmentBlob(block: AttachmentBlockComponent) {
     return;
   }
 
-  const name = model.name;
+  const name = model.props.name;
   const shortName = name.length < 20 ? name : name.slice(0, 20) + '...';
 
   if (error || !blobUrl) {
