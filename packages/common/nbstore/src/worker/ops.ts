@@ -1,12 +1,20 @@
 import type { AvailableStorageImplementations } from '../impls';
 import type {
+  AcceptedIndexJob,
+  AggregateOptions,
+  AggregateResult,
   BlobRecord,
   DocClock,
   DocClocks,
   DocDiff,
   DocRecord,
   DocUpdate,
+  IndexDocument,
+  IndexJobParams,
   ListedBlobRecord,
+  Query,
+  SearchOptions,
+  SearchResult,
   StorageType,
 } from '../storage';
 import type { AwarenessRecord } from '../storage/awareness';
@@ -59,6 +67,67 @@ interface GroupedWorkerOps {
       ),
     ];
     collect: [{ collectId: string; awareness: AwarenessRecord }, void];
+  };
+
+  indexStorage: {
+    search: [
+      {
+        table: string;
+        query: Query<any>;
+        options?: SearchOptions<any>;
+      },
+      SearchResult<any, any>,
+    ];
+    aggregate: [
+      {
+        table: string;
+        query: Query<any>;
+        field: string;
+        options?: AggregateOptions<any>;
+      },
+      AggregateResult<any, any>,
+    ];
+    subscribeSearch: [
+      {
+        table: string;
+        query: Query<any>;
+        options?: SearchOptions<any>;
+      },
+      SearchResult<any, any>,
+    ];
+    subscribeAggregate: [
+      {
+        table: string;
+        query: Query<any>;
+        field: string;
+        options?: AggregateOptions<any>;
+      },
+      AggregateResult<any, any>,
+    ];
+    insert: [
+      {
+        table: string;
+        document: IndexDocument<any>;
+      },
+      void,
+    ];
+    put: [
+      {
+        table: string;
+        document: IndexDocument<any>;
+      },
+      void,
+    ];
+    delete: [
+      {
+        table: string;
+        id: string;
+      },
+      void,
+    ];
+    enqueueIndexJob: [IndexJobParams, void];
+    acceptIndexJob: [void, AcceptedIndexJob];
+    completeIndexJob: [AcceptedIndexJob, void];
   };
 
   docSync: {

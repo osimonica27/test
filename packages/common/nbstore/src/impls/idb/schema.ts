@@ -124,6 +124,36 @@ export interface DocStorageSchema extends DBSchema {
       lock: Date;
     };
   };
+  indexerMetadata: {
+    key: string;
+    value: {
+      key: string;
+      value: any;
+    };
+  };
+  indexerRecords: {
+    key: number;
+    value: {
+      table: string;
+      id: string;
+      data: Map<string, string[]>;
+    };
+    indexes: { table: string; id: [string, string] };
+  };
+  invertedIndex: {
+    key: number;
+    value: {
+      table: string;
+      nid: number;
+      pos?: {
+        i: number /* index */;
+        l: number /* length */;
+        rs: [number, number][] /* ranges: [start, end] */;
+      };
+      key: ArrayBuffer;
+    };
+    indexes: { key: [string, ArrayBuffer]; nid: number };
+  };
 }
 
 const migrate: OpenDBCallbacks<DocStorageSchema>['upgrade'] = (
@@ -199,11 +229,32 @@ const initBlobSync: Migrate = db => {
 
   blobSync.createIndex('peer', 'peer', { unique: false });
 };
+const initIndexer: Migrate = db => {
+  db.createObjectStore('indexerMetadata', {
+    keyPath: 'key',
+  });
+  const indexRecordsStore = db.createObjectStore('indexerRecords', {
+    autoIncrement: true,
+  });
+  indexRecordsStore.createIndex('table', 'table', {
+    unique: false,
+  });
+  indexRecordsStore.createIndex('id', ['table', 'id'], {
+    unique: true,
+  });
+  const invertedIndexStore = db.createObjectStore('invertedIndex', {
+    autoIncrement: true,
+  });
+  invertedIndexStore.createIndex('key', ['table', 'key'], {
+    unique: false,
+  });
+  invertedIndexStore.createIndex('nid', 'nid', { unique: false });
+};
 // END REGION
 
 // 1. all schema changed should be put in migrations
 // 2. order matters
-const migrations: Migrate[] = [init, initBlobSync];
+const migrations: Migrate[] = [init, initBlobSync, initIndexer];
 
 export const migrator = {
   version: migrations.length,
