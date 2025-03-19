@@ -842,6 +842,11 @@ export const PackageList = [
     workspaceDependencies: [],
   },
   {
+    location: 'packages/frontend/routes',
+    name: '@affine/routes',
+    workspaceDependencies: ['tools/cli', 'tools/utils'],
+  },
+  {
     location: 'packages/frontend/templates',
     name: '@affine/templates',
     workspaceDependencies: [],
@@ -1004,6 +1009,7 @@ export type PackageName =
   | '@affine/i18n'
   | '@affine/media-capture-playground'
   | '@affine/native'
+  | '@affine/routes'
   | '@affine/templates'
   | '@affine/track'
   | '@affine-test/affine-cloud'

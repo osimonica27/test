@@ -826,6 +826,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/routes@workspace:packages/frontend/routes":
+  version: 0.0.0-use.local
+  resolution: "@affine/routes@workspace:packages/frontend/routes"
+  dependencies:
+    "@affine-tools/cli": "workspace:*"
+    "@affine-tools/utils": "workspace:*"
+    path-to-regexp: "npm:^8.2.0"
+    query-string: "npm:^9.1.1"
+    react-router-dom: "npm:^6.28.0"
+  dependenciesMeta:
+    react-router-dom:
+      optional: true
+  languageName: unknown
+  linkType: soft
+
 "@affine/server-native@workspace:*, @affine/server-native@workspace:packages/backend/native":
   version: 0.0.0-use.local
   resolution: "@affine/server-native@workspace:packages/backend/native"
@@ -27971,7 +27986,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"path-to-regexp@npm:^8.1.0":
+"path-to-regexp@npm:^8.1.0, path-to-regexp@npm:^8.2.0":
   version: 8.2.0
   resolution: "path-to-regexp@npm:8.2.0"
   checksum: 10/23378276a172b8ba5f5fb824475d1818ca5ccee7bbdb4674701616470f23a14e536c1db11da9c9e6d82b82c556a817bbf4eee6e41b9ed20090ef9427cbb38e13
