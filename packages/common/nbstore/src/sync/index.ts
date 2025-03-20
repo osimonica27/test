@@ -4,6 +4,7 @@ import type { SpaceStorage } from '../storage';
 import { AwarenessSyncImpl } from './awareness';
 import { BlobSyncImpl } from './blob';
 import { DocSyncImpl, type DocSyncState } from './doc';
+import { IndexSyncImpl } from './indexer';
 import type { PeerStorageOptions } from './types';
 
 export type { BlobSyncState } from './blob';
@@ -17,6 +18,7 @@ export class Sync {
   readonly doc: DocSyncImpl;
   readonly blob: BlobSyncImpl;
   readonly awareness: AwarenessSyncImpl;
+  readonly index: IndexSyncImpl;
 
   readonly state$: Observable<SyncState>;
 
@@ -26,6 +28,7 @@ export class Sync {
     const docSync = storages.local.get('docSync');
     const blobSync = storages.local.get('blobSync');
     const awareness = storages.local.get('awareness');
+    const index = storages.local.get('index');
 
     this.doc = new DocSyncImpl(
       {
@@ -60,6 +63,7 @@ export class Sync {
         ])
       ),
     });
+    this.index = new IndexSyncImpl(doc, index);
 
     this.state$ = this.doc.state$.pipe(map(doc => ({ doc })));
   }
@@ -67,10 +71,12 @@ export class Sync {
   start() {
     this.doc?.start();
     this.blob?.start();
+    this.index?.start();
   }
 
   stop() {
     this.doc?.stop();
     this.blob?.stop();
+    this.index?.stop();
   }
 }

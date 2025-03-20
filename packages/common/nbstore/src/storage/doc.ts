@@ -47,6 +47,7 @@ export interface DocStorageOptions {
 export interface DocStorage extends Storage {
   readonly storageType: 'doc';
   readonly isReadonly: boolean;
+  readonly spaceId: string;
   /**
    * Get a doc record with latest binary.
    */
@@ -103,7 +104,7 @@ export abstract class DocStorageBase<Opts = {}> implements DocStorage {
   readonly storageType = 'doc';
   abstract readonly connection: Connection;
   protected readonly locker: Locker = new SingletonLocker();
-  protected readonly spaceId = this.options.id;
+  readonly spaceId = this.options.id;
 
   constructor(protected readonly options: Opts & DocStorageOptions) {}
 
