@@ -14,6 +14,7 @@ import { StdIdentifier } from '../../identifier.js';
 import type { BlockStdScope } from '../../scope/index.js';
 import type { AttributeRenderer } from '../types.js';
 import { getDefaultAttributeRenderer } from '../utils/attribute-renderer.js';
+import { InlineSpecIdentifier } from './inline-spec.js';
 import { MarkdownMatcherIdentifier } from './markdown-matcher.js';
 import type { InlineMarkdownMatch, InlineSpecs } from './type.js';
 
@@ -74,9 +75,17 @@ export class InlineManager<TextAttributes extends BaseTextAttributes> {
   constructor(
     readonly std: BlockStdScope,
     readonly enableMarkdown: boolean,
-    ...specs: Array<InlineSpecs<TextAttributes>>
+    specs?: Array<InlineSpecs<TextAttributes>>
   ) {
-    this.specs = specs;
+    if (Array.isArray(specs)) {
+      this.specs = specs;
+      return;
+    }
+
+    const allSpecs = this.std.provider.getAll(InlineSpecIdentifier);
+    this.specs = Array.from(allSpecs.values()) as Array<
+      InlineSpecs<TextAttributes>
+    >;
   }
 }
 
@@ -85,7 +94,7 @@ export type InlineManagerExtensionConfig<
 > = {
   id: string;
   enableMarkdown?: boolean;
-  specs: ServiceIdentifier<InlineSpecs<TextAttributes>>[];
+  specs?: ServiceIdentifier<InlineSpecs<TextAttributes>>[];
 };
 
 const InlineManagerIdentifier = createIdentifier<unknown>(
@@ -108,7 +117,7 @@ export function InlineManagerExtension<
         return new InlineManager(
           provider.get(StdIdentifier),
           enableMarkdown,
-          ...specs.map(spec => provider.get(spec))
+          specs?.map(spec => provider.get(spec))
         );
       });
     },
