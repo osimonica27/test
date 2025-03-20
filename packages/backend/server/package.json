@@ -63,7 +63,7 @@
     "@opentelemetry/semantic-conventions": "^1.28.0",
     "@prisma/client": "^5.22.0",
     "@prisma/instrumentation": "^5.22.0",
-    "@react-email/components": "0.0.33",
+    "@react-email/components": "0.0.34",
     "@socket.io/redis-adapter": "^8.3.0",
     "ai": "^4.1.51",
     "bullmq": "^5.40.2",
