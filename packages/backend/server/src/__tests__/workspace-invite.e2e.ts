@@ -132,9 +132,11 @@ test('should send invitation notification', async t => {
   app.switchUser(u2.id);
   await acceptInviteById(app, workspace.id, invite, true);
 
-  const acceptedMail = app.mails.last('MemberAccepted');
-  t.is(acceptedMail.to, u1.email);
-  t.is(acceptedMail.props.user.$$userId, u2.id);
+  const acceptedNotification = app.queue.last(
+    'notification.sendInvitationAccepted'
+  );
+  t.is(acceptedNotification.payload.inviterId, u1.id);
+  t.is(acceptedNotification.payload.inviteId, invite);
 
   await leaveWorkspace(app, workspace.id, true);
 

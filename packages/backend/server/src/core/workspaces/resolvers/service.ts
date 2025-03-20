@@ -1,7 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { getStreamAsBuffer } from 'get-stream';
 
-import { Cache, JobQueue, NotFound, OnEvent, URLHelper } from '../../../base';
+import {
+  Cache,
+  JobQueue,
+  NotFound,
+  OnEvent,
+  URLHelper,
+  UserNotFound,
+} from '../../../base';
 import {
   DEFAULT_WORKSPACE_AVATAR,
   DEFAULT_WORKSPACE_NAME,
@@ -75,10 +82,9 @@ export class WorkspaceService {
     };
   }
 
-  async sendAcceptedEmail(inviteId: string) {
+  async sendInvitationAcceptedNotification(inviteId: string) {
     const { workspaceId, inviterUserId, inviteeUserId } =
       await this.getInviteInfo(inviteId);
-
     const inviter = inviterUserId
       ? await this.models.user.getWorkspaceUser(inviterUserId)
       : await this.models.workspaceUser.getOwner(workspaceId);
@@ -87,20 +93,12 @@ export class WorkspaceService {
       this.logger.warn(
         `Inviter or invitee user not found for inviteId: ${inviteId}`
       );
-      return false;
+      throw new UserNotFound();
     }
 
-    return await this.mailer.send({
-      name: 'MemberAccepted',
-      to: inviter.email,
-      props: {
-        user: {
-          $$userId: inviteeUserId,
-        },
-        workspace: {
-          $$workspaceId: workspaceId,
-        },
-      },
+    await this.queue.add('notification.sendInvitationAccepted', {
+      inviterId: inviter.id,
+      inviteId,
     });
   }
 

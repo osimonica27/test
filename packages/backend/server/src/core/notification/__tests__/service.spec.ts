@@ -123,7 +123,7 @@ test('should not create invitation notification if user is already a member', as
   t.is(notification, undefined);
 });
 
-test('should create invitation accepted notification', async t => {
+test('should create invitation accepted notification and email', async t => {
   const { notificationService } = t.context;
   const inviteId = randomUUID();
   const notification = await notificationService.createInvitationAccepted({
@@ -140,6 +140,50 @@ test('should create invitation accepted notification', async t => {
   t.is(notification!.body.workspaceId, workspace.id);
   t.is(notification!.body.createdByUserId, member.id);
   t.is(notification!.body.inviteId, inviteId);
+
+  // should send email
+  const invitationAcceptedMail = t.context.module.mails.last('MemberAccepted');
+  t.is(invitationAcceptedMail.to, owner.email);
+});
+
+test('should not send invitation accepted email if user settings is not receive invitation email', async t => {
+  const { notificationService } = t.context;
+  const inviteId = randomUUID();
+  // should not send email if user settings is not receive invitation email
+  await t.context.models.settings.set(owner.id, {
+    receiveInvitationEmail: false,
+  });
+  const invitationAcceptedMailCount =
+    t.context.module.mails.count('MemberAccepted');
+  const notification = await notificationService.createInvitationAccepted({
+    userId: owner.id,
+    body: {
+      workspaceId: workspace.id,
+      createdByUserId: member.id,
+      inviteId,
+    },
+  });
+  t.truthy(notification);
+  // no new invitation accepted email should be sent
+  t.is(
+    t.context.module.mails.count('MemberAccepted'),
+    invitationAcceptedMailCount
+  );
+});
+
+test('should not create invitation accepted notification if user is not an active member', async t => {
+  const { notificationService, models } = t.context;
+  const inviteId = randomUUID();
+  mock.method(models.workspaceUser, 'getActive', async () => null);
+  const notification = await notificationService.createInvitationAccepted({
+    userId: owner.id,
+    body: {
+      workspaceId: workspace.id,
+      createdByUserId: member.id,
+      inviteId,
+    },
+  });
+  t.is(notification, undefined);
 });
 
 test('should create invitation blocked notification', async t => {
