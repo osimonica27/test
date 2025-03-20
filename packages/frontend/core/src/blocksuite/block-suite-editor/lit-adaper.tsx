@@ -19,6 +19,7 @@ import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { JournalService } from '@affine/core/modules/journal';
 import { toURLSearchParams } from '@affine/core/modules/navigation';
+import { useInsidePeekView } from '@affine/core/modules/peek-view';
 import { PeekViewService } from '@affine/core/modules/peek-view/services/peek-view';
 import { MemberSearchService } from '@affine/core/modules/permissions';
 import { WorkspaceService } from '@affine/core/modules/workspace';
@@ -144,6 +145,8 @@ const usePatchSpecs = (mode: DocMode) => {
 
   const enableAI = useEnableAI();
 
+  const insidePeekView = useInsidePeekView();
+
   const enableTurboRenderer = useLiveData(
     featureFlagService.flags.enable_turbo_renderer.$
   );
@@ -154,7 +157,7 @@ const usePatchSpecs = (mode: DocMode) => {
     builder.extend(
       [
         patchReferenceRenderer(reactToLit, referenceRenderer),
-        patchForEdgelessNoteConfig(framework, reactToLit),
+        patchForEdgelessNoteConfig(framework, reactToLit, insidePeekView),
         patchNotificationService(confirmModal),
         patchPeekViewService(peekViewService),
         patchOpenDocExtension(),
@@ -193,6 +196,7 @@ const usePatchSpecs = (mode: DocMode) => {
     enableAI,
     reactToLit,
     referenceRenderer,
+    insidePeekView,
     confirmModal,
     peekViewService,
     docService,
