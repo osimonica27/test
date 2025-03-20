@@ -7322,6 +7322,18 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.readwise-prop.source"](): string;
     /**
+      * `Created`
+      */
+    ["com.affine.integration.readwise-prop.created"](): string;
+    /**
+      * `Updated`
+      */
+    ["com.affine.integration.readwise-prop.updated"](): string;
+    /**
+      * `Integration properties`
+      */
+    ["com.affine.integration.properties"](): string;
+    /**
       * `Notes`
       */
     ["com.affine.attachmentViewer.audio.notes"](): string;
