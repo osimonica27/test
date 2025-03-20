@@ -20,21 +20,23 @@ import { getSurfaceBlock } from '@blocksuite/affine-block-surface';
 import { insertSurfaceRefBlockCommand } from '@blocksuite/affine-block-surface-ref';
 import { toggleEmbedCardCreateModal } from '@blocksuite/affine-components/embed-card-modal';
 import { toast } from '@blocksuite/affine-components/toast';
-import type { FrameBlockModel } from '@blocksuite/affine-model';
+import { toggleLink } from '@blocksuite/affine-inline-link';
 import {
   formatBlockCommand,
   formatNativeCommand,
   formatTextCommand,
-  getInlineEditorByModel,
   getTextStyle,
-  insertContent,
   insertInlineLatex,
   toggleBold,
   toggleCode,
   toggleItalic,
-  toggleLink,
   toggleStrike,
   toggleUnderline,
+} from '@blocksuite/affine-inline-preset';
+import type { FrameBlockModel } from '@blocksuite/affine-model';
+import {
+  getInlineEditorByModel,
+  insertContent,
 } from '@blocksuite/affine-rich-text';
 import {
   copySelectedModelsCommand,

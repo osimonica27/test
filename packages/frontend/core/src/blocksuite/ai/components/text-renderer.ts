@@ -16,7 +16,7 @@ import { WithDisposable } from '@blocksuite/affine/global/lit';
 import {
   InlineDeltaToMarkdownAdapterExtensions,
   MarkdownInlineToDeltaAdapterExtensions,
-} from '@blocksuite/affine/rich-text';
+} from '@blocksuite/affine/inlines/preset';
 import { codeBlockWrapMiddleware } from '@blocksuite/affine/shared/adapters';
 import { LinkPreviewerService } from '@blocksuite/affine/shared/services';
 import type {

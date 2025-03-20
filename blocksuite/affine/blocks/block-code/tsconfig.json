@@ -8,6 +8,8 @@
   "include": ["./src"],
   "references": [
     { "path": "../../components" },
+    { "path": "../../inlines/link" },
+    { "path": "../../inlines/preset" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },

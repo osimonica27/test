@@ -45,6 +45,9 @@ import { effects as componentViewDropdownMenuEffects } from '@blocksuite/affine-
 import { effects as fragmentDocTitleEffects } from '@blocksuite/affine-fragment-doc-title/effects';
 import { effects as fragmentFramePanelEffects } from '@blocksuite/affine-fragment-frame-panel/effects';
 import { effects as fragmentOutlineEffects } from '@blocksuite/affine-fragment-outline/effects';
+import { effects as inlineLinkEffects } from '@blocksuite/affine-inline-link/effects';
+import { effects as inlinePresetEffects } from '@blocksuite/affine-inline-preset/effects';
+import { effects as inlineReferenceEffects } from '@blocksuite/affine-inline-reference/effects';
 import { effects as richTextEffects } from '@blocksuite/affine-rich-text/effects';
 import { effects as widgetDragHandleEffects } from '@blocksuite/affine-widget-drag-handle/effects';
 import { effects as widgetEdgelessAutoConnectEffects } from '@blocksuite/affine-widget-edgeless-auto-connect/effects';
@@ -112,6 +115,10 @@ export function effects() {
 
   dataViewEffects();
   richTextEffects();
+
+  inlineReferenceEffects();
+  inlinePresetEffects();
+  inlineLinkEffects();
 
   blockNoteEffects();
   blockAttachmentEffects();

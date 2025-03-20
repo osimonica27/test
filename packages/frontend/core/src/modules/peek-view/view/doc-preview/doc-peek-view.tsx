@@ -11,7 +11,7 @@ import { DebugLogger } from '@affine/debug';
 import { GfxControllerIdentifier } from '@blocksuite/affine/block-std/gfx';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { Bound } from '@blocksuite/affine/global/gfx';
-import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   FrameworkScope,
   useLiveData,

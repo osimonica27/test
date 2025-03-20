@@ -26,7 +26,7 @@ import {
   ImageProxyService,
 } from '@blocksuite/affine/blocks/image';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
-import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import { LinkPreviewerService } from '@blocksuite/affine/shared/services';
 import {
   FrameworkScope,

@@ -1,7 +1,5 @@
-import {
-  type AffineInlineEditor,
-  getInlineEditorByModel,
-} from '@blocksuite/affine-rich-text';
+import { getInlineEditorByModel } from '@blocksuite/affine-rich-text';
+import type { AffineInlineEditor } from '@blocksuite/affine-shared/types';
 import type { UIEventStateContext } from '@blocksuite/block-std';
 import { TextSelection, WidgetComponent } from '@blocksuite/block-std';
 import { InlineEditor } from '@blocksuite/block-std/inline';

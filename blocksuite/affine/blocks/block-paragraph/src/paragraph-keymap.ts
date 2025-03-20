@@ -1,3 +1,4 @@
+import { textKeymap } from '@blocksuite/affine-inline-preset';
 import {
   CalloutBlockModel,
   ParagraphBlockModel,
@@ -7,7 +8,6 @@ import {
   focusTextModel,
   getInlineEditorByModel,
   markdownInput,
-  textKeymap,
 } from '@blocksuite/affine-rich-text';
 import {
   calculateCollapsedSiblings,

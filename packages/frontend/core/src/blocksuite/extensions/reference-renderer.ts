@@ -1,6 +1,6 @@
 import type { ElementOrFactory } from '@affine/component';
-import type { AffineReference } from '@blocksuite/affine/rich-text';
-import { ReferenceNodeConfigExtension } from '@blocksuite/affine/rich-text';
+import type { AffineReference } from '@blocksuite/affine/inlines/reference';
+import { ReferenceNodeConfigExtension } from '@blocksuite/affine/inlines/reference';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import type { TemplateResult } from 'lit';
 

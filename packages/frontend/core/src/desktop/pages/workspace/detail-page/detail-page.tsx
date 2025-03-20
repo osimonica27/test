@@ -19,7 +19,7 @@ import { WorkspaceService } from '@affine/core/modules/workspace';
 import { isNewTabTrigger } from '@affine/core/utils';
 import track from '@affine/track';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
-import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   AiIcon,
   FrameIcon,

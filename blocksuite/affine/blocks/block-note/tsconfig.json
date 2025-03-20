@@ -11,6 +11,7 @@
     { "path": "../block-surface" },
     { "path": "../../components" },
     { "path": "../../fragments/fragment-doc-title" },
+    { "path": "../../inlines/preset" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },

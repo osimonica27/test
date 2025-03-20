@@ -8,10 +8,8 @@ import type {
 import type { InlineRootElement } from '@blocksuite/affine/block-std/inline';
 import type { EdgelessNoteBackground } from '@blocksuite/affine/blocks/note';
 import type { NoteBlockModel, RootBlockModel } from '@blocksuite/affine/model';
-import type {
-  AffineInlineEditor,
-  RichText,
-} from '@blocksuite/affine/rich-text';
+import type { RichText } from '@blocksuite/affine/rich-text';
+import type { AffineInlineEditor } from '@blocksuite/affine/shared/types';
 import type { BlockModel } from '@blocksuite/affine/store';
 import { expect, type Locator, type Page } from '@playwright/test';
 

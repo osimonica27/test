@@ -9,6 +9,7 @@
   "references": [
     { "path": "../../components" },
     { "path": "../../gfx/turbo-renderer" },
+    { "path": "../../inlines/preset" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },

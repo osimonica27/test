@@ -8,7 +8,7 @@ import {
   LinkedWidgetUtils,
 } from '@blocksuite/affine/blocks/root';
 import type { DocMode } from '@blocksuite/affine/model';
-import type { AffineInlineEditor } from '@blocksuite/affine/rich-text';
+import type { AffineInlineEditor } from '@blocksuite/affine/shared/types';
 import type { DocMeta } from '@blocksuite/affine/store';
 import { Text } from '@blocksuite/affine/store';
 import {

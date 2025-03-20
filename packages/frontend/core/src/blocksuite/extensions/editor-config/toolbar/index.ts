@@ -42,14 +42,14 @@ import {
 } from '@blocksuite/affine/components/toolbar';
 import { watch } from '@blocksuite/affine/global/lit';
 import {
+  AffineReference,
+  toggleReferencePopup,
+} from '@blocksuite/affine/inlines/reference';
+import {
   BookmarkBlockModel,
   EmbedLinkedDocModel,
   EmbedSyncedDocModel,
 } from '@blocksuite/affine/model';
-import {
-  AffineReference,
-  toggleReferencePopup,
-} from '@blocksuite/affine/rich-text';
 import { getSelectedModelsCommand } from '@blocksuite/affine/shared/commands';
 import { ImageSelection } from '@blocksuite/affine/shared/selection';
 import {

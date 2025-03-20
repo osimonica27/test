@@ -1,13 +1,13 @@
-import type {
-  AffineInlineEditor,
-  RichText,
-} from '@blocksuite/affine-rich-text';
-import { DefaultInlineManagerExtension } from '@blocksuite/affine-rich-text';
+import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
+import type { RichText } from '@blocksuite/affine-rich-text';
 import {
   ParseDocUrlProvider,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import type {
+  AffineInlineEditor,
+  AffineTextAttributes,
+} from '@blocksuite/affine-shared/types';
 import {
   getViewportElement,
   isValidUrl,

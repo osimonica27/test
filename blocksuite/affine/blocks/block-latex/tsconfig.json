@@ -9,6 +9,7 @@
   "references": [
     { "path": "../block-note" },
     { "path": "../../components" },
+    { "path": "../../inlines/preset" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },

@@ -1,10 +1,10 @@
 import { createLitPortal } from '@blocksuite/affine-components/portal';
-import type { AffineInlineEditor } from '@blocksuite/affine-rich-text';
 import {
   cleanSpecifiedTail,
   getInlineEditorByModel,
   getTextContentFromInlineRange,
 } from '@blocksuite/affine-rich-text';
+import type { AffineInlineEditor } from '@blocksuite/affine-shared/types';
 import {
   createKeydownObserver,
   getCurrentNativeRange,

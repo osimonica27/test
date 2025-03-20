@@ -1,10 +1,8 @@
 import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
 import { TOGGLE_BUTTON_PARENT_CLASS } from '@blocksuite/affine-components/toggle-button';
+import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
 import type { ParagraphBlockModel } from '@blocksuite/affine-model';
-import {
-  DefaultInlineManagerExtension,
-  type RichText,
-} from '@blocksuite/affine-rich-text';
+import type { RichText } from '@blocksuite/affine-rich-text';
 import {
   BLOCK_CHILDREN_CONTAINER_PADDING_LEFT,
   NOTE_SELECTOR,

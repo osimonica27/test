@@ -1,4 +1,7 @@
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import type {
+  AffineInlineEditor,
+  AffineTextAttributes,
+} from '@blocksuite/affine-shared/types';
 import { ShadowlessElement } from '@blocksuite/block-std';
 import {
   type AttributeRenderer,
@@ -19,7 +22,6 @@ import * as Y from 'yjs';
 import { z } from 'zod';
 
 import { onVBeforeinput, onVCompositionEnd } from './hooks.js';
-import type { AffineInlineEditor } from './inline/index.js';
 
 interface RichTextStackItem {
   meta: Map<'richtext-v-range', InlineRange | null>;

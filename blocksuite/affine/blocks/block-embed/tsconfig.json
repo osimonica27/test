@@ -9,6 +9,7 @@
   "references": [
     { "path": "../block-surface" },
     { "path": "../../components" },
+    { "path": "../../inlines/reference" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },

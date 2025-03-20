@@ -16,9 +16,9 @@ import {
   formatNativeCommand,
   formatTextCommand,
   isFormatSupported,
-  textConversionConfigs,
   textFormatConfigs,
-} from '@blocksuite/affine-rich-text';
+} from '@blocksuite/affine-inline-preset';
+import { textConversionConfigs } from '@blocksuite/affine-rich-text';
 import {
   copySelectedModelsCommand,
   deleteSelectedModelsCommand,

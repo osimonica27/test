@@ -1,3 +1,4 @@
+import { LinkInlineSpecExtension } from '@blocksuite/affine-inline-link';
 import {
   BackgroundInlineSpecExtension,
   BoldInlineSpecExtension,
@@ -5,10 +6,9 @@ import {
   ColorInlineSpecExtension,
   ItalicInlineSpecExtension,
   LatexInlineSpecExtension,
-  LinkInlineSpecExtension,
   StrikeInlineSpecExtension,
   UnderlineInlineSpecExtension,
-} from '@blocksuite/affine-rich-text';
+} from '@blocksuite/affine-inline-preset';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import {
   InlineManagerExtension,
