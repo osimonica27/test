@@ -29,15 +29,18 @@ export class ContextSession implements AsyncDisposable {
     return this.config.workspaceId;
   }
 
-  listCategories(): ContextCategory[] {
-    return [...this.config.categories];
+  get categories(): ContextCategory[] {
+    return this.config.categories.map(c => ({
+      ...c,
+      docs: c.docs.map(d => ({ ...d })),
+    }));
   }
 
-  listDocs(): ContextDoc[] {
-    return [...this.config.docs];
+  get docs(): ContextDoc[] {
+    return this.config.docs.map(d => ({ ...d }));
   }
 
-  listFiles() {
+  get files() {
     return this.config.files.map(f => ({ ...f }));
   }
 
@@ -48,14 +51,20 @@ export class ContextSession implements AsyncDisposable {
     ) as ContextList;
   }
 
-  async addCategoryRecord(type: ContextCategories, id: string) {
+  async addCategoryRecord(type: ContextCategories, id: string, docs: string[]) {
     const category = this.config.categories.find(
       c => c.type === type && c.id === id
     );
     if (category) {
       return category;
     }
-    const record = { id, type, docs: [], createdAt: Date.now() };
+    const createdAt = Date.now();
+    const record = {
+      id,
+      type,
+      docs: docs.map(id => ({ id, createdAt, status: null })),
+      createdAt,
+    };
     this.config.categories.push(record);
     await this.save();
     return record;

@@ -34,6 +34,13 @@ export enum ContextCategories {
 export const ContextDocSchema = z.object({
   id: z.string(),
   createdAt: z.number(),
+  status: z
+    .enum([
+      ContextEmbedStatus.processing,
+      ContextEmbedStatus.finished,
+      ContextEmbedStatus.failed,
+    ])
+    .nullable(),
 });
 
 export const ContextFileSchema = z.object({

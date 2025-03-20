@@ -6,7 +6,6 @@ import { Prisma } from '@prisma/client';
 import { CopilotSessionNotFound } from '../base';
 import { BaseModel } from './base';
 import {
-  ChunkSimilarity,
   ContextConfigSchema,
   ContextDoc,
   ContextEmbedStatus,
@@ -24,7 +23,7 @@ type UpdateCopilotContextInput = Pick<CopilotContext, 'config'>;
  */
 @Injectable()
 export class CopilotContextModel extends BaseModel {
-  // contexts
+  // ================ contexts ================
 
   async create(sessionId: string) {
     const session = await this.db.aiSession.findFirst({
@@ -113,7 +112,7 @@ export class CopilotContextModel extends BaseModel {
     return ret.count > 0;
   }
 
-  // embeddings
+  // ================ embeddings ================
 
   async checkEmbeddingAvailable(): Promise<boolean> {
     const [{ count }] = await this.db.$queryRaw<
@@ -177,7 +176,7 @@ export class CopilotContextModel extends BaseModel {
     contextId: string,
     topK: number,
     threshold: number
-  ): Promise<ChunkSimilarity[]> {
+  ): Promise<FileChunkSimilarity[]> {
     const similarityChunks = await this.db.$queryRaw<
       Array<FileChunkSimilarity>
     >`
@@ -214,7 +213,7 @@ export class CopilotContextModel extends BaseModel {
     workspaceId: string,
     topK: number,
     threshold: number
-  ): Promise<ChunkSimilarity[]> {
+  ): Promise<DocChunkSimilarity[]> {
     const similarityChunks = await this.db.$queryRaw<Array<DocChunkSimilarity>>`
        SELECT "doc_id" as "docId", "chunk", "content", "embedding" <=> ${embedding}::vector as "distance"
        FROM "ai_workspace_embeddings"

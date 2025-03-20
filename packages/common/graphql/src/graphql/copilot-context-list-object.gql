@@ -26,13 +26,15 @@ query listContextObject(
             id
             status
           }
+          createdAt
         }
-        collection {
+        collections {
           id
           docs {
             id
             status
           }
+          createdAt
         }
       }
     }

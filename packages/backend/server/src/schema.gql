@@ -99,8 +99,8 @@ type Copilot {
 }
 
 type CopilotContext {
-  """list files in context"""
-  categories: [CopilotContextDoc!]!
+  """list categories in context"""
+  collections: [CopilotContextCategory!]!
 
   """list files in context"""
   docs: [CopilotContextDoc!]!
@@ -114,6 +114,9 @@ type CopilotContext {
 
   """match workspace doc content"""
   matchWorkspaceContext(content: String!, limit: SafeInt): ContextMatchedDocChunk!
+
+  """list categories in context"""
+  tags: [CopilotContextCategory!]!
   workspaceId: String!
 }
 
