@@ -3373,6 +3373,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.billing-setting.ai.purchase"](): string;
     /**
+      * `Start free trial`
+      */
+    ["com.affine.payment.billing-setting.ai.start-free-trial"](): string;
+    /**
       * `One-time payment`
       */
     ["com.affine.payment.billing-setting.believer.price-caption"](): string;

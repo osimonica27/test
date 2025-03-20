@@ -838,6 +838,7 @@
   "com.affine.payment.billing-setting.ai-plan": "AFFiNE AI",
   "com.affine.payment.billing-setting.ai.free-desc": "You are currently on the <a>free plan</a>.",
   "com.affine.payment.billing-setting.ai.purchase": "Purchase",
+  "com.affine.payment.billing-setting.ai.start-free-trial": "Start free trial",
   "com.affine.payment.billing-setting.believer.description": "You have purchased <a>Believer plan</a>. Enjoy with your benefits!",
   "com.affine.payment.billing-setting.believer.price-caption": "One-time payment",
   "com.affine.payment.billing-setting.believer.title": "AFFiNE Cloud",

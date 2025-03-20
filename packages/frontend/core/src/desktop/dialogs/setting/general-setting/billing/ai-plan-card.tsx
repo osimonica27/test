@@ -89,7 +89,7 @@ export const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
             )
           ) : (
             <AISubscribe className={styles.planAction}>
-              {t['com.affine.payment.billing-setting.ai.purchase']()}
+              {t['com.affine.payment.billing-setting.ai.start-free-trial']()}
             </AISubscribe>
           )
         ) : null}
