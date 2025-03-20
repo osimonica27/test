@@ -7330,6 +7330,36 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.attachmentViewer.audio.transcribing"](): string;
     /**
+      * `Audio activity`
+      */
+    ["com.affine.recording.new"](): string;
+    /**
+      * `Open app`
+      */
+    ["com.affine.recording.ready"](): string;
+    /**
+      * `{{appName}}'s audio`
+      */
+    ["com.affine.recording.recording"](options: {
+        readonly appName: string;
+    }): string;
+    /**
+      * `Audio recording`
+      */
+    ["com.affine.recording.recording.unnamed"](): string;
+    /**
+      * `Start`
+      */
+    ["com.affine.recording.start"](): string;
+    /**
+      * `Dismiss`
+      */
+    ["com.affine.recording.dismiss"](): string;
+    /**
+      * `Stop`
+      */
+    ["com.affine.recording.stop"](): string;
+    /**
       * `An internal error occurred.`
       */
     ["error.INTERNAL_SERVER_ERROR"](): string;
