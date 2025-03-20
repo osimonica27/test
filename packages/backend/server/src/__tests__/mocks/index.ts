@@ -4,6 +4,7 @@ export * from './user.mock';
 export * from './workspace.mock';
 
 import { MockMailer } from './mailer.mock';
+import { MockJobQueue } from './queue.mock';
 import { MockTeamWorkspace } from './team-workspace.mock';
 import { MockUser } from './user.mock';
 import { MockWorkspace } from './workspace.mock';
@@ -14,4 +15,4 @@ export const Mockers = {
   TeamWorkspace: MockTeamWorkspace,
 };
 
-export { MockMailer };
+export { MockJobQueue, MockMailer };
