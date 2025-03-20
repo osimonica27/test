@@ -1,21 +1,24 @@
-import {
-  GROUP_TITLE_FONT_SIZE,
-  GROUP_TITLE_OFFSET,
-  GROUP_TITLE_PADDING,
-} from '@blocksuite/affine-block-surface';
 import type { GroupElementModel } from '@blocksuite/affine-model';
 import type { RichText } from '@blocksuite/affine-rich-text';
 import {
-  type BlockComponent,
+  type BlockStdScope,
   RANGE_SYNC_EXCLUDE_ATTR,
   ShadowlessElement,
+  stdContext,
 } from '@blocksuite/block-std';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { Bound } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
+import { consume } from '@lit/context';
 import { html, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
+
+import {
+  GROUP_TITLE_FONT_SIZE,
+  GROUP_TITLE_OFFSET,
+  GROUP_TITLE_PADDING,
+} from '../../renderer/elements/group/consts.js';
 
 export class EdgelessGroupTitleEditor extends WithDisposable(
   ShadowlessElement
@@ -29,7 +32,7 @@ export class EdgelessGroupTitleEditor extends WithDisposable(
   }
 
   get gfx() {
-    return this.edgeless.std.get(GfxControllerIdentifier);
+    return this.std.get(GfxControllerIdentifier);
   }
 
   get selection() {
@@ -53,7 +56,7 @@ export class EdgelessGroupTitleEditor extends WithDisposable(
   }
 
   override firstUpdated(): void {
-    const dispatcher = this.edgeless.std.event;
+    const dispatcher = this.std.event;
 
     this.updateComplete
       .then(() => {
@@ -145,10 +148,12 @@ export class EdgelessGroupTitleEditor extends WithDisposable(
   }
 
   @property({ attribute: false })
-  accessor edgeless!: BlockComponent;
-
-  @property({ attribute: false })
   accessor group!: GroupElementModel;
+
+  @consume({
+    context: stdContext,
+  })
+  accessor std!: BlockStdScope;
 
   @query('rich-text')
   accessor richText!: RichText;

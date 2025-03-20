@@ -1,24 +1,25 @@
-import {
-  EdgelessCRUDIdentifier,
-  TextUtils,
-} from '@blocksuite/affine-block-surface';
 import type { ShapeElementModel } from '@blocksuite/affine-model';
 import { MindmapElementModel, TextResizing } from '@blocksuite/affine-model';
 import type { RichText } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { getSelectedRect } from '@blocksuite/affine-shared/utils';
 import {
-  type BlockComponent,
+  type BlockStdScope,
   RANGE_SYNC_EXCLUDE_ATTR,
   ShadowlessElement,
+  stdContext,
 } from '@blocksuite/block-std';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { Bound, toRadian, Vec } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
+import { consume } from '@lit/context';
 import { html, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import * as Y from 'yjs';
+
+import { EdgelessCRUDIdentifier } from '../../extensions';
+import { wrapFontFamily } from '../../utils/font';
 
 export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
   private _keeping = false;
@@ -32,11 +33,11 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
   }
 
   get crud() {
-    return this.edgeless.std.get(EdgelessCRUDIdentifier);
+    return this.std.get(EdgelessCRUDIdentifier);
   }
 
   get gfx() {
-    return this.edgeless.std.get(GfxControllerIdentifier);
+    return this.std.get(GfxControllerIdentifier);
   }
 
   get selection() {
@@ -182,7 +183,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
   }
 
   override firstUpdated(): void {
-    const dispatcher = this.edgeless.std.event;
+    const dispatcher = this.std.event;
 
     this.element.textDisplay = false;
 
@@ -276,7 +277,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
     );
     const [x, y] = this.gfx.viewport.toViewCoord(leftTopX, leftTopY);
     const autoWidth = textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT;
-    const color = this.edgeless.std
+    const color = this.std
       .get(ThemeProvider)
       .generateColorProperty(this.element.color, '#000000');
 
@@ -302,7 +303,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
           : undefined,
       boxSizing: 'border-box',
       fontSize: this.element.fontSize + 'px',
-      fontFamily: TextUtils.wrapFontFamily(this.element.fontFamily),
+      fontFamily: wrapFontFamily(this.element.fontFamily),
       fontWeight: this.element.fontWeight,
       lineHeight: 'normal',
       outline: 'none',
@@ -350,15 +351,12 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
   }
 
   @property({ attribute: false })
-  accessor edgeless!: BlockComponent;
-
-  @property({ attribute: false })
   accessor element!: ShapeElementModel;
 
-  @property({ attribute: false })
-  accessor mountEditor:
-    | ((element: ShapeElementModel, edgeless: BlockComponent) => void)
-    | undefined = undefined;
+  @consume({
+    context: stdContext,
+  })
+  accessor std!: BlockStdScope;
 
   @query('rich-text')
   accessor richText!: RichText;

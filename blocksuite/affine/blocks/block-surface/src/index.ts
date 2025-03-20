@@ -48,6 +48,11 @@ export {
   EdgelessSurfaceBlockAdapterExtensions,
   SurfaceBlockAdapterExtensions,
 } from './adapters/index.js';
+export {
+  mountConnectorLabelEditor,
+  mountGroupTitleEditor,
+  mountShapeTextEditor,
+} from './components/text-editor/mount.js';
 export type { SurfaceContext } from './surface-block.js';
 export { SurfaceBlockComponent } from './surface-block.js';
 export {

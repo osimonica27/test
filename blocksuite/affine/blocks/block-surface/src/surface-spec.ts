@@ -13,7 +13,9 @@ import {
 import { ExportManagerExtension } from './extensions/export-manager/export-manager';
 import { SurfaceBlockService } from './surface-service';
 import { ConnectorElementView } from './view/connector';
+import { GroupElementView } from './view/group';
 import { MindMapView } from './view/mindmap';
+import { ShapeElementView } from './view/shape';
 
 const CommonSurfaceBlockSpec: ExtensionType[] = [
   FlavourExtension('affine:surface'),
@@ -23,7 +25,12 @@ const CommonSurfaceBlockSpec: ExtensionType[] = [
   ExportManagerExtension,
 ];
 
-const ElementModelViews = [MindMapView, ConnectorElementView];
+const ElementModelViews = [
+  MindMapView,
+  ConnectorElementView,
+  ShapeElementView,
+  GroupElementView,
+];
 
 export const PageSurfaceBlockSpec: ExtensionType[] = [
   ...CommonSurfaceBlockSpec,

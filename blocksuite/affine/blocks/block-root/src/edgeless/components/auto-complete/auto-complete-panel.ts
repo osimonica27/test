@@ -2,6 +2,7 @@ import { insertEdgelessTextCommand } from '@blocksuite/affine-block-edgeless-tex
 import {
   CanvasElementType,
   EdgelessCRUDIdentifier,
+  mountShapeTextEditor,
 } from '@blocksuite/affine-block-surface';
 import { FontFamilyIcon } from '@blocksuite/affine-components/icons';
 import { mountTextElementEditor } from '@blocksuite/affine-gfx-text';
@@ -57,7 +58,6 @@ import {
   SHAPE_OVERLAY_HEIGHT,
   SHAPE_OVERLAY_WIDTH,
 } from '../../utils/consts.js';
-import { mountShapeTextEditor } from '../../utils/text.js';
 import { ShapeComponentConfig } from '../toolbar/shape/shape-menu-config.js';
 import {
   type AUTO_COMPLETE_TARGET_TYPE,

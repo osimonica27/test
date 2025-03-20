@@ -9,15 +9,12 @@ import {
   OverlayIdentifier,
 } from '@blocksuite/affine-block-surface';
 import { addText, mountTextElementEditor } from '@blocksuite/affine-gfx-text';
-import type {
-  EdgelessTextBlockModel,
-  NoteBlockModel,
-} from '@blocksuite/affine-model';
 import {
-  ConnectorElementModel,
+  type ConnectorElementModel,
+  type EdgelessTextBlockModel,
   GroupElementModel,
   MindmapElementModel,
-  ShapeElementModel,
+  type NoteBlockModel,
   TextElementModel,
 } from '@blocksuite/affine-model';
 import { focusTextModel } from '@blocksuite/affine-rich-text';
@@ -49,12 +46,7 @@ import type { EdgelessRootBlockComponent } from '../index.js';
 import { prepareCloneData } from '../utils/clone-utils.js';
 import { calPanDelta } from '../utils/panning-utils.js';
 import { isCanvasElement, isEdgelessTextBlock } from '../utils/query.js';
-import {
-  mountConnectorLabelEditor,
-  mountFrameTitleEditor,
-  mountGroupTitleEditor,
-  mountShapeTextEditor,
-} from '../utils/text.js';
+import { mountFrameTitleEditor } from '../utils/text.js';
 import { DefaultModeDragType } from './default-tool-ext/ext.js';
 
 export class DefaultTool extends BaseTool {
@@ -595,6 +587,7 @@ export class DefaultTool extends BaseTool {
       return;
     } else {
       if (selected.isLocked()) return;
+
       const [x, y] = this.gfx.viewport.toModelCoord(e.x, e.y);
       if (selected instanceof TextElementModel) {
         mountTextElementEditor(selected, this._edgeless, {
@@ -603,20 +596,8 @@ export class DefaultTool extends BaseTool {
         });
         return;
       }
-      if (selected instanceof ShapeElementModel) {
-        mountShapeTextEditor(selected, this._edgeless);
-        return;
-      }
-      if (selected instanceof ConnectorElementModel) {
-        mountConnectorLabelEditor(selected, this._edgeless, [x, y]);
-        return;
-      }
       if (isFrameBlock(selected)) {
         mountFrameTitleEditor(selected, this._edgeless);
-        return;
-      }
-      if (selected instanceof GroupElementModel) {
-        mountGroupTitleEditor(selected, this._edgeless);
         return;
       }
     }

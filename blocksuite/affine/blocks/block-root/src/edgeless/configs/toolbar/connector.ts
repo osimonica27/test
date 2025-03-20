@@ -1,6 +1,7 @@
 import {
   ConnectorUtils,
   EdgelessCRUDIdentifier,
+  mountConnectorLabelEditor,
   TextUtils,
 } from '@blocksuite/affine-block-surface';
 import {
@@ -50,7 +51,6 @@ import {
 import { html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { mountConnectorLabelEditor } from '../../utils/text';
 import { LINE_STYLE_LIST } from './consts';
 import { createTextActions } from './text-common';
 import type { MenuItem } from './types';

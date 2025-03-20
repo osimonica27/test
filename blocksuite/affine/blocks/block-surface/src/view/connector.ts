@@ -6,6 +6,8 @@ import {
   GfxElementModelView,
 } from '@blocksuite/block-std/gfx';
 
+import { mountConnectorLabelEditor } from '../components/text-editor/mount';
+
 export class ConnectorElementView extends GfxElementModelView<ConnectorElementModel> {
   static override type = 'connector';
 
@@ -24,4 +26,20 @@ export class ConnectorElementView extends GfxElementModelView<ConnectorElementMo
 
     this.model.moveTo(currentBound.moveDelta(dx, dy));
   };
+
+  override onCreated(): void {
+    super.onCreated();
+
+    this._initDblClickToEdit();
+  }
+
+  private _initDblClickToEdit(): void {
+    this.on('dblclick', () => {
+      const edgeless = this.std.view.getBlock(this.std.store.root!.id);
+
+      if (edgeless) {
+        mountConnectorLabelEditor(this.model, edgeless);
+      }
+    });
+  }
 }

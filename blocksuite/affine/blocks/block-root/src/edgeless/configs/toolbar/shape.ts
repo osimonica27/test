@@ -1,5 +1,6 @@
 import {
   EdgelessCRUDIdentifier,
+  mountShapeTextEditor,
   normalizeShapeBound,
 } from '@blocksuite/affine-block-surface';
 import {
@@ -36,7 +37,6 @@ import isEqual from 'lodash-es/isEqual';
 
 import type { ShapeToolOption } from '../..';
 import { ShapeComponentConfig } from '../../components/toolbar/shape/shape-menu-config';
-import { mountShapeTextEditor } from '../../utils/text';
 import { LINE_STYLE_LIST } from './consts';
 import {
   createMindmapLayoutActionMenu,

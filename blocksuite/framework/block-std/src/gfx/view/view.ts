@@ -70,6 +70,10 @@ export class GfxElementModelView<
     return this.model.type;
   }
 
+  get std() {
+    return this.gfx.std;
+  }
+
   constructor(
     model: T,
     readonly gfx: GfxController

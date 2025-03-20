@@ -27,10 +27,7 @@ import {
   EDGELESS_SELECTED_RECT_WIDGET,
   EdgelessSelectedRectWidget,
 } from './edgeless/components/rects/edgeless-selected-rect.js';
-import { EdgelessConnectorLabelEditor } from './edgeless/components/text/edgeless-connector-label-editor.js';
 import { EdgelessFrameTitleEditor } from './edgeless/components/text/edgeless-frame-title-editor.js';
-import { EdgelessGroupTitleEditor } from './edgeless/components/text/edgeless-group-title-editor.js';
-import { EdgelessShapeTextEditor } from './edgeless/components/text/edgeless-shape-text-editor.js';
 import { EdgelessBrushMenu } from './edgeless/components/toolbar/brush/brush-menu.js';
 import { EdgelessBrushToolButton } from './edgeless/components/toolbar/brush/brush-tool-button.js';
 import { EdgelessSlideMenu } from './edgeless/components/toolbar/common/slide-menu.js';
@@ -231,15 +228,6 @@ function registerEdgelessPanelComponents() {
 
 function registerEdgelessEditorComponents() {
   customElements.define(
-    'edgeless-connector-label-editor',
-    EdgelessConnectorLabelEditor
-  );
-  customElements.define('edgeless-shape-text-editor', EdgelessShapeTextEditor);
-  customElements.define(
-    'edgeless-group-title-editor',
-    EdgelessGroupTitleEditor
-  );
-  customElements.define(
     'edgeless-frame-title-editor',
     EdgelessFrameTitleEditor
   );
@@ -323,10 +311,7 @@ declare global {
     'edgeless-navigator-black-background': EdgelessNavigatorBlackBackgroundWidget;
     'edgeless-dragging-area-rect': EdgelessDraggingAreaRectWidget;
     'edgeless-selected-rect': EdgelessSelectedRectWidget;
-    'edgeless-connector-label-editor': EdgelessConnectorLabelEditor;
     'edgeless-frame-title-editor': EdgelessFrameTitleEditor;
-    'edgeless-group-title-editor': EdgelessGroupTitleEditor;
-    'edgeless-shape-text-editor': EdgelessShapeTextEditor;
     'edgeless-toolbar-widget': EdgelessToolbarWidget;
     'presentation-toolbar': PresentationToolbar;
     'edgeless-brush-menu': EdgelessBrushMenu;

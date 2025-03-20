@@ -1,24 +1,24 @@
-import {
-  EdgelessCRUDIdentifier,
-  getSurfaceBlock,
-  TextUtils,
-} from '@blocksuite/affine-block-surface';
 import type { ConnectorElementModel } from '@blocksuite/affine-model';
 import type { RichText } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { almostEqual } from '@blocksuite/affine-shared/utils';
 import {
-  type BlockComponent,
+  type BlockStdScope,
   RANGE_SYNC_EXCLUDE_ATTR,
   ShadowlessElement,
+  stdContext,
 } from '@blocksuite/block-std';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { Bound, Vec } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
+import { consume } from '@lit/context';
 import { css, html, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import * as Y from 'yjs';
+
+import { EdgelessCRUDIdentifier } from '../../extensions/crud-extension.js';
+import { getLineHeight } from '../../renderer/elements/text/utils.js';
 
 const HORIZONTAL_PADDING = 2;
 const VERTICAL_PADDING = 2;
@@ -61,11 +61,11 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
   `;
 
   get crud() {
-    return this.edgeless.std.get(EdgelessCRUDIdentifier);
+    return this.std.get(EdgelessCRUDIdentifier);
   }
 
   get gfx() {
-    return this.edgeless.std.get(GfxControllerIdentifier);
+    return this.std.get(GfxControllerIdentifier);
   }
 
   get selection() {
@@ -79,8 +79,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
   private _resizeObserver: ResizeObserver | null = null;
 
   private readonly _updateLabelRect = () => {
-    const { connector, edgeless } = this;
-    if (!connector || !edgeless) return;
+    const { connector, isConnected } = this;
+    if (!connector || !isConnected) return;
 
     if (!this.inlineEditorContainer) return;
 
@@ -122,9 +122,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
   }
 
   override firstUpdated() {
-    const { edgeless, connector, selection } = this;
-    const dispatcher = edgeless.std.event;
-    const store = edgeless.std.store;
+    const { connector, selection, std } = this;
+    const dispatcher = std.event;
 
     this._resizeObserver = new ResizeObserver(() => {
       this._updateLabelRect();
@@ -162,7 +161,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
           })
         );
 
-        const surface = getSurfaceBlock(store);
+        const surface = this.gfx.surface;
 
         if (surface) {
           this.disposables.add(
@@ -263,11 +262,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
       labelConstraints: { hasMaxWidth, maxWidth },
     } = connector;
 
-    const lineHeight = TextUtils.getLineHeight(
-      fontFamily,
-      fontSize,
-      fontWeight
-    );
+    const lineHeight = getLineHeight(fontFamily, fontSize, fontWeight);
     const { translateX, translateY, zoom } = this.gfx.viewport;
     const [x, y] = Vec.mul(connector.getPointByOffsetDistance(distance), zoom);
     const transformOperation = [
@@ -278,7 +273,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
     ];
 
     const isEmpty = !connector.text?.length && !this._isComposition;
-    const color = this.edgeless.std
+    const color = this.std
       .get(ThemeProvider)
       .generateColorProperty(labelColor, '#000000');
 
@@ -329,8 +324,10 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
   @property({ attribute: false })
   accessor connector!: ConnectorElementModel;
 
-  @property({ attribute: false })
-  accessor edgeless!: BlockComponent;
+  @consume({
+    context: stdContext,
+  })
+  accessor std!: BlockStdScope;
 
   @query('rich-text')
   accessor richText!: RichText;

@@ -1,3 +1,4 @@
+import { mountGroupTitleEditor } from '@blocksuite/affine-block-surface';
 import { toast } from '@blocksuite/affine-components/toast';
 import {
   DEFAULT_NOTE_HEIGHT,
@@ -12,7 +13,6 @@ import { matchModels } from '@blocksuite/affine-shared/utils';
 import { Bound } from '@blocksuite/global/gfx';
 import { EditIcon, PageIcon, UngroupIcon } from '@blocksuite/icons/lit';
 
-import { mountGroupTitleEditor } from '../../utils/text';
 import { getEdgelessWith } from './utils';
 
 export const builtinGroupToolbarConfig = {
