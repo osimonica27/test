@@ -1,6 +1,11 @@
+import { type DocMode as GraphqlDocMode } from '@affine/graphql';
 import { I18n, i18nTime } from '@affine/i18n';
 import track from '@affine/track';
-import type { EditorHost } from '@blocksuite/affine/block-std';
+import {
+  BLOCK_ID_ATTR,
+  type BlockComponent,
+  type EditorHost,
+} from '@blocksuite/affine/block-std';
 import {
   type LinkedMenuGroup,
   type LinkedMenuItem,
@@ -9,23 +14,28 @@ import {
 } from '@blocksuite/affine/blocks/root';
 import type { DocMode } from '@blocksuite/affine/model';
 import type { AffineInlineEditor } from '@blocksuite/affine/rich-text';
+import { DocModeProvider } from '@blocksuite/affine/shared/services';
 import type { DocMeta } from '@blocksuite/affine/store';
 import { Text } from '@blocksuite/affine/store';
 import {
   DateTimeIcon,
+  MainAvatarIcon,
   NewXxxEdgelessIcon,
   NewXxxPageIcon,
 } from '@blocksuite/icons/lit';
-import { computed, Signal } from '@preact/signals-core';
+import { computed, Signal, signal } from '@preact/signals-core';
 import { Service } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { html } from 'lit';
 
+import type { WorkspaceServerService } from '../../cloud';
 import type { WorkspaceDialogService } from '../../dialogs';
 import type { DocsService } from '../../doc';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
 import type { EditorSettingService } from '../../editor-setting';
 import { type JournalService, suggestJournalDate } from '../../journal';
+import { NotificationService } from '../../notification';
+import type { Member, MemberSearchService } from '../../permissions';
 import type { SearchMenuService } from '../../search-menu/services';
 
 function resolveSignal<T>(data: T | Signal<T>): T {
@@ -45,7 +55,9 @@ export class AtMenuConfigService extends Service {
     private readonly dialogService: WorkspaceDialogService,
     private readonly editorSettingService: EditorSettingService,
     private readonly docsService: DocsService,
-    private readonly searchMenuService: SearchMenuService
+    private readonly memberSearchService: MemberSearchService,
+    private readonly searchMenuService: SearchMenuService,
+    private readonly workspaceServerService: WorkspaceServerService
   ) {
     super();
   }
@@ -310,12 +322,112 @@ export class AtMenuConfigService extends Service {
     return result;
   }
 
+  private memberGroup(
+    query: string,
+    close: () => void,
+    inlineEditor: AffineInlineEditor,
+    _: AbortSignal
+  ): LinkedMenuGroup {
+    const inviteItem: LinkedMenuItem = {
+      key: 'invite',
+      name: 'Invite...',
+      icon: MainAvatarIcon(),
+      action: () => {
+        close();
+
+        this.dialogService.open('setting', {
+          activeTab: 'workspace:members',
+        });
+      },
+    };
+    const convertMemberToMenuItem = (member: Member) => {
+      const { id, name, avatarUrl } = member;
+      const icon = avatarUrl
+        ? html`<img style="width: 20px; height: 20px;" src="${avatarUrl}" />`
+        : MainAvatarIcon();
+      return {
+        key: id,
+        name: name ?? 'Unknown',
+        icon,
+        action: () => {
+          close();
+
+          const root = inlineEditor.rootElement;
+          const block = root?.closest<BlockComponent>(`[${BLOCK_ID_ATTR}]`);
+          if (!block) return;
+
+          const notificationService =
+            this.workspaceServerService.server?.scope.get(NotificationService);
+          if (!notificationService) return;
+
+          const doc = block.doc;
+          const workspaceId = doc.workspace.id;
+          const docId = doc.id;
+          const docTitle = doc.meta?.title ?? '';
+          const mode = block.std.get(DocModeProvider).getEditorMode() ?? 'page';
+
+          notificationService
+            .mentionUser(id, workspaceId, {
+              id: docId,
+              title: docTitle,
+              blockId: block.blockId,
+              mode: mode as GraphqlDocMode,
+            })
+            .catch(error => {
+              console.error(error);
+            });
+
+          const inlineRange = inlineEditor.getInlineRange();
+          if (inlineRange && inlineRange.length === 0) {
+            inlineEditor.insertText(inlineRange, ' ', {
+              member: id,
+            });
+            inlineEditor.setInlineRange({
+              index: inlineRange.index + 1,
+              length: 0,
+            });
+          }
+        },
+      };
+    };
+
+    if (query.length === 0) {
+      return {
+        name: I18n.t('com.affine.editor.at-menu.mention-member'),
+        items: [
+          ...this.memberSearchService.result$.value
+            .slice(0, 3)
+            .map(member => convertMemberToMenuItem(member)),
+          inviteItem,
+        ],
+      };
+    }
+    this.memberSearchService.reset();
+
+    const items = signal<LinkedMenuItem[]>([inviteItem]);
+    const loading = this.memberSearchService.isLoading$.signal;
+    this.memberSearchService.result$.subscribe(members => {
+      items.value = [
+        ...members.map(member => convertMemberToMenuItem(member)),
+        inviteItem,
+      ];
+    });
+    this.memberSearchService.search(query);
+
+    return {
+      name: I18n.t('com.affine.editor.at-menu.mention-member'),
+      items,
+      loading,
+    };
+  }
+
   private getMenusFn(): LinkedWidgetConfig['getMenus'] {
     return (query, close, editorHost, inlineEditor, abortSignal) => {
       return [
         this.journalGroup(query, close, inlineEditor),
         this.linkToDocGroup(query, close, inlineEditor, abortSignal),
         this.newDocMenuGroup(query, close, editorHost, inlineEditor),
+        this.memberGroup(query, close, inlineEditor, abortSignal),
       ];
     };
   }

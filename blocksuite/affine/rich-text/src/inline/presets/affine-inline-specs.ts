@@ -214,6 +214,28 @@ export const FootNoteInlineSpecExtension = InlineSpecExtension(
   }
 );
 
+export const AffineMemberInlineSpecExtension = InlineSpecExtension(
+  'member',
+  provider => {
+    const std = provider.get(StdIdentifier);
+    return {
+      name: 'member',
+      schema: z.string().optional().nullable().catch(undefined),
+      match: delta => {
+        return !!delta.attributes?.member;
+      },
+      renderer: ({ delta, selected }) => {
+        return html`<affine-member
+          .std=${std}
+          .delta=${delta}
+          .selected=${selected}
+        ></affine-member>`;
+      },
+      embed: true,
+    };
+  }
+);
+
 export const InlineSpecExtensions = [
   BoldInlineSpecExtension,
   ItalicInlineSpecExtension,
@@ -227,6 +249,7 @@ export const InlineSpecExtensions = [
   LinkInlineSpecExtension,
   LatexEditorUnitSpecExtension,
   FootNoteInlineSpecExtension,
+  AffineMemberInlineSpecExtension,
 
   ToolbarModuleExtension({
     id: BlockFlavourIdentifier('affine:reference'),
