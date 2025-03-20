@@ -34,21 +34,21 @@ import {
 } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
 import { AccessController } from '../../../core/permission';
-import { COPILOT_LOCKER, CopilotType } from '../resolver';
-import { ChatSessionService } from '../session';
-import { CopilotStorage } from '../storage';
-import { CopilotContextDocJob } from './job';
-import { CopilotContextService } from './service';
 import {
   ContextCategories,
   ContextCategory,
   ContextDoc,
   ContextEmbedStatus,
-  type ContextFile,
+  ContextFile,
   DocChunkSimilarity,
   FileChunkSimilarity,
-  MAX_EMBEDDABLE_SIZE,
-} from './types';
+} from '../../../models';
+import { COPILOT_LOCKER, CopilotType } from '../resolver';
+import { ChatSessionService } from '../session';
+import { CopilotStorage } from '../storage';
+import { CopilotContextDocJob } from './job';
+import { CopilotContextService } from './service';
+import { MAX_EMBEDDABLE_SIZE } from './types';
 import { readStream } from './utils';
 
 @InputType()
@@ -61,6 +61,9 @@ class AddRemoveContextCategoryInput {
 
   @Field(() => String)
   categoryId!: string;
+
+  @Field(() => [String], { nullable: true })
+  docs!: string[] | null;
 }
 
 @InputType()
@@ -111,12 +114,15 @@ export class CopilotContextType {
 registerEnumType(ContextCategories, { name: 'ContextCategories' });
 
 @ObjectType()
-class CopilotContextCategory implements ContextCategory {
+class CopilotContextCategory implements Omit<ContextCategory, 'docs'> {
   @Field(() => ID)
   id!: string;
 
   @Field(() => ContextCategories)
   type!: ContextCategories;
+
+  @Field(() => [CopilotContextDoc])
+  docs!: CopilotContextDoc[];
 
   @Field(() => SafeIntResolver)
   createdAt!: number;
@@ -360,7 +366,20 @@ export class CopilotContextResolver {
   @CallMetric('ai', 'context_file_list')
   async docs(@Parent() context: CopilotContextType): Promise<ContextDoc[]> {
     const session = await this.context.get(context.id);
-    return session.listDocs();
+    const docs = session.listDocs();
+
+    return docs;
+  }
+
+  @ResolveField(() => [CopilotContextDoc], {
+    description: 'list files in context',
+  })
+  @CallMetric('ai', 'context_file_list')
+  async categories(
+    @Parent() context: CopilotContextType
+  ): Promise<ContextCategory[]> {
+    const session = await this.context.get(context.id);
+    return session.listCategories();
   }
 
   @Mutation(() => CopilotContextCategory, {

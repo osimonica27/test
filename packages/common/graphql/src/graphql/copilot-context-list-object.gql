@@ -20,6 +20,20 @@ query listContextObject(
           status
           createdAt
         }
+        tags {
+          id
+          docs {
+            id
+            status
+          }
+        }
+        collection {
+          id
+          docs {
+            id
+            status
+          }
+        }
       }
     }
   }

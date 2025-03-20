@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 
-import { Embedding, EmbeddingClient } from './types';
+import { Embedding } from '../../../models';
+import { EmbeddingClient } from './types';
 
 export class OpenAIEmbeddingClient extends EmbeddingClient {
   constructor(private readonly client: OpenAI) {
