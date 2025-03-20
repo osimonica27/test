@@ -5,6 +5,7 @@ import type { TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
 
+import { JobQueue } from '../base';
 import { ConfigModule } from '../base/config';
 import { AuthService } from '../core/auth';
 import { WorkspaceModule } from '../core/workspaces';
@@ -88,6 +89,10 @@ test.before(async t => {
       WorkspaceModule,
       CopilotModule,
     ],
+    tapModule: m => {
+      // use real JobQueue for testing
+      m.overrideProvider(JobQueue).useClass(JobQueue);
+    },
   });
 
   const auth = app.get(AuthService);
