@@ -84,6 +84,7 @@ test('should update context', async t => {
   const doc = {
     id: docId,
     createdAt: Date.now(),
+    status: null,
   };
   config?.docs.push(doc);
   await t.context.copilotContext.update(contextId, { config });
