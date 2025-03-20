@@ -1,6 +1,12 @@
 import { toURLSearchParams } from '@affine/core/modules/navigation';
 import type { ReferenceParams } from '@blocksuite/affine/model';
-import { fromPromise, OnEvent, Service } from '@toeverything/infra';
+import {
+  fromPromise,
+  type MatchQuery,
+  OnEvent,
+  type Schema,
+  Service,
+} from '@toeverything/infra';
 import { isEmpty, omit } from 'lodash-es';
 import { map, type Observable, switchMap } from 'rxjs';
 import { z } from 'zod';
@@ -134,18 +140,21 @@ export class DocsSearchService extends Service {
       );
   }
 
-  watchRefsFrom(docId: string) {
+  watchRefsFrom(ids: string | string[]) {
+    const docIds = Array.isArray(ids) ? ids : [ids];
+    const queries: MatchQuery<Schema>[] = docIds.map(id => ({
+      type: 'match',
+      field: 'docId',
+      match: id,
+    }));
+
     return this.indexer.blockIndex
       .search$(
         {
           type: 'boolean',
           occur: 'must',
           queries: [
-            {
-              type: 'match',
-              field: 'docId',
-              match: docId,
-            },
+            ...queries,
             {
               type: 'exists',
               field: 'refDocId',
@@ -171,7 +180,7 @@ export class DocsSearchService extends Service {
                       ? [JSON.parse(ref)]
                       : ref.map(item => JSON.parse(item));
                   })
-                  .filter(ref => ref.docId !== docId)
+                  .filter(ref => !docIds.includes(ref.docId))
                   .map(ref => [ref.docId, ref])
               ).values()
             );
