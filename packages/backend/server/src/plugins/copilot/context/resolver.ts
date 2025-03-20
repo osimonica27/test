@@ -34,21 +34,22 @@ import {
 } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
 import { AccessController } from '../../../core/permission';
-import { COPILOT_LOCKER, CopilotType } from '../resolver';
-import { ChatSessionService } from '../session';
-import { CopilotStorage } from '../storage';
-import { CopilotContextDocJob } from './job';
-import { CopilotContextService } from './service';
 import {
   ContextCategories,
   ContextCategory,
   ContextDoc,
   ContextEmbedStatus,
-  type ContextFile,
+  ContextFile,
   DocChunkSimilarity,
   FileChunkSimilarity,
-  MAX_EMBEDDABLE_SIZE,
-} from './types';
+  Models,
+} from '../../../models';
+import { COPILOT_LOCKER, CopilotType } from '../resolver';
+import { ChatSessionService } from '../session';
+import { CopilotStorage } from '../storage';
+import { CopilotContextDocJob } from './job';
+import { CopilotContextService } from './service';
+import { MAX_EMBEDDABLE_SIZE } from './types';
 import { readStream } from './utils';
 
 @InputType()
@@ -61,6 +62,9 @@ class AddRemoveContextCategoryInput {
 
   @Field(() => String)
   categoryId!: string;
+
+  @Field(() => [String], { nullable: true })
+  docs!: string[] | null;
 }
 
 @InputType()
@@ -111,12 +115,15 @@ export class CopilotContextType {
 registerEnumType(ContextCategories, { name: 'ContextCategories' });
 
 @ObjectType()
-class CopilotContextCategory implements ContextCategory {
+class CopilotContextCategory implements Omit<ContextCategory, 'docs'> {
   @Field(() => ID)
   id!: string;
 
   @Field(() => ContextCategories)
   type!: ContextCategories;
+
+  @Field(() => [CopilotContextDoc])
+  docs!: CopilotContextDoc[];
 
   @Field(() => SafeIntResolver)
   createdAt!: number;
@@ -338,6 +345,7 @@ export class CopilotContextRootResolver {
 export class CopilotContextResolver {
   constructor(
     private readonly ac: AccessController,
+    private readonly models: Models,
     private readonly mutex: RequestMutex,
     private readonly context: CopilotContextService,
     private readonly jobs: CopilotContextDocJob,
@@ -354,13 +362,65 @@ export class CopilotContextResolver {
     return controller.signal;
   }
 
+  @ResolveField(() => [CopilotContextCategory], {
+    description: 'list categories in context',
+  })
+  @CallMetric('ai', 'context_file_list')
+  async collections(
+    @Parent() context: CopilotContextType
+  ): Promise<ContextCategory[]> {
+    const session = await this.context.get(context.id);
+    const categories = session.categories.filter(
+      c => c.type === ContextCategories.Collection
+    );
+    await this.models.copilotContext.mergeDocStatus(
+      session.workspaceId,
+      categories.flatMap(c => c.docs)
+    );
+
+    return categories;
+  }
+
+  @ResolveField(() => [CopilotContextCategory], {
+    description: 'list categories in context',
+  })
+  @CallMetric('ai', 'context_file_list')
+  async tags(
+    @Parent() context: CopilotContextType
+  ): Promise<ContextCategory[]> {
+    const session = await this.context.get(context.id);
+    const categories = session.categories.filter(
+      c => c.type === ContextCategories.Tag
+    );
+    await this.models.copilotContext.mergeDocStatus(
+      session.workspaceId,
+      categories.flatMap(c => c.docs)
+    );
+
+    return categories;
+  }
+
   @ResolveField(() => [CopilotContextDoc], {
     description: 'list files in context',
   })
   @CallMetric('ai', 'context_file_list')
   async docs(@Parent() context: CopilotContextType): Promise<ContextDoc[]> {
     const session = await this.context.get(context.id);
-    return session.listDocs();
+    const docs = session.docs;
+    await this.models.copilotContext.mergeDocStatus(session.workspaceId, docs);
+
+    return docs;
+  }
+
+  @ResolveField(() => [CopilotContextFile], {
+    description: 'list files in context',
+  })
+  @CallMetric('ai', 'context_file_list')
+  async files(
+    @Parent() context: CopilotContextType
+  ): Promise<CopilotContextFile[]> {
+    const session = await this.context.get(context.id);
+    return session.files;
   }
 
   @Mutation(() => CopilotContextCategory, {
@@ -370,16 +430,31 @@ export class CopilotContextResolver {
   async addContextCategory(
     @Args({ name: 'options', type: () => AddRemoveContextCategoryInput })
     options: AddRemoveContextCategoryInput
-  ) {
+  ): Promise<CopilotContextCategory> {
     const lockFlag = `${COPILOT_LOCKER}:context:${options.contextId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
-      return new TooManyRequest('Server is busy');
+      throw new TooManyRequest('Server is busy');
     }
     const session = await this.context.get(options.contextId);
 
     try {
-      return await session.addCategoryRecord(options.type, options.categoryId);
+      const records = await session.addCategoryRecord(
+        options.type,
+        options.categoryId,
+        options.docs || []
+      );
+
+      if (options.docs) {
+        await this.jobs.addDocEmbeddingQueue(
+          options.docs.map(docId => ({
+            workspaceId: session.workspaceId,
+            docId,
+          }))
+        );
+      }
+
+      return records;
     } catch (e: any) {
       throw new CopilotFailedToModifyContext({
         contextId: options.contextId,
@@ -432,7 +507,16 @@ export class CopilotContextResolver {
     const session = await this.context.get(options.contextId);
 
     try {
-      return await session.addDocRecord(options.docId);
+      const record = await session.addDocRecord(options.docId);
+
+      await this.jobs.addDocEmbeddingQueue([
+        {
+          workspaceId: session.workspaceId,
+          docId: options.docId,
+        },
+      ]);
+
+      return record;
     } catch (e: any) {
       throw new CopilotFailedToModifyContext({
         contextId: options.contextId,
@@ -464,17 +548,6 @@ export class CopilotContextResolver {
         message: e.message,
       });
     }
-  }
-
-  @ResolveField(() => [CopilotContextFile], {
-    description: 'list files in context',
-  })
-  @CallMetric('ai', 'context_file_list')
-  async files(
-    @Parent() context: CopilotContextType
-  ): Promise<CopilotContextFile[]> {
-    const session = await this.context.get(context.id);
-    return session.listFiles();
   }
 
   @Mutation(() => CopilotContextFile, {

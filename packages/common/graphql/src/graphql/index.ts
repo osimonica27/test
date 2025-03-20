@@ -247,6 +247,22 @@ export const listContextObjectQuery = {
           status
           createdAt
         }
+        tags {
+          id
+          docs {
+            id
+            status
+          }
+          createdAt
+        }
+        collections {
+          id
+          docs {
+            id
+            status
+          }
+          createdAt
+        }
       }
     }
   }

@@ -1362,7 +1362,7 @@ test('should be able to manage context', async t => {
       },
     ]);
 
-    const list = session.listFiles();
+    const list = session.files;
     t.deepEqual(
       list.map(f => f.id),
       [file.id],
@@ -1371,11 +1371,11 @@ test('should be able to manage context', async t => {
 
     const docId = randomUUID();
     await session.addDocRecord(docId);
-    const docs = session.listDocs().map(d => d.id);
+    const docs = session.docs.map(d => d.id);
     t.deepEqual(docs, [docId], 'should list doc id');
 
     await session.removeDocRecord(docId);
-    t.deepEqual(session.listDocs(), [], 'should remove doc id');
+    t.deepEqual(session.docs, [], 'should remove doc id');
 
     const result = await session.matchFileChunks('test', 1, undefined, 1);
     t.is(result.length, 1, 'should match context');

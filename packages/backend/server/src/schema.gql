@@ -15,6 +15,7 @@ input AddContextFileInput {
 input AddRemoveContextCategoryInput {
   categoryId: String!
   contextId: String!
+  docs: [String!]
   type: ContextCategories!
 }
 
@@ -98,6 +99,9 @@ type Copilot {
 }
 
 type CopilotContext {
+  """list categories in context"""
+  collections: [CopilotContextCategory!]!
+
   """list files in context"""
   docs: [CopilotContextDoc!]!
 
@@ -110,11 +114,15 @@ type CopilotContext {
 
   """match workspace doc content"""
   matchWorkspaceContext(content: String!, limit: SafeInt): ContextMatchedDocChunk!
+
+  """list categories in context"""
+  tags: [CopilotContextCategory!]!
   workspaceId: String!
 }
 
 type CopilotContextCategory {
   createdAt: SafeInt!
+  docs: [CopilotContextDoc!]!
   id: ID!
   type: ContextCategories!
 }

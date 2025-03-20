@@ -50,6 +50,7 @@ export interface AddContextFileInput {
 export interface AddRemoveContextCategoryInput {
   categoryId: Scalars['String']['input'];
   contextId: Scalars['String']['input'];
+  docs?: InputMaybe<Array<Scalars['String']['input']>>;
   type: ContextCategories;
 }
 
@@ -164,6 +165,8 @@ export interface CopilotSessionsArgs {
 
 export interface CopilotContext {
   __typename?: 'CopilotContext';
+  /** list categories in context */
+  collections: Array<CopilotContextCategory>;
   /** list files in context */
   docs: Array<CopilotContextDoc>;
   /** list files in context */
@@ -173,6 +176,8 @@ export interface CopilotContext {
   matchContext: Array<ContextMatchedFileChunk>;
   /** match workspace doc content */
   matchWorkspaceContext: ContextMatchedDocChunk;
+  /** list categories in context */
+  tags: Array<CopilotContextCategory>;
   workspaceId: Scalars['String']['output'];
 }
 
@@ -190,6 +195,7 @@ export interface CopilotContextMatchWorkspaceContextArgs {
 export interface CopilotContextCategory {
   __typename?: 'CopilotContextCategory';
   createdAt: Scalars['SafeInt']['output'];
+  docs: Array<CopilotContextDoc>;
   id: Scalars['ID']['output'];
   type: ContextCategories;
 }
@@ -2561,6 +2567,26 @@ export type ListContextObjectQuery = {
           error: string | null;
           status: ContextEmbedStatus;
           createdAt: number;
+        }>;
+        tags: Array<{
+          __typename?: 'CopilotContextCategory';
+          id: string;
+          createdAt: number;
+          docs: Array<{
+            __typename?: 'CopilotContextDoc';
+            id: string;
+            status: ContextEmbedStatus | null;
+          }>;
+        }>;
+        collections: Array<{
+          __typename?: 'CopilotContextCategory';
+          id: string;
+          createdAt: number;
+          docs: Array<{
+            __typename?: 'CopilotContextDoc';
+            id: string;
+            status: ContextEmbedStatus | null;
+          }>;
         }>;
       }>;
     };
