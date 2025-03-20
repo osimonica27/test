@@ -3,11 +3,11 @@
 
 @_exported import ApolloAPI
 
-public class GetWorkspacePublicPageByIdQuery: GraphQLQuery {
-  public static let operationName: String = "getWorkspacePublicPageById"
+public class GetWorkspacePageByIdQuery: GraphQLQuery {
+  public static let operationName: String = "getWorkspacePageById"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getWorkspacePublicPageById($workspaceId: String!, $pageId: String!) { workspace(id: $workspaceId) { __typename publicPage(pageId: $pageId) { __typename id mode } } }"#
+      #"query getWorkspacePageById($workspaceId: String!, $pageId: String!) { workspace(id: $workspaceId) { __typename doc(docId: $pageId) { __typename id mode defaultRole public } } }"#
     ))
 
   public var workspaceId: String
@@ -48,28 +48,32 @@ public class GetWorkspacePublicPageByIdQuery: GraphQLQuery {
       public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.WorkspaceType }
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
-        .field("publicPage", PublicPage?.self, arguments: ["pageId": .variable("pageId")]),
+        .field("doc", Doc.self, arguments: ["docId": .variable("pageId")]),
       ] }
 
-      /// Get public page of a workspace by page id.
-      public var publicPage: PublicPage? { __data["publicPage"] }
+      /// Get get with given id
+      public var doc: Doc { __data["doc"] }
 
-      /// Workspace.PublicPage
+      /// Workspace.Doc
       ///
-      /// Parent Type: `WorkspacePage`
-      public struct PublicPage: AffineGraphQL.SelectionSet {
+      /// Parent Type: `DocType`
+      public struct Doc: AffineGraphQL.SelectionSet {
         public let __data: DataDict
         public init(_dataDict: DataDict) { __data = _dataDict }
 
-        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.WorkspacePage }
+        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.DocType }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("id", String.self),
-          .field("mode", GraphQLEnum<AffineGraphQL.PublicPageMode>.self),
+          .field("mode", GraphQLEnum<AffineGraphQL.PublicDocMode>.self),
+          .field("defaultRole", GraphQLEnum<AffineGraphQL.DocRole>.self),
+          .field("public", Bool.self),
         ] }
 
         public var id: String { __data["id"] }
-        public var mode: GraphQLEnum<AffineGraphQL.PublicPageMode> { __data["mode"] }
+        public var mode: GraphQLEnum<AffineGraphQL.PublicDocMode> { __data["mode"] }
+        public var defaultRole: GraphQLEnum<AffineGraphQL.DocRole> { __data["defaultRole"] }
+        public var `public`: Bool { __data["public"] }
       }
     }
   }

@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let WorkspacePage = ApolloAPI.Object(
-    typename: "WorkspacePage",
+  static let WorkspaceRolePermissions = ApolloAPI.Object(
+    typename: "WorkspaceRolePermissions",
     implementedInterfaces: [],
     keyFields: nil
   )

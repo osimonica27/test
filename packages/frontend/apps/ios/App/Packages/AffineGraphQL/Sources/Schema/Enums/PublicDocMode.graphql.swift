@@ -3,8 +3,8 @@
 
 import ApolloAPI
 
-/// The mode which the public page default in
-public enum PublicPageMode: String, EnumType {
+/// The mode which the public doc default in
+public enum PublicDocMode: String, EnumType {
   case edgeless = "Edgeless"
   case page = "Page"
 }
