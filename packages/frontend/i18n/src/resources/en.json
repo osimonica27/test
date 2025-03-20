@@ -490,6 +490,7 @@
   "com.affine.enableAffineCloudModal.custom-server.description": "Choose an instance.",
   "com.affine.enableAffineCloudModal.custom-server.enable": "Enable Cloud",
   "com.affine.error.hide-error": "Hide error",
+  "com.affine.error.show-error": "Show error",
   "com.affine.error.no-page-root.title": "Doc content is missing",
   "com.affine.error.refetch": "Refetch",
   "com.affine.error.reload": "Reload AFFiNE",

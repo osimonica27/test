@@ -113,7 +113,11 @@ export const ErrorDetail: FC<ErrorDetailProps> = props => {
               className={styles.actionButton}
             >
               <div className={styles.actionContent}>
-                <span>{t['com.affine.error.hide-error']()}</span>
+                <span>
+                  {showStack
+                    ? t['com.affine.error.hide-error']()
+                    : t['com.affine.error.show-error']()}
+                </span>
                 <ArrowDownSmallIcon
                   data-show-stack={showStack}
                   className={styles.arrowIcon}
