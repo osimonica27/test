@@ -146,18 +146,6 @@ export class DocsSearchService extends Service {
               field: 'docId',
               match: docId,
             },
-            // Ignore if it is a link to the current document.
-            {
-              type: 'boolean',
-              occur: 'must_not',
-              queries: [
-                {
-                  type: 'match',
-                  field: 'refDocId',
-                  match: docId,
-                },
-              ],
-            },
             {
               type: 'exists',
               field: 'refDocId',
@@ -174,13 +162,18 @@ export class DocsSearchService extends Service {
       .pipe(
         switchMap(({ nodes }) => {
           return fromPromise(async () => {
-            const refs: ({ docId: string } & ReferenceParams)[] = nodes.flatMap(
-              node => {
-                const { ref } = node.fields;
-                return typeof ref === 'string'
-                  ? [JSON.parse(ref)]
-                  : ref.map(item => JSON.parse(item));
-              }
+            const refs: ({ docId: string } & ReferenceParams)[] = Array.from(
+              new Map(
+                nodes
+                  .flatMap(node => {
+                    const { ref } = node.fields;
+                    return typeof ref === 'string'
+                      ? [JSON.parse(ref)]
+                      : ref.map(item => JSON.parse(item));
+                  })
+                  .filter(ref => ref.docId !== docId)
+                  .map(ref => [ref.docId, ref])
+              ).values()
             );
 
             const docData = await this.indexer.docIndex.getAll(
