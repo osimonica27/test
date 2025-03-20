@@ -121,6 +121,7 @@ export class EdgelessColorPickerButton extends WithDisposable(LitElement) {
                   .theme=${this.theme}
                   .palettes=${this.palettes}
                   .hollowCircle=${this.hollowCircle}
+                  .shouldKeepColor=${this.shouldKeepColor}
                   .hasTransparent=${false}
                   @select=${this.#select}
                 >
@@ -204,4 +205,7 @@ export class EdgelessColorPickerButton extends WithDisposable(LitElement) {
 
   @property()
   accessor enableCustomColor: boolean = true;
+
+  @property({ attribute: false })
+  accessor shouldKeepColor: boolean = false;
 }
