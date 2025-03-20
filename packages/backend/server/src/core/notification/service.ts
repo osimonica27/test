@@ -1,18 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
-import { NotificationNotFound, PaginationInput, URLHelper } from '../../base';
 import {
+  Config,
+  NotificationNotFound,
+  PaginationInput,
+  URLHelper,
+} from '../../base';
+import {
+  DEFAULT_WORKSPACE_NAME,
   InvitationNotificationCreate,
   MentionNotification,
   MentionNotificationCreate,
   Models,
   NotificationType,
   UnionNotificationBody,
+  Workspace,
 } from '../../models';
 import { DocReader } from '../doc';
 import { Mailer } from '../mail';
-import { WorkspaceBlobStorage } from '../storage';
 import { generateDocPath } from '../utils/doc';
 
 @Injectable()
@@ -22,9 +28,9 @@ export class NotificationService {
   constructor(
     private readonly models: Models,
     private readonly docReader: DocReader,
-    private readonly workspaceBlobStorage: WorkspaceBlobStorage,
     private readonly mailer: Mailer,
-    private readonly url: URLHelper
+    private readonly url: URLHelper,
+    private readonly config: Config
   ) {}
 
   async cleanExpiredNotifications() {
@@ -77,20 +83,49 @@ export class NotificationService {
   }
 
   async createInvitation(input: InvitationNotificationCreate) {
-    const isActive = await this.models.workspaceUser.getActive(
-      input.body.workspaceId,
-      input.userId
-    );
-    if (isActive) {
-      this.logger.debug(
-        `User ${input.userId} is already a active member of workspace ${input.body.workspaceId}, skip creating notification`
-      );
+    const workspaceId = input.body.workspaceId;
+    const userId = input.userId;
+    if (await this.isActiveWorkspaceUser(workspaceId, userId)) {
       return;
     }
-    await this.ensureWorkspaceContentExists(input.body.workspaceId);
-    return await this.models.notification.createInvitation(
+    await this.ensureWorkspaceContentExists(workspaceId);
+    const notification = await this.models.notification.createInvitation(
       input,
       NotificationType.Invitation
+    );
+    await this.sendInvitationEmail(input);
+    return notification;
+  }
+
+  private async sendInvitationEmail(input: InvitationNotificationCreate) {
+    const inviteUrl = this.url.link(`/invite/${input.body.inviteId}`);
+    if (this.config.node.dev) {
+      // make it easier to test in dev mode
+      this.logger.debug(`Invite link: ${inviteUrl}`);
+    }
+    const userSetting = await this.models.settings.get(input.userId);
+    if (!userSetting.receiveInvitationEmail) {
+      return;
+    }
+    const receiver = await this.models.user.getWorkspaceUser(input.userId);
+    if (!receiver) {
+      return;
+    }
+    await this.mailer.send({
+      name: 'MemberInvitation',
+      to: receiver.email,
+      props: {
+        user: {
+          $$userId: input.body.createdByUserId,
+        },
+        workspace: {
+          $$workspaceId: input.body.workspaceId,
+        },
+        url: inviteUrl,
+      },
+    });
+    this.logger.log(
+      `Invitation email sent to user ${receiver.id} for workspace ${input.body.workspaceId}`
     );
   }
 
@@ -157,16 +192,7 @@ export class NotificationService {
       Array.from(workspaceIds)
     );
     const workspaceInfos = new Map(
-      workspaces.map(w => [
-        w.id,
-        {
-          id: w.id,
-          name: w.name ?? '',
-          avatarUrl: w.avatarKey
-            ? this.workspaceBlobStorage.getAvatarUrl(w.id, w.avatarKey)
-            : undefined,
-        },
-      ])
+      workspaces.map(w => [w.id, this.formatWorkspaceInfo(w)])
     );
 
     // fill latest doc title
@@ -201,5 +227,26 @@ export class NotificationService {
 
   async countByUserId(userId: string) {
     return await this.models.notification.countByUserId(userId);
+  }
+
+  private formatWorkspaceInfo(workspace: Workspace) {
+    return {
+      id: workspace.id,
+      name: workspace.name ?? DEFAULT_WORKSPACE_NAME,
+      // TODO(@fengmk2): workspace avatar url is not public access by default, impl it in future
+      // avatarUrl: this.workspaceBlobStorage.getAvatarUrl(
+      //   workspace.id,
+      //   workspace.avatarKey
+      // ),
+      url: this.url.link(`/workspace/${workspace.id}`),
+    };
+  }
+
+  private async isActiveWorkspaceUser(workspaceId: string, userId: string) {
+    const isActive = await this.models.workspaceUser.getActive(
+      workspaceId,
+      userId
+    );
+    return !!isActive;
   }
 }
